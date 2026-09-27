@@ -27,20 +27,19 @@
   @keyframes toastIn { from { opacity:0; transform:translateY(-20px) scale(.9); } to { opacity:1; transform:translateY(0) scale(1); } }
   @keyframes toastOut { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(-20px) scale(.9); } }
 
-  .combo-popup { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); z-index:9999999; pointer-events:none; display:none; }
-  .combo-popup.show { display:block; animation:comboBurst 2s ease-out forwards; }
-  .combo-inner { background:linear-gradient(135deg,#FF6B00,#FF3D00,#FF8C00); border:3px solid #FFD700; border-radius:22px; padding:22px 44px; box-shadow:0 0 40px rgba(255,100,0,0.85),0 0 80px rgba(255,200,0,0.55),inset 0 0 24px rgba(255,220,0,0.35); color:#fff; font-weight:900; text-shadow:0 0 10px #FFD700,0 0 22px #FF6B00,0 0 40px #FF3D00,0 2px 8px rgba(0,0,0,0.6); display:flex; align-items:center; gap:14px; white-space:nowrap; font-size:32px; line-height:1; font-family:'Segoe UI',-apple-system,sans-serif; }
+  /* ==================== 連勝彈出（固定大小 + 頂部不擋選擇） ==================== */
+  .combo-popup { position:fixed; top:110px; left:50%; transform:translateX(-50%); z-index:999998; pointer-events:none; display:none; }
+  .combo-popup.show { display:block; animation:comboFloat 3s ease-out forwards; }
+  .combo-inner { background:linear-gradient(135deg,#FF6B00,#FF3D00,#FF8C00); border:3px solid #FFD700; border-radius:18px; padding:14px 32px; box-shadow:0 0 30px rgba(255,100,0,0.85),0 0 60px rgba(255,200,0,0.55),inset 0 0 20px rgba(255,220,0,0.35); color:#fff; font-weight:900; text-shadow:0 0 8px #FFD700,0 0 18px #FF6B00,0 0 32px #FF3D00,0 2px 6px rgba(0,0,0,0.6); display:flex; align-items:center; gap:12px; white-space:nowrap; font-size:26px; line-height:1; font-family:'Segoe UI',-apple-system,sans-serif; }
   .combo-fire { font-size:1.2em; display:inline-block; animation:fireFlicker 0.35s ease-in-out infinite alternate; }
   .combo-text { font-size:1em; letter-spacing:2px; }
   @keyframes fireFlicker { from { transform:scale(1) rotate(-4deg); } to { transform:scale(1.18) rotate(4deg); } }
-  @keyframes comboBurst {
-    0%   { transform:translate(-50%,-50%) scale(0) rotate(-20deg); opacity:0; }
-    25%  { transform:translate(-50%,-50%) scale(1.15) rotate(5deg); opacity:1; }
-    40%  { transform:translate(-50%,-50%) scale(0.95) rotate(-3deg); opacity:1; }
-    55%  { transform:translate(-50%,-50%) scale(1.05) rotate(2deg); opacity:1; }
-    70%  { transform:translate(-50%,-50%) scale(1) rotate(0); opacity:1; }
-    85%  { transform:translate(-50%,-50%) scale(1.03) rotate(0); opacity:1; }
-    100% { transform:translate(-50%,-50%) scale(1.08) rotate(0); opacity:0; }
+  @keyframes comboFloat {
+    0%   { opacity:0; transform:translateX(-50%) translateY(-20px) scale(.8); }
+    15%  { opacity:1; transform:translateX(-50%) translateY(0) scale(1.08); }
+    25%  { opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
+    85%  { opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
+    100% { opacity:0; transform:translateX(-50%) translateY(-20px) scale(1); }
   }
 
   #termsPage { display:flex; justify-content:center; align-items:center; min-height:100vh; padding:20px; padding-top:60px; padding-bottom:40px; }
@@ -231,9 +230,9 @@
 
 <div class="combo-popup" id="comboPopup">
   <div class="combo-inner" id="comboInner">
-    <span class="combo-fire" id="comboFireL">🔥</span>
+    <span class="combo-fire">🔥</span>
     <span class="combo-text" id="comboText">連勝 x3 !!!</span>
-    <span class="combo-fire" id="comboFireR">🔥</span>
+    <span class="combo-fire">🔥</span>
   </div>
 </div>
 
@@ -400,7 +399,7 @@
       <div id="tierBadge" style="display:inline-block;padding:18px 42px;border-radius:16px;font-size:52px;font-weight:900;letter-spacing:3px;line-height:1;min-width:150px;color:#9ca3af;background:rgba(156,163,175,0.18);border:2px solid rgba(156,163,175,0.65);">—</div>
       <div id="tierDesc" style="font-size:14px;margin-top:12px;font-weight:bold;color:#9ca3af;"></div>
       <div id="tierDetail" style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.5;"></div>
-      <div style="font-size:12px;color:var(--text-muted);margin-top:8px;" data-i18n="tierHint">※ 猜 20 場以上才顯示等級（命中率 40% + ROI 60%）</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:8px;" data-i18n="tierHint">※ 猜 5 場以上才顯示等級（命中率 40% + ROI 60%）</div>
     </div>
 
     <div class="game-stats">
@@ -460,7 +459,7 @@
       <div class="dev-layer">
         <div class="dev-layer-title">第 1 層：勝率差距 → 買和</div>
         <div class="dev-param-grid">
-          <div class="dev-param-item"><label>勝率差上限 (A−C)</label><input type="text" id="p1_gap" value="6" inputmode="numeric"></div>
+          <div class="dev-param-item"><label>勝率差上限 (A−C)</label><input type="text" id="p1_gap" value="3" inputmode="numeric"></div>
         </div>
       </div>
       <div class="dev-layer">
@@ -489,6 +488,7 @@
         <div class="dev-layer-title">第 5 層：客強客冷 → 反向買主</div>
         <div class="dev-param-grid">
           <div class="dev-param-item"><label>客賠上限</label><input type="text" id="p4_fmax" value="550" inputmode="numeric"></div>
+          <div class="dev-param-item"><label>和賠下限</label><input type="text" id="p4_emin" value="300" inputmode="numeric"></div>
         </div>
       </div>
       <div class="dev-layer">
@@ -521,13 +521,13 @@
 
 <script>
 // ==================== 全域 ====================
-var PARAMS = { p1_gap:6, p_odds_gap:20, p2_hmin:42, p2_dmin:155, p2_dmax:205, p3_hmin:40, p3_dmin:210, p3_dmax:245, p4_fmax:550, p5_fmin:185, p5_fmax:215, pb_hmin:30, pb_dmin:600, pb_fskip:750 };
+var PARAMS = { p1_gap:3, p_odds_gap:20, p2_hmin:42, p2_dmin:155, p2_dmax:205, p3_hmin:40, p3_dmin:210, p3_dmax:245, p4_fmax:550, p4_emin:300, p5_fmin:185, p5_fmax:215, pb_hmin:30, pb_dmin:600, pb_fskip:750 };
 var DEFAULT_PARAMS = JSON.parse(JSON.stringify(PARAMS));
 var CALIBRATION = { FAVORITE_BOOST:0.18, DRAW_BOOST:1.25, DRAW_LOW:150, DRAW_HIGH:210, MARGIN_MIN:1.10, MARGIN_MAX:1.16 };
 var currentLang = 'zh-HK';
 var devMode = false;
 
-var TIER_MIN_PLAYED = 20;
+var TIER_MIN_PLAYED = 5;
 var TIER_WEIGHT_HITRATE = 0.4;
 var TIER_WEIGHT_ROI = 0.6;
 
@@ -547,24 +547,19 @@ function showToast(msg, type) {
   }, 2000);
 }
 
-// ==================== 連勝彈出 ====================
+// ==================== 連勝彈出（固定大小） ====================
 function showComboPopup(combo) {
   var popup = document.getElementById('comboPopup');
-  var inner = document.getElementById('comboInner');
   var textEl = document.getElementById('comboText');
-  if (!popup || !inner || !textEl) return;
+  if (!popup || !textEl) return;
   var t = translations[currentLang];
-  var comboText = (t.comboStreak || '連勝 x') + combo + ' !!!';
-  textEl.textContent = comboText;
-  var scale = 1 + Math.min(0.5, (combo - 3) * 0.1);
-  var baseSize = 32;
-  inner.style.fontSize = (baseSize * scale) + 'px';
+  textEl.textContent = (t.comboStreak || '連勝 x') + combo + ' !!!';
   popup.classList.remove('show');
   void popup.offsetWidth;
   popup.classList.add('show');
   setTimeout(function() {
     popup.classList.remove('show');
-  }, 2000);
+  }, 3000);
 }
 
 // ==================== 主題切換 ====================
@@ -610,11 +605,11 @@ const translations = {
     errIncomplete:'⚠️ 數據不完整', errOver100:'⚠️ 命中率大於100%',
     evLabel:'期望值 EV-1：',
     hintSkip:'數據信號不明，系統選擇跳過本次投注，避免風險。',
-    hint1:'主客勝率相近（相差 6 以內），和局概率被市場低估，系統捕捉高價值和局，建議買和局。',
+    hint1:'主客勝率相近（相差 3 以內），和局概率被市場低估，系統捕捉高價值和局，建議買和局。',
     hint2:'主客賠率非常接近（相差 0.20 以內），市場認為雙方勢均力敵，和局概率上升，建議買和局。',
     hint3:'主隊勝率明顯佔優，賠率處於合理回報區間，主場優勢強勁，建議買主勝。',
     hint4:'主隊勝率雖高但賠率偏高，市場對主勝存有疑慮，系統判斷需防冷，建議買和局。',
-    hint5:'客勝率高於主勝率，客隊略為冷門，系統反向買主隊，搏主場優勢。',
+    hint5:'客勝率高於主勝率，客隊略為冷門，且和賠合理（>3.00），系統反向買主隊，搏主場優勢。',
     hint6:'客勝率高於主勝率，且客賠處於 1.85～2.15 的高價值區間，客隊具備市場價值，建議買客勝。',
     hint7:'市場賠率與勝率模型出現分歧，系統選擇賠率更高的一方進行博弈。',
     hintReverse:'偵測到極端冷門賠率，系統按最新規則買和局搏高賠回報。',
@@ -633,7 +628,7 @@ const translations = {
     desc_favorite:'🔥 大熱取勝', desc_strong:'💪 大熱輕鬆取勝',
     desc_D_extreme:'🎯 超罕見超高賠和局！', desc_D_huge:'💰 高賠和局命中！',
     desc_D_high:'📊 中高賠和局', desc_D_normal:'🤝 正常和局',
-    tierHint:'※ 猜 20 場以上才顯示等級（命中率 40% + ROI 60%）',
+    tierHint:'※ 猜 5 場以上才顯示等級（命中率 40% + ROI 60%）',
     tierEX:'🏆 傳奇！神級預測！', tierS:'🔥 頂尖表現！繼續保持！',
     tierA:'⭐ 優秀！表現出色！', tierB:'🎯 表現不俗！繼續努力！',
     tierC:'📊 一般水平，仍有進步空間',
@@ -684,11 +679,11 @@ const translations = {
     errIncomplete:'⚠️ 数据不完整', errOver100:'⚠️ 命中率大于100%',
     evLabel:'期望值 EV-1：',
     hintSkip:'数据信号不明，系统选择跳过本次投注，避免风险。',
-    hint1:'主客胜率相近（相差 6 以内），和局概率被市场低估，系统捕捉高价值和局，建议买和局。',
+    hint1:'主客胜率相近（相差 3 以内），和局概率被市场低估，系统捕捉高价值和局，建议买和局。',
     hint2:'主客赔率非常接近（相差 0.20 以内），市场认为双方势均力敌，和局概率上升，建议买和局。',
     hint3:'主队胜率明显占优，赔率处于合理回报区间，主场优势强劲，建议买主胜。',
     hint4:'主队胜率虽高但赔率偏高，市场对主胜存有疑虑，系统判断需防冷，建议买和局。',
-    hint5:'客胜率高于主胜率，客队略为冷门，系统反向买主队，搏主场优势。',
+    hint5:'客胜率高于主胜率，客队略为冷门，且和赔合理（>3.00），系统反向买主队，搏主场优势。',
     hint6:'客胜率高于主胜率，且客赔处于 1.85～2.15 的高价值区间，客队具备市场价值，建议买客胜。',
     hint7:'市场赔率与胜率模型出现分歧，系统选择赔率更高的一方进行博弈。',
     hintReverse:'侦测到极端冷门赔率，系统按最新规则买和局搏高赔回报。',
@@ -707,7 +702,7 @@ const translations = {
     desc_favorite:'🔥 大热取胜', desc_strong:'💪 大热轻松取胜',
     desc_D_extreme:'🎯 超罕见超高赔和局！', desc_D_huge:'💰 高赔和局命中！',
     desc_D_high:'📊 中高赔和局', desc_D_normal:'🤝 正常和局',
-    tierHint:'※ 猜 20 场以上才显示等级（命中率 40% + ROI 60%）',
+    tierHint:'※ 猜 5 场以上才显示等级（命中率 40% + ROI 60%）',
     tierEX:'🏆 传奇！神级预测！', tierS:'🔥 顶尖表现！继续保持！',
     tierA:'⭐ 优秀！表现出色！', tierB:'🎯 表现不俗！继续努力！',
     tierC:'📊 一般水平，仍有进步空间',
@@ -758,11 +753,11 @@ const translations = {
     errIncomplete:'⚠️ Incomplete Data', errOver100:'⚠️ Probability exceeds 100%',
     evLabel:'Expected Value EV-1: ',
     hintSkip:'Signal unclear. System skips this bet to avoid risk.',
-    hint1:'Home and away win rates are close (within 6). Draw is undervalued. Bet Draw.',
+    hint1:'Home and away win rates are close (within 3). Draw is undervalued. Bet Draw.',
     hint2:'Home and away odds are very close (within 0.20). Market sees evenly matched teams. Bet Draw.',
     hint3:'Home team has clear advantage with reasonable odds. Bet Home Win.',
     hint4:'Home win rate is high but odds are elevated. Market has doubts. Bet Draw for safety.',
-    hint5:'Away win rate exceeds home, away team slightly underdog. System bets Home Win as contrarian play.',
+    hint5:'Away win rate exceeds home, away team slightly underdog, draw odds reasonable (>3.00). System bets Home Win as contrarian play.',
     hint6:'Away win rate exceeds home, and away odds fall in the 1.85–2.15 high-value zone. Bet Away Win.',
     hint7:'Market odds diverge from win rate model. System selects the higher-odds side for contrarian play.',
     hintReverse:'Detected extreme underdog odds. System switches to Draw bet for high-payout upside.',
@@ -781,7 +776,7 @@ const translations = {
     desc_favorite:'🔥 Favorite Wins', desc_strong:'💪 Dominant Win',
     desc_D_extreme:'🎯 Ultra-Rare High-Odds Draw!', desc_D_huge:'💰 High-Odds Draw Hit!',
     desc_D_high:'📊 Mid-High Odds Draw', desc_D_normal:'🤝 Normal Draw',
-    tierHint:'※ Play 20+ rounds to reveal rank (Hit Rate 40% + ROI 60%)',
+    tierHint:'※ Play 5+ rounds to reveal rank (Hit Rate 40% + ROI 60%)',
     tierEX:'🏆 Legendary! Godlike predictions!', tierS:'🔥 Top-tier performance! Keep it up!',
     tierA:'⭐ Excellent! Outstanding performance!', tierB:'🎯 Decent performance! Keep pushing!',
     tierC:'📊 Average, room to improve',
@@ -796,6 +791,7 @@ const translations = {
     gameAutoSkip:'🤖 System recommends SKIP. Please choose manually or skip.',
     gameLoading:'⏳ Loading match data...',
     gameNoData:'⚠️ No match data available. Please try again later.',
+    gameLoadFailed:'📚 Database load failed',
     gameLoadError:'⚠️ Failed to load data. Please check your connection.',
     gameRealDataBadge:'📚 REAL DATA',
     dbLoading:'📚 Loading database...',
@@ -985,16 +981,16 @@ function loadStatsWithRetry() {
 
 // ==================== 公式 ====================
 function calcBet(hw, dw, aw, ho, doo, ao) {
-  // 第 1 層：勝率差 <=6 → D
+  // 第 1 層：勝率差 <=3 → D
   if (Math.abs(hw - aw) <= PARAMS.p1_gap) return "D";
-  // 第 2 層：賠率差 <0.20 → D
+  // 第 2 層：主客賠差 <0.20 → D
   if (Math.abs(ho - ao) * 100 < PARAMS.p_odds_gap) return "D";
   // 第 3 層：主強主賠低 → H
   if (hw >= PARAMS.p2_hmin && ho >= PARAMS.p2_dmin/100 && ho < PARAMS.p2_dmax/100 && ho !== ao) return "H";
   // 第 4 層：主強主賠中 → D
   if (hw >= PARAMS.p3_hmin && ho > PARAMS.p3_dmin/100 && ho <= PARAMS.p3_dmax/100 && ho !== ao) return "D";
-  // 第 5 層：客強客冷 → H
-  if (aw > hw && ao > ho && ao < PARAMS.p4_fmax/100) return "H";
+  // 第 5 層：客強客冷 → H（需 和賠 >3.00）
+  if (aw > hw && ao > ho && ao < PARAMS.p4_fmax/100 && doo * 100 > PARAMS.p4_emin) return "H";
   // 第 6 層：客強客賠價值 → A
   if (aw > hw && ao >= PARAMS.p5_fmin/100 && ao <= PARAMS.p5_fmax/100) return "A";
   // 兜底層
@@ -1015,7 +1011,7 @@ function calcLayer(hw, dw, aw, ho, doo, ao) {
   if (Math.abs(ho - ao) * 100 < PARAMS.p_odds_gap) return 2;
   if (hw >= PARAMS.p2_hmin && ho >= PARAMS.p2_dmin/100 && ho < PARAMS.p2_dmax/100 && ho !== ao) return 3;
   if (hw >= PARAMS.p3_hmin && ho > PARAMS.p3_dmin/100 && ho <= PARAMS.p3_dmax/100 && ho !== ao) return 4;
-  if (aw > hw && ao > ho && ao < PARAMS.p4_fmax/100) return 5;
+  if (aw > hw && ao > ho && ao < PARAMS.p4_fmax/100 && doo * 100 > PARAMS.p4_emin) return 5;
   if (aw > hw && ao >= PARAMS.p5_fmin/100 && ao <= PARAMS.p5_fmax/100) return 6;
   return 7;
 }
@@ -1130,7 +1126,7 @@ function closeDevPanel() {
 }
 
 function applyParams() {
-  PARAMS.p1_gap = Number(document.getElementById('p1_gap').value) || 6;
+  PARAMS.p1_gap = Number(document.getElementById('p1_gap').value) || 3;
   PARAMS.p_odds_gap = Number(document.getElementById('p_odds_gap').value) || 20;
   PARAMS.p2_hmin = Number(document.getElementById('p2_hmin').value) || 42;
   PARAMS.p2_dmin = Number(document.getElementById('p2_dmin').value) || 155;
@@ -1139,6 +1135,7 @@ function applyParams() {
   PARAMS.p3_dmin = Number(document.getElementById('p3_dmin').value) || 210;
   PARAMS.p3_dmax = Number(document.getElementById('p3_dmax').value) || 245;
   PARAMS.p4_fmax = Number(document.getElementById('p4_fmax').value) || 550;
+  PARAMS.p4_emin = Number(document.getElementById('p4_emin').value) || 300;
   PARAMS.p5_fmin = Number(document.getElementById('p5_fmin').value) || 185;
   PARAMS.p5_fmax = Number(document.getElementById('p5_fmax').value) || 215;
   PARAMS.pb_hmin = Number(document.getElementById('pb_hmin').value) || 30;
@@ -1152,7 +1149,7 @@ function applyParams() {
 
 function resetParams() {
   PARAMS = JSON.parse(JSON.stringify(DEFAULT_PARAMS));
-  ['p1_gap','p_odds_gap','p2_hmin','p2_dmin','p2_dmax','p3_hmin','p3_dmin','p3_dmax','p4_fmax','p5_fmin','p5_fmax','pb_hmin','pb_dmin','pb_fskip'].forEach(k => {
+  ['p1_gap','p_odds_gap','p2_hmin','p2_dmin','p2_dmax','p3_hmin','p3_dmin','p3_dmax','p4_fmax','p4_emin','p5_fmin','p5_fmax','pb_hmin','pb_dmin','pb_fskip'].forEach(k => {
     var el = document.getElementById(k);
     if (el) el.value = DEFAULT_PARAMS[k];
   });
@@ -1213,7 +1210,6 @@ function updateDbInfo() {
 }
 
 // ==================== 猜賽果 ====================
-// ⚠️ 所有隨機抽樣都是真實數據（來自 Google Sheet A2:H）
 var sheetMatchPool = null;
 var sheetPoolPromise = null;
 
@@ -1661,171 +1657,4 @@ function updateTierDisplay(withAnimation) {
     'B+': { grad:'linear-gradient(135deg, #67e8f9, #22d3ee, #06b6d4)', color:'#fff', glow:'0 0 16px #67e8f9, 0 0 32px #06b6d4, 0 2px 10px #22d3ee', shadow:'0 0 30px rgba(34,211,238,0.55)' },
     'B':  { grad:'linear-gradient(135deg, #5eead4, #14b8a6, #0d9488)', color:'#fff', glow:'0 0 14px #5eead4, 0 0 28px #0d9488, 0 2px 8px #14b8a6', shadow:'0 0 25px rgba(20,184,166,0.55)' },
     'B-': { grad:'linear-gradient(135deg, #6ee7b7, #10b981, #059669)', color:'#fff', glow:'0 0 12px #6ee7b7, 0 0 24px #059669, 0 2px 6px #10b981', shadow:'0 0 22px rgba(16,185,129,0.5)' },
-    'C+': { grad:'linear-gradient(135deg, #fcd34d, #fbbf24, #f59e0b)', color:'#fff', glow:'0 0 14px #fcd34d, 0 0 28px #f59e0b, 0 2px 8px #fbbf24', shadow:'0 0 25px rgba(251,191,36,0.5)' },
-    'C':  { grad:'linear-gradient(135deg, #fbbf24, #f59e0b, #d97706)', color:'#fff', glow:'0 0 12px #fbbf24, 0 0 24px #d97706, 0 2px 6px #f59e0b', shadow:'0 0 22px rgba(245,158,11,0.5)' },
-    'C-': { grad:'linear-gradient(135deg, #fb923c, #ea580c, #c2410c)', color:'#fff', glow:'0 0 10px #fb923c, 0 0 20px #c2410c, 0 2px 6px #ea580c', shadow:'0 0 20px rgba(234,88,12,0.5)' },
-    'D+': { grad:'linear-gradient(135deg, #fca5a5, #f87171, #ef4444)', color:'#fff', glow:'0 0 14px #fca5a5, 0 0 28px #ef4444, 0 2px 8px #f87171', shadow:'0 0 22px rgba(248,113,113,0.5)' },
-    'D':  { grad:'linear-gradient(135deg, #f87171, #ef4444, #dc2626)', color:'#fff', glow:'0 0 12px #f87171, 0 0 24px #dc2626, 0 2px 6px #ef4444', shadow:'0 0 20px rgba(239,68,68,0.5)' },
-    'D-': { grad:'linear-gradient(135deg, #ef4444, #dc2626, #991b1b)', color:'#fff', glow:'0 0 10px #ef4444, 0 0 20px #991b1b, 0 2px 6px #dc2626', shadow:'0 0 18px rgba(220,38,38,0.5)' },
-    'E+': { grad:'linear-gradient(135deg, #d1d5db, #9ca3af, #6b7280)', color:'#fff', glow:'0 0 12px #d1d5db, 0 0 24px #6b7280, 0 2px 6px #9ca3af', shadow:'0 0 18px rgba(156,163,175,0.5)' },
-    'E':  { grad:'linear-gradient(135deg, #9ca3af, #6b7280, #4b5563)', color:'#fff', glow:'0 0 10px #9ca3af, 0 0 20px #4b5563, 0 2px 6px #6b7280', shadow:'0 0 15px rgba(107,114,128,0.5)' },
-    'E-': { grad:'linear-gradient(135deg, #6b7280, #4b5563, #374151)', color:'#fff', glow:'0 0 8px #6b7280, 0 0 16px #374151, 0 2px 4px #4b5563', shadow:'0 0 15px rgba(75,85,99,0.5)' }
-  };
-  var style = colorMap[tier.tier] || colorMap['E-'];
-
-  badgeEl.style.display = 'inline-block';
-  badgeEl.style.padding = '18px 42px';
-  badgeEl.style.borderRadius = '16px';
-  badgeEl.style.fontSize = '52px';
-  badgeEl.style.fontWeight = '900';
-  badgeEl.style.letterSpacing = '3px';
-  badgeEl.style.lineHeight = '1';
-  badgeEl.style.minWidth = '150px';
-  badgeEl.style.fontFamily = "'Segoe UI', -apple-system, sans-serif";
-  badgeEl.style.background = style.grad;
-  badgeEl.style.backgroundSize = '400% 400%';
-  badgeEl.style.color = style.color;
-  badgeEl.style.textShadow = style.glow;
-  badgeEl.style.boxShadow = style.shadow;
-  badgeEl.style.border = '2px solid rgba(255,255,255,0.35)';
-  badgeEl.textContent = tier.tier;
-  badgeEl.setAttribute('data-tier', tier.tier);
-  badgeEl.style.animation = 'tierEXGradient 3s ease infinite, tierPulse 2.5s ease-in-out infinite';
-
-  descEl.style.fontSize = '14px';
-  descEl.style.marginTop = '12px';
-  descEl.style.fontWeight = 'bold';
-  descEl.style.letterSpacing = '0.5px';
-  descEl.style.color = style.color;
-  descEl.style.textShadow = '0 1px 4px rgba(0,0,0,0.5)';
-  descEl.textContent = t[tier.descKey] || '';
-
-  if (detailEl) {
-    var roiSign = roi >= 0 ? '+' : '';
-    detailEl.innerHTML = '📐 ' + (t.tierFormula || '綜合分數 = 命中率 × 40% + ROI × 60%') +
-      '<br>🎯 綜合分數：<b style="color:' + style.color + ';text-shadow:' + style.glow + '">' + rate.toFixed(1) + '</b>' +
-      '　（命中率 ' + hitRate.toFixed(1) + '% × 40% + ROI ' + roiSign + roi.toFixed(1) + '% × 60%）';
-  }
-
-  tierEl.style.display = 'block';
-  tierEl.style.textAlign = 'center';
-  tierEl.style.marginBottom = '20px';
-  tierEl.style.padding = '20px 15px';
-  tierEl.style.borderRadius = '14px';
-  tierEl.style.background = 'var(--bg-panel)';
-  tierEl.style.border = '1px solid var(--border-color)';
-
-  if (withAnimation && isNewTier) {
-    badgeEl.style.animation = 'tierPop 0.6s ease-out, tierEXGradient 3s ease infinite, tierPulse 2.5s ease-in-out 0.6s infinite';
-    setTimeout(function() {
-      badgeEl.style.animation = 'tierEXGradient 3s ease infinite, tierPulse 2.5s ease-in-out infinite';
-    }, 700);
-  }
-}
-
-// ==================== 綁定所有事件 ====================
-window.addEventListener('load', function() {
-  var savedTheme = 'dark';
-  try { savedTheme = localStorage.getItem('qfp_theme') || 'dark'; } catch(e) {}
-  applyTheme(savedTheme);
-
-  var themeBtn = document.getElementById('themeSwitcher');
-  if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
-
-  var langSel = document.getElementById('langSelect');
-  if (langSel) langSel.addEventListener('change', function() { changeLang(this.value); });
-
-  window.addEventListener('scroll', handleTopBtnsScroll, { passive: true });
-  window.addEventListener('touchmove', handleTopBtnsScroll, { passive: true });
-  handleTopBtnsScroll();
-
-  var s = document.getElementById('termsScroll');
-  if (s) {
-    s.addEventListener('scroll', updateAgreeBtnVisual);
-    s.addEventListener('touchmove', updateAgreeBtnVisual);
-    s.addEventListener('touchend', updateAgreeBtnVisual);
-    s.addEventListener('wheel', updateAgreeBtnVisual, { passive: true });
-    setTimeout(function() {
-      if (s.scrollHeight <= s.clientHeight + 200) {
-        var btn = document.getElementById('agreeBtn');
-        if (btn) btn.classList.add('active');
-        updateAgreeBtnText();
-      }
-    }, 300);
-    setInterval(function() {
-      if (s.scrollTop + s.clientHeight >= s.scrollHeight - 200) {
-        var btn = document.getElementById('agreeBtn');
-        if (btn && !btn.classList.contains('active')) {
-          btn.classList.add('active');
-          updateAgreeBtnText();
-        }
-      }
-    }, 400);
-  }
-  window.addEventListener('resize', updateAgreeBtnVisual);
-  updateAgreeBtnText();
-
-  var agreeBtn = document.getElementById('agreeBtn');
-  if (agreeBtn) agreeBtn.addEventListener('click', handleAgree);
-
-  ['hw','dw','aw'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.addEventListener('input', function() {
-      this.value = this.value.replace(/[^0-9]/g, '');
-      checkClearBtn();
-    });
-  });
-  ['ho','doo','ao'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) {
-      el.addEventListener('input', function() { formatOddsInput(this); checkClearBtn(); });
-      el.addEventListener('blur', function() { formatOddsOnBlur(this); });
-    }
-  });
-
-  var calcBtn = document.getElementById('calcBtn');
-  if (calcBtn) calcBtn.addEventListener('click', calculate);
-  var clearBtn = document.getElementById('clearBtn');
-  if (clearBtn) clearBtn.addEventListener('click', clearData);
-
-  var gbtnH = document.getElementById('gbtnH');
-  if (gbtnH) gbtnH.addEventListener('click', function() { gameGuess('H'); });
-  var gbtnD = document.getElementById('gbtnD');
-  if (gbtnD) gbtnD.addEventListener('click', function() { gameGuess('D'); });
-  var gbtnA = document.getElementById('gbtnA');
-  if (gbtnA) gbtnA.addEventListener('click', function() { gameGuess('A'); });
-  var gbtnAuto = document.getElementById('gbtnAuto');
-  if (gbtnAuto) gbtnAuto.addEventListener('click', gameAutoPredict);
-  var gbtnDev = document.getElementById('gbtnDev');
-  if (gbtnDev) gbtnDev.addEventListener('click', devAutoPredict);
-  var gbtnSkip = document.getElementById('gbtnSkip');
-  if (gbtnSkip) gbtnSkip.addEventListener('click', gameSkip);
-  var gbtnNew = document.getElementById('gameNewBtn');
-  if (gbtnNew) gbtnNew.addEventListener('click', gameNewRound);
-
-  var devUnlockBtn = document.getElementById('devUnlockBtn');
-  if (devUnlockBtn) devUnlockBtn.addEventListener('click', devUnlock);
-  var devSettingsBtn = document.getElementById('devSettingsBtn');
-  if (devSettingsBtn) devSettingsBtn.addEventListener('click', openDevPanel);
-  var devResetGameBtn = document.getElementById('devResetGameBtn');
-  if (devResetGameBtn) devResetGameBtn.addEventListener('click', resetGameProgress);
-  var devCloseBtn = document.getElementById('devCloseBtn');
-  if (devCloseBtn) devCloseBtn.addEventListener('click', closeDevPanel);
-  var devApplyBtn = document.getElementById('devApplyBtn');
-  if (devApplyBtn) devApplyBtn.addEventListener('click', applyParams);
-  var devResetBtn = document.getElementById('devResetBtn');
-  if (devResetBtn) devResetBtn.addEventListener('click', resetParams);
-
-  applyLanguage('zh-HK');
-  checkClearBtn();
-  loadSavedParams();
-  loadStatsWithRetry();
-  setInterval(loadStatsWithRetry, 15000);
-  window.addEventListener('focus', loadStatsWithRetry);
-  document.addEventListener('visibilitychange', function() { if (!document.hidden) loadStatsWithRetry(); });
-
-  ensureSheetPool().catch(function(e) { console.warn('Pool preload failed:', e); });
-});
-</script>
-</body>
-</html>
+    'C+': { grad:'linear-gradient(135deg, #fcd34d, #fbbf24, #f59e0b)', color:'#fff', glow:'0 0
