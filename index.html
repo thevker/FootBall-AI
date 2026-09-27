@@ -109,7 +109,6 @@
   .game-tier { display:none; text-align:center; margin-bottom:20px; padding:20px 15px; border-radius:14px; background:var(--bg-panel); border:1px solid var(--border-color); }
   .game-tier.show { display:block!important; }
 
-  /* ==================== Tier 固定尺寸 + 同級同色 + 升降動畫 ==================== */
   .tier-badge-wrap { position:relative; display:inline-block; }
   .tier-badge { display:inline-flex; align-items:center; justify-content:center; width:180px; height:110px; border-radius:18px; font-size:52px; font-weight:900; letter-spacing:3px; line-height:1; font-family:'Segoe UI', -apple-system, sans-serif; transition:all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); border:2px solid rgba(255,255,255,0.35); }
   .tier-arrow { position:absolute; top:-20px; right:-16px; font-size:44px; font-weight:900; pointer-events:none; opacity:0; }
@@ -129,7 +128,6 @@
     80%  { opacity:1; transform:translateY(6px) scale(1.05); }
     100% { opacity:0; transform:translateY(30px) scale(1); }
   }
-  /* 升級/降級時整塊 panel 邊框閃光 */
   .game-tier.flash-up { animation:flashUp 1.8s ease-out; }
   .game-tier.flash-down { animation:flashDown 1.8s ease-out; }
   @keyframes flashUp {
@@ -143,7 +141,6 @@
     100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); border-color:var(--border-color); }
   }
 
-  /* 綜合分數獨立顯示 */
   .tier-score-box { margin-top:16px; padding:14px 22px; display:inline-block; border-radius:14px; background:linear-gradient(135deg, rgba(96,165,250,0.10), rgba(192,132,252,0.10)); border:1px solid rgba(96,165,250,0.35); box-shadow:0 4px 16px rgba(0,0,0,0.15); }
   .tier-score-label { font-size:11px; color:var(--text-tertiary); margin-bottom:6px; letter-spacing:1.5px; font-weight:bold; }
   .tier-score-value { font-size:40px; font-weight:900; letter-spacing:1px; line-height:1; font-family:'Segoe UI',-apple-system,sans-serif; }
@@ -507,6 +504,7 @@
         <div class="dev-layer-title" data-i18n="devLayer1">第 1 層：勝率差距 → 買和</div>
         <div class="dev-param-grid">
           <div class="dev-param-item"><label data-i18n="devP1Gap">勝率差上限 (A−C)</label><input type="text" id="p1_gap" value="3" inputmode="numeric"></div>
+          <div class="dev-param-item"><label data-i18n="devP1Emax">和賠上限 (E)</label><input type="text" id="p1_emax" value="400" inputmode="numeric"></div>
         </div>
       </div>
       <div class="dev-layer">
@@ -527,8 +525,8 @@
         <div class="dev-layer-title" data-i18n="devLayer4">第 4 層：主強 + 主賠中 → 買和</div>
         <div class="dev-param-grid">
           <div class="dev-param-item"><label data-i18n="devP3Hmin">主勝率下限</label><input type="text" id="p3_hmin" value="40" inputmode="numeric"></div>
-          <div class="dev-param-item"><label data-i18n="devP3Dmin">主賠下限</label><input type="text" id="p3_dmin" value="210" inputmode="numeric"></div>
-          <div class="dev-param-item"><label data-i18n="devP3Dmax">主賠上限</label><input type="text" id="p3_dmax" value="245" inputmode="numeric"></div>
+          <div class="dev-param-item"><label data-i18n="devP3Dmin">主賠下限</label><input type="text" id="p3_dmin" value="205" inputmode="numeric"></div>
+          <div class="dev-param-item"><label data-i18n="devP3Dmax">主賠上限</label><input type="text" id="p3_dmax" value="235" inputmode="numeric"></div>
         </div>
       </div>
       <div class="dev-layer">
@@ -568,7 +566,7 @@
 
 <script>
 // ==================== 全域 ====================
-var PARAMS = { p1_gap:3, p_odds_gap:20, p2_hmin:42, p2_dmin:155, p2_dmax:205, p3_hmin:40, p3_dmin:210, p3_dmax:245, p4_fmax:550, p4_emin:300, p5_fmin:185, p5_fmax:215, pb_hmin:30, pb_dmin:600, pb_fskip:750 };
+var PARAMS = { p1_gap:3, p1_emax:400, p_odds_gap:20, p2_hmin:42, p2_dmin:155, p2_dmax:205, p3_hmin:40, p3_dmin:205, p3_dmax:235, p4_fmax:550, p4_emin:300, p5_fmin:185, p5_fmax:215, pb_hmin:30, pb_dmin:600, pb_fskip:750 };
 var DEFAULT_PARAMS = JSON.parse(JSON.stringify(PARAMS));
 var CALIBRATION = { FAVORITE_BOOST:0.18, DRAW_BOOST:1.25, DRAW_LOW:150, DRAW_HIGH:210, MARGIN_MIN:1.10, MARGIN_MAX:1.16 };
 var currentLang = 'zh-HK';
@@ -580,7 +578,9 @@ var TIER_WEIGHT_ROI = 0.6;
 
 var comboCount = 0;
 
-// ==================== Toast 提示系統 ====================
+var DEV_PASSWORD = 'football';
+
+// ==================== Toast ====================
 function showToast(msg, type) {
   var container = document.getElementById('toastContainer');
   if (!container) return;
@@ -594,7 +594,7 @@ function showToast(msg, type) {
   }, 2000);
 }
 
-// ==================== 連勝彈出 ====================
+// ==================== 連勝 ====================
 function showComboPopup(combo) {
   var popup = document.getElementById('comboPopup');
   var textEl = document.getElementById('comboText');
@@ -604,12 +604,10 @@ function showComboPopup(combo) {
   popup.classList.remove('show');
   void popup.offsetWidth;
   popup.classList.add('show');
-  setTimeout(function() {
-    popup.classList.remove('show');
-  }, 3000);
+  setTimeout(function() { popup.classList.remove('show'); }, 3000);
 }
 
-// ==================== 主題切換 ====================
+// ==================== 主題 ====================
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   var icon = document.getElementById('themeIcon');
@@ -621,7 +619,6 @@ function toggleTheme() {
   applyTheme(current === 'dark' ? 'light' : 'dark');
 }
 
-// ==================== 滾動隱藏 ====================
 function handleTopBtnsScroll() {
   var y = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
   var themeBtn = document.querySelector('.theme-switcher');
@@ -652,7 +649,7 @@ const translations = {
     errIncomplete:'⚠️ 數據不完整', errOver100:'⚠️ 命中率大於100%',
     evLabel:'期望值 EV-1：',
     hintSkip:'數據信號不明，系統選擇跳過本次投注，避免風險。',
-    hint1:'主客勝率相近（相差 3 以內），和局概率被市場低估，系統捕捉高價值和局，建議買和局。',
+    hint1:'主客勝率相近（相差 3 以內），且和賠偏低（<4.00），系統判斷和局概率高，建議買和局。',
     hint2:'主客賠率非常接近（相差 0.20 以內），市場認為雙方勢均力敵，和局概率上升，建議買和局。',
     hint3:'主隊勝率明顯佔優，賠率處於合理回報區間，主場優勢強勁，建議買主勝。',
     hint4:'主隊勝率雖高但賠率偏高，市場對主勝存有疑慮，系統判斷需防冷，建議買和局。',
@@ -718,7 +715,7 @@ const translations = {
     devLayer5:'第 5 層：客強客冷 → 反向買主',
     devLayer6:'第 6 層：客強 + 客賠價值 → 買客',
     devLayer7:'兜底層：賠率博弈',
-    devP1Gap:'勝率差上限 (A−C)',
+    devP1Gap:'勝率差上限 (A−C)', devP1Emax:'和賠上限 (E)',
     devPOddsGap:'賠率差上限 (D−F)',
     devP2Hmin:'主勝率下限', devP2Dmin:'主賠下限', devP2Dmax:'主賠上限',
     devP3Hmin:'主勝率下限', devP3Dmin:'主賠下限', devP3Dmax:'主賠上限',
@@ -745,7 +742,7 @@ const translations = {
     errIncomplete:'⚠️ 数据不完整', errOver100:'⚠️ 命中率大于100%',
     evLabel:'期望值 EV-1：',
     hintSkip:'数据信号不明，系统选择跳过本次投注，避免风险。',
-    hint1:'主客胜率相近（相差 3 以内），和局概率被市场低估，系统捕捉高价值和局，建议买和局。',
+    hint1:'主客胜率相近（相差 3 以内），且和赔偏低（<4.00），系统判断和局概率高，建议买和局。',
     hint2:'主客赔率非常接近（相差 0.20 以内），市场认为双方势均力敌，和局概率上升，建议买和局。',
     hint3:'主队胜率明显占优，赔率处于合理回报区间，主场优势强劲，建议买主胜。',
     hint4:'主队胜率虽高但赔率偏高，市场对主胜存有疑虑，系统判断需防冷，建议买和局。',
@@ -811,7 +808,7 @@ const translations = {
     devLayer5:'第 5 层：客强客冷 → 反向买主',
     devLayer6:'第 6 层：客强 + 客赔价值 → 买客',
     devLayer7:'兜底层：赔率博弈',
-    devP1Gap:'胜率差上限 (A−C)',
+    devP1Gap:'胜率差上限 (A−C)', devP1Emax:'和赔上限 (E)',
     devPOddsGap:'赔率差上限 (D−F)',
     devP2Hmin:'主胜率下限', devP2Dmin:'主赔下限', devP2Dmax:'主赔上限',
     devP3Hmin:'主胜率下限', devP3Dmin:'主赔下限', devP3Dmax:'主赔上限',
@@ -838,7 +835,7 @@ const translations = {
     errIncomplete:'⚠️ Incomplete Data', errOver100:'⚠️ Probability exceeds 100%',
     evLabel:'Expected Value EV-1: ',
     hintSkip:'Signal unclear. System skips this bet to avoid risk.',
-    hint1:'Home and away win rates are close (within 3). Draw is undervalued. Bet Draw.',
+    hint1:'Home and away win rates are close (within 3), and draw odds are low (<4.00). System detects high draw probability. Bet Draw.',
     hint2:'Home and away odds are very close (within 0.20). Market sees evenly matched teams. Bet Draw.',
     hint3:'Home team has clear advantage with reasonable odds. Bet Home Win.',
     hint4:'Home win rate is high but odds are elevated. Market has doubts. Bet Draw for safety.',
@@ -904,7 +901,7 @@ const translations = {
     devLayer5:'Layer 5: Strong Away + Cold → Reverse Home',
     devLayer6:'Layer 6: Strong Away + Value → Away',
     devLayer7:'Fallback: Odds Battle',
-    devP1Gap:'Win Rate Gap Max (A−C)',
+    devP1Gap:'Win Rate Gap Max (A−C)', devP1Emax:'Draw Odds Max (E)',
     devPOddsGap:'Odds Gap Max (D−F)',
     devP2Hmin:'Home Win Min', devP2Dmin:'Home Odds Min', devP2Dmax:'Home Odds Max',
     devP3Hmin:'Home Win Min', devP3Dmin:'Home Odds Min', devP3Dmax:'Home Odds Max',
@@ -959,7 +956,6 @@ function applyLanguage(lang) {
   const t = translations[lang];
   if (!t) return;
   try {
-    // 透過 data-i18n 更新所有文字
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
       if (t[key]) el.textContent = t[key];
@@ -976,16 +972,11 @@ function applyLanguage(lang) {
     });
     document.getElementById('langSelect').value = lang;
     updateAgreeBtnText();
-    // 更新「剩 X 次」文字
     if (typeof updateSkipDisplay === 'function') updateSkipDisplay();
-    // 更新 Tier 顯示
     if (typeof updateTierDisplay === 'function') updateTierDisplay(false);
-    // 更新資料庫資訊
     if (typeof updateDbInfo === 'function') updateDbInfo();
-    // 更新結果框（若存在）
     if (typeof gameState !== 'undefined' && gameState && gameState.lastGuess && gameState.current) renderGameResult(gameState.lastGuess, false);
     if (typeof updatePnlDisplay === 'function') updatePnlDisplay();
-    // 更新賽事顯示
     if (typeof gameState !== 'undefined' && gameState && gameState.current) displayMatch(gameState.current);
     if (window._lastResult) {
       const r = window._lastResult;
@@ -1082,12 +1073,19 @@ function loadStatsWithRetry() {
 
 // ==================== 公式 ====================
 function calcBet(hw, dw, aw, ho, doo, ao) {
-  if (Math.abs(hw - aw) <= PARAMS.p1_gap) return "D";
+  // 第 1 層：勝率差 <=3 且 和賠 <400 → D
+  if (Math.abs(hw - aw) <= PARAMS.p1_gap && doo * 100 < PARAMS.p1_emax) return "D";
+  // 第 2 層：主客賠差 <0.20 → D
   if (Math.abs(ho - ao) * 100 < PARAMS.p_odds_gap) return "D";
+  // 第 3 層：主強主賠低 → H
   if (hw >= PARAMS.p2_hmin && ho >= PARAMS.p2_dmin/100 && ho < PARAMS.p2_dmax/100 && ho !== ao) return "H";
+  // 第 4 層：主強主賠中 → D
   if (hw >= PARAMS.p3_hmin && ho > PARAMS.p3_dmin/100 && ho <= PARAMS.p3_dmax/100 && ho !== ao) return "D";
+  // 第 5 層：客強客冷 → H
   if (aw > hw && ao > ho && ao < PARAMS.p4_fmax/100 && doo * 100 > PARAMS.p4_emin) return "H";
+  // 第 6 層：客強客賠價值 → A
   if (aw > hw && ao >= PARAMS.p5_fmin/100 && ao <= PARAMS.p5_fmax/100) return "A";
+  // 兜底
   if (ho > ao) {
     if (hw >= PARAMS.pb_hmin && ho >= PARAMS.pb_dmin/100) return "D";
     return "H";
@@ -1101,7 +1099,7 @@ function calcBet(hw, dw, aw, ho, doo, ao) {
   }
 }
 function calcLayer(hw, dw, aw, ho, doo, ao) {
-  if (Math.abs(hw - aw) <= PARAMS.p1_gap) return 1;
+  if (Math.abs(hw - aw) <= PARAMS.p1_gap && doo * 100 < PARAMS.p1_emax) return 1;
   if (Math.abs(ho - ao) * 100 < PARAMS.p_odds_gap) return 2;
   if (hw >= PARAMS.p2_hmin && ho >= PARAMS.p2_dmin/100 && ho < PARAMS.p2_dmax/100 && ho !== ao) return 3;
   if (hw >= PARAMS.p3_hmin && ho > PARAMS.p3_dmin/100 && ho <= PARAMS.p3_dmax/100 && ho !== ao) return 4;
@@ -1194,7 +1192,7 @@ function clearData() {
 function devUnlock() {
   var pwd = prompt('🔒 請輸入開發者密碼：');
   if (pwd === null) return;
-  if (pwd === 'y511634a') {
+  if (pwd === DEV_PASSWORD) {
     devMode = true;
     var t = translations[currentLang];
     document.getElementById('gbtnDev').style.display = 'block';
@@ -1209,10 +1207,7 @@ function devUnlock() {
 
 function openDevPanel() {
   var panel = document.getElementById('devPanel');
-  if (panel) {
-    panel.classList.add('show');
-    panel.classList.remove('compact');
-  }
+  if (panel) { panel.classList.add('show'); panel.classList.remove('compact'); }
 }
 function closeDevPanel() {
   var panel = document.getElementById('devPanel');
@@ -1221,13 +1216,14 @@ function closeDevPanel() {
 
 function applyParams() {
   PARAMS.p1_gap = Number(document.getElementById('p1_gap').value) || 3;
+  PARAMS.p1_emax = Number(document.getElementById('p1_emax').value) || 400;
   PARAMS.p_odds_gap = Number(document.getElementById('p_odds_gap').value) || 20;
   PARAMS.p2_hmin = Number(document.getElementById('p2_hmin').value) || 42;
   PARAMS.p2_dmin = Number(document.getElementById('p2_dmin').value) || 155;
   PARAMS.p2_dmax = Number(document.getElementById('p2_dmax').value) || 205;
   PARAMS.p3_hmin = Number(document.getElementById('p3_hmin').value) || 40;
-  PARAMS.p3_dmin = Number(document.getElementById('p3_dmin').value) || 210;
-  PARAMS.p3_dmax = Number(document.getElementById('p3_dmax').value) || 245;
+  PARAMS.p3_dmin = Number(document.getElementById('p3_dmin').value) || 205;
+  PARAMS.p3_dmax = Number(document.getElementById('p3_dmax').value) || 235;
   PARAMS.p4_fmax = Number(document.getElementById('p4_fmax').value) || 550;
   PARAMS.p4_emin = Number(document.getElementById('p4_emin').value) || 300;
   PARAMS.p5_fmin = Number(document.getElementById('p5_fmin').value) || 185;
@@ -1243,7 +1239,7 @@ function applyParams() {
 
 function resetParams() {
   PARAMS = JSON.parse(JSON.stringify(DEFAULT_PARAMS));
-  ['p1_gap','p_odds_gap','p2_hmin','p2_dmin','p2_dmax','p3_hmin','p3_dmin','p3_dmax','p4_fmax','p4_emin','p5_fmin','p5_fmax','pb_hmin','pb_dmin','pb_fskip'].forEach(k => {
+  ['p1_gap','p1_emax','p_odds_gap','p2_hmin','p2_dmin','p2_dmax','p3_hmin','p3_dmin','p3_dmax','p4_fmax','p4_emin','p5_fmin','p5_fmax','pb_hmin','pb_dmin','pb_fskip'].forEach(k => {
     var el = document.getElementById(k);
     if (el) el.value = DEFAULT_PARAMS[k];
   });
@@ -1256,13 +1252,8 @@ function resetParams() {
 function resetGameProgress() {
   var t = translations[currentLang];
   if (!confirm(t.toastGameResetConfirm || '確定要重置遊戲進度嗎？所有已玩場次將被清空。')) return;
-  gameState.played = 0;
-  gameState.hits = 0;
-  gameState.totalPnl = 0;
-  gameState.skipsUsed = 0;
-  gameState.current = null;
-  gameState.waiting = false;
-  gameState.lastGuess = null;
+  gameState.played = 0; gameState.hits = 0; gameState.totalPnl = 0; gameState.skipsUsed = 0;
+  gameState.current = null; gameState.waiting = false; gameState.lastGuess = null;
   comboCount = 0;
   document.getElementById('gamePlayed').textContent = '0';
   document.getElementById('gameHits').textContent = '0';
@@ -1379,9 +1370,7 @@ function fetchSheetMatches() {
 }
 
 function ensureSheetPool(forceRefresh) {
-  if (!forceRefresh && sheetMatchPool && sheetMatchPool.length > 0) {
-    return Promise.resolve(sheetMatchPool);
-  }
+  if (!forceRefresh && sheetMatchPool && sheetMatchPool.length > 0) return Promise.resolve(sheetMatchPool);
   if (sheetPoolPromise) return sheetPoolPromise;
   sheetPoolPromise = fetchSheetMatches().then(function(pool) {
     sheetPoolPromise = null;
@@ -1390,10 +1379,7 @@ function ensureSheetPool(forceRefresh) {
     sheetPoolPromise = null;
     console.error('❌ 載入失敗：', e);
     var el = document.getElementById('dbInfo');
-    if (el) {
-      var t = translations[currentLang];
-      el.textContent = t.dbLoadFailed || '📚 資料庫載入失敗';
-    }
+    if (el) { var t = translations[currentLang]; el.textContent = t.dbLoadFailed || '📚 資料庫載入失敗'; }
     throw e;
   });
   return sheetPoolPromise;
@@ -1433,11 +1419,7 @@ function generateMatch() {
   if (!sheetMatchPool || sheetMatchPool.length === 0) return null;
   var idx = Math.floor(Math.random() * sheetMatchPool.length);
   var m = sheetMatchPool[idx];
-  return {
-    hw: m.hw, dw: m.dw, aw: m.aw,
-    ho: m.ho, doo: m.doo, ao: m.ao,
-    score: m.score, result: m.result
-  };
+  return { hw: m.hw, dw: m.dw, aw: m.aw, ho: m.ho, doo: m.doo, ao: m.ao, score: m.score, result: m.result };
 }
 
 function displayMatch(m) {
@@ -1461,22 +1443,13 @@ function gameNewRound() {
     var tl = translations[currentLang];
     showGameMessage(tl.gameLoading || '⏳ 載入比賽數據中...', false);
     ensureSheetPool().then(function(pool) {
-      if (!pool || pool.length === 0) {
-        showGameMessage(tl.gameNoData || '⚠️ 暫無比賽數據', true);
-        return;
-      }
+      if (!pool || pool.length === 0) { showGameMessage(tl.gameNoData || '⚠️ 暫無比賽數據', true); return; }
       gameNewRound();
-    }).catch(function() {
-      showGameMessage(tl.gameLoadError || '⚠️ 載入數據失敗', true);
-    });
+    }).catch(function() { showGameMessage(tl.gameLoadError || '⚠️ 載入數據失敗', true); });
     return;
   }
   var m = generateMatch();
-  if (!m) {
-    var t2 = translations[currentLang];
-    showGameMessage(t2.gameNoData || '⚠️ 暫無比賽數據', true);
-    return;
-  }
+  if (!m) { var t2 = translations[currentLang]; showGameMessage(t2.gameNoData || '⚠️ 暫無比賽數據', true); return; }
   gameState.current = m;
   gameState.waiting = true;
   gameState.lastGuess = null;
@@ -1503,10 +1476,7 @@ function gameSkip() {
   showGameMessage(tl.gameSkipToast || '⏭️ 已跳過本場', false);
   setTimeout(function() {
     var m = generateMatch();
-    if (!m) {
-      showGameMessage(tl.gameNoData || '⚠️ 暫無比賽數據', true);
-      return;
-    }
+    if (!m) { showGameMessage(tl.gameNoData || '⚠️ 暫無比賽數據', true); return; }
     gameState.current = m;
     gameState.waiting = true;
     gameState.lastGuess = null;
@@ -1552,12 +1522,8 @@ function performGuess(bet, isAuto) {
   if (isWin) {
     gameState.hits++;
     comboCount++;
-    if (comboCount >= 3) {
-      showComboPopup(comboCount);
-    }
-  } else {
-    comboCount = 0;
-  }
+    if (comboCount >= 3) showComboPopup(comboCount);
+  } else comboCount = 0;
   gameState.totalPnl += roundPnl;
   gameState.waiting = false;
   renderGameResult(bet, true, roundPnl, isAuto);
@@ -1608,12 +1574,8 @@ function devAutoPredict() {
   if (isWin) {
     gameState.hits++;
     comboCount++;
-    if (comboCount >= 3) {
-      showComboPopup(comboCount);
-    }
-  } else {
-    comboCount = 0;
-  }
+    if (comboCount >= 3) showComboPopup(comboCount);
+  } else comboCount = 0;
   gameState.totalPnl += roundPnl;
   gameState.lastGuess = bet;
   renderGameResult(bet, true, roundPnl, true);
@@ -1703,7 +1665,6 @@ function renderGameResult(guess, animate, roundPnl, isAuto) {
 }
 
 // ==================== Tier ====================
-// 🎯 19 級 Tier，同大級同色
 function getTier(rate) {
   if (rate >= 55)   return { tier:'EX', descKey:'tierEX' };
   if (rate >= 52.5) return { tier:'S+', descKey:'tierS' };
@@ -1726,18 +1687,15 @@ function getTier(rate) {
   return { tier:'E-', descKey:'tierE' };
 }
 
-// 用於比較升降
 function getTierRank(tier) {
   var map = { 'EX':19, 'S+':18, 'S':17, 'S-':16, 'A+':15, 'A':14, 'A-':13, 'B+':12, 'B':11, 'B-':10, 'C+':9, 'C':8, 'C-':7, 'D+':6, 'D':5, 'D-':4, 'E+':3, 'E':2, 'E-':1 };
   return map[tier] || 0;
 }
-
 function getTierFamily(tier) {
   if (tier === 'EX') return 'EX';
   return tier.charAt(0);
 }
 
-// 同一大級用同一種漸變色
 var TIER_FAMILY_COLORS = {
   'EX': { grad:'linear-gradient(135deg, #c084fc, #a78bfa, #818cf8, #e879f9, #c084fc, #a78bfa)', color:'#fff', glow:'0 0 20px #c084fc, 0 0 40px #a78bfa, 0 0 60px #e879f9', shadow:'0 0 50px rgba(192,132,252,0.6)' },
   'S':  { grad:'linear-gradient(135deg, #FFE44E, #FFD700, #FFB800)', color:'#fff', glow:'0 0 18px #FFE44E, 0 0 36px #FFB800, 0 2px 12px #FFD700', shadow:'0 0 40px rgba(255,215,0,0.55)' },
@@ -1793,7 +1751,6 @@ function updateTierDisplay(withAnimation) {
   descEl.style.textShadow = '0 1px 4px rgba(0,0,0,0.5)';
   descEl.textContent = t[tier.descKey] || '';
 
-  // 綜合分數獨立顯示
   if (scoreValueEl) {
     scoreValueEl.textContent = rate.toFixed(1);
     scoreValueEl.style.color = style.color;
@@ -1813,7 +1770,6 @@ function updateTierDisplay(withAnimation) {
   tierEl.style.background = 'var(--bg-panel)';
   tierEl.style.border = '1px solid var(--border-color)';
 
-  // 觸發升降動畫
   if (arrowEl) {
     if (withAnimation && isUpgrade) {
       arrowEl.classList.remove('show-up', 'show-down');
@@ -1838,16 +1794,13 @@ function updateTierDisplay(withAnimation) {
     }
   }
 
-  // 首次出現時彈跳
   if (withAnimation && isNewTier && !isUpgrade && !isDowngrade) {
     badgeEl.style.animation = 'tierPop 0.6s ease-out, tierEXGradient 3s ease infinite, tierPulse 2.5s ease-in-out 0.6s infinite';
-    setTimeout(function() {
-      badgeEl.style.animation = 'tierEXGradient 3s ease infinite, tierPulse 2.5s ease-in-out infinite';
-    }, 700);
+    setTimeout(function() { badgeEl.style.animation = 'tierEXGradient 3s ease infinite, tierPulse 2.5s ease-in-out infinite'; }, 700);
   }
 }
 
-// ==================== 綁定所有事件 ====================
+// ==================== 綁定 ====================
 window.addEventListener('load', function() {
   var savedTheme = 'dark';
   try { savedTheme = localStorage.getItem('qfp_theme') || 'dark'; } catch(e) {}
