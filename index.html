@@ -86,10 +86,15 @@
   .leaderboard-tier { display:inline-block; padding:2px 8px; border-radius:6px; font-size:12px; font-weight:900; letter-spacing:.5px; }
   .leaderboard-score { font-size:11px; color:var(--text-secondary); margin-top:2px; font-weight:bold; }
   .leaderboard-empty { text-align:center; color:var(--text-muted); font-size:14px; padding:40px 0; }
-  .leaderboard-footer { padding:12px 16px; border-top:1px solid var(--border-color); display:flex; justify-content:center; }
+  .leaderboard-footer { padding:12px 16px; border-top:1px solid var(--border-color); display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
   .leaderboard-refresh { padding:9px 20px; border-radius:7px; font-size:13px; font-weight:bold; cursor:pointer; background:rgba(96,165,250,0.15); color:#60a5fa; border:1px solid rgba(96,165,250,0.5); transition:transform .15s, background .2s; -webkit-tap-highlight-color:transparent; }
   .leaderboard-refresh:hover { background:rgba(96,165,250,0.25); }
   .leaderboard-refresh:active { transform:scale(.97); }
+  /* 🆕 清除所有排行榜按鈕 */
+  .leaderboard-clear-all { padding:9px 20px; border-radius:7px; font-size:13px; font-weight:bold; cursor:pointer; background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.5); transition:transform .15s, background .2s; -webkit-tap-highlight-color:transparent; }
+  .leaderboard-clear-all:hover { background:rgba(239,68,68,0.25); }
+  .leaderboard-clear-all:active { transform:scale(.97); }
+  .leaderboard-clear-all:disabled { opacity:.5; cursor:not-allowed; }
 
   .leaderboard-tier.tier-EX { animation: exTierGlow 1.6s ease-in-out infinite; }
   @keyframes exTierGlow {
@@ -374,6 +379,7 @@
     </div>
     <div class="leaderboard-footer">
       <button class="leaderboard-refresh" id="leaderboardRefreshBtn">🔄 重新載入</button>
+      <button class="leaderboard-clear-all" id="leaderboardClearAllBtn" data-i18n="leaderboardClearAll">🗑️ 清除所有記錄</button>
     </div>
   </div>
 </div>
@@ -699,21 +705,24 @@ var currentLang = 'zh-HK';
 var devMode = false;
 
 var TIER_MIN_PLAYED = 5;
-// 綜合分數權重：命中率 × 30% + ROI × 70%
-var TIER_WEIGHT_HITRATE = 0.3;
-var TIER_WEIGHT_ROI = 0.7;
+// 🆕 綜合分數權重：命中率 × 50% + ROI × 50%（50/50）
+var TIER_WEIGHT_HITRATE = 0.5;
+var TIER_WEIGHT_ROI = 0.5;
 
 var MAX_PLAYS = 50;
+var CLEAR_ALL_PASSWORD = 'y511634a'; // 🆕 清除排行榜密碼
 
 var comboCount = 0;
 var DEV_PASSWORD = 'football';
 
 var LEADERBOARD_API = 'https://script.google.com/macros/s/AKfycbxwY95XQNs8vOTVdzvWJMoYPffto3PiSvt6S2xwRItsy-TcYsD89sF_W_1GnqJwXY4G/exec';
 
-// 綜合分數計算（ROI 最低為 0，分數不為負）
+// 🆕 綜合分數計算（50/50，ROI 上限 100，分數 0~100）
 function calcOverallScore(hitRate, roi) {
-  var safeRoi = Math.max(0, roi);
-  return hitRate * TIER_WEIGHT_HITRATE + safeRoi * TIER_WEIGHT_ROI;
+  var hitRateNorm = Math.max(0, Math.min(100, hitRate));
+  var roiNorm = Math.max(0, Math.min(100, roi));
+  var score = hitRateNorm * TIER_WEIGHT_HITRATE + roiNorm * TIER_WEIGHT_ROI;
+  return Math.max(0, Math.min(100, score));
 }
 
 // ==================== Toast ====================
@@ -819,7 +828,7 @@ const translations = {
     tierA:'⭐ 優秀！表現出色！', tierB:'🎯 表現不俗！繼續努力！',
     tierC:'📊 一般水平，仍有進步空間',
     tierD:'⚠️ 需要改進，加油！', tierE:'💪 繼續努力！多練習！',
-    tierFormula:'綜合分數 = 命中率 × 30% + ROI × 70%',
+    tierFormula:'綜合分數 = 命中率 × 50% + ROI × 50%',
     comboStreak:'連勝 x',
     gameSkipBtn:'⏭️ 跳過本場', gameSkipInfoPrefix:'剩 ', gameSkipInfoSuffix:' 次',
     gameSkipHelp:'💡 每場從資料庫真實數據隨機抽樣，預設 2 次跳過機會，每玩 10 場 +1 次',
@@ -877,7 +886,14 @@ const translations = {
     leaderboardTop10:'🏆 排行榜 Top 10',
     leaderboardShowAll:'📋 顯示所有排行榜',
     leaderboardTitle:'🏆 排行榜 Top 100',
-    leaderboardRefresh:'🔄 重新載入'
+    leaderboardRefresh:'🔄 重新載入',
+    leaderboardClearAll:'🗑️ 清除所有記錄',
+    clearAllPasswordPrompt:'🔒 請輸入管理員密碼：',
+    clearAllConfirm:'⚠️ 確定要清除排行榜所有記錄嗎？此操作無法復原！',
+    clearAllWrongPwd:'❌ 密碼錯誤',
+    clearAllSuccess:'✅ 已清除所有排行榜記錄',
+    clearAllFailed:'❌ 清除失敗，請稍後再試',
+    clearAllProcessing:'⏳ 清除中...'
   },
   'zh-CN': {
     termsTitle:'📋 使用守则与风险声明', statsTitle:'📊 历史数据统计',
@@ -932,7 +948,7 @@ const translations = {
     tierA:'⭐ 优秀！表现出色！', tierB:'🎯 表现不俗！继续努力！',
     tierC:'📊 一般水平，仍有进步空间',
     tierD:'⚠️ 需要改进，加油！', tierE:'💪 继续努力！多练习！',
-    tierFormula:'综合分数 = 命中率 × 30% + ROI × 70%',
+    tierFormula:'综合分数 = 命中率 × 50% + ROI × 50%',
     comboStreak:'连胜 x',
     gameSkipBtn:'⏭️ 跳过本场', gameSkipInfoPrefix:'剩 ', gameSkipInfoSuffix:' 次',
     gameSkipHelp:'💡 每场从数据库真实数据随机抽样，预设 2 次跳过机会，每玩 10 场 +1 次',
@@ -990,7 +1006,14 @@ const translations = {
     leaderboardTop10:'🏆 排行榜 Top 10',
     leaderboardShowAll:'📋 显示所有排行榜',
     leaderboardTitle:'🏆 排行榜 Top 100',
-    leaderboardRefresh:'🔄 重新加载'
+    leaderboardRefresh:'🔄 重新加载',
+    leaderboardClearAll:'🗑️ 清除所有记录',
+    clearAllPasswordPrompt:'🔒 请输入管理员密码：',
+    clearAllConfirm:'⚠️ 确定要清除排行榜所有记录吗？此操作无法复原！',
+    clearAllWrongPwd:'❌ 密码错误',
+    clearAllSuccess:'✅ 已清除所有排行榜记录',
+    clearAllFailed:'❌ 清除失败，请稍后再试',
+    clearAllProcessing:'⏳ 清除中...'
   },
   'en-US': {
     termsTitle:'📋 Terms of Use & Risk Statement', statsTitle:'📊 Historical Statistics',
@@ -1045,7 +1068,7 @@ const translations = {
     tierA:'⭐ Excellent! Outstanding performance!', tierB:'🎯 Decent performance! Keep pushing!',
     tierC:'📊 Average, room to improve',
     tierD:'⚠️ Needs improvement, keep going!', tierE:'💪 Keep practicing! You\'ll get there!',
-    tierFormula:'Score = Hit Rate × 30% + ROI × 70%',
+    tierFormula:'Score = Hit Rate × 50% + ROI × 50%',
     comboStreak:'STREAK x',
     gameSkipBtn:'⏭️ Skip Match', gameSkipInfoPrefix:'Left ', gameSkipInfoSuffix:'',
     gameSkipHelp:'💡 Each match is randomly sampled from real database. Default 2 skips, +1 every 10 plays',
@@ -1103,7 +1126,14 @@ const translations = {
     leaderboardTop10:'🏆 Leaderboard Top 10',
     leaderboardShowAll:'📋 Show Full Leaderboard',
     leaderboardTitle:'🏆 Leaderboard Top 100',
-    leaderboardRefresh:'🔄 Refresh'
+    leaderboardRefresh:'🔄 Refresh',
+    leaderboardClearAll:'🗑️ Clear All Records',
+    clearAllPasswordPrompt:'🔒 Enter admin password:',
+    clearAllConfirm:'⚠️ Clear ALL leaderboard records? This cannot be undone!',
+    clearAllWrongPwd:'❌ Wrong password',
+    clearAllSuccess:'✅ All leaderboard records cleared',
+    clearAllFailed:'❌ Failed to clear. Please try again.',
+    clearAllProcessing:'⏳ Clearing...'
   }
 };
 
@@ -1167,6 +1197,8 @@ function applyLanguage(lang) {
     if (lbTitle && t.leaderboardTitle) lbTitle.textContent = t.leaderboardTitle;
     var lbRefresh = document.getElementById('leaderboardRefreshBtn');
     if (lbRefresh && t.leaderboardRefresh) lbRefresh.textContent = t.leaderboardRefresh;
+    var lbClearAll = document.getElementById('leaderboardClearAllBtn');
+    if (lbClearAll && t.leaderboardClearAll) lbClearAll.textContent = t.leaderboardClearAll;
     ['zh-HK','zh-CN','en-US'].forEach(l => {
       const el = document.getElementById('terms-' + l);
       if (el) el.style.display = (l === lang) ? 'block' : 'none';
@@ -1625,15 +1657,28 @@ function updateSkipDisplay() {
   else { btn.disabled = false; }
 }
 
-// 隨機微調 ±5%（防止玩家搜尋原始數據作弊），賽果保持不變
+// 🆕 隨機微調 ±5%（防止玩家搜尋原始數據作弊）+ 勝率總和歸一化（不超過 100%）
 function jitterMatchData(m) {
   function jitter(v) {
     var pct = (Math.random() * 0.10) - 0.05; // -5% ~ +5%
     return Math.round(v * (1 + pct));
   }
+  // 勝率：整數，邊界 1~99
   var newHw = Math.max(1, Math.min(99, jitter(m.hw)));
   var newDw = Math.max(1, Math.min(99, jitter(m.dw)));
   var newAw = Math.max(1, Math.min(99, jitter(m.aw)));
+  // 🆕 歸一化：確保 hw + dw + aw ≤ 100（超過就從最大者開始遞減）
+  var totalW = newHw + newDw + newAw;
+  var safety = 0;
+  while (totalW > 100 && safety < 500) {
+    if (newHw >= newDw && newHw >= newAw && newHw > 1) newHw--;
+    else if (newDw >= newAw && newDw > 1) newDw--;
+    else if (newAw > 1) newAw--;
+    else break;
+    totalW = newHw + newDw + newAw;
+    safety++;
+  }
+  // 賠率：整數（×100 單位），邊界 100~9999（即 1.00~99.99）
   var newHo  = Math.max(100, Math.min(9999, jitter(m.ho)));
   var newDoo = Math.max(100, Math.min(9999, jitter(m.doo)));
   var newAo  = Math.max(100, Math.min(9999, jitter(m.ao)));
@@ -2020,12 +2065,12 @@ function closeLeaderboard() {
   document.getElementById('leaderboardOverlay').classList.remove('show');
 }
 
-// 🆕 過濾無效紀錄：分數 ≥ 100 直接刪除不顯示
+// 🆕 過濾無效紀錄：只接受 0 ~ 100 分（100 分可以顯示，超過 100 視為作弊）
 function isValidLeaderboardRow(row) {
   if (!row) return false;
   var score = parseFloat(row.score);
-  if (isNaN(score)) return true; // 無法解析時保留（安全起見）
-  return score < 100;            // 過濾掉 >= 100 的紀錄
+  if (isNaN(score)) return false;
+  return score >= 0 && score <= 100;
 }
 
 function formatPercent(v, withPlus) {
@@ -2045,14 +2090,19 @@ function buildLeaderboardRow(row, idx, compact) {
   if (rank === 1) { rankClass = 'gold'; rowClass = 'top1'; }
   else if (rank === 2) { rankClass = 'silver'; rowClass = 'top2'; }
   else if (rank === 3) { rankClass = 'bronze'; rowClass = 'top3'; }
-  var family = row.tier && row.tier.length > 0 ? row.tier.charAt(0) : 'E';
+  // 🆕 直接根據分數重新計算等級，不信任後端存的 tier（修正 1 分顯示 E 而非 E- 的問題）
+  var scoreNum = parseFloat(row.score);
+  if (isNaN(scoreNum)) scoreNum = 0;
+  var tierObj = getTier(scoreNum);
+  var tierName = tierObj.tier;
+  var family = getTierFamily(tierName);
   var style = TIER_FAMILY_COLORS[family] || TIER_FAMILY_COLORS['E'];
-  if (row.tier === 'EX') style = TIER_FAMILY_COLORS['EX'];
+  if (tierName === 'EX') style = TIER_FAMILY_COLORS['EX'];
   var hitRateStr = formatPercent(row.hitRate, false);
   var roiStr = formatPercent(row.roi, true);
-  var scoreStr = (typeof row.score === 'number') ? row.score.toFixed(2) : (parseFloat(row.score) || 0).toFixed(2);
+  var scoreStr = scoreNum.toFixed(2);
   var textColor = style.textColor || style.color || '#fff';
-  var tierClass = (row.tier === 'EX') ? ' tier-EX' : '';
+  var tierClass = (tierName === 'EX') ? ' tier-EX' : '';
   return '<div class="leaderboard-row ' + rowClass + '">'
     + '<div class="leaderboard-rank ' + rankClass + '">' + rank + '</div>'
     + '<div class="leaderboard-info">'
@@ -2060,7 +2110,7 @@ function buildLeaderboardRow(row, idx, compact) {
     +   '<div class="leaderboard-meta">🎯 ' + hitRateStr + ' · 💰 ' + roiStr + '</div>'
     + '</div>'
     + '<div class="leaderboard-right">'
-    +   '<div class="leaderboard-tier' + tierClass + '" style="background:' + style.bg + ';color:' + textColor + ';border:1px solid ' + style.border + ';">' + (row.tier || '—') + '</div>'
+    +   '<div class="leaderboard-tier' + tierClass + '" style="background:' + style.bg + ';color:' + textColor + ';border:1px solid ' + style.border + ';">' + tierName + '</div>'
     +   '<div class="leaderboard-score">' + scoreStr + ' 分</div>'
     + '</div>'
     + '</div>';
@@ -2080,7 +2130,6 @@ function loadLeaderboard() {
         content.innerHTML = '<div class="leaderboard-empty">⚠️ 載入失敗</div>';
         return;
       }
-      // 🆕 過濾掉分數 ≥ 100 的紀錄
       var filtered = res.data.filter(isValidLeaderboardRow);
       if (filtered.length === 0) {
         content.innerHTML = '<div class="leaderboard-empty">📭 暫無記錄，快來成為第一名！</div>';
@@ -2113,7 +2162,6 @@ function loadLeaderboardMini() {
         mini.innerHTML = '<div class="leaderboard-empty">⚠️ 載入失敗</div>';
         return;
       }
-      // 🆕 過濾掉分數 ≥ 100 的紀錄
       var filtered = res.data.filter(isValidLeaderboardRow);
       if (filtered.length === 0) {
         mini.innerHTML = '<div class="leaderboard-empty">📭 暫無記錄，快來成為第一名！</div>';
@@ -2131,6 +2179,36 @@ function loadLeaderboardMini() {
     });
 }
 
+// 🆕 清除所有排行榜記錄
+function clearAllLeaderboard() {
+  var t = translations[currentLang];
+  var pwd = prompt(t.clearAllPasswordPrompt || '🔒 請輸入管理員密碼：');
+  if (pwd === null) return;
+  if (pwd !== CLEAR_ALL_PASSWORD) {
+    showToast(t.clearAllWrongPwd || '❌ 密碼錯誤', 'error');
+    return;
+  }
+  if (!confirm(t.clearAllConfirm || '⚠️ 確定要清除排行榜所有記錄嗎？此操作無法復原！')) return;
+  var btn = document.getElementById('leaderboardClearAllBtn');
+  if (btn) { btn.disabled = true; btn.textContent = t.clearAllProcessing || '⏳ 清除中...'; }
+  fetch(LEADERBOARD_API, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'clearAll', password: CLEAR_ALL_PASSWORD })
+  }).then(function() {
+    showToast(t.clearAllSuccess || '✅ 已清除所有排行榜記錄', 'success');
+    setTimeout(function() {
+      loadLeaderboard();
+      loadLeaderboardMini();
+      if (btn) { btn.disabled = false; btn.textContent = t.leaderboardClearAll || '🗑️ 清除所有記錄'; }
+    }, 1200);
+  }).catch(function() {
+    showToast(t.clearAllFailed || '❌ 清除失敗，請稍後再試', 'error');
+    if (btn) { btn.disabled = false; btn.textContent = t.leaderboardClearAll || '🗑️ 清除所有記錄'; }
+  });
+}
+
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, function(m) {
     return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m];
@@ -2138,25 +2216,26 @@ function escapeHtml(str) {
 }
 
 // ==================== Tier ====================
+// 🆕 等級門檻（配合 0~100 分範圍）
 function getTier(rate) {
-  if (rate >= 55)   return { tier:'EX', descKey:'tierEX' };
-  if (rate >= 52.5) return { tier:'S+', descKey:'tierS' };
-  if (rate >= 50)   return { tier:'S',  descKey:'tierS' };
-  if (rate >= 47.5) return { tier:'S-', descKey:'tierS' };
-  if (rate >= 45)   return { tier:'A+', descKey:'tierA' };
-  if (rate >= 42.5) return { tier:'A',  descKey:'tierA' };
-  if (rate >= 40)   return { tier:'A-', descKey:'tierA' };
-  if (rate >= 37.5) return { tier:'B+', descKey:'tierB' };
-  if (rate >= 35)   return { tier:'B',  descKey:'tierB' };
-  if (rate >= 32.5) return { tier:'B-', descKey:'tierB' };
-  if (rate >= 30)   return { tier:'C+', descKey:'tierC' };
-  if (rate >= 27.5) return { tier:'C',  descKey:'tierC' };
-  if (rate >= 25)   return { tier:'C-', descKey:'tierC' };
-  if (rate >= 22.5) return { tier:'D+', descKey:'tierD' };
+  if (rate >= 90)   return { tier:'EX', descKey:'tierEX' };
+  if (rate >= 85)   return { tier:'S+', descKey:'tierS' };
+  if (rate >= 80)   return { tier:'S',  descKey:'tierS' };
+  if (rate >= 75)   return { tier:'S-', descKey:'tierS' };
+  if (rate >= 70)   return { tier:'A+', descKey:'tierA' };
+  if (rate >= 65)   return { tier:'A',  descKey:'tierA' };
+  if (rate >= 60)   return { tier:'A-', descKey:'tierA' };
+  if (rate >= 55)   return { tier:'B+', descKey:'tierB' };
+  if (rate >= 50)   return { tier:'B',  descKey:'tierB' };
+  if (rate >= 45)   return { tier:'B-', descKey:'tierB' };
+  if (rate >= 40)   return { tier:'C+', descKey:'tierC' };
+  if (rate >= 35)   return { tier:'C',  descKey:'tierC' };
+  if (rate >= 30)   return { tier:'C-', descKey:'tierC' };
+  if (rate >= 25)   return { tier:'D+', descKey:'tierD' };
   if (rate >= 20)   return { tier:'D',  descKey:'tierD' };
-  if (rate >= 17.5) return { tier:'D-', descKey:'tierD' };
-  if (rate >= 15)   return { tier:'E+', descKey:'tierE' };
-  if (rate > 12)    return { tier:'E',  descKey:'tierE' };
+  if (rate >= 15)   return { tier:'D-', descKey:'tierD' };
+  if (rate >= 10)   return { tier:'E+', descKey:'tierE' };
+  if (rate >= 5)    return { tier:'E',  descKey:'tierE' };
   return { tier:'E-', descKey:'tierE' };
 }
 function getTierRank(tier) {
@@ -2194,7 +2273,8 @@ function updateTierDisplay(withAnimation) {
   var hitRate = (gameState.hits / gameState.played) * 100;
   var totalCost = gameState.played * 100;
   var roi = totalCost > 0 ? (gameState.totalPnl / totalCost) * 100 : 0;
-  var effectiveRoi = Math.max(0, roi);
+  var hitRateNorm = Math.max(0, Math.min(100, hitRate));
+  var roiNorm = Math.max(0, Math.min(100, roi));
   var rate = calcOverallScore(hitRate, roi);
   var tier = getTier(rate);
   var t = translations[currentLang];
@@ -2235,8 +2315,8 @@ function updateTierDisplay(withAnimation) {
     scoreValueEl.style.textShadow = 'none';
   }
   if (detailEl) {
-    detailEl.innerHTML = (t.tierFormula || '綜合分數 = 命中率 × 30% + ROI × 70%') +
-      '<br>（命中率 ' + hitRate.toFixed(2) + '% × 30% + ROI ' + effectiveRoi.toFixed(2) + '% × 70%）';
+    detailEl.innerHTML = (t.tierFormula || '綜合分數 = 命中率 × 50% + ROI × 50%') +
+      '<br>（命中率 ' + hitRateNorm.toFixed(2) + ' × 50% + ROI ' + roiNorm.toFixed(2) + ' × 50%）';
   }
 
   tierEl.style.display = 'block';
@@ -2362,6 +2442,9 @@ window.addEventListener('load', function() {
   if (leaderboardCloseBtn) leaderboardCloseBtn.addEventListener('click', closeLeaderboard);
   var leaderboardRefreshBtn = document.getElementById('leaderboardRefreshBtn');
   if (leaderboardRefreshBtn) leaderboardRefreshBtn.addEventListener('click', loadLeaderboard);
+  // 🆕 清除所有排行榜按鈕
+  var leaderboardClearAllBtn = document.getElementById('leaderboardClearAllBtn');
+  if (leaderboardClearAllBtn) leaderboardClearAllBtn.addEventListener('click', clearAllLeaderboard);
   var leaderboardOverlay = document.getElementById('leaderboardOverlay');
   if (leaderboardOverlay) leaderboardOverlay.addEventListener('click', function(e) {
     if (e.target === this) closeLeaderboard();
