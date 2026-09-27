@@ -91,21 +91,10 @@
   .leaderboard-refresh:hover { background:rgba(96,165,250,0.25); }
   .leaderboard-refresh:active { transform:scale(.97); }
 
-  /* 🆕 EX 排行榜徽章特效：紫色文字 + 發光呼吸 */
-  .leaderboard-tier.tier-EX {
-    animation: exTierGlow 1.6s ease-in-out infinite;
-  }
+  .leaderboard-tier.tier-EX { animation: exTierGlow 1.6s ease-in-out infinite; }
   @keyframes exTierGlow {
-    0%, 100% {
-      text-shadow: 0 0 4px #e879f9, 0 0 8px #c084fc;
-      box-shadow: 0 0 6px rgba(232,121,249,0.45);
-      filter: brightness(1);
-    }
-    50% {
-      text-shadow: 0 0 10px #e879f9, 0 0 18px #c084fc, 0 0 28px #a78bfa;
-      box-shadow: 0 0 16px rgba(232,121,249,0.85), 0 0 26px rgba(192,132,252,0.55);
-      filter: brightness(1.15);
-    }
+    0%, 100% { text-shadow: 0 0 4px #e879f9, 0 0 8px #c084fc; box-shadow: 0 0 6px rgba(232,121,249,0.45); filter: brightness(1); }
+    50% { text-shadow: 0 0 10px #e879f9, 0 0 18px #c084fc, 0 0 28px #a78bfa; box-shadow: 0 0 16px rgba(232,121,249,0.85), 0 0 26px rgba(192,132,252,0.55); filter: brightness(1.15); }
   }
 
   .leaderboard-section { margin-top:20px; }
@@ -547,6 +536,8 @@
 
     <div class="db-info" id="dbInfo">📚 資料庫載入中...</div>
 
+    <div class="tier-info-hint" data-i18n="gameDataHint">🔒 每場從資料庫真實數據抽樣，並約略微調 ±5% 以避免被搜尋反查作弊；賽果保持真實。</div>
+
     <div class="tier-info-hint" data-i18n="tierInfoHint">📊 猜 5 場以上顯示等級　|　🏆 猜滿 50 場可上傳排行榜</div>
 
     <div class="game-tier" id="gameTier">
@@ -687,7 +678,7 @@
   </div>
 
   <div class="dark-card leaderboard-section">
-    <h3 class="leaderboard-section-title">🏆 排行榜 Top 10</h3>
+    <h3 class="leaderboard-section-title" data-i18n="leaderboardTop10">🏆 排行榜 Top 10</h3>
     <div class="leaderboard-mini" id="leaderboardMini">
       <div class="leaderboard-loading">⏳ 載入中...</div>
     </div>
@@ -708,7 +699,7 @@ var currentLang = 'zh-HK';
 var devMode = false;
 
 var TIER_MIN_PLAYED = 5;
-// 🆕 綜合分數權重：命中率 × 30% + ROI × 70%
+// 綜合分數權重：命中率 × 30% + ROI × 70%
 var TIER_WEIGHT_HITRATE = 0.3;
 var TIER_WEIGHT_ROI = 0.7;
 
@@ -719,7 +710,7 @@ var DEV_PASSWORD = 'football';
 
 var LEADERBOARD_API = 'https://script.google.com/macros/s/AKfycbxwY95XQNs8vOTVdzvWJMoYPffto3PiSvt6S2xwRItsy-TcYsD89sF_W_1GnqJwXY4G/exec';
 
-// 🆕 綜合分數計算（ROI 最低為 0，分數不為負）
+// 綜合分數計算（ROI 最低為 0，分數不為負）
 function calcOverallScore(hitRate, roi) {
   var safeRoi = Math.max(0, roi);
   return hitRate * TIER_WEIGHT_HITRATE + safeRoi * TIER_WEIGHT_ROI;
@@ -805,6 +796,7 @@ const translations = {
     hint7:'市場賠率與勝率模型出現分歧，系統選擇賠率更高的一方進行博弈。',
     hintReverse:'偵測到極端冷門賠率，系統按最新規則買和局搏高賠回報。',
     gameTitle:'🎮 猜賽果挑戰', gameSub:'📚 從資料庫真實數據隨機抽樣，試下你嘅眼光！',
+    gameDataHint:'🔒 每場從資料庫真實數據抽樣，並約略微調 ±5% 以避免被搜尋反查作弊；賽果保持真實。',
     gamePlayed:'已玩', gameHits:'命中', gameRate:'命中率', gamePnl:'盈虧',
     gameHW:'主勝率', gameDW:'和勝率', gameAW:'客勝率',
     gameHO:'主賠', gameDO:'和賠', gameAO:'客賠',
@@ -882,6 +874,7 @@ const translations = {
     goUploaded:'✅ 已上傳', goUploadFailed:'❌ 上傳失敗',
     goEnterName:'請輸入你的名字：',
     maxPlayReached:'⚠️ 已達 50 場上限，請重新挑戰',
+    leaderboardTop10:'🏆 排行榜 Top 10',
     leaderboardShowAll:'📋 顯示所有排行榜',
     leaderboardTitle:'🏆 排行榜 Top 100',
     leaderboardRefresh:'🔄 重新載入'
@@ -916,6 +909,7 @@ const translations = {
     hint7:'市场赔率与胜率模型出现分歧，系统选择赔率更高的一方进行博弈。',
     hintReverse:'侦测到极端冷门赔率，系统按最新规则买和局搏高赔回报。',
     gameTitle:'🎮 猜赛果挑战', gameSub:'📚 从数据库真实数据随机抽样，试试你的眼光！',
+    gameDataHint:'🔒 每场从数据库真实数据抽样，并约略微调 ±5% 以避免被搜寻反查作弊；赛果保持真实。',
     gamePlayed:'已玩', gameHits:'命中', gameRate:'命中率', gamePnl:'盈亏',
     gameHW:'主胜率', gameDW:'和胜率', gameAW:'客胜率',
     gameHO:'主赔', gameDO:'和赔', gameAO:'客赔',
@@ -993,6 +987,7 @@ const translations = {
     goUploaded:'✅ 已上传', goUploadFailed:'❌ 上传失败',
     goEnterName:'请输入你的名字：',
     maxPlayReached:'⚠️ 已达 50 场上限，请重新挑战',
+    leaderboardTop10:'🏆 排行榜 Top 10',
     leaderboardShowAll:'📋 显示所有排行榜',
     leaderboardTitle:'🏆 排行榜 Top 100',
     leaderboardRefresh:'🔄 重新加载'
@@ -1027,6 +1022,7 @@ const translations = {
     hint7:'Market odds diverge from win rate model. System selects the higher-odds side for contrarian play.',
     hintReverse:'Detected extreme underdog odds. System switches to Draw bet for high-payout upside.',
     gameTitle:'🎮 Guess the Result', gameSub:'📚 Randomly sampled from real database. Try your luck!',
+    gameDataHint:'🔒 Each match is sampled from real database and slightly adjusted ±5% to prevent lookup cheating. Results stay authentic.',
     gamePlayed:'Played', gameHits:'Correct', gameRate:'Accuracy', gamePnl:'P/L',
     gameHW:'Home Win %', gameDW:'Draw %', gameAW:'Away Win %',
     gameHO:'Home Odds', gameDO:'Draw Odds', gameAO:'Away Odds',
@@ -1104,6 +1100,7 @@ const translations = {
     goUploaded:'✅ Uploaded', goUploadFailed:'❌ Upload failed',
     goEnterName:'Enter your name:',
     maxPlayReached:'⚠️ 50-match limit reached. Please restart',
+    leaderboardTop10:'🏆 Leaderboard Top 10',
     leaderboardShowAll:'📋 Show Full Leaderboard',
     leaderboardTitle:'🏆 Leaderboard Top 100',
     leaderboardRefresh:'🔄 Refresh'
@@ -1628,11 +1625,35 @@ function updateSkipDisplay() {
   else { btn.disabled = false; }
 }
 
+// 隨機微調 ±5%（防止玩家搜尋原始數據作弊），賽果保持不變
+function jitterMatchData(m) {
+  function jitter(v) {
+    var pct = (Math.random() * 0.10) - 0.05; // -5% ~ +5%
+    return Math.round(v * (1 + pct));
+  }
+  var newHw = Math.max(1, Math.min(99, jitter(m.hw)));
+  var newDw = Math.max(1, Math.min(99, jitter(m.dw)));
+  var newAw = Math.max(1, Math.min(99, jitter(m.aw)));
+  var newHo  = Math.max(100, Math.min(9999, jitter(m.ho)));
+  var newDoo = Math.max(100, Math.min(9999, jitter(m.doo)));
+  var newAo  = Math.max(100, Math.min(9999, jitter(m.ao)));
+  return {
+    hw: newHw, dw: newDw, aw: newAw,
+    ho: newHo, doo: newDoo, ao: newAo,
+    score: m.score,
+    result: m.result
+  };
+}
+
 function generateMatch() {
   if (!sheetMatchPool || sheetMatchPool.length === 0) return null;
   var idx = Math.floor(Math.random() * sheetMatchPool.length);
   var m = sheetMatchPool[idx];
-  return { hw: m.hw, dw: m.dw, aw: m.aw, ho: m.ho, doo: m.doo, ao: m.ao, score: m.score, result: m.result };
+  return jitterMatchData({
+    hw: m.hw, dw: m.dw, aw: m.aw,
+    ho: m.ho, doo: m.doo, ao: m.ao,
+    score: m.score, result: m.result
+  });
 }
 
 function displayMatch(m) {
@@ -1907,7 +1928,6 @@ function showGameOver() {
   var hitRate = gameState.played > 0 ? (gameState.hits / gameState.played * 100) : 0;
   var totalCost = gameState.played * 100;
   var roi = totalCost > 0 ? (gameState.totalPnl / totalCost) * 100 : 0;
-  // 🆕 綜合分數（ROI 最低 0）
   var score = calcOverallScore(hitRate, roi);
   var tier = getTier(score);
 
@@ -1958,7 +1978,6 @@ function uploadToLeaderboard() {
   var hitRate = gameState.played > 0 ? (gameState.hits / gameState.played * 100) : 0;
   var totalCost = gameState.played * 100;
   var roi = totalCost > 0 ? (gameState.totalPnl / totalCost) * 100 : 0;
-  // 🆕 綜合分數（ROI 最低 0）
   var score = calcOverallScore(hitRate, roi);
   var tier = getTier(score);
 
@@ -2001,6 +2020,14 @@ function closeLeaderboard() {
   document.getElementById('leaderboardOverlay').classList.remove('show');
 }
 
+// 🆕 過濾無效紀錄：分數 ≥ 100 直接刪除不顯示
+function isValidLeaderboardRow(row) {
+  if (!row) return false;
+  var score = parseFloat(row.score);
+  if (isNaN(score)) return true; // 無法解析時保留（安全起見）
+  return score < 100;            // 過濾掉 >= 100 的紀錄
+}
+
 function formatPercent(v, withPlus) {
   if (v === null || v === undefined || v === '') return '—';
   var s = String(v).replace(/%/g, '').replace(/\+/g, '').trim();
@@ -2024,7 +2051,6 @@ function buildLeaderboardRow(row, idx, compact) {
   var hitRateStr = formatPercent(row.hitRate, false);
   var roiStr = formatPercent(row.roi, true);
   var scoreStr = (typeof row.score === 'number') ? row.score.toFixed(2) : (parseFloat(row.score) || 0).toFixed(2);
-  // 🆕 EX 使用紫色文字 + 特效 class
   var textColor = style.textColor || style.color || '#fff';
   var tierClass = (row.tier === 'EX') ? ' tier-EX' : '';
   return '<div class="leaderboard-row ' + rowClass + '">'
@@ -2054,12 +2080,14 @@ function loadLeaderboard() {
         content.innerHTML = '<div class="leaderboard-empty">⚠️ 載入失敗</div>';
         return;
       }
-      if (res.data.length === 0) {
+      // 🆕 過濾掉分數 ≥ 100 的紀錄
+      var filtered = res.data.filter(isValidLeaderboardRow);
+      if (filtered.length === 0) {
         content.innerHTML = '<div class="leaderboard-empty">📭 暫無記錄，快來成為第一名！</div>';
         return;
       }
       var html = '';
-      res.data.slice(0, 100).forEach(function(row, idx) {
+      filtered.slice(0, 100).forEach(function(row, idx) {
         html += buildLeaderboardRow(row, idx, false);
       });
       content.innerHTML = html;
@@ -2085,12 +2113,14 @@ function loadLeaderboardMini() {
         mini.innerHTML = '<div class="leaderboard-empty">⚠️ 載入失敗</div>';
         return;
       }
-      if (res.data.length === 0) {
+      // 🆕 過濾掉分數 ≥ 100 的紀錄
+      var filtered = res.data.filter(isValidLeaderboardRow);
+      if (filtered.length === 0) {
         mini.innerHTML = '<div class="leaderboard-empty">📭 暫無記錄，快來成為第一名！</div>';
         return;
       }
       var html = '';
-      res.data.slice(0, 10).forEach(function(row, idx) {
+      filtered.slice(0, 10).forEach(function(row, idx) {
         html += buildLeaderboardRow(row, idx, true);
       });
       mini.innerHTML = html;
@@ -2138,8 +2168,8 @@ function getTierFamily(tier) {
   return tier.charAt(0);
 }
 
+// C/D/E 顏色互換：C=紅（原 D）、D=灰（原 E）、E=啡（原 C）
 var TIER_FAMILY_COLORS = {
-  // 🆕 EX：深紫背景 + 亮紫文字 + 紫色發光（textColor 為紫色）
   'EX': { 
     grad:'linear-gradient(135deg, #1a0033, #2d0845, #4a148c, #2d0845, #1a0033)', 
     color:'#e879f9',
@@ -2152,9 +2182,9 @@ var TIER_FAMILY_COLORS = {
   'S':  { grad:'linear-gradient(135deg, #FFE44E, #FFD700, #FFB800)', color:'#FFD700', textColor:'#fff', glow:'0 0 13px #FFE44E, 0 0 26px #FFB800, 0 2px 9px #FFD700', shadow:'0 0 32px rgba(255,215,0,0.55)', bg:'rgba(255,215,0,0.15)', border:'rgba(255,215,0,0.65)' },
   'A':  { grad:'linear-gradient(135deg, #93c5fd, #60a5fa, #3b82f6)', color:'#60a5fa', textColor:'#fff', glow:'0 0 12px #93c5fd, 0 0 24px #3b82f6, 0 2px 8px #60a5fa', shadow:'0 0 26px rgba(96,165,250,0.55)', bg:'rgba(96,165,250,0.15)', border:'rgba(96,165,250,0.65)' },
   'B':  { grad:'linear-gradient(135deg, #86efac, #4ade80, #22c55e)', color:'#4ade80', textColor:'#fff', glow:'0 0 12px #86efac, 0 0 24px #22c55e, 0 2px 8px #4ade80', shadow:'0 0 22px rgba(74,222,128,0.5)', bg:'rgba(74,222,128,0.15)', border:'rgba(74,222,128,0.65)' },
-  'C':  { grad:'linear-gradient(135deg, #d4a373, #a16207, #6b4423)', color:'#a16207', textColor:'#fff', glow:'0 0 12px #d4a373, 0 0 24px #a16207, 0 2px 8px #d4a373', shadow:'0 0 22px rgba(161,98,7,0.5)', bg:'rgba(161,98,7,0.15)', border:'rgba(161,98,7,0.65)' },
-  'D':  { grad:'linear-gradient(135deg, #fca5a5, #f87171, #ef4444)', color:'#f87171', textColor:'#fff', glow:'0 0 11px #fca5a5, 0 0 22px #ef4444, 0 2px 6px #f87171', shadow:'0 0 18px rgba(248,113,113,0.5)', bg:'rgba(248,113,113,0.15)', border:'rgba(248,113,113,0.65)' },
-  'E':  { grad:'linear-gradient(135deg, #d1d5db, #9ca3af, #6b7280)', color:'#9ca3af', textColor:'#fff', glow:'0 0 9px #d1d5db, 0 0 18px #6b7280, 0 2px 5px #9ca3af', shadow:'0 0 15px rgba(156,163,175,0.5)', bg:'rgba(156,163,175,0.15)', border:'rgba(156,163,175,0.65)' }
+  'C':  { grad:'linear-gradient(135deg, #fca5a5, #f87171, #ef4444)', color:'#f87171', textColor:'#fff', glow:'0 0 11px #fca5a5, 0 0 22px #ef4444, 0 2px 6px #f87171', shadow:'0 0 18px rgba(248,113,113,0.5)', bg:'rgba(248,113,113,0.15)', border:'rgba(248,113,113,0.65)' },
+  'D':  { grad:'linear-gradient(135deg, #d1d5db, #9ca3af, #6b7280)', color:'#9ca3af', textColor:'#fff', glow:'0 0 9px #d1d5db, 0 0 18px #6b7280, 0 2px 5px #9ca3af', shadow:'0 0 15px rgba(156,163,175,0.5)', bg:'rgba(156,163,175,0.15)', border:'rgba(156,163,175,0.65)' },
+  'E':  { grad:'linear-gradient(135deg, #d4a373, #a16207, #6b4423)', color:'#a16207', textColor:'#fff', glow:'0 0 12px #d4a373, 0 0 24px #a16207, 0 2px 8px #d4a373', shadow:'0 0 22px rgba(161,98,7,0.5)', bg:'rgba(161,98,7,0.15)', border:'rgba(161,98,7,0.65)' }
 };
 
 function updateTierDisplay(withAnimation) {
@@ -2164,7 +2194,6 @@ function updateTierDisplay(withAnimation) {
   var hitRate = (gameState.hits / gameState.played) * 100;
   var totalCost = gameState.played * 100;
   var roi = totalCost > 0 ? (gameState.totalPnl / totalCost) * 100 : 0;
-  // 🆕 綜合分數（ROI 最低 0）
   var effectiveRoi = Math.max(0, roi);
   var rate = calcOverallScore(hitRate, roi);
   var tier = getTier(rate);
@@ -2188,7 +2217,6 @@ function updateTierDisplay(withAnimation) {
   badgeEl.style.display = 'inline-flex';
   badgeEl.style.background = style.grad;
   badgeEl.style.backgroundSize = '400% 400%';
-  // 🆕 EX 使用紫色文字，其他保持白色
   badgeEl.style.color = style.textColor || '#fff';
   badgeEl.style.textShadow = style.glow;
   badgeEl.style.boxShadow = style.shadow;
@@ -2207,7 +2235,6 @@ function updateTierDisplay(withAnimation) {
     scoreValueEl.style.textShadow = 'none';
   }
   if (detailEl) {
-    // 🆕 公式展開（ROI 使用有效值，最低 0）
     detailEl.innerHTML = (t.tierFormula || '綜合分數 = 命中率 × 30% + ROI × 70%') +
       '<br>（命中率 ' + hitRate.toFixed(2) + '% × 30% + ROI ' + effectiveRoi.toFixed(2) + '% × 70%）';
   }
