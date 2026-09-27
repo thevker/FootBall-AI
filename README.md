@@ -17,9 +17,9 @@
 > 三合一系統：**條款同意頁 + 智能預測計算器 + 猜賽果挑戰**
 
 - 🌙 直接深淺色主題切換
-- 🌐 繁中 /使用 簡中 / 英文
-- 📊 實時讀取 Google Sheets 歷史數據
-- 🎮 遊戲化猜賽果 + Tier 等級系統
+- 🌐 繁中 / 簡中 / 英文（全介面支援，含開發者模式）
+- 📊 實時讀取 Google Sheets 真實賽事數據
+- 🎮 遊戲化猜賽果 + Tier 等級系統 + 連勝特效
 - 📱 響應式設計（手機 / 平板 / 電腦）
 
 ---
@@ -28,33 +28,48 @@
 
 ### 🧮 智能預測計算器
 - 輸入 **6 個數據**（主/和/客勝率 + 主/和/客賠）
-- 經 **6 層公式判斷** 輸出建議：**買主 / 買和 / 買客 / 不出手**
+- 經 **6 層公式 + 兜底判斷** 輸出建議：**買主 / 買和 / 買客 / 不出手**
 - 自動計算 **期望值 EV-1**
 - 顯示該層策略邏輯說明
 
 ### 🎮 猜賽果挑戰
-- 隨機生成合理賠率（模擬真實市場）
+- **從 Google Sheets 真實數據隨機抽樣**（非本地生成）
+- 顯示真實比分與賽果
 - 每注固定 **$100**
 - **⏭️ 跳過功能**：預設 2 次，每玩 10 場 +1 次
-- **Tier 等級系統**（10 場後顯示）：
-  - 🟣 **EX**（≥70%）：紫色幻彩漸變
-  - 🟡 **S / S+ / S-**（62.5-70%）：金色發光
-  - 🔵 **A 系列**：藍色
-  - 🟡 **C 系列**：黃色
-  - 🔴 **D 系列**：紅色
-  - ⚪ **E 系列**：灰色
+- **🔥 連勝特效**：連續命中 3 場以上彈出火焰連勝提示（固定大小，不遮擋按鈕）
+- **Tier 等級系統**（5 場後顯示）：
+  - 綜合分數 = **命中率 × 40% + ROI × 60%**
+  - 🟣 **EX**：紫色幻彩漸變
+  - 🟡 **S / S+ / S-**：金色漸變
+  - 🔵 **A / A+ / A-**：冰藍漸變
+  - 🟢 **B / B+ / B-**：淺綠漸變
+  - 🟠 **C / C+ / C-**：橙黃漸變
+  - 🔴 **D / D+ / D-**：紅色漸變
+  - ⚪ **E / E+ / E-**：灰色漸變
+  - **同級同色**，換級有漸變過渡效果
+  - **⬆️ 升級** 顯示綠色箭頭 + 邊框閃光
+  - **⬇️ 降級** 顯示紅色箭頭 + 邊框閃光
 - 賽事描述：💥 史詩級大爆冷 / 💰 高賠和局 / ✅ 正常賽果 …
 
 ### 📊 歷史數據統計
 - 實時讀取 Google Sheets 數據
 - 每 **15 秒** 自動同步
-- 顯示：總盈虧 / 命中數 / 總成本 / 出手數 / ROI / 命中率
+- ）
+顯示：總盈虧 / 命中數- / 總成本 / 出手數 / ROI / 命中率
 
-### 🎨 UI/UX
+### 🎨 UI **/UX
 - 🌙 / ☀️ **深淺色主題**（localStorage 記憶）
-- 🌐 **三語言**：繁中 / 簡中 / 英文
+- 🌐 **三語言**：繁中 / 簡中 / 英文（完整覆蓋所有按鈕、提示、開發者面板）
 - 滾動時頂部按鈕自動淡出
 - 玻璃擬態（Glassmorphism）設計
+- 綜合分數**獨立大字顯示**（含公式明細）
+
+### ⚙️ 開發者模式（隱藏）
+- 密碼解鎖（預設 `y511634a`⚙️ 系統設定**：彈出式面板，修改 7 層公式參數
+- **🔄 重置遊戲**：一鍵清空遊戲進度
+- 套用後自動收起，Toast 提示成功
+- **📚 資料庫資訊**：實時顯示載入的真實比賽場數
 
 ---
 
@@ -65,8 +80,8 @@
 下載 `index.html`，用瀏覽器打開即可。
 
 ```bash
-git clone https://github.com/你的用戶名/quant-football-predictor.git
-cd quant-football-predictor
+git clone https://github.com/thevker/FootBall-AI.git
+cd FootBall-AI
 # 用瀏覽器打開 index.html
 ```
 
@@ -87,51 +102,56 @@ npx serve
 1. 將 `index.html` 推到 GitHub repo
 2. 進入 **Settings → Pages**
 3. Source 選 `main` branch
-4. 網址：`https://你的用戶名.github.io/quant-football-predictor/`
+4. 網址：`https://thevker.github.io/FootBall-AI/`
 
 ---
 
-## 📐 核心公式（6 層判斷）
+## 📐 核心公式（6 層 + 兜底）
 
 | 層 | 條件 | 結果 |
 |---|---|---|
-| 1 | `\|A−C\| ≤ 6` | **D**（買和）|
-| 2 | `A≥42` 且 `1.55≤D<2.05` 且 `D≠F` | **H**（買主）|
-| 3 | `A≥40` 且 `2.10<D≤2.45` 且 `D≠F` | **D**（買和）|
-| 4 | `C>A` 且 `F>D` 且 `F<5.50` | **H**（買主）|
-| 5 | `C>A` 且 `1.85≤F≤2.15` | **A**（買客）|
-| 6 | 兜底賠率博弈 | 見下 |
+| 1 | `\|A−C\| ≤ 3` 且 `E < 400` | **D**（買和）|
+| 2 | `\|D−F\| < 20` | **D**（買和）|
+| 3 | `A≥42` 且 `155≤D<205` 且 `D≠F` | **H**（買主）|
+| 4 | `A≥40` 且 `210<D≤235` 且 `D≠F` | **D**（買和）|
+| 5 | `C>A` 且 `F>D` 且 `F<550` 且 `E>300` | **H**（反向買主）|
+| 6 | `C>A` 且 `185≤F≤215` | **A**（買客）|
+| 兜底 | 賠率博弈 | 見下 |
 
 **兜底層：**
 ```
 D>F：A≥30 且 D≥6.00 → D；否則 H
 F>D：F≥7.50 → skip；否則 A
-D=F：按勝率比較
+D=F：按勝率比較（C>A → A，否則 skip）
 ```
 
-**欄位定義：**
+**欄位定義（Google Sheets A2:H 逐行）：**
+
 | 欄 | 內容 |
 |---|---|
-| A | 主勝率 |
-| B | 和勝率 |
-| C | 客勝率 |
-| D | 主賠（×100）|
+| A | 主勝率（%）|
+| B | 和勝率（%）|
+| C | 客勝率（%）|
+| D | 主賠（×100，例如 158 = 1.58）|
 | E | 和賠（×100）|
 | F | 客賠（×100）|
+| G | 比分（例如 2:1）|
+| H | 賽果（H / D / A）|
 
 ---
 
 ## 📁 檔案結構
 
 ```
-quant-football-predictor/
+FootBall-AI/
 ├── index.html          # 完整單檔案應用
 ├── README.md           # 本文件
 ├── LICENSE             # MIT License
 └── screenshots/
     ├── dark-mode.png
     ├── light-mode.png
-    └── tier-example.png
+    ├── tier-example.png
+    └── combo-streak.png
 ```
 
 ---
@@ -143,9 +163,9 @@ quant-football-predictor/
 | **HTML5** | 頁面結構 |
 | **CSS3** | 樣式、動畫、主題變數 |
 | **Vanilla JavaScript** | 邏輯、狀態管理 |
-| **Google Sheets API** | 實時讀取歷史數據 |
-| **localStorage** | 主題偏好記憶 |
-| **CSS Keyframes** | Tier 動畫（脈衝、幻彩、彈跳）|
+| **Google Sheets gviz API** | 實時讀取歷史數據與賽事 |
+| **localStorage** | 主題偏好 + 參數記憶 |
+| **CSS Keyframes** | Tier 動畫、連勝火焰、升降箭頭 |
 
 **零依賴** — 唔需要 npm、webpack、任何框架。
 
@@ -162,18 +182,60 @@ const SHEET_ID = '你的_GOOGLE_SHEET_ID';
 const SHEET_NAME = '工作表1';
 ```
 
-改成你嘅 Sheet ID 同工作表名稱。
+改成你嘅 Sheet ID 同工作表名稱。Sheet 需設為「**任何人可檢視**」。
+
+### 修改公式參數
+
+**方法 A**：解鎖開發者模式（點「🔒 開發者模式」→ 輸入密碼 `y511634a`），點「⚙️ 系統設定」彈出面板調整。
+
+**方法 B**：直接改 `index.html` 內的 `PARAMS`：
+
+```javascript
+var PARAMS = {
+  p1_gap: 3,        // 第 1 層：勝率差上限
+  p_odds_gap: 20,   // 第 2 層：主客賠差上限
+  p2_hmin: 42, p2_dmin: 155, p2_dmax: 205,   // 第 3 層
+  p3_hmin: 40, p3_dmin: 210, p3_dmax: 235,   // 第 4 層
+  p4_fmax: 550, p4_emin: 300,                // 第 5 層
+  p5_fmin: 185, p5_fmax: 215,                // 第 6 層
+  pb_hmin: 30, pb_dmin: 600, pb_fskip: 750   // 兜底
+};
+```
 
 ### 修改 Tier 分佈
 
-搵到 `function getTier(rate)`：
+搵到 `function getTier(rate)`，目前分佈為 **19 級**：
 
 ```javascript
 function getTier(rate) {
-  if (rate >= 70)   return { tier: 'EX', descKey: 'tierEX' };
-  if (rate >= 67.5) return { tier: 'S+', descKey: 'tierS' };
-  // ...
+  if (rate >= 55)   return { tier: 'EX', descKey: 'tierEX' };
+  if (rate >= 52.5) return { tier: 'S+', descKey: 'tierS' };
+  if (rate >= 50)   return { tier: 'S',  descKey: 'tierS' };
+  if (rate >= 47.5) return { tier: 'S-', descKey: 'tierS' };
+  if (rate >= 45)   return { tier: 'A+', descKey: 'tierA' };
+  if (rate >= 42.5) return { tier: 'A',  descKey: 'tierA' };
+  if (rate >= 40)   return { tier: 'A-', descKey: 'tierA' };
+  if (rate >= 37.5) return { tier: 'B+', descKey: 'tierB' };
+  if (rate >= 35)   return { tier: 'B',  descKey: 'tierB' };
+  if (rate >= 32.5) return { tier: 'B-', descKey: 'tierB' };
+  if (rate >= 30)   return { tier: 'C+', descKey: 'tierC' };
+  if (rate >= 27.5) return { tier: 'C',  descKey: 'tierC' };
+  if (rate >= 25)   return { tier: 'C-', descKey: 'tierC' };
+  if (rate >= 22.5) return { tier: 'D+', descKey: 'tierD' };
+  if (rate >= 20)   return { tier: 'D',  descKey: 'tierD' };
+  if (rate >= 17.5) return { tier: 'D-', descKey: 'tierD' };
+  if (rate >= 15)   return { tier: 'E+', descKey: 'tierE' };
+  if (rate > 12)    return { tier: 'E',  descKey: 'tierE' };
+  return { tier: 'E-', descKey: 'tierE' };
 }
+```
+
+### 修改 Tier 顯示門檻
+
+```javascript
+var TIER_MIN_PLAYED = 5;           // 玩幾場才顯示 Tier
+var TIER_WEIGHT_HITRATE = 0.4;     // 命中率權重
+var TIER_WEIGHT_ROI = 0.6;         // ROI 權重
 ```
 
 ### 修改跳過次數
@@ -197,13 +259,15 @@ function getMaxSkips() {
 2. 閱讀條款（滾到底）→ 按「我已閱讀並同意」
    ↓
 3. 進入主頁面
-   ├─ 頂部：歷史數據統計（自動同步）
+   ├─ 頂部：歷史數據統計（每 15 秒自動同步）
    ├─ 中間：智能預測計算器
-   └─ 底部：猜賽果挑戰
+   └─ 底部：猜賽果挑戰（讀取真實數據）
    ↓
-4. 輸入 6 個數據 → 按「計算結果」→ 得出建議
+4. 輸入 6 個數據 → 按「計算結果」→ 得出建議 + EV
    ↓
-5. 玩猜賽果累積 Tier 等級
+5. 玩猜賽果累積 Tier 等級、觸發連勝特效
+   ↓
+6.（可選）解鎖開發者模式調整公式參數
 ```
 
 ---
