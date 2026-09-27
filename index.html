@@ -1657,4 +1657,171 @@ function updateTierDisplay(withAnimation) {
     'B+': { grad:'linear-gradient(135deg, #67e8f9, #22d3ee, #06b6d4)', color:'#fff', glow:'0 0 16px #67e8f9, 0 0 32px #06b6d4, 0 2px 10px #22d3ee', shadow:'0 0 30px rgba(34,211,238,0.55)' },
     'B':  { grad:'linear-gradient(135deg, #5eead4, #14b8a6, #0d9488)', color:'#fff', glow:'0 0 14px #5eead4, 0 0 28px #0d9488, 0 2px 8px #14b8a6', shadow:'0 0 25px rgba(20,184,166,0.55)' },
     'B-': { grad:'linear-gradient(135deg, #6ee7b7, #10b981, #059669)', color:'#fff', glow:'0 0 12px #6ee7b7, 0 0 24px #059669, 0 2px 6px #10b981', shadow:'0 0 22px rgba(16,185,129,0.5)' },
-    'C+': { grad:'linear-gradient(135deg, #fcd34d, #fbbf24, #f59e0b)', color:'#fff', glow:'0 0
+    'C+': { grad:'linear-gradient(135deg, #fcd34d, #fbbf24, #f59e0b)', color:'#fff', glow:'0 0 14px #fcd34d, 0 0 28px #f59e0b, 0 2px 8px #fbbf24', shadow:'0 0 25px rgba(251,191,36,0.5)' },
+    'C':  { grad:'linear-gradient(135deg, #fbbf24, #f59e0b, #d97706)', color:'#fff', glow:'0 0 12px #fbbf24, 0 0 24px #d97706, 0 2px 6px #f59e0b', shadow:'0 0 22px rgba(245,158,11,0.5)' },
+    'C-': { grad:'linear-gradient(135deg, #fb923c, #ea580c, #c2410c)', color:'#fff', glow:'0 0 10px #fb923c, 0 0 20px #c2410c, 0 2px 6px #ea580c', shadow:'0 0 20px rgba(234,88,12,0.5)' },
+    'D+': { grad:'linear-gradient(135deg, #fca5a5, #f87171, #ef4444)', color:'#fff', glow:'0 0 14px #fca5a5, 0 0 28px #ef4444, 0 2px 8px #f87171', shadow:'0 0 22px rgba(248,113,113,0.5)' },
+    'D':  { grad:'linear-gradient(135deg, #f87171, #ef4444, #dc2626)', color:'#fff', glow:'0 0 12px #f87171, 0 0 24px #dc2626, 0 2px 6px #ef4444', shadow:'0 0 20px rgba(239,68,68,0.5)' },
+    'D-': { grad:'linear-gradient(135deg, #ef4444, #dc2626, #991b1b)', color:'#fff', glow:'0 0 10px #ef4444, 0 0 20px #991b1b, 0 2px 6px #dc2626', shadow:'0 0 18px rgba(220,38,38,0.5)' },
+    'E+': { grad:'linear-gradient(135deg, #d1d5db, #9ca3af, #6b7280)', color:'#fff', glow:'0 0 12px #d1d5db, 0 0 24px #6b7280, 0 2px 6px #9ca3af', shadow:'0 0 18px rgba(156,163,175,0.5)' },
+    'E':  { grad:'linear-gradient(135deg, #9ca3af, #6b7280, #4b5563)', color:'#fff', glow:'0 0 10px #9ca3af, 0 0 20px #4b5563, 0 2px 6px #6b7280', shadow:'0 0 15px rgba(107,114,128,0.5)' },
+    'E-': { grad:'linear-gradient(135deg, #6b7280, #4b5563, #374151)', color:'#fff', glow:'0 0 8px #6b7280, 0 0 16px #374151, 0 2px 4px #4b5563', shadow:'0 0 15px rgba(75,85,99,0.5)' }
+  };
+  var style = colorMap[tier.tier] || colorMap['E-'];
+
+  badgeEl.style.display = 'inline-block';
+  badgeEl.style.padding = '18px 42px';
+  badgeEl.style.borderRadius = '16px';
+  badgeEl.style.fontSize = '52px';
+  badgeEl.style.fontWeight = '900';
+  badgeEl.style.letterSpacing = '3px';
+  badgeEl.style.lineHeight = '1';
+  badgeEl.style.minWidth = '150px';
+  badgeEl.style.fontFamily = "'Segoe UI', -apple-system, sans-serif";
+  badgeEl.style.background = style.grad;
+  badgeEl.style.backgroundSize = '400% 400%';
+  badgeEl.style.color = style.color;
+  badgeEl.style.textShadow = style.glow;
+  badgeEl.style.boxShadow = style.shadow;
+  badgeEl.style.border = '2px solid rgba(255,255,255,0.35)';
+  badgeEl.textContent = tier.tier;
+  badgeEl.setAttribute('data-tier', tier.tier);
+  badgeEl.style.animation = 'tierEXGradient 3s ease infinite, tierPulse 2.5s ease-in-out infinite';
+
+  descEl.style.fontSize = '14px';
+  descEl.style.marginTop = '12px';
+  descEl.style.fontWeight = 'bold';
+  descEl.style.letterSpacing = '0.5px';
+  descEl.style.color = style.color;
+  descEl.style.textShadow = '0 1px 4px rgba(0,0,0,0.5)';
+  descEl.textContent = t[tier.descKey] || '';
+
+  if (detailEl) {
+    var roiSign = roi >= 0 ? '+' : '';
+    detailEl.innerHTML = '📐 ' + (t.tierFormula || '綜合分數 = 命中率 × 40% + ROI × 60%') +
+      '<br>🎯 綜合分數：<b style="color:' + style.color + ';text-shadow:' + style.glow + '">' + rate.toFixed(1) + '</b>' +
+      '　（命中率 ' + hitRate.toFixed(1) + '% × 40% + ROI ' + roiSign + roi.toFixed(1) + '% × 60%）';
+  }
+
+  tierEl.style.display = 'block';
+  tierEl.style.textAlign = 'center';
+  tierEl.style.marginBottom = '20px';
+  tierEl.style.padding = '20px 15px';
+  tierEl.style.borderRadius = '14px';
+  tierEl.style.background = 'var(--bg-panel)';
+  tierEl.style.border = '1px solid var(--border-color)';
+
+  if (withAnimation && isNewTier) {
+    badgeEl.style.animation = 'tierPop 0.6s ease-out, tierEXGradient 3s ease infinite, tierPulse 2.5s ease-in-out 0.6s infinite';
+    setTimeout(function() {
+      badgeEl.style.animation = 'tierEXGradient 3s ease infinite, tierPulse 2.5s ease-in-out infinite';
+    }, 700);
+  }
+}
+
+// ==================== 綁定所有事件 ====================
+window.addEventListener('load', function() {
+  var savedTheme = 'dark';
+  try { savedTheme = localStorage.getItem('qfp_theme') || 'dark'; } catch(e) {}
+  applyTheme(savedTheme);
+
+  var themeBtn = document.getElementById('themeSwitcher');
+  if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
+
+  var langSel = document.getElementById('langSelect');
+  if (langSel) langSel.addEventListener('change', function() { changeLang(this.value); });
+
+  window.addEventListener('scroll', handleTopBtnsScroll, { passive: true });
+  window.addEventListener('touchmove', handleTopBtnsScroll, { passive: true });
+  handleTopBtnsScroll();
+
+  var s = document.getElementById('termsScroll');
+  if (s) {
+    s.addEventListener('scroll', updateAgreeBtnVisual);
+    s.addEventListener('touchmove', updateAgreeBtnVisual);
+    s.addEventListener('touchend', updateAgreeBtnVisual);
+    s.addEventListener('wheel', updateAgreeBtnVisual, { passive: true });
+    setTimeout(function() {
+      if (s.scrollHeight <= s.clientHeight + 200) {
+        var btn = document.getElementById('agreeBtn');
+        if (btn) btn.classList.add('active');
+        updateAgreeBtnText();
+      }
+    }, 300);
+    setInterval(function() {
+      if (s.scrollTop + s.clientHeight >= s.scrollHeight - 200) {
+        var btn = document.getElementById('agreeBtn');
+        if (btn && !btn.classList.contains('active')) {
+          btn.classList.add('active');
+          updateAgreeBtnText();
+        }
+      }
+    }, 400);
+  }
+  window.addEventListener('resize', updateAgreeBtnVisual);
+  updateAgreeBtnText();
+
+  var agreeBtn = document.getElementById('agreeBtn');
+  if (agreeBtn) agreeBtn.addEventListener('click', handleAgree);
+
+  ['hw','dw','aw'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', function() {
+      this.value = this.value.replace(/[^0-9]/g, '');
+      checkClearBtn();
+    });
+  });
+  ['ho','doo','ao'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', function() { formatOddsInput(this); checkClearBtn(); });
+      el.addEventListener('blur', function() { formatOddsOnBlur(this); });
+    }
+  });
+
+  var calcBtn = document.getElementById('calcBtn');
+  if (calcBtn) calcBtn.addEventListener('click', calculate);
+  var clearBtn = document.getElementById('clearBtn');
+  if (clearBtn) clearBtn.addEventListener('click', clearData);
+
+  var gbtnH = document.getElementById('gbtnH');
+  if (gbtnH) gbtnH.addEventListener('click', function() { gameGuess('H'); });
+  var gbtnD = document.getElementById('gbtnD');
+  if (gbtnD) gbtnD.addEventListener('click', function() { gameGuess('D'); });
+  var gbtnA = document.getElementById('gbtnA');
+  if (gbtnA) gbtnA.addEventListener('click', function() { gameGuess('A'); });
+  var gbtnAuto = document.getElementById('gbtnAuto');
+  if (gbtnAuto) gbtnAuto.addEventListener('click', gameAutoPredict);
+  var gbtnDev = document.getElementById('gbtnDev');
+  if (gbtnDev) gbtnDev.addEventListener('click', devAutoPredict);
+  var gbtnSkip = document.getElementById('gbtnSkip');
+  if (gbtnSkip) gbtnSkip.addEventListener('click', gameSkip);
+  var gbtnNew = document.getElementById('gameNewBtn');
+  if (gbtnNew) gbtnNew.addEventListener('click', gameNewRound);
+
+  var devUnlockBtn = document.getElementById('devUnlockBtn');
+  if (devUnlockBtn) devUnlockBtn.addEventListener('click', devUnlock);
+  var devSettingsBtn = document.getElementById('devSettingsBtn');
+  if (devSettingsBtn) devSettingsBtn.addEventListener('click', openDevPanel);
+  var devResetGameBtn = document.getElementById('devResetGameBtn');
+  if (devResetGameBtn) devResetGameBtn.addEventListener('click', resetGameProgress);
+  var devCloseBtn = document.getElementById('devCloseBtn');
+  if (devCloseBtn) devCloseBtn.addEventListener('click', closeDevPanel);
+  var devApplyBtn = document.getElementById('devApplyBtn');
+  if (devApplyBtn) devApplyBtn.addEventListener('click', applyParams);
+  var devResetBtn = document.getElementById('devResetBtn');
+  if (devResetBtn) devResetBtn.addEventListener('click', resetParams);
+
+  applyLanguage('zh-HK');
+  checkClearBtn();
+  loadSavedParams();
+  loadStatsWithRetry();
+  setInterval(loadStatsWithRetry, 15000);
+  window.addEventListener('focus', loadStatsWithRetry);
+  document.addEventListener('visibilitychange', function() { if (!document.hidden) loadStatsWithRetry(); });
+
+  ensureSheetPool().catch(function(e) { console.warn('Pool preload failed:', e); });
+});
+</script>
+</body>
+</html>
