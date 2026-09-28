@@ -394,7 +394,7 @@
       </div>
       <div id="terms-zh-CN" style="display:none;">
         <h3>📊 智能量化足球预测系统 ver 1.0</h3>
-        <p>感谢您使用本系统。在使用前，请务必仔细阅读以下所有条款。您必须滚动到最底部，才能点击“同意”按钮进入系统。</p>
+        <p>感谢您使用本系统。在使用前，请务必仔细阅读以下所有条款。您必须滚动到最底部，才能点击"同意"按钮进入系统。</p>
         <h3>🎯 系统核心定位</h3>
         <p>本系统是一套结合概率模型、市场定价（赔率）与极致风控的自动化量化分析工具。系统严格执行数学逻辑，旨在杜绝人为情绪干扰，协助用户进行数据分析。</p>
         <h3>🛠️ 核心功能模组</h3>
@@ -713,11 +713,10 @@
 
 <script>
 window.onerror = function(msg, src, line, col, err) {
-  console.error('🚨 JS Error:', msg, 'at', src, line + ':' + col, err);
+  console.error("[JS Error]", msg, "at", src, line + ":" + col, err);
   return false;
 };
 
-// ==================== 全域 ====================
 var PARAMS = {
   p1_cbmin: 32, p1_cgap: 6,
   p2_hmin: 60, p2_cmax: 11, p2_dmin: 140, p2_dmax: 190, p2_fmin: 400, p2_fmax: 460,
@@ -736,17 +735,12 @@ var DEFAULT_PARAMS = JSON.parse(JSON.stringify(PARAMS));
 var CALIBRATION = { FAVORITE_BOOST:0.18, DRAW_BOOST:1.25, DRAW_LOW:150, DRAW_HIGH:210, MARGIN_MIN:1.10, MARGIN_MAX:1.16 };
 var currentLang = "zh-HK";
 var devMode = false;
-
 var TIER_MIN_PLAYED = 5;
-// 🆕 權重：命中率 70% + ROI 30%
 var TIER_WEIGHT_HITRATE = 0.7;
 var TIER_WEIGHT_ROI = 0.3;
-
 var MAX_PLAYS = 50;
-
 var comboCount = 0;
 var DEV_PASSWORD = "football";
-
 var LEADERBOARD_API = "https://script.google.com/macros/s/AKfycbxwY95XQNs8vOTVdzvWJMoYPffto3PiSvt6S2xwRItsy-TcYsD89sF_W_1GnqJwXY4G/exec";
 
 function calcOverallScore(hitRate, roi) {
@@ -756,7 +750,6 @@ function calcOverallScore(hitRate, roi) {
   return Math.max(0, Math.min(100, score));
 }
 
-// ==================== Toast ====================
 function showToast(msg, type) {
   var container = document.getElementById("toastContainer");
   if (!container) return;
@@ -770,7 +763,6 @@ function showToast(msg, type) {
   }, 2000);
 }
 
-// ==================== 連勝 ====================
 function showComboPopup(combo) {
   var popup = document.getElementById("comboPopup");
   var textEl = document.getElementById("comboText");
@@ -783,7 +775,6 @@ function showComboPopup(combo) {
   setTimeout(function() { popup.classList.remove("show"); }, 3000);
 }
 
-// ==================== 主題 ====================
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   var icon = document.getElementById("themeIcon");
@@ -804,7 +795,6 @@ function handleTopBtnsScroll() {
   else { themeBtn.classList.remove("hidden"); langBtn.classList.remove("hidden"); }
 }
 
-// ==================== 翻譯 ====================
 const translations = {
   "zh-HK": {
     termsTitle:"📋 使用守則與風險聲明", statsTitle:"📊 歷史數據統計",
@@ -1129,7 +1119,6 @@ const translations = {
   }
 };
 
-// ==================== 同意按鈕 ====================
 var agreeTexts = {
   "zh-HK": { scroll:"請滾動閱讀至最底部", agree:"✅ 我已閱讀並同意，進入系統", alert:"請滾動閱讀至最底部，才能按同意。" },
   "zh-CN": { scroll:"请滚动阅读至最底部", agree:"✅ 我已阅读并同意，进入系统", alert:"请滚动阅读至最底部，才能按同意。" },
@@ -1169,17 +1158,16 @@ function handleAgree() {
   try { loadLeaderboardMini(); } catch(e) { console.error("LB mini error:", e); }
 }
 
-// ==================== 語言切換 ====================
 function applyLanguage(lang) {
   currentLang = lang;
   const t = translations[lang];
   if (!t) return;
   try {
-    document.querySelectorAll("[data-i18n]").forEach(el => {
+    document.querySelectorAll("[data-i18n]").forEach(function(el) {
       const key = el.getAttribute("data-i18n");
       if (t[key]) el.textContent = t[key];
     });
-    document.querySelectorAll("[data-i18n-ph]").forEach(el => {
+    document.querySelectorAll("[data-i18n-ph]").forEach(function(el) {
       const key = el.getAttribute("data-i18n-ph");
       if (t[key]) el.placeholder = t[key];
     });
@@ -1189,12 +1177,11 @@ function applyLanguage(lang) {
     if (lbTitle && t.leaderboardTitle) lbTitle.textContent = t.leaderboardTitle;
     var lbRefresh = document.getElementById("leaderboardRefreshBtn");
     if (lbRefresh && t.leaderboardRefresh) lbRefresh.textContent = t.leaderboardRefresh;
-    // 排行榜彈窗的動態載入文字
     var lbContent = document.getElementById("leaderboardContent");
     if (lbContent && lbContent.querySelector(".leaderboard-loading")) {
       lbContent.querySelector(".leaderboard-loading").textContent = t.leaderboardLoading || "⏳ 載入中...";
     }
-    ["zh-HK","zh-CN","en-US"].forEach(l => {
+    ["zh-HK","zh-CN","en-US"].forEach(function(l) {
       const el = document.getElementById("terms-" + l);
       if (el) el.style.display = (l === lang) ? "block" : "none";
     });
@@ -1227,7 +1214,6 @@ function applyLanguage(lang) {
 }
 function changeLang(lang) { applyLanguage(lang); }
 
-// ==================== 輸入處理 ====================
 function formatOddsInput(input) {
   let val = input.value.replace(/[^0-9.]/g, "");
   const parts = val.split(".");
@@ -1242,14 +1228,13 @@ function formatOddsOnBlur(input) {
   input.value = num.toFixed(2);
 }
 
-// ==================== 讀取 Sheets ====================
 const SHEET_ID = "1zIJSl7Qt3eVkd3qXStZItuFvtcatEnLdfScy95se0WM";
 const SHEET_NAME = "工作表1";
 function fetchCell(range) {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}&range=${range}&t=${Date.now()}`;
-  return fetch(url).then(res => res.text()).then(text => {
+  const url = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=" + SHEET_NAME + "&range=" + range + "&t=" + Date.now();
+  return fetch(url).then(function(res) { return res.text(); }).then(function(text) {
     const json = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
-    const cell = json.table.rows[0]?.c[0];
+    const cell = json.table.rows[0] && json.table.rows[0].c[0];
     return cell ? (cell.f !== undefined ? cell.f : cell.v) : null;
   });
 }
@@ -1258,7 +1243,7 @@ function loadStatsWithRetry() {
   var okCount = 0, totalCount = 7;
   function checkDone() { okCount++; if (okCount === totalCount) statsLoadFailed = 0; }
   function checkFail() { statsLoadFailed++; if (statsLoadFailed >= 3) { statsLoadFailed = 0; setTimeout(loadStatsWithRetry, 3000); } }
-  fetchCell("L7").then(v => {
+  fetchCell("L7").then(function(v) {
     if (v === null || v === undefined) { checkDone(); return; }
     const num = Number(String(v).replace(/,/g, ""));
     const el = document.getElementById("stat-pnl");
@@ -1267,25 +1252,25 @@ function loadStatsWithRetry() {
     else { el.textContent = "0"; el.className = "value neutral"; }
     checkDone();
   }).catch(checkFail);
-  fetchCell("L8").then(v => { document.getElementById("stat-cost").textContent = v !== null ? v : "—"; checkDone(); }).catch(checkFail);
-  fetchCell("L10").then(v => { document.getElementById("stat-bets").textContent = v !== null ? v : "—"; checkDone(); }).catch(checkFail);
-  fetchCell("L11").then(v => { document.getElementById("stat-wins").textContent = v !== null ? v : "—"; checkDone(); }).catch(checkFail);
-  fetchCell("M2").then(v => { document.getElementById("stat-update-date").textContent = v !== null ? v : "—"; checkDone(); }).catch(checkFail);
-  fetchCell("L9").then(v => {
+  fetchCell("L8").then(function(v) { document.getElementById("stat-cost").textContent = v !== null ? v : "—"; checkDone(); }).catch(checkFail);
+  fetchCell("L10").then(function(v) { document.getElementById("stat-bets").textContent = v !== null ? v : "—"; checkDone(); }).catch(checkFail);
+  fetchCell("L11").then(function(v) { document.getElementById("stat-wins").textContent = v !== null ? v : "—"; checkDone(); }).catch(checkFail);
+  fetchCell("M2").then(function(v) { document.getElementById("stat-update-date").textContent = v !== null ? v : "—"; checkDone(); }).catch(checkFail);
+  fetchCell("L9").then(function(v) {
     const el = document.getElementById("stat-roi");
     if (v === null || v === undefined || v === "") { checkDone(); return; }
     let numVal; let strVal = String(v).trim();
-    if (strVal.includes("%")) { numVal = parseFloat(strVal.replace("%", "")); }
+    if (strVal.indexOf("%") >= 0) { numVal = parseFloat(strVal.replace("%", "")); }
     else { numVal = parseFloat(strVal); if (!isNaN(numVal) && Math.abs(numVal) <= 1 && numVal !== 0) numVal = numVal * 100; }
     if (isNaN(numVal)) { checkDone(); return; }
     el.textContent = (numVal > 0 ? "+" : "") + numVal.toFixed(2) + "%";
     el.className = "value " + (numVal > 0 ? "positive" : numVal < 0 ? "negative" : "neutral");
     checkDone();
   }).catch(checkFail);
-  fetchCell("L12").then(v => {
+  fetchCell("L12").then(function(v) {
     if (v === null || v === undefined || v === "") { checkDone(); return; }
     let numVal; let strVal = String(v).trim();
-    if (strVal.includes("%")) { numVal = parseFloat(strVal.replace("%", "")); }
+    if (strVal.indexOf("%") >= 0) { numVal = parseFloat(strVal.replace("%", "")); }
     else { numVal = parseFloat(strVal); if (!isNaN(numVal) && Math.abs(numVal) <= 1 && numVal !== 0) numVal = numVal * 100; }
     if (isNaN(numVal)) { checkDone(); return; }
     document.getElementById("stat-hitrate").textContent = numVal.toFixed(2) + "%";
@@ -1293,7 +1278,6 @@ function loadStatsWithRetry() {
   }).catch(checkFail);
 }
 
-// ==================== 公式（12 層）====================
 function calcBet(hw, dw, aw, ho, doo, ao) {
   if (dw >= PARAMS.p1_cbmin && Math.abs(hw - aw) <= PARAMS.p1_cgap) return "D";
   if (hw >= PARAMS.p2_hmin && aw <= PARAMS.p2_cmax && ho >= PARAMS.p2_dmin/100 && ho <= PARAMS.p2_dmax/100 && ao >= PARAMS.p2_fmin/100 && ao <= PARAMS.p2_fmax/100) return "H";
@@ -1371,7 +1355,7 @@ function showResult(text, className, layer, bet, ev, isReverse, errKey) {
   let hintBox = document.getElementById("hintBox");
   if (className === "result-error") {
     evBox.style.display = "none"; hintBox.style.display = "none"; hintBox.innerText = "";
-    window._lastResult = { text, className, layer, bet, ev, isReverse, errKey };
+    window._lastResult = { text: text, className: className, layer: layer, bet: bet, ev: ev, isReverse: isReverse, errKey: errKey };
     return;
   }
   const t = translations[currentLang];
@@ -1403,10 +1387,9 @@ function showResult(text, className, layer, bet, ev, isReverse, errKey) {
   }
   hintBox.innerText = hintText;
   hintBox.style.display = hintText ? "block" : "none";
-  window._lastResult = { text, className, layer, bet, ev, isReverse };
+  window._lastResult = { text: text, className: className, layer: layer, bet: bet, ev: ev, isReverse: isReverse };
 }
 
-// ==================== 開發者模式 ====================
 function devUnlock() {
   var pwd = prompt("🔒 請輸入開發者密碼：");
   if (pwd === null) return;
@@ -1450,7 +1433,7 @@ function applyParams() {
 
 function resetParams() {
   PARAMS = JSON.parse(JSON.stringify(DEFAULT_PARAMS));
-  Object.keys(PARAMS).forEach(k => {
+  Object.keys(PARAMS).forEach(function(k) {
     var el = document.getElementById(k);
     if (el) el.value = PARAMS[k];
   });
@@ -1492,7 +1475,7 @@ function loadSavedParams() {
     if (saved) {
       var p = JSON.parse(saved);
       PARAMS = Object.assign({}, DEFAULT_PARAMS, p);
-      Object.keys(PARAMS).forEach(k => {
+      Object.keys(PARAMS).forEach(function(k) {
         var el = document.getElementById(k);
         if (el) el.value = PARAMS[k];
       });
@@ -1500,7 +1483,6 @@ function loadSavedParams() {
   } catch(e) {}
 }
 
-// ==================== 資料庫資訊 ====================
 function updateDbInfo() {
   var el = document.getElementById("dbInfo");
   if (!el) return;
@@ -1512,7 +1494,6 @@ function updateDbInfo() {
   }
 }
 
-// ==================== 猜賽果 ====================
 var sheetMatchPool = null;
 var sheetPoolPromise = null;
 
@@ -1664,11 +1645,10 @@ function jitterMatchData(m) {
 function generateMatch() {
   if (!sheetMatchPool || sheetMatchPool.length === 0) return null;
   var idx = Math.floor(Math.random() * sheetMatchPool.length);
-)  var m = sheetMatchPool[idx];
-  return return jitterMatchData({
-    hw;
-: m .hw, dw: m.dw, aw game: m.aw,
-    ho: m.Stateho, doo: m.doo, ao: m.ao,
+  var m = sheetMatchPool[idx];
+  return jitterMatchData({
+    hw: m.hw, dw: m.dw, aw: m.aw,
+    ho: m.ho, doo: m.doo, ao: m.ao,
     score: m.score, result: m.result
   });
 }
@@ -1821,7 +1801,8 @@ function devAutoPredict() {
     return;
   }
   var m = generateMatch();
-  if (!m.current = m;
+  if (!m) return;
+  gameState.current = m;
   displayMatch(m);
   var bet = calcBet(m.hw, m.dw, m.aw, m.ho/100, m.doo/100, m.ao/100);
   if (bet === "skip") {
@@ -1862,7 +1843,6 @@ function devAutoPredict() {
   }
 }
 
-// 🆕 主/和/客 專用模式
 var devSpecialRunning = false;
 function devSpecialPredict(target) {
   if (!devMode) return;
@@ -1876,7 +1856,6 @@ function devSpecialPredict(target) {
   var maxTries = 500;
   var tries = 0;
   var t = translations[currentLang];
-  // 🆕 使用翻譯的標籤
   var targetLabel = target === "H" ? (t.specialHome || "主") : (target === "D" ? (t.specialDraw || "和") : (t.specialAway || "客"));
   showGameMessage((t.specialRunning || "⏳ 搜尋中...") + " (🎯 " + targetLabel + ")", false);
   function tryOne() {
@@ -2015,7 +1994,6 @@ function renderGameResult(guess, animate, roundPnl, isAuto) {
     + '<div class="result-line3">' + line3 + "</div>";
 }
 
-// ==================== 遊戲結束 ====================
 function showGameOver() {
   var t = translations[currentLang];
   var hitRate = gameState.played > 0 ? (gameState.hits / gameState.played * 100) : 0;
@@ -2102,7 +2080,6 @@ function uploadToLeaderboard() {
   });
 }
 
-// ==================== 🏆 排行榜 ====================
 function openLeaderboard() {
   document.getElementById("leaderboardOverlay").classList.add("show");
   loadLeaderboard();
@@ -2233,7 +2210,6 @@ function escapeHtml(str) {
   });
 }
 
-// ==================== Tier ====================
 function getTier(rate) {
   if (rate >= 90)   return { tier:"EX", descKey:"tierEX" };
   if (rate >= 85)   return { tier:"S+", descKey:"tierS" };
@@ -2359,7 +2335,6 @@ function updateTierDisplay(withAnimation) {
   }
 }
 
-// ==================== 綁定 ====================
 function safeBind(id, event, handler) {
   try {
     var el = document.getElementById(id);
@@ -2368,7 +2343,10 @@ function safeBind(id, event, handler) {
   } catch(e) { console.error("綁定失敗:", id, e); }
 }
 
-window.addEventListener("load", function() {
+function initApp() {
+  if (window._qfpInited) return;
+  window._qfpInited = true;
+
   try {
     var savedTheme = "dark";
     try { savedTheme = localStorage.getItem("qfp_theme") || "dark"; } catch(e) {}
@@ -2474,7 +2452,14 @@ window.addEventListener("load", function() {
   try {
     ensureSheetPool().catch(function(e) { console.warn("Pool preload failed:", e); });
   } catch(e) {}
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}
+setTimeout(initApp, 1500);
 </script>
 </body>
 </html>
