@@ -732,7 +732,6 @@ var PARAMS = {
   pb_hmin: 30, pb_dmin: 600, pb_fskip: 750
 };
 var DEFAULT_PARAMS = JSON.parse(JSON.stringify(PARAMS));
-var CALIBRATION = { FAVORITE_BOOST:0.18, DRAW_BOOST:1.25, DRAW_LOW:150, DRAW_HIGH:210, MARGIN_MIN:1.10, MARGIN_MAX:1.16 };
 var currentLang = "zh-HK";
 var devMode = false;
 var TIER_MIN_PLAYED = 5;
@@ -742,6 +741,16 @@ var MAX_PLAYS = 50;
 var comboCount = 0;
 var DEV_PASSWORD = "football";
 var LEADERBOARD_API = "https://script.google.com/macros/s/AKfycbxwY95XQNs8vOTVdzvWJMoYPffto3PiSvt6S2xwRItsy-TcYsD89sF_W_1GnqJwXY4G/exec";
+
+// 🆕 正規化百分比：0~1 視為小數自動 ×100，字串含 % 自動去除
+function normalizePercent(v) {
+  if (v === null || v === undefined || v === "") return 0;
+  var s = String(v).replace(/%/g, "").replace(/\+/g, "").trim();
+  var n = parseFloat(s);
+  if (isNaN(n)) return 0;
+  if (Math.abs(n) > 0 && Math.abs(n) <= 1) n = n * 100;
+  return n;
+}
 
 function calcOverallScore(hitRate, roi) {
   var hitRateNorm = Math.max(0, Math.min(100, hitRate));
@@ -2090,23 +2099,18 @@ function closeLeaderboard() {
   document.getElementById("leaderboardOverlay").classList.remove("show");
 }
 
-// 🆕 驗證排行榜資料合法性（不再依賴 row.score，改以 hitRate / roi 判斷）
 function isValidLeaderboardRow(row) {
   if (!row) return false;
-  var hr = parseFloat(row.hitRate);
-  var rr = parseFloat(row.roi);
-  if (isNaN(hr) || isNaN(rr)) return false;
+  var hr = normalizePercent(row.hitRate);
+  var rr = normalizePercent(row.roi);
   if (hr < 0 || hr > 100) return false;
   if (rr < -100 || rr > 1000) return false;
   return true;
 }
 
 function formatPercent(v, withPlus) {
-  if (v === null || v === undefined || v === "") return "—";
-  var s = String(v).replace(/%/g, "").replace(/\+/g, "").trim();
-  var n = parseFloat(s);
-  if (isNaN(n)) return String(v);
-  if (Math.abs(n) > 0 && Math.abs(n) <= 1) n = n * 100;
+  var n = normalizePercent(v);
+  if (n === 0 && (v === null || v === undefined || v === "")) return "—";
   var sign = (withPlus && n > 0) ? "+" : "";
   return sign + n.toFixed(2) + "%";
 }
@@ -2120,11 +2124,9 @@ function buildLeaderboardRow(row, idx, compact) {
   else if (rank === 2) { rankClass = "silver"; rowClass = "top2"; }
   else if (rank === 3) { rankClass = "bronze"; rowClass = "top3"; }
 
-  // 🆕 用命中率 + ROI 即時計算綜合分數（不讀取 row.score）
-  var hitRateNum = parseFloat(row.hitRate);
-  var roiNum = parseFloat(row.roi);
-  if (isNaN(hitRateNum)) hitRateNum = 0;
-  if (isNaN(roiNum)) roiNum = 0;
+  // 🆕 用 normalizePercent 處理 0~1 小數，再計算綜合分數
+  var hitRateNum = normalizePercent(row.hitRate);
+  var roiNum = normalizePercent(row.roi);
   var scoreNum = calcOverallScore(hitRateNum, roiNum);
 
   var tierObj = getTier(scoreNum);
@@ -2138,7 +2140,6 @@ function buildLeaderboardRow(row, idx, compact) {
   var textColor = style.textColor || style.color || "#fff";
   var tierClass = (tierName === "EX") ? " tier-EX" : "";
   var scoreUnit = t.scoreUnit || " 分";
-  // 🆕 命中率 / ROI 標籤支援多語言
   var lbHitRateLabel = t.hitRate || "命中率";
   var lbRoiLabel = t.roi || "ROI";
   return '<div class="leaderboard-row ' + rowClass + '">'
@@ -2174,10 +2175,10 @@ function loadLeaderboard() {
         content.innerHTML = '<div class="leaderboard-empty">' + (t.leaderboardEmpty || "📭 暫無記錄") + "</div>";
         return;
       }
-      // 🆕 用計算後的分數重新排序
+      // 🆕 用 normalizePercent 計算的分數重新排序
       filtered.sort(function(a, b) {
-        var sa = calcOverallScore(parseFloat(a.hitRate) || 0, parseFloat(a.roi) || 0);
-        var sb = calcOverallScore(parseFloat(b.hitRate) || 0, parseFloat(b.roi) || 0);
+        var sa = calcOverallScore(normalizePercent(a.hitRate), normalizePercent(a.roi));
+        var sb = calcOverallScore(normalizePercent(b.hitRate), normalizePercent(b.roi));
         return sb - sa;
       });
       var html = "";
@@ -2213,10 +2214,10 @@ function loadLeaderboardMini() {
         mini.innerHTML = '<div class="leaderboard-empty">' + (t.leaderboardEmpty || "📭 暫無記錄") + "</div>";
         return;
       }
-      // 🆕 用計算後的分數重新排序
+      // 🆕 用 normalizePercent 計算的分數重新排序
       filtered.sort(function(a, b) {
-        var sa = calcOverallScore(parseFloat(a.hitRate) || 0, parseFloat(a.roi) || 0);
-        var sb = calcOverallScore(parseFloat(b.hitRate) || 0, parseFloat(b.roi) || 0);
+        var sa = calcOverallScore(normalizePercent(a.hitRate), normalizePercent(a.roi));
+        var sb = calcOverallScore(normalizePercent(b.hitRate), normalizePercent(b.roi));
         return sb - sa;
       });
       var html = "";
@@ -2325,7 +2326,6 @@ function updateTierDisplay(withAnimation) {
     scoreValueEl.style.color = style.color;
     scoreValueEl.style.textShadow = "none";
   }
-  // 🆕 命中率 / ROI 標籤支援多語言
   if (detailEl) {
     var lbHitRateLabel = t.hitRate || "命中率";
     var lbRoiLabel = t.roi || "ROI";
