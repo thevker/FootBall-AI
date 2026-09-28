@@ -261,6 +261,17 @@
   .game-dev-btn:disabled { opacity:.4; cursor:not-allowed; }
   .game-dev-badge { display:inline-block; padding:3px 8px; background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.5); border-radius:4px; font-size:10px; font-weight:bold; margin-left:6px; }
 
+  /* 🆕 主/和/客專用按鈕 */
+  .dev-special-btns { display:none; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:6px; }
+  .dev-special-btns.show { display:grid !important; }
+  .dev-special-btn { padding:10px 4px; border-radius:7px; font-size:13px; font-weight:900; cursor:pointer; transition:transform .1s; -webkit-tap-highlight-color:transparent; letter-spacing:.5px; }
+  .dev-special-btn:hover:not(:disabled) { filter:brightness(1.15); }
+  .dev-special-btn:active:not(:disabled) { transform:scale(.95); }
+  .dev-special-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .dev-special-H { background:linear-gradient(135deg,rgba(74,222,128,0.35),rgba(22,163,74,0.25)); color:#4ade80; border:2px solid rgba(74,222,128,0.75); text-shadow:0 0 6px rgba(74,222,128,0.5); }
+  .dev-special-D { background:linear-gradient(135deg,rgba(251,191,36,0.35),rgba(217,119,6,0.25)); color:#fbbf24; border:2px solid rgba(251,191,36,0.75); text-shadow:0 0 6px rgba(251,191,36,0.5); }
+  .dev-special-A { background:linear-gradient(135deg,rgba(96,165,250,0.35),rgba(37,99,235,0.25)); color:#60a5fa; border:2px solid rgba(96,165,250,0.75); text-shadow:0 0 6px rgba(96,165,250,0.5); }
+
   .game-result-box { padding:10px 12px; border-radius:8px; text-align:center; font-size:14px; font-weight:bold; margin-bottom:6px; display:none; line-height:1.4; }
   .game-result-box .result-line1 { font-size:14px; font-weight:bold; text-align:center; }
   .game-result-box .pnl-big { display:inline-block; font-size:18px; font-weight:900; margin-left:8px; letter-spacing:.5px; vertical-align:middle; }
@@ -587,6 +598,13 @@
       <span data-i18n="gameDevBtn">⚡ 開發者連按模式</span> <span class="game-dev-badge">DEV</span>
     </button>
 
+    <!-- 🆕 主/和/客 專用按鈕 -->
+    <div class="dev-special-btns" id="devSpecialBtns">
+      <button class="dev-special-btn dev-special-H" id="gbtnSpecialH">🎯 主專用</button>
+      <button class="dev-special-btn dev-special-D" id="gbtnSpecialD">🎯 和專用</button>
+      <button class="dev-special-btn dev-special-A" id="gbtnSpecialA">🎯 客專用</button>
+    </div>
+
     <div class="game-skip-help" data-i18n="gameSkipHelp">💡 每場從資料庫真實數據隨機抽樣，預設 2 次跳過機會，每玩 10 場 +1 次</div>
 
     <div id="gameResult" class="game-result-box"></div>
@@ -663,7 +681,7 @@
       <div class="dev-layer">
         <div class="dev-layer-title">第 8 層：主強 + 主賠中 → 買和</div>
         <div class="dev-param-grid">
-          <div class="dev-param-item"><label>主勝率下限</label><input type="text" id="p8_hmin" value="40" inputmode="numeric"></div>
+          <div class="dev-param-item"><label>主勝率下限</label><input type="text" id="p8_hmin" value="38" inputmode="numeric"></div>
           <div class="dev-param-item"><label>主賠下限</label><input type="text" id="p8_dmin" value="205" inputmode="numeric"></div>
           <div class="dev-param-item"><label>主賠上限</label><input type="text" id="p8_dmax" value="235" inputmode="numeric"></div>
         </div>
@@ -722,29 +740,17 @@
 <script>
 // ==================== 全域 ====================
 var PARAMS = {
-  // Layer 1: 和勝率高 + 主客接近 → 買和
   p1_cbmin: 32, p1_cgap: 6,
-  // Layer 2: 主強 + 客極弱 + 主賠中低 + 客賠中高 → 買主 (新)
   p2_hmin: 60, p2_cmax: 11, p2_dmin: 140, p2_dmax: 190, p2_fmin: 400, p2_fmax: 460,
-  // Layer 3: 勝率差 + 和賠低 + 主客賠近 → 買和
   p3_wgap: 3, p3_emax: 380, p3_ogap: 40,
-  // Layer 4: 主強 + 客弱 + 主客賠近 + 主賠中 → 買和 (新)
   p4_hmin: 45, p4_cmax: 20, p4_ogap: 70, p4_dmax: 400,
-  // Layer 5: 主客賠差小 → 買和
   p5_ogap: 20,
-  // Layer 6: 主強 + 客賠高 + 勝率差極大 → 買和 (新)
   p6_hmin: 42, p6_dmin: 155, p6_dmax: 205, p6_wgap: 50,
-  // Layer 7: 主強 + 主賠低中 → 買主
   p7_hmin: 42, p7_dmin: 155, p7_dmax: 205,
-  // Layer 8: 主強 + 主賠中 → 買和
-  p8_hmin: 40, p8_dmin: 205, p8_dmax: 235,
-  // Layer 9: 主賠極高 + 主強 + 客賠低 → 買和
+  p8_hmin: 38, p8_dmin: 205, p8_dmax: 235,
   p9_dmin: 340, p9_hmin: 40, p9_fmax: 250,
-  // Layer 10: 客強客冷 → 反向買主
   p10_fmax: 550, p10_emin: 300,
-  // Layer 11: 客強 + 客賠價值 → 買客
   p11_fmin: 185, p11_fmax: 215,
-  // Layer 12: 賠率博弈（兜底）
   pb_hmin: 30, pb_dmin: 600, pb_fskip: 750
 };
 var DEFAULT_PARAMS = JSON.parse(JSON.stringify(PARAMS));
@@ -846,7 +852,7 @@ const translations = {
     hint5:'主客賠率非常接近（相差 0.20 以內），市場認為雙方勢均力敵，和局概率上升，建議買和局。',
     hint6:'主勝率達 42% 以上、主賠 1.55~2.05、客賠高於主賠、但主客勝率差極大（≥50），屬異常信號，系統建議買和局。',
     hint7:'主隊勝率明顯佔優且主賠處於 1.55~2.05 的合理回報區間，主場優勢強勁，建議買主勝。',
-    hint8:'主隊勝率雖高但主賠處於 2.05~2.35，市場對主勝存有疑慮，系統判斷需防冷，建議買和局。',
+    hint8:'主隊勝率達 38% 以上但主賠處於 2.05~2.35，市場對主勝存有疑慮，系統判斷需防冷，建議買和局。',
     hint9:'主賠極高（≥3.40）、主勝率仍達 40% 以上，且客賠合理（<2.50），系統判斷主勝被市場低估，反向買和搏回報。',
     hint10:'客勝率高於主勝率，客隊略為冷門，且和賠合理（>3.00），系統反向買主隊，搏主場優勢。',
     hint11:'客勝率高於主勝率，且客賠處於 1.85～2.15 的高價值區間，客隊具備市場價值，建議買客勝。',
@@ -916,7 +922,9 @@ const translations = {
     leaderboardTop10:'🏆 排行榜 Top 10',
     leaderboardShowAll:'📋 顯示所有排行榜',
     leaderboardTitle:'🏆 排行榜 Top 100',
-    leaderboardRefresh:'🔄 重新載入'
+    leaderboardRefresh:'🔄 重新載入',
+    specialNoMatch:'⚠️ 嘗試多場未找到符合條件的場次',
+    specialRunning:'⏳ 搜尋中...'
   },
   'zh-CN': {
     termsTitle:'📋 使用守则与风险声明', statsTitle:'📊 历史数据统计',
@@ -944,7 +952,7 @@ const translations = {
     hint5:'主客赔率非常接近（相差 0.20 以内），市场认为双方势均力敌，和局概率上升，建议买和局。',
     hint6:'主胜率达 42% 以上、主赔 1.55~2.05、客赔高于主赔、但主客胜率差极大（≥50），属异常信号，系统建议买和局。',
     hint7:'主队胜率明显占优且主赔处于 1.55~2.05 的合理回报区间，主场优势强劲，建议买主胜。',
-    hint8:'主队胜率虽高但主赔处于 2.05~2.35，市场对主胜存有疑虑，系统判断需防冷，建议买和局。',
+    hint8:'主队胜率达 38% 以上但主赔处于 2.05~2.35，市场对主胜存有疑虑，系统判断需防冷，建议买和局。',
     hint9:'主赔极高（≥3.40）、主胜率仍达 40% 以上，且客赔合理（<2.50），系统判断主胜被市场低估，反向买和搏回报。',
     hint10:'客胜率高于主胜率，客队略为冷门，且和赔合理（>3.00），系统反向买主队，搏主场优势。',
     hint11:'客胜率高于主胜率，且客赔处于 1.85～2.15 的高价值区间，客队具备市场价值，建议买客胜。',
@@ -1014,7 +1022,9 @@ const translations = {
     leaderboardTop10:'🏆 排行榜 Top 10',
     leaderboardShowAll:'📋 显示所有排行榜',
     leaderboardTitle:'🏆 排行榜 Top 100',
-    leaderboardRefresh:'🔄 重新加载'
+    leaderboardRefresh:'🔄 重新加载',
+    specialNoMatch:'⚠️ 尝试多场未找到符合条件的场次',
+    specialRunning:'⏳ 搜寻中...'
   },
   'en-US': {
     termsTitle:'📋 Terms of Use & Risk Statement', statsTitle:'📊 Historical Statistics',
@@ -1042,7 +1052,7 @@ const translations = {
     hint5:'Home and away odds very close (within 0.20). Market sees evenly matched teams. Bet Draw.',
     hint6:'Home win rate ≥ 42%, home odds 1.55-2.05, away odds > home odds, but win rate gap ≥ 50 — anomalous signal. Bet Draw.',
     hint7:'Home team advantage with home odds 1.55-2.05 in reasonable range. Bet Home Win.',
-    hint8:'Home win rate high but odds 2.05-2.35 — market doubts. Bet Draw for safety.',
+    hint8:'Home win rate ≥ 38% but odds 2.05-2.35 — market doubts. Bet Draw for safety.',
     hint9:'Home odds very high (≥3.40) but home win rate still ≥ 40%, away odds < 2.50. Bet Draw as contrarian.',
     hint10:'Away win rate exceeds home, away slightly underdog, draw odds reasonable (>3.00). System bets Home Win as contrarian.',
     hint11:'Away win rate exceeds home, away odds in 1.85-2.15 high-value zone. Bet Away Win.',
@@ -1112,7 +1122,9 @@ const translations = {
     leaderboardTop10:'🏆 Leaderboard Top 10',
     leaderboardShowAll:'📋 Show Full Leaderboard',
     leaderboardTitle:'🏆 Leaderboard Top 100',
-    leaderboardRefresh:'🔄 Refresh'
+    leaderboardRefresh:'🔄 Refresh',
+    specialNoMatch:'⚠️ No matching match found after many tries',
+    specialRunning:'⏳ Searching...'
   }
 };
 
@@ -1278,19 +1290,19 @@ function loadStatsWithRetry() {
 function calcBet(hw, dw, aw, ho, doo, ao) {
   // Layer 1: 和勝率高 + 主客接近 → 買和
   if (dw >= PARAMS.p1_cbmin && Math.abs(hw - aw) <= PARAMS.p1_cgap) return "D";
-  // Layer 2: 主強 + 客極弱 + 主賠中低 + 客賠中高 → 買主 (新)
+  // Layer 2: 主強 + 客極弱 + 主賠中低 + 客賠中高 → 買主
   if (hw >= PARAMS.p2_hmin && aw <= PARAMS.p2_cmax && ho >= PARAMS.p2_dmin/100 && ho <= PARAMS.p2_dmax/100 && ao >= PARAMS.p2_fmin/100 && ao <= PARAMS.p2_fmax/100) return "H";
   // Layer 3: 勝率差 + 和賠低 + 主客賠近 → 買和
   if (Math.abs(hw - aw) <= PARAMS.p3_wgap && doo * 100 < PARAMS.p3_emax && Math.abs(ho - ao) * 100 < PARAMS.p3_ogap) return "D";
-  // Layer 4: 主強 + 客弱 + 主客賠近 + 主賠中 → 買和 (新)
+  // Layer 4: 主強 + 客弱 + 主客賠近 + 主賠中 → 買和
   if (hw >= PARAMS.p4_hmin && aw <= PARAMS.p4_cmax && Math.abs(ho - ao) * 100 < PARAMS.p4_ogap && ho < PARAMS.p4_dmax/100) return "D";
   // Layer 5: 主客賠差小 → 買和
   if (Math.abs(ho - ao) * 100 < PARAMS.p5_ogap) return "D";
-  // Layer 6: 主強 + 客賠高 + 勝率差極大 → 買和 (新)
+  // Layer 6: 主強 + 客賠高 + 勝率差極大 → 買和
   if (hw >= PARAMS.p6_hmin && ho >= PARAMS.p6_dmin/100 && ho < PARAMS.p6_dmax/100 && ho !== ao && ao > ho && Math.abs(hw - aw) >= PARAMS.p6_wgap) return "D";
   // Layer 7: 主強 + 主賠低中 → 買主
   if (hw >= PARAMS.p7_hmin && ho >= PARAMS.p7_dmin/100 && ho < PARAMS.p7_dmax/100 && ho !== ao) return "H";
-  // Layer 8: 主強 + 主賠中 → 買和
+  // Layer 8: 主強 + 主賠中 → 買和（A≥38）
   if (hw >= PARAMS.p8_hmin && ho > PARAMS.p8_dmin/100 && ho <= PARAMS.p8_dmax/100 && ho !== ao) return "D";
   // Layer 9: 主賠極高 + 主強 + 客賠低 → 買和
   if (ho >= PARAMS.p9_dmin/100 && hw >= PARAMS.p9_hmin && ao < PARAMS.p9_fmax/100 && ho > ao) return "D";
@@ -1337,9 +1349,9 @@ function calculate() {
   if (hwVal === '' || dwVal === '' || awVal === '' || hoVal === '' || dooVal === '' || aoVal === '') {
     showResult(t.errIncomplete, "result-error", 0, "skip", null, false, 'incomplete'); return;
   }
-  let hw = Number(hwVal), dw = Number(dwVal), aw = Number(awVal);
-  let ho = Number(hoVal), doo = Number(dooVal), ao = Number(aoVal);
-  if (isNaN(hw) || isNaN(dw) || isNaN(aw) || isNaN(ho) || isNaN(doo) || isNaN(ao)) {
+  let hw = Number(hwVal), dw = Number(dwValGame), aw = Number(awVal);
+  letMessage ho = Number((thoVal), doo = Number(doolVal), ao = Number(a.gameoVal);
+  if (isNoNaN(hw) || isNaN(dw) || isNaN(aw) || isNaN(ho) || isNaN(doo) || isNaN(ao)) {
     showResult(t.errIncomplete, "result-error", 0, "skip", null, false, 'incomplete'); return;
   }
   if (hw + dw + aw > 100) { showResult(t.errOver100, "result-error", 0, "skip", null, false, 'over100'); return; }
@@ -1407,6 +1419,7 @@ function devUnlock() {
     devMode = true;
     var t = translations[currentLang];
     document.getElementById('gbtnDev').style.display = 'block';
+    document.getElementById('devSpecialBtns').classList.add('show');
     document.getElementById('devUnlockBtn').style.display = 'none';
     document.getElementById('devSettingsRow').classList.add('show');
     showToast(t.toastDevUnlocked || '✅ 開發者模式已啟用', 'success');
@@ -1690,7 +1703,7 @@ function gameNewRound() {
     var tl = translations[currentLang];
     showGameMessage(tl.gameLoading || '⏳ 載入比賽數據中...', false);
     ensureSheetPool().then(function(pool) {
-      if (!pool || pool.length === 0) { showGameMessage(tl.gameNoData || '⚠️ 暫無比賽數據', true); return; }
+      if (!pool || pool.length === 0) { showData || '⚠️ 暫無比賽數據', true); return; }
       gameNewRound();
     }).catch(function() { showGameMessage(tl.gameLoadError || '⚠️ 載入數據失敗', true); });
     return;
@@ -1840,6 +1853,85 @@ function devAutoPredict() {
   document.getElementById('gameRate').textContent = rate;
   updatePnlDisplay();
   updateTierDisplay(true);
+  gameState.current = generateMatch();
+  gameState.waiting = true;
+  gameState.lastGuess = null;
+  if (gameState.current) displayMatch(gameState.current);
+  if (isMaxPlayReached()) {
+    setTimeout(function() { showGameOver(); }, 800);
+  }
+}
+
+// 🆕 主/和/客 專用模式：自動連續抽樣直到命中該選項，跳過不消耗次數
+var devSpecialRunning = false;
+function devSpecialPredict(target) {
+  if (!devMode) return;
+  if (devSpecialRunning) return; // 防重入
+  if (isMaxPlayReached()) { showGameOver(); return; }
+  if (!sheetMatchPool || sheetMatchPool.length === 0) {
+    ensureSheetPool().then(function() { devSpecialPredict(target); }).catch(function() {});
+    return;
+  }
+  devSpecialRunning = true;
+  var maxTries = 500;
+  var tries = 0;
+  var t = translations[currentLang];
+  // 顯示搜尋中
+  showGameMessage((t.specialRunning || '⏳ 搜尋中...') + ' (🎯 ' + (target === 'H' ? '主' : target === 'D' ? '和' : '客') + ')', false);
+  function tryOne() {
+    if (tries >= maxTries) {
+      devSpecialRunning = false;
+      showToast(t.specialNoMatch || '⚠️ 未找到符合條件的場次', 'info');
+      clearGameMessage();
+      return;
+    }
+    if (isMaxPlayReached()) {
+      devSpecialRunning = false;
+      showGameOver();
+      return;
+    }
+    var m = generateMatch();
+    if (!m) { devSpecialRunning = false; return; }
+    var bet = calcBet(m.hw, m.dw, m.aw, m.ho/100, m.doo/100, m.ao/100);
+    if (bet === target) {
+      // 命中！執行下注
+      devSpecialRunning = false;
+      gameState.current = m;
+      displayMatch(m);
+      devSpecialExecute(m, target);
+      return;
+    }
+    // 不消耗次數跳過
+    tries++;
+    setTimeout(tryOne, 25);
+  }
+  tryOne();
+}
+
+function devSpecialExecute(m, bet) {
+  var result = m.result;
+  var isWin = (bet === result);
+  var odds;
+  if (result === "H") odds = m.ho / 100;
+  else if (result === "D") odds = m.doo / 100;
+  else odds = m.ao / 100;
+  var roundPnl = isWin ? Math.round(odds * 100 - 100) : -100;
+  gameState.played++;
+  if (isWin) {
+    gameState.hits++;
+    comboCount++;
+    if (comboCount >= 3) showComboPopup(comboCount);
+  } else comboCount = 0;
+  gameState.totalPnl += roundPnl;
+  gameState.lastGuess = bet;
+  renderGameResult(bet, true, roundPnl, true);
+  document.getElementById('gamePlayed').textContent = gameState.played;
+  document.getElementById('gameHits').textContent = gameState.hits;
+  var rate = gameState.played > 0 ? (gameState.hits / gameState.played * 100).toFixed(1) + '%' : '—';
+  document.getElementById('gameRate').textContent = rate;
+  updatePnlDisplay();
+  updateTierDisplay(true);
+  // 準備下一場
   gameState.current = generateMatch();
   gameState.waiting = true;
   gameState.lastGuess = null;
@@ -2341,6 +2433,14 @@ window.addEventListener('load', function() {
   if (gbtnSkip) gbtnSkip.addEventListener('click', gameSkip);
   var gbtnNew = document.getElementById('gameNewBtn');
   if (gbtnNew) gbtnNew.addEventListener('click', gameNewRound);
+
+  // 🆕 主/和/客 專用按鈕綁定
+  var gbtnSpecialH = document.getElementById('gbtnSpecialH');
+  if (gbtnSpecialH) gbtnSpecialH.addEventListener('click', function() { devSpecialPredict('H'); });
+  var gbtnSpecialD = document.getElementById('gbtnSpecialD');
+  if (gbtnSpecialD) gbtnSpecialD.addEventListener('click', function() { devSpecialPredict('D'); });
+  var gbtnSpecialA = document.getElementById('gbtnSpecialA');
+  if (gbtnSpecialA) gbtnSpecialA.addEventListener('click', function() { devSpecialPredict('A'); });
 
   var restartBtn = document.getElementById('gameOverRestartBtn');
   if (restartBtn) restartBtn.addEventListener('click', restartGame);
