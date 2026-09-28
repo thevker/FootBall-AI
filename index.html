@@ -884,6 +884,7 @@ const translations = {
     devBtnApply:"✅ 套用參數",
     devUnlockBtn:"🔒 開發者模式",
     devPanelTitle:"⚙️ 系統公式參數調整",
+    devPasswordPrompt:"🔒 請輸入開發者密碼：",
     goTitle:"🏁 挑戰結束！",
     goSub:"已完成 50 場",
     goHitRate:"命中率", goRoi:"ROI", goScore:"綜合分數", goPnl:"總盈虧",
@@ -991,6 +992,7 @@ const translations = {
     devBtnApply:"✅ 套用参数",
     devUnlockBtn:"🔒 开发者模式",
     devPanelTitle:"⚙️ 系统公式参数调整",
+    devPasswordPrompt:"🔒 请输入开发者密码：",
     goTitle:"🏁 挑战结束！",
     goSub:"已完成 50 场",
     goHitRate:"命中率", goRoi:"ROI", goScore:"综合分数", goPnl:"总盈亏",
@@ -1098,6 +1100,7 @@ const translations = {
     devBtnApply:"✅ Apply Params",
     devUnlockBtn:"🔒 Developer Mode",
     devPanelTitle:"⚙️ System Formula Parameters",
+    devPasswordPrompt:"🔒 Enter developer password:",
     goTitle:"🏁 Challenge Complete!",
     goSub:"50 matches played",
     goHitRate:"Hit Rate", goRoi:"ROI", goScore:"Score", goPnl:"Total P/L",
@@ -1391,11 +1394,11 @@ function showResult(text, className, layer, bet, ev, isReverse, errKey) {
 }
 
 function devUnlock() {
-  var pwd = prompt("🔒 請輸入開發者密碼：");
+  var t = translations[currentLang] || translations["zh-HK"];
+  var pwd = prompt(t.devPasswordPrompt || "🔒 請輸入開發者密碼：");
   if (pwd === null) return;
   if (pwd === DEV_PASSWORD) {
     devMode = true;
-    var t = translations[currentLang];
     var gb = document.getElementById("gbtnDev");
     if (gb) gb.style.display = "block";
     var sb = document.getElementById("devSpecialBtns");
@@ -1406,8 +1409,7 @@ function devUnlock() {
     if (sr) sr.classList.add("show");
     showToast(t.toastDevUnlocked || "✅ 開發者模式已啟用", "success");
   } else {
-    var tl = translations[currentLang];
-    showToast(tl.toastDevWrongPwd || "❌ 密碼錯誤", "error");
+    showToast(t.toastDevWrongPwd || "❌ 密碼錯誤", "error");
   }
 }
 
@@ -2088,11 +2090,15 @@ function closeLeaderboard() {
   document.getElementById("leaderboardOverlay").classList.remove("show");
 }
 
+// 🆕 驗證排行榜資料合法性（不再依賴 row.score，改以 hitRate / roi 判斷）
 function isValidLeaderboardRow(row) {
   if (!row) return false;
-  var score = parseFloat(row.score);
-  if (isNaN(score)) return false;
-  return score >= 0 && score <= 100;
+  var hr = parseFloat(row.hitRate);
+  var rr = parseFloat(row.roi);
+  if (isNaN(hr) || isNaN(rr)) return false;
+  if (hr < 0 || hr > 100) return false;
+  if (rr < -100 || rr > 1000) return false;
+  return true;
 }
 
 function formatPercent(v, withPlus) {
@@ -2106,14 +2112,21 @@ function formatPercent(v, withPlus) {
 }
 
 function buildLeaderboardRow(row, idx, compact) {
+  var t = translations[currentLang] || translations["zh-HK"];
   var rank = idx + 1;
   var rankClass = "";
   var rowClass = "";
   if (rank === 1) { rankClass = "gold"; rowClass = "top1"; }
   else if (rank === 2) { rankClass = "silver"; rowClass = "top2"; }
   else if (rank === 3) { rankClass = "bronze"; rowClass = "top3"; }
-  var scoreNum = parseFloat(row.score);
-  if (isNaN(scoreNum)) scoreNum = 0;
+
+  // 🆕 用命中率 + ROI 即時計算綜合分數（不讀取 row.score）
+  var hitRateNum = parseFloat(row.hitRate);
+  var roiNum = parseFloat(row.roi);
+  if (isNaN(hitRateNum)) hitRateNum = 0;
+  if (isNaN(roiNum)) roiNum = 0;
+  var scoreNum = calcOverallScore(hitRateNum, roiNum);
+
   var tierObj = getTier(scoreNum);
   var tierName = tierObj.tier;
   var family = getTierFamily(tierName);
@@ -2124,13 +2137,15 @@ function buildLeaderboardRow(row, idx, compact) {
   var scoreStr = scoreNum.toFixed(2);
   var textColor = style.textColor || style.color || "#fff";
   var tierClass = (tierName === "EX") ? " tier-EX" : "";
-  var t = translations[currentLang] || translations["zh-HK"];
   var scoreUnit = t.scoreUnit || " 分";
+  // 🆕 命中率 / ROI 標籤支援多語言
+  var lbHitRateLabel = t.hitRate || "命中率";
+  var lbRoiLabel = t.roi || "ROI";
   return '<div class="leaderboard-row ' + rowClass + '">'
     + '<div class="leaderboard-rank ' + rankClass + '">' + rank + "</div>"
     + '<div class="leaderboard-info">'
     +   '<div class="leaderboard-name">' + escapeHtml(row.name || "—") + "</div>"
-    +   '<div class="leaderboard-meta">🎯 ' + hitRateStr + " · 💰 " + roiStr + "</div>"
+    +   '<div class="leaderboard-meta">🎯 ' + lbHitRateLabel + ' ' + hitRateStr + " · 💰 " + lbRoiLabel + " " + roiStr + "</div>"
     + "</div>"
     + '<div class="leaderboard-right">'
     +   '<div class="leaderboard-tier' + tierClass + '" style="background:' + style.bg + ";color:" + textColor + ";border:1px solid " + style.border + ';">' + tierName + "</div>"
@@ -2159,6 +2174,12 @@ function loadLeaderboard() {
         content.innerHTML = '<div class="leaderboard-empty">' + (t.leaderboardEmpty || "📭 暫無記錄") + "</div>";
         return;
       }
+      // 🆕 用計算後的分數重新排序
+      filtered.sort(function(a, b) {
+        var sa = calcOverallScore(parseFloat(a.hitRate) || 0, parseFloat(a.roi) || 0);
+        var sb = calcOverallScore(parseFloat(b.hitRate) || 0, parseFloat(b.roi) || 0);
+        return sb - sa;
+      });
       var html = "";
       filtered.slice(0, 100).forEach(function(row, idx) {
         html += buildLeaderboardRow(row, idx, false);
@@ -2192,6 +2213,12 @@ function loadLeaderboardMini() {
         mini.innerHTML = '<div class="leaderboard-empty">' + (t.leaderboardEmpty || "📭 暫無記錄") + "</div>";
         return;
       }
+      // 🆕 用計算後的分數重新排序
+      filtered.sort(function(a, b) {
+        var sa = calcOverallScore(parseFloat(a.hitRate) || 0, parseFloat(a.roi) || 0);
+        var sb = calcOverallScore(parseFloat(b.hitRate) || 0, parseFloat(b.roi) || 0);
+        return sb - sa;
+      });
       var html = "";
       filtered.slice(0, 10).forEach(function(row, idx) {
         html += buildLeaderboardRow(row, idx, true);
@@ -2298,9 +2325,12 @@ function updateTierDisplay(withAnimation) {
     scoreValueEl.style.color = style.color;
     scoreValueEl.style.textShadow = "none";
   }
+  // 🆕 命中率 / ROI 標籤支援多語言
   if (detailEl) {
+    var lbHitRateLabel = t.hitRate || "命中率";
+    var lbRoiLabel = t.roi || "ROI";
     detailEl.innerHTML = (t.tierFormula || "綜合分數 = 命中率 × 70% + ROI × 30%") +
-      "<br>（命中率 " + hitRateNorm.toFixed(2) + " × 70% + ROI " + roiNorm.toFixed(2) + " × 30%）";
+      "<br>（" + lbHitRateLabel + " " + hitRateNorm.toFixed(2) + " × 70% + " + lbRoiLabel + " " + roiNorm.toFixed(2) + " × 30%）";
   }
 
   tierEl.style.display = "block";
