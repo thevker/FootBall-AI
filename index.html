@@ -351,14 +351,14 @@
 <div class="leaderboard-overlay" id="leaderboardOverlay">
   <div class="leaderboard-box">
     <div class="leaderboard-header">
-      <div class="leaderboard-title">🏆 排行榜 Top 100</div>
+      <div class="leaderboard-title" data-i18n="leaderboardTitle">🏆 排行榜 Top 100</div>
       <button class="leaderboard-close" id="leaderboardCloseBtn">✖</button>
     </div>
     <div class="leaderboard-content" id="leaderboardContent">
       <div class="leaderboard-loading">⏳ 載入中...</div>
     </div>
     <div class="leaderboard-footer">
-      <button class="leaderboard-refresh" id="leaderboardRefreshBtn">🔄 重新載入</button>
+      <button class="leaderboard-refresh" id="leaderboardRefreshBtn" data-i18n="leaderboardRefresh">🔄 重新載入</button>
     </div>
   </div>
 </div>
@@ -574,9 +574,9 @@
     </button>
 
     <div class="dev-special-btns" id="devSpecialBtns">
-      <button class="dev-special-btn dev-special-H" id="gbtnSpecialH">🎯 主專用</button>
-      <button class="dev-special-btn dev-special-D" id="gbtnSpecialD">🎯 和專用</button>
-      <button class="dev-special-btn dev-special-A" id="gbtnSpecialA">🎯 客專用</button>
+      <button class="dev-special-btn dev-special-H" id="gbtnSpecialH" data-i18n="devSpecialH">🎯 主專用</button>
+      <button class="dev-special-btn dev-special-D" id="gbtnSpecialD" data-i18n="devSpecialD">🎯 和專用</button>
+      <button class="dev-special-btn dev-special-A" id="gbtnSpecialA" data-i18n="devSpecialA">🎯 客專用</button>
     </div>
 
     <div class="game-skip-help" data-i18n="gameSkipHelp">💡 每場從資料庫真實數據隨機抽樣，預設 2 次跳過機會，每玩 10 場 +1 次</div>
@@ -712,7 +712,6 @@
 </div>
 
 <script>
-// ===== 全域錯誤捕捉（避免某處錯誤導致整頁失效）=====
 window.onerror = function(msg, src, line, col, err) {
   console.error('🚨 JS Error:', msg, 'at', src, line + ':' + col, err);
   return false;
@@ -739,8 +738,9 @@ var currentLang = "zh-HK";
 var devMode = false;
 
 var TIER_MIN_PLAYED = 5;
-var TIER_WEIGHT_HITRATE = 0.5;
-var TIER_WEIGHT_ROI = 0.5;
+// 🆕 權重：命中率 70% + ROI 30%
+var TIER_WEIGHT_HITRATE = 0.7;
+var TIER_WEIGHT_ROI = 0.3;
 
 var MAX_PLAYS = 50;
 
@@ -862,7 +862,8 @@ const translations = {
     tierA:"⭐ 優秀！表現出色！", tierB:"🎯 表現不俗！繼續努力！",
     tierC:"📊 一般水平，仍有進步空間",
     tierD:"⚠️ 需要改進，加油！", tierE:"💪 繼續努力！多練習！",
-    tierFormula:"綜合分數 = 命中率 × 50% + ROI × 50%",
+    tierFormula:"綜合分數 = 命中率 × 70% + ROI × 30%",
+    scoreUnit:" 分",
     comboStreak:"連勝 x",
     gameSkipBtn:"⏭️ 跳過本場", gameSkipInfoPrefix:"剩 ", gameSkipInfoSuffix:" 次",
     gameSkipHelp:"💡 每場從資料庫真實數據隨機抽樣，預設 2 次跳過機會，每玩 10 場 +1 次",
@@ -871,6 +872,7 @@ const translations = {
     gameAutoBtn:"🤖 自動預測（系統公式）",
     gameAutoSkip:"🤖 系統建議不出手（Skip），請手動選擇或跳過",
     gameDevBtn:"⚡ 開發者連按模式",
+    devSpecialH:"🎯 主專用", devSpecialD:"🎯 和專用", devSpecialA:"🎯 客專用",
     gameLoading:"⏳ 載入比賽數據中...",
     gameNoData:"⚠️ 暫無比賽數據，請稍後再試",
     gameLoadError:"⚠️ 載入數據失敗，請檢查網絡",
@@ -903,8 +905,13 @@ const translations = {
     leaderboardShowAll:"📋 顯示所有排行榜",
     leaderboardTitle:"🏆 排行榜 Top 100",
     leaderboardRefresh:"🔄 重新載入",
+    leaderboardLoading:"⏳ 載入中...",
+    leaderboardEmpty:"📭 暫無記錄，快來成為第一名！",
+    leaderboardLoadFailed:"⚠️ 載入失敗，請稍後再試",
+    leaderboardApiMissing:"⚠️ 排行榜 API 未設定",
     specialNoMatch:"⚠️ 嘗試多場未找到符合條件的場次",
-    specialRunning:"⏳ 搜尋中..."
+    specialRunning:"⏳ 搜尋中...",
+    specialHome:"主", specialDraw:"和", specialAway:"客"
   },
   "zh-CN": {
     termsTitle:"📋 使用守则与风险声明", statsTitle:"📊 历史数据统计",
@@ -962,7 +969,8 @@ const translations = {
     tierA:"⭐ 优秀！表现出色！", tierB:"🎯 表现不俗！继续努力！",
     tierC:"📊 一般水平，仍有进步空间",
     tierD:"⚠️ 需要改进，加油！", tierE:"💪 继续努力！多练习！",
-    tierFormula:"综合分数 = 命中率 × 50% + ROI × 50%",
+    tierFormula:"综合分数 = 命中率 × 70% + ROI × 30%",
+    scoreUnit:" 分",
     comboStreak:"连胜 x",
     gameSkipBtn:"⏭️ 跳过本场", gameSkipInfoPrefix:"剩 ", gameSkipInfoSuffix:" 次",
     gameSkipHelp:"💡 每场从数据库真实数据随机抽样，预设 2 次跳过机会，每玩 10 场 +1 次",
@@ -971,6 +979,7 @@ const translations = {
     gameAutoBtn:"🤖 自动预测（系统公式）",
     gameAutoSkip:"🤖 系统建议不出手（Skip），请手动选择或跳过",
     gameDevBtn:"⚡ 开发者连按模式",
+    devSpecialH:"🎯 主专用", devSpecialD:"🎯 和专用", devSpecialA:"🎯 客专用",
     gameLoading:"⏳ 加载比赛数据中...",
     gameNoData:"⚠️ 暂无比赛数据，请稍后再试",
     gameLoadError:"⚠️ 加载数据失败，请检查网络",
@@ -1003,8 +1012,13 @@ const translations = {
     leaderboardShowAll:"📋 显示所有排行榜",
     leaderboardTitle:"🏆 排行榜 Top 100",
     leaderboardRefresh:"🔄 重新加载",
+    leaderboardLoading:"⏳ 加载中...",
+    leaderboardEmpty:"📭 暂无记录，快来成为第一名！",
+    leaderboardLoadFailed:"⚠️ 加载失败，请稍后再试",
+    leaderboardApiMissing:"⚠️ 排行榜 API 未设置",
     specialNoMatch:"⚠️ 尝试多场未找到符合条件的场次",
-    specialRunning:"⏳ 搜寻中..."
+    specialRunning:"⏳ 搜寻中...",
+    specialHome:"主", specialDraw:"和", specialAway:"客"
   },
   "en-US": {
     termsTitle:"📋 Terms of Use & Risk Statement", statsTitle:"📊 Historical Statistics",
@@ -1062,7 +1076,8 @@ const translations = {
     tierA:"⭐ Excellent! Outstanding performance!", tierB:"🎯 Decent performance! Keep pushing!",
     tierC:"📊 Average, room to improve",
     tierD:"⚠️ Needs improvement, keep going!", tierE:"💪 Keep practicing! You will get there!",
-    tierFormula:"Score = Hit Rate × 50% + ROI × 50%",
+    tierFormula:"Score = Hit Rate × 70% + ROI × 30%",
+    scoreUnit:" pts",
     comboStreak:"STREAK x",
     gameSkipBtn:"⏭️ Skip Match", gameSkipInfoPrefix:"Left ", gameSkipInfoSuffix:"",
     gameSkipHelp:"💡 Each match is randomly sampled from real database. Default 2 skips, +1 every 10 plays",
@@ -1071,6 +1086,7 @@ const translations = {
     gameAutoBtn:"🤖 Auto Predict (System Formula)",
     gameAutoSkip:"🤖 System recommends SKIP. Please choose manually or skip.",
     gameDevBtn:"⚡ Developer Rapid Mode",
+    devSpecialH:"🎯 Home only", devSpecialD:"🎯 Draw only", devSpecialA:"🎯 Away only",
     gameLoading:"⏳ Loading match data...",
     gameNoData:"⚠️ No match data available. Please try again later.",
     gameLoadError:"⚠️ Failed to load data. Please check your connection.",
@@ -1103,8 +1119,13 @@ const translations = {
     leaderboardShowAll:"📋 Show Full Leaderboard",
     leaderboardTitle:"🏆 Leaderboard Top 100",
     leaderboardRefresh:"🔄 Refresh",
+    leaderboardLoading:"⏳ Loading...",
+    leaderboardEmpty:"📭 No records yet. Be the first!",
+    leaderboardLoadFailed:"⚠️ Load failed. Please try again.",
+    leaderboardApiMissing:"⚠️ Leaderboard API not configured",
     specialNoMatch:"⚠️ No matching match found after many tries",
-    specialRunning:"⏳ Searching..."
+    specialRunning:"⏳ Searching...",
+    specialHome:"Home", specialDraw:"Draw", specialAway:"Away"
   }
 };
 
@@ -1168,6 +1189,11 @@ function applyLanguage(lang) {
     if (lbTitle && t.leaderboardTitle) lbTitle.textContent = t.leaderboardTitle;
     var lbRefresh = document.getElementById("leaderboardRefreshBtn");
     if (lbRefresh && t.leaderboardRefresh) lbRefresh.textContent = t.leaderboardRefresh;
+    // 排行榜彈窗的動態載入文字
+    var lbContent = document.getElementById("leaderboardContent");
+    if (lbContent && lbContent.querySelector(".leaderboard-loading")) {
+      lbContent.querySelector(".leaderboard-loading").textContent = t.leaderboardLoading || "⏳ 載入中...";
+    }
     ["zh-HK","zh-CN","en-US"].forEach(l => {
       const el = document.getElementById("terms-" + l);
       if (el) el.style.display = (l === lang) ? "block" : "none";
@@ -1638,10 +1664,11 @@ function jitterMatchData(m) {
 function generateMatch() {
   if (!sheetMatchPool || sheetMatchPool.length === 0) return null;
   var idx = Math.floor(Math.random() * sheetMatchPool.length);
-  var m = sheetMatchPool[idx];
-  return jitterMatchData({
-    hw: m.hw, dw: m.dw, aw: m.aw,
-    ho: m.ho, doo: m.doo, ao: m.ao,
+)  var m = sheetMatchPool[idx];
+  return return jitterMatchData({
+    hw;
+: m .hw, dw: m.dw, aw game: m.aw,
+    ho: m.Stateho, doo: m.doo, ao: m.ao,
     score: m.score, result: m.result
   });
 }
@@ -1794,8 +1821,7 @@ function devAutoPredict() {
     return;
   }
   var m = generateMatch();
-  if (!m) return;
-  gameState.current = m;
+  if (!m.current = m;
   displayMatch(m);
   var bet = calcBet(m.hw, m.dw, m.aw, m.ho/100, m.doo/100, m.ao/100);
   if (bet === "skip") {
@@ -1850,7 +1876,8 @@ function devSpecialPredict(target) {
   var maxTries = 500;
   var tries = 0;
   var t = translations[currentLang];
-  var targetLabel = target === "H" ? "主" : (target === "D" ? "和" : "客");
+  // 🆕 使用翻譯的標籤
+  var targetLabel = target === "H" ? (t.specialHome || "主") : (target === "D" ? (t.specialDraw || "和") : (t.specialAway || "客"));
   showGameMessage((t.specialRunning || "⏳ 搜尋中...") + " (🎯 " + targetLabel + ")", false);
   function tryOne() {
     if (tries >= maxTries) {
@@ -2120,6 +2147,8 @@ function buildLeaderboardRow(row, idx, compact) {
   var scoreStr = scoreNum.toFixed(2);
   var textColor = style.textColor || style.color || "#fff";
   var tierClass = (tierName === "EX") ? " tier-EX" : "";
+  var t = translations[currentLang] || translations["zh-HK"];
+  var scoreUnit = t.scoreUnit || " 分";
   return '<div class="leaderboard-row ' + rowClass + '">'
     + '<div class="leaderboard-rank ' + rankClass + '">' + rank + "</div>"
     + '<div class="leaderboard-info">'
@@ -2128,28 +2157,29 @@ function buildLeaderboardRow(row, idx, compact) {
     + "</div>"
     + '<div class="leaderboard-right">'
     +   '<div class="leaderboard-tier' + tierClass + '" style="background:' + style.bg + ";color:" + textColor + ";border:1px solid " + style.border + ';">' + tierName + "</div>"
-    +   '<div class="leaderboard-score">' + scoreStr + " 分</div>"
+    +   '<div class="leaderboard-score">' + scoreStr + scoreUnit + "</div>"
     + "</div>"
     + "</div>";
 }
 
 function loadLeaderboard() {
+  var t = translations[currentLang] || translations["zh-HK"];
   var content = document.getElementById("leaderboardContent");
-  content.innerHTML = '<div class="leaderboard-loading">⏳ 載入中...</div>';
+  content.innerHTML = '<div class="leaderboard-loading">' + (t.leaderboardLoading || "⏳ 載入中...") + "</div>";
   if (!LEADERBOARD_API) {
-    content.innerHTML = '<div class="leaderboard-empty">⚠️ 排行榜 API 未設定</div>';
+    content.innerHTML = '<div class="leaderboard-empty">' + (t.leaderboardApiMissing || "⚠️ 排行榜 API 未設定") + "</div>";
     return;
   }
   fetch(LEADERBOARD_API + "?t=" + Date.now())
     .then(function(r) { return r.json(); })
     .then(function(res) {
       if (!res.ok || !res.data) {
-        content.innerHTML = '<div class="leaderboard-empty">⚠️ 載入失敗</div>';
+        content.innerHTML = '<div class="leaderboard-empty">' + (t.leaderboardLoadFailed || "⚠️ 載入失敗") + "</div>";
         return;
       }
       var filtered = res.data.filter(isValidLeaderboardRow);
       if (filtered.length === 0) {
-        content.innerHTML = '<div class="leaderboard-empty">📭 暫無記錄，快來成為第一名！</div>';
+        content.innerHTML = '<div class="leaderboard-empty">' + (t.leaderboardEmpty || "📭 暫無記錄") + "</div>";
         return;
       }
       var html = "";
@@ -2160,28 +2190,29 @@ function loadLeaderboard() {
     })
     .catch(function(e) {
       console.error("Leaderboard error:", e);
-      content.innerHTML = '<div class="leaderboard-empty">⚠️ 載入失敗，請稍後再試</div>';
+      content.innerHTML = '<div class="leaderboard-empty">' + (t.leaderboardLoadFailed || "⚠️ 載入失敗，請稍後再試") + "</div>";
     });
 }
 
 function loadLeaderboardMini() {
+  var t = translations[currentLang] || translations["zh-HK"];
   var mini = document.getElementById("leaderboardMini");
   if (!mini) return;
-  mini.innerHTML = '<div class="leaderboard-loading">⏳ 載入中...</div>';
+  mini.innerHTML = '<div class="leaderboard-loading">' + (t.leaderboardLoading || "⏳ 載入中...") + "</div>";
   if (!LEADERBOARD_API) {
-    mini.innerHTML = '<div class="leaderboard-empty">⚠️ 排行榜 API 未設定</div>';
+    mini.innerHTML = '<div class="leaderboard-empty">' + (t.leaderboardApiMissing || "⚠️ 排行榜 API 未設定") + "</div>";
     return;
   }
   fetch(LEADERBOARD_API + "?t=" + Date.now())
     .then(function(r) { return r.json(); })
     .then(function(res) {
       if (!res.ok || !res.data) {
-        mini.innerHTML = '<div class="leaderboard-empty">⚠️ 載入失敗</div>';
+        mini.innerHTML = '<div class="leaderboard-empty">' + (t.leaderboardLoadFailed || "⚠️ 載入失敗") + "</div>";
         return;
       }
       var filtered = res.data.filter(isValidLeaderboardRow);
       if (filtered.length === 0) {
-        mini.innerHTML = '<div class="leaderboard-empty">📭 暫無記錄，快來成為第一名！</div>';
+        mini.innerHTML = '<div class="leaderboard-empty">' + (t.leaderboardEmpty || "📭 暫無記錄") + "</div>";
         return;
       }
       var html = "";
@@ -2192,7 +2223,7 @@ function loadLeaderboardMini() {
     })
     .catch(function(e) {
       console.error("Leaderboard mini error:", e);
-      mini.innerHTML = '<div class="leaderboard-empty">⚠️ 載入失敗，請稍後再試</div>';
+      mini.innerHTML = '<div class="leaderboard-empty">' + (t.leaderboardLoadFailed || "⚠️ 載入失敗，請稍後再試") + "</div>";
     });
 }
 
@@ -2292,8 +2323,8 @@ function updateTierDisplay(withAnimation) {
     scoreValueEl.style.textShadow = "none";
   }
   if (detailEl) {
-    detailEl.innerHTML = (t.tierFormula || "綜合分數 = 命中率 × 50% + ROI × 50%") +
-      "<br>（命中率 " + hitRateNorm.toFixed(2) + " × 50% + ROI " + roiNorm.toFixed(2) + " × 50%）";
+    detailEl.innerHTML = (t.tierFormula || "綜合分數 = 命中率 × 70% + ROI × 30%") +
+      "<br>（命中率 " + hitRateNorm.toFixed(2) + " × 70% + ROI " + roiNorm.toFixed(2) + " × 30%）";
   }
 
   tierEl.style.display = "block";
@@ -2328,7 +2359,7 @@ function updateTierDisplay(withAnimation) {
   }
 }
 
-// ==================== 綁定（全部用 safeBind 隔離）====================
+// ==================== 綁定 ====================
 function safeBind(id, event, handler) {
   try {
     var el = document.getElementById(id);
@@ -2338,25 +2369,21 @@ function safeBind(id, event, handler) {
 }
 
 window.addEventListener("load", function() {
-  // 主題
   try {
     var savedTheme = "dark";
     try { savedTheme = localStorage.getItem("qfp_theme") || "dark"; } catch(e) {}
     applyTheme(savedTheme);
   } catch(e) { console.error("Theme init error:", e); }
 
-  // 頂部按鈕綁定
   safeBind("themeSwitcher", "click", toggleTheme);
   safeBind("langSelect", "change", function() { changeLang(this.value); });
 
-  // 滾動隱藏頂部
   try {
     window.addEventListener("scroll", handleTopBtnsScroll, { passive: true });
     window.addEventListener("touchmove", handleTopBtnsScroll, { passive: true });
     handleTopBtnsScroll();
   } catch(e) { console.error("Scroll bind error:", e); }
 
-  // 條款滾動
   try {
     var s = document.getElementById("termsScroll");
     if (s) {
@@ -2389,10 +2416,8 @@ window.addEventListener("load", function() {
     updateAgreeBtnText();
   } catch(e) { console.error("Terms scroll bind error:", e); }
 
-  // 同意按鈕
   safeBind("agreeBtn", "click", handleAgree);
 
-  // 輸入框格式化
   try {
     ["hw","dw","aw"].forEach(function(id) {
       var el = document.getElementById(id);
@@ -2409,10 +2434,7 @@ window.addEventListener("load", function() {
     });
   } catch(e) { console.error("Input bind error:", e); }
 
-  // 計算器
   safeBind("calcBtn", "click", calculate);
-
-  // 猜賽果按鈕
   safeBind("gbtnH", "click", function() { gameGuess("H"); });
   safeBind("gbtnD", "click", function() { gameGuess("D"); });
   safeBind("gbtnA", "click", function() { gameGuess("A"); });
@@ -2420,17 +2442,11 @@ window.addEventListener("load", function() {
   safeBind("gbtnDev", "click", devAutoPredict);
   safeBind("gbtnSkip", "click", gameSkip);
   safeBind("gameNewBtn", "click", gameNewRound);
-
-  // 專用按鈕
   safeBind("gbtnSpecialH", "click", function() { devSpecialPredict("H"); });
   safeBind("gbtnSpecialD", "click", function() { devSpecialPredict("D"); });
   safeBind("gbtnSpecialA", "click", function() { devSpecialPredict("A"); });
-
-  // 遊戲結束
   safeBind("gameOverRestartBtn", "click", restartGame);
   safeBind("gameOverShareBtn", "click", uploadToLeaderboard);
-
-  // 排行榜
   safeBind("leaderboardShowAllBtn", "click", openLeaderboard);
   safeBind("leaderboardCloseBtn", "click", closeLeaderboard);
   safeBind("leaderboardRefreshBtn", "click", loadLeaderboard);
@@ -2440,8 +2456,6 @@ window.addEventListener("load", function() {
       if (e.target === this) closeLeaderboard();
     });
   } catch(e) {}
-
-  // 開發者
   safeBind("devUnlockBtn", "click", devUnlock);
   safeBind("devSettingsBtn", "click", openDevPanel);
   safeBind("devResetGameBtn", "click", resetGameProgress);
@@ -2449,7 +2463,6 @@ window.addEventListener("load", function() {
   safeBind("devApplyBtn", "click", applyParams);
   safeBind("devResetBtn", "click", resetParams);
 
-  // 初始化
   try { applyLanguage("zh-HK"); } catch(e) { console.error("Apply lang error:", e); }
   try { loadSavedParams(); } catch(e) { console.error("Load params error:", e); }
   try { loadStatsWithRetry(); } catch(e) { console.error("Load stats error:", e); }
@@ -2458,7 +2471,6 @@ window.addEventListener("load", function() {
     window.addEventListener("focus", loadStatsWithRetry);
     document.addEventListener("visibilitychange", function() { if (!document.hidden) loadStatsWithRetry(); });
   } catch(e) {}
-
   try {
     ensureSheetPool().catch(function(e) { console.warn("Pool preload failed:", e); });
   } catch(e) {}
