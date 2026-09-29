@@ -1306,6 +1306,10 @@ function loadStatsWithRetry() {
   }).catch(checkFail);
 }
 
+/* ✅ 已按最新 Google Sheets ARRAYFORMULA 更新：
+   - 第13層 (D>1500 且 C<50)：A>C → "D"，否則 skip
+   - 第13層 (F>=750 且 A<50)：C>A → "D"，否則 skip
+*/
 function calcBet(hw, dw, aw, ho, doo, ao) {
   if (dw >= PARAMS.p1_cbmin && Math.abs(hw - aw) <= PARAMS.p1_cgap) return "D";
   if (hw >= PARAMS.p2_hmin && aw <= PARAMS.p2_cmax && ho >= PARAMS.p2_dmin/100 && ho <= PARAMS.p2_dmax/100 && ao >= PARAMS.p2_fmin/100 && ao <= PARAMS.p2_fmax/100) return "H";
@@ -1322,6 +1326,7 @@ function calcBet(hw, dw, aw, ho, doo, ao) {
   if (ho > ao) {
     if (ho >= PARAMS.pd_skip/100) {
       if (aw >= PARAMS.pd_cAmin) return "A";
+      if (hw > aw) return "D";
       return "skip";
     }
     if (hw >= PARAMS.pb_hmin && ho >= PARAMS.pb_dmin/100) return "D";
@@ -1329,6 +1334,7 @@ function calcBet(hw, dw, aw, ho, doo, ao) {
   } else if (ao > ho) {
     if (ao >= PARAMS.pb_fskip/100) {
       if (hw >= PARAMS.pb_hAmin) return "H";
+      if (aw > hw) return "D";
       return "skip";
     }
     return "A";
