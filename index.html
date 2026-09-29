@@ -597,7 +597,7 @@
       <div class="dev-layer">
         <div class="dev-layer-title">第 1 層：和勝率高 + 主客接近 → 買和</div>
         <div class="dev-param-grid">
-          <div class="dev-param-item"><label>和勝率下限</label><input type="text" id="p1_cbmin" value="32" inputmode="numeric"></div>
+          <div class="dev-param-item"><label>和勝率下限</label><input type="text" id="p1_cbmin" value="31" inputmode="numeric"></div>
           <div class="dev-param-item"><label>主客勝率差上限</label><input type="text" id="p1_cgap" value="6" inputmode="numeric"></div>
         </div>
       </div>
@@ -683,7 +683,7 @@
         </div>
       </div>
       <div class="dev-layer">
-        <div class="dev-layer-title">🆕 第 12 層：客略強 + 客賠中 + 客勝率低 + 主賠低 → 買和</div>
+        <div class="dev-layer-title">第 12 層：客略強 + 客賠中 + 客勝率低 + 主賠低 → 買和</div>
         <div class="dev-param-grid">
           <div class="dev-param-item"><label>客勝率上限</label><input type="text" id="p12_cmax" value="45" inputmode="numeric"></div>
           <div class="dev-param-item"><label>客賠上限</label><input type="text" id="p12_fmax" value="300" inputmode="numeric"></div>
@@ -694,9 +694,11 @@
         <div class="dev-layer-title">🆕 第 13 層：賠率博弈（兜底）</div>
         <div class="dev-param-grid">
           <div class="dev-param-item"><label>主賠 skip 門檻</label><input type="text" id="pd_skip" value="1500" inputmode="numeric"></div>
+          <div class="dev-param-item"><label>主賠極端時客勝率下限</label><input type="text" id="pd_cAmin" value="50" inputmode="numeric"></div>
           <div class="dev-param-item"><label>主勝率下限(買和)</label><input type="text" id="pb_hmin" value="35" inputmode="numeric"></div>
           <div class="dev-param-item"><label>主賠下限(買和)</label><input type="text" id="pb_dmin" value="600" inputmode="numeric"></div>
           <div class="dev-param-item"><label>客賠 skip 門檻</label><input type="text" id="pb_fskip" value="750" inputmode="numeric"></div>
+          <div class="dev-param-item"><label>客賠極端時主勝率下限</label><input type="text" id="pb_hAmin" value="50" inputmode="numeric"></div>
         </div>
       </div>
       <div class="dev-btn-row">
@@ -727,7 +729,7 @@ window.onerror = function(msg, src, line, col, err) {
 };
 
 var PARAMS = {
-  p1_cbmin: 32, p1_cgap: 6,
+  p1_cbmin: 31, p1_cgap: 6,
   p2_hmin: 60, p2_cmax: 11, p2_dmin: 140, p2_dmax: 190, p2_fmin: 400, p2_fmax: 460,
   p3_wgap: 3, p3_emax: 380, p3_ogap: 40,
   p4_hmin: 45, p4_cmax: 20, p4_ogap: 70, p4_dmax: 400,
@@ -739,8 +741,8 @@ var PARAMS = {
   p10_fmax: 550, p10_emin: 300,
   p11_fmin: 185, p11_fmax: 215,
   p12_cmax: 45, p12_fmax: 300, p12_dmax: 250,
-  pd_skip: 1500,
-  pb_hmin: 35, pb_dmin: 600, pb_fskip: 750
+  pd_skip: 1500, pd_cAmin: 50,
+  pb_hmin: 35, pb_dmin: 600, pb_fskip: 750, pb_hAmin: 50
 };
 var DEFAULT_PARAMS = JSON.parse(JSON.stringify(PARAMS));
 var currentLang = "zh-HK";
@@ -834,7 +836,7 @@ const translations = {
     errIncomplete:"⚠️ 數據不完整", errOver100:"⚠️ 命中率大於100%",
     evLabel:"期望值 EV-1：",
     hintSkip:"數據信號不明，系統選擇跳過本次投注，避免風險。",
-    hint1:"和勝率達 32% 以上且主客勝率差距小於 6%，和局概率明顯上升，系統建議買和局。",
+    hint1:"和勝率達 31% 以上且主客勝率差距小於 6%，和局概率明顯上升，系統建議買和局。",
     hint2:"主勝率達 60%、客勝率極低（≤11%）、主賠處於 1.40~1.90 且客賠 4.00~4.60，屬極端大熱主場，系統建議買主勝。",
     hint3:"主客勝率相近（相差 3 以內）、和賠偏低（<3.80）、且主客賠率差距小於 0.40，系統判斷和局概率高，建議買和局。",
     hint4:"主勝率達 45% 以上、客勝率低（≤20%）、主客賠率接近（<0.70）、且主賠低於 4.00，系統判斷主勝被低估，建議買和局。",
@@ -943,7 +945,7 @@ const translations = {
     errIncomplete:"⚠️ 数据不完整", errOver100:"⚠️ 命中率大于100%",
     evLabel:"期望值 EV-1：",
     hintSkip:"数据信号不明，系统选择跳过本次投注，避免风险。",
-    hint1:"和胜率达 32% 以上且主客胜率差距小于 6%，和局概率明显上升，系统建议买和局。",
+    hint1:"和胜率达 31% 以上且主客胜率差距小于 6%，和局概率明显上升，系统建议买和局。",
     hint2:"主胜率达 60%、客胜率极低（≤11%）、主赔处于 1.40~1.90 且客赔 4.00~4.60，属极端大热主场，系统建议买主胜。",
     hint3:"主客胜率相近（相差 3 以内）、和赔偏低（<3.80）、且主客赔率差距小于 0.40，系统判断和局概率高，建议买和局。",
     hint4:"主胜率达 45% 以上、客胜率低（≤20%）、主客赔率接近（<0.70）、且主赔低于 4.00，系统判断主胜被低估，建议买和局。",
@@ -1052,7 +1054,7 @@ const translations = {
     errIncomplete:"⚠️ Incomplete Data", errOver100:"⚠️ Probability exceeds 100%",
     evLabel:"Expected Value EV-1: ",
     hintSkip:"Signal unclear. System skips this bet to avoid risk.",
-    hint1:"Draw rate ≥ 32% with home/away win rate gap ≤ 6% — draw probability rises significantly. Bet Draw.",
+    hint1:"Draw rate ≥ 31% with home/away win rate gap ≤ 6% — draw probability rises significantly. Bet Draw.",
     hint2:"Home win rate ≥ 60%, away win rate ≤ 11%, home odds 1.40-1.90, away odds 4.00-4.60 — extreme favorite home scenario. Bet Home Win.",
     hint3:"Home and away win rates close (within 3), draw odds low (<3.80), home/away odds gap < 0.40. Bet Draw.",
     hint4:"Home win rate ≥ 45%, away win rate ≤ 20%, odds gap < 0.70, home odds < 4.00. Bet Draw.",
@@ -1317,11 +1319,17 @@ function calcBet(hw, dw, aw, ho, doo, ao) {
   if (aw > hw && ao >= PARAMS.p11_fmin/100 && ao <= PARAMS.p11_fmax/100) return "A";
   if (aw > hw && ao > ho && ao < PARAMS.p12_fmax/100 && aw < PARAMS.p12_cmax && ho < PARAMS.p12_dmax/100) return "D";
   if (ho > ao) {
-    if (ho >= PARAMS.pd_skip/100) return "skip";
+    if (ho >= PARAMS.pd_skip/100) {
+      if (aw >= PARAMS.pd_cAmin) return "A";
+      return "skip";
+    }
     if (hw >= PARAMS.pb_hmin && ho >= PARAMS.pb_dmin/100) return "D";
     return "H";
   } else if (ao > ho) {
-    if (ao >= PARAMS.pb_fskip/100) return "skip";
+    if (ao >= PARAMS.pb_fskip/100) {
+      if (hw >= PARAMS.pb_hAmin) return "H";
+      return "skip";
+    }
     return "A";
   } else {
     if (hw > aw) return "H";
@@ -1643,16 +1651,15 @@ function updateSkipDisplay() {
   else { btn.disabled = false; }
 }
 
-// 🆕 帶賽果方向性的微調：80% 順方向、20% 反方向打破規律
 function randRange(min, max) {
   return min + Math.random() * (max - min);
 }
 
+// 帶賽果方向性的微調：80% 順方向、20% 反方向打破規律
 function jitterMatchData(m) {
-  var result = m.result; // "H" / "D" / "A"
-  var directional = Math.random() < 0.8; // 80% 順方向
+  var result = m.result;
+  var directional = Math.random() < 0.8;
 
-  // 決定方向係數：+1 = 順主勝方向、−1 = 反方向
   var signH, signA;
   if (result === "H") {
     signH = directional ? 1 : -1;
@@ -1667,16 +1674,13 @@ function jitterMatchData(m) {
   var newHw, newDw, newAw, newHo, newDoo, newAo;
 
   if (result === "H" || result === "A") {
-    // 主勝或客勝：主/客勝率跟隨方向 ±0~2%，和勝率 ±1%
     newHw = m.hw + signH * randRange(0, 2);
     newAw = m.aw + signA * randRange(0, 2);
     newDw = m.dw + randRange(-1, 1);
-    // 賠率同步微調（±0~1%），和賠 ±1%
     newHo = m.ho * (1 + signH * randRange(0, 0.01));
     newAo = m.ao * (1 + signA * randRange(0, 0.01));
     newDoo = m.doo * (1 + randRange(-0.01, 0.01));
   } else {
-    // 和局：全部 ±1%
     newHw = m.hw + randRange(-1, 1);
     newDw = m.dw + randRange(-1, 1);
     newAw = m.aw + randRange(-1, 1);
@@ -1699,7 +1703,6 @@ function jitterMatchData(m) {
   newDoo = Math.max(100, Math.min(9999, newDoo));
   newAo = Math.max(100, Math.min(9999, newAo));
 
-  // 勝率歸一化：hw + dw + aw = 100
   var over = newHw + newDw + newAw - 100;
   var safety = 0;
   while (over > 0 && safety < 500) {
