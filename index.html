@@ -748,9 +748,9 @@ var DEFAULT_PARAMS = JSON.parse(JSON.stringify(PARAMS));
 var currentLang = "zh-HK";
 var devMode = false;
 var TIER_MIN_PLAYED = 5;
-// 🆕 綜合分數權重：50:50
+// 🆕 綜合分數權重：命中率 50% + ROI 100%（上限 100 分）
 var TIER_WEIGHT_HITRATE = 0.5;
-var TIER_WEIGHT_ROI = 0.5;
+var TIER_WEIGHT_ROI = 1.0;
 var MAX_PLAYS = 50;
 var comboCount = 0;
 var DEV_PASSWORD = "football";
@@ -875,7 +875,7 @@ const translations = {
     tierA:"⭐ 優秀！表現出色！", tierB:"🎯 表現不俗！繼續努力！",
     tierC:"📊 一般水平，仍有進步空間",
     tierD:"⚠️ 需要改進，加油！", tierE:"💪 繼續努力！多練習！",
-    tierFormula:"綜合分數 = 命中率 × 50% + ROI × 50%",
+    tierFormula:"綜合分數 = 命中率 × 50% + ROI × 100%（上限 100 分）",
     scoreUnit:" 分",
     comboStreak:"連勝 x",
     gameSkipBtn:"⏭️ 跳過本場", gameSkipInfoPrefix:"剩 ", gameSkipInfoSuffix:" 次",
@@ -984,7 +984,7 @@ const translations = {
     tierA:"⭐ 优秀！表现出色！", tierB:"🎯 表现不俗！继续努力！",
     tierC:"📊 一般水平，仍有进步空间",
     tierD:"⚠️ 需要改进，加油！", tierE:"💪 继续努力！多练习！",
-    tierFormula:"综合分数 = 命中率 × 50% + ROI × 50%",
+    tierFormula:"综合分数 = 命中率 × 50% + ROI × 100%（上限 100 分）",
     scoreUnit:" 分",
     comboStreak:"连胜 x",
     gameSkipBtn:"⏭️ 跳过本场", gameSkipInfoPrefix:"剩 ", gameSkipInfoSuffix:" 次",
@@ -1093,7 +1093,7 @@ const translations = {
     tierA:"⭐ Excellent! Outstanding performance!", tierB:"🎯 Decent performance! Keep pushing!",
     tierC:"📊 Average, room to improve",
     tierD:"⚠️ Needs improvement, keep going!", tierE:"💪 Keep practicing! You will get there!",
-    tierFormula:"Score = Hit Rate × 50% + ROI × 50%",
+    tierFormula:"Score = Hit Rate × 50% + ROI × 100% (Max 100)",
     scoreUnit:" pts",
     comboStreak:"STREAK x",
     gameSkipBtn:"⏭️ Skip Match", gameSkipInfoPrefix:"Left ", gameSkipInfoSuffix:"",
@@ -2299,7 +2299,7 @@ function escapeHtml(str) {
   });
 }
 
-// 🆕 等級門檻：EX ≥85、E- <15（配合 50:50 權重）
+// 🆕 等級門檻：EX ≥85、E- <15（配合新權重 50:100）
 function getTier(rate) {
   if (rate >= 85)   return { tier:"EX", descKey:"tierEX" };
   if (rate >= 81)   return { tier:"S+", descKey:"tierS" };
@@ -2391,8 +2391,8 @@ function updateTierDisplay(withAnimation) {
   if (detailEl) {
     var lbHitRateLabel = t.hitRate || "命中率";
     var lbRoiLabel = t.roi || "ROI";
-    detailEl.innerHTML = (t.tierFormula || "綜合分數 = 命中率 × 50% + ROI × 50%") +
-      "<br>（" + lbHitRateLabel + " " + hitRateNorm.toFixed(2) + " × 50% + " + lbRoiLabel + " " + roiNorm.toFixed(2) + " × 50%）";
+    detailEl.innerHTML = (t.tierFormula || "綜合分數 = 命中率 × 50% + ROI × 100%（上限 100 分）") +
+      "<br>（" + lbHitRateLabel + " " + hitRateNorm.toFixed(2) + " × 50% + " + lbRoiLabel + " " + roiNorm.toFixed(2) + " × 100%，上限 100）";
   }
 
   tierEl.style.display = "block";
