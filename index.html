@@ -632,7 +632,7 @@
       <div class="dev-layer">
         <div class="dev-layer-title">第 5 層：主客賠差小 → 買和</div>
         <div class="dev-param-grid">
-          <div class="dev-param-item"><label>賠率差上限</label><input type="text" id="p5_ogap" value="20" inputmode="numeric"></div>
+          <div class="dev-param-item"><label>賠率差上限</label><input type="text" id="p5_ogap" value="18" inputmode="numeric"></div>
         </div>
       </div>
       <div class="dev-layer">
@@ -683,9 +683,18 @@
         </div>
       </div>
       <div class="dev-layer">
-        <div class="dev-layer-title">第 12 層：賠率博弈（兜底）</div>
+        <div class="dev-layer-title">🆕 第 12 層：客略強 + 客賠中 + 客勝率低 + 主賠低 → 買和</div>
         <div class="dev-param-grid">
-          <div class="dev-param-item"><label>主勝率下限(買和)</label><input type="text" id="pb_hmin" value="30" inputmode="numeric"></div>
+          <div class="dev-param-item"><label>客勝率上限</label><input type="text" id="p12_cmax" value="45" inputmode="numeric"></div>
+          <div class="dev-param-item"><label>客賠上限</label><input type="text" id="p12_fmax" value="300" inputmode="numeric"></div>
+          <div class="dev-param-item"><label>主賠上限</label><input type="text" id="p12_dmax" value="250" inputmode="numeric"></div>
+        </div>
+      </div>
+      <div class="dev-layer">
+        <div class="dev-layer-title">🆕 第 13 層：賠率博弈（兜底）</div>
+        <div class="dev-param-grid">
+          <div class="dev-param-item"><label>主賠 skip 門檻</label><input type="text" id="pd_skip" value="1500" inputmode="numeric"></div>
+          <div class="dev-param-item"><label>主勝率下限(買和)</label><input type="text" id="pb_hmin" value="35" inputmode="numeric"></div>
           <div class="dev-param-item"><label>主賠下限(買和)</label><input type="text" id="pb_dmin" value="600" inputmode="numeric"></div>
           <div class="dev-param-item"><label>客賠 skip 門檻</label><input type="text" id="pb_fskip" value="750" inputmode="numeric"></div>
         </div>
@@ -722,14 +731,16 @@ var PARAMS = {
   p2_hmin: 60, p2_cmax: 11, p2_dmin: 140, p2_dmax: 190, p2_fmin: 400, p2_fmax: 460,
   p3_wgap: 3, p3_emax: 380, p3_ogap: 40,
   p4_hmin: 45, p4_cmax: 20, p4_ogap: 70, p4_dmax: 400,
-  p5_ogap: 20,
+  p5_ogap: 18,
   p6_hmin: 42, p6_dmin: 155, p6_dmax: 205, p6_wgap: 50,
   p7_hmin: 42, p7_dmin: 155, p7_dmax: 205,
   p8_hmin: 38, p8_dmin: 205, p8_dmax: 235,
   p9_dmin: 340, p9_hmin: 40, p9_fmax: 250,
   p10_fmax: 550, p10_emin: 300,
   p11_fmin: 185, p11_fmax: 215,
-  pb_hmin: 30, pb_dmin: 600, pb_fskip: 750
+  p12_cmax: 45, p12_fmax: 300, p12_dmax: 250,
+  pd_skip: 1500,
+  pb_hmin: 35, pb_dmin: 600, pb_fskip: 750
 };
 var DEFAULT_PARAMS = JSON.parse(JSON.stringify(PARAMS));
 var currentLang = "zh-HK";
@@ -742,7 +753,6 @@ var comboCount = 0;
 var DEV_PASSWORD = "football";
 var LEADERBOARD_API = "https://script.google.com/macros/s/AKfycbxwY95XQNs8vOTVdzvWJMoYPffto3PiSvt6S2xwRItsy-TcYsD89sF_W_1GnqJwXY4G/exec";
 
-// 🆕 正規化百分比：0~1 視為小數自動 ×100，字串含 % 自動去除
 function normalizePercent(v) {
   if (v === null || v === undefined || v === "") return 0;
   var s = String(v).replace(/%/g, "").replace(/\+/g, "").trim();
@@ -828,14 +838,15 @@ const translations = {
     hint2:"主勝率達 60%、客勝率極低（≤11%）、主賠處於 1.40~1.90 且客賠 4.00~4.60，屬極端大熱主場，系統建議買主勝。",
     hint3:"主客勝率相近（相差 3 以內）、和賠偏低（<3.80）、且主客賠率差距小於 0.40，系統判斷和局概率高，建議買和局。",
     hint4:"主勝率達 45% 以上、客勝率低（≤20%）、主客賠率接近（<0.70）、且主賠低於 4.00，系統判斷主勝被低估，建議買和局。",
-    hint5:"主客賠率非常接近（相差 0.20 以內），市場認為雙方勢均力敵，和局概率上升，建議買和局。",
+    hint5:"主客賠率非常接近（相差 0.18 以內），市場認為雙方勢均力敵，和局概率上升，建議買和局。",
     hint6:"主勝率達 42% 以上、主賠 1.55~2.05、客賠高於主賠、但主客勝率差極大（≥50），屬異常信號，系統建議買和局。",
     hint7:"主隊勝率明顯佔優且主賠處於 1.55~2.05 的合理回報區間，主場優勢強勁，建議買主勝。",
     hint8:"主隊勝率達 38% 以上但主賠處於 2.05~2.35，市場對主勝存有疑慮，系統判斷需防冷，建議買和局。",
     hint9:"主賠極高（≥3.40）、主勝率仍達 40% 以上，且客賠合理（<2.50），系統判斷主勝被市場低估，反向買和搏回報。",
     hint10:"客勝率高於主勝率，客隊略為冷門，且和賠合理（>3.00），系統反向買主隊，搏主場優勢。",
     hint11:"客勝率高於主勝率，且客賠處於 1.85～2.15 的高價值區間，客隊具備市場價值，建議買客勝。",
-    hint12:"市場賠率與勝率模型出現分歧，系統選擇賠率更高的一方進行博弈。",
+    hint12:"客勝率略高於主勝率（客勝率<45%）、客賠中高（<3.00）、主賠低（<2.50），系統判斷和局有保護價值，建議買和局。",
+    hint13:"市場賠率與勝率模型出現分歧，系統選擇賠率更高的一方進行博弈。",
     hintReverse:"偵測到極端冷門賠率，系統按最新規則買和局搏高賠回報。",
     gameTitle:"🎮 猜賽果挑戰", gameSub:"📚 從資料庫真實數據隨機抽樣，試下你嘅眼光！",
     gameDataHint:"🔒 每場從資料庫真實數據抽樣，並約略微調 ±5% 以避免被搜尋反查作弊；賽果保持真實。",
@@ -936,14 +947,15 @@ const translations = {
     hint2:"主胜率达 60%、客胜率极低（≤11%）、主赔处于 1.40~1.90 且客赔 4.00~4.60，属极端大热主场，系统建议买主胜。",
     hint3:"主客胜率相近（相差 3 以内）、和赔偏低（<3.80）、且主客赔率差距小于 0.40，系统判断和局概率高，建议买和局。",
     hint4:"主胜率达 45% 以上、客胜率低（≤20%）、主客赔率接近（<0.70）、且主赔低于 4.00，系统判断主胜被低估，建议买和局。",
-    hint5:"主客赔率非常接近（相差 0.20 以内），市场认为双方势均力敌，和局概率上升，建议买和局。",
+    hint5:"主客赔率非常接近（相差 0.18 以内），市场认为双方势均力敌，和局概率上升，建议买和局。",
     hint6:"主胜率达 42% 以上、主赔 1.55~2.05、客赔高于主赔、但主客胜率差极大（≥50），属异常信号，系统建议买和局。",
     hint7:"主队胜率明显占优且主赔处于 1.55~2.05 的合理回报区间，主场优势强劲，建议买主胜。",
     hint8:"主队胜率达 38% 以上但主赔处于 2.05~2.35，市场对主胜存有疑虑，系统判断需防冷，建议买和局。",
     hint9:"主赔极高（≥3.40）、主胜率仍达 40% 以上，且客赔合理（<2.50），系统判断主胜被市场低估，反向买和搏回报。",
     hint10:"客胜率高于主胜率，客队略为冷门，且和赔合理（>3.00），系统反向买主队，搏主场优势。",
     hint11:"客胜率高于主胜率，且客赔处于 1.85～2.15 的高价值区间，客队具备市场价值，建议买客胜。",
-    hint12:"市场赔率与胜率模型出现分歧，系统选择赔率更高的一方进行博弈。",
+    hint12:"客胜率略高于主胜率（客胜率<45%）、客赔中高（<3.00）、主赔低（<2.50），系统判断和局有保护价值，建议买和局。",
+    hint13:"市场赔率与胜率模型出现分歧，系统选择赔率更高的一方进行博弈。",
     hintReverse:"侦测到极端冷门赔率，系统按最新规则买和局搏高赔回报。",
     gameTitle:"🎮 猜赛果挑战", gameSub:"📚 从数据库真实数据随机抽样，试试你的眼光！",
     gameDataHint:"🔒 每场从数据库真实数据抽样，并约略微调 ±5% 以避免被搜寻反查作弊；赛果保持真实。",
@@ -1044,14 +1056,15 @@ const translations = {
     hint2:"Home win rate ≥ 60%, away win rate ≤ 11%, home odds 1.40-1.90, away odds 4.00-4.60 — extreme favorite home scenario. Bet Home Win.",
     hint3:"Home and away win rates close (within 3), draw odds low (<3.80), home/away odds gap < 0.40. Bet Draw.",
     hint4:"Home win rate ≥ 45%, away win rate ≤ 20%, odds gap < 0.70, home odds < 4.00. Bet Draw.",
-    hint5:"Home and away odds very close (within 0.20). Market sees evenly matched teams. Bet Draw.",
+    hint5:"Home and away odds very close (within 0.18). Market sees evenly matched teams. Bet Draw.",
     hint6:"Home win rate ≥ 42%, home odds 1.55-2.05, away odds > home odds, but win rate gap ≥ 50 — anomalous signal. Bet Draw.",
     hint7:"Home team advantage with home odds 1.55-2.05 in reasonable range. Bet Home Win.",
     hint8:"Home win rate ≥ 38% but odds 2.05-2.35 — market doubts. Bet Draw for safety.",
     hint9:"Home odds very high (≥3.40) but home win rate still ≥ 40%, away odds < 2.50. Bet Draw as contrarian.",
     hint10:"Away win rate exceeds home, away slightly underdog, draw odds reasonable (>3.00). System bets Home Win as contrarian.",
     hint11:"Away win rate exceeds home, away odds in 1.85-2.15 high-value zone. Bet Away Win.",
-    hint12:"Market odds diverge from win rate model. System selects higher-odds side.",
+    hint12:"Away win rate slightly exceeds home (<45%), away odds mid-high (<3.00), home odds low (<2.50) — draw offers protection. Bet Draw.",
+    hint13:"Market odds diverge from win rate model. System selects higher-odds side.",
     hintReverse:"Detected extreme underdog odds. System switches to Draw bet for high-payout upside.",
     gameTitle:"🎮 Guess the Result", gameSub:"📚 Randomly sampled from real database. Try your luck!",
     gameDataHint:"🔒 Each match is sampled from real database and slightly adjusted ±5% to prevent lookup cheating. Results stay authentic.",
@@ -1290,19 +1303,35 @@ function loadStatsWithRetry() {
   }).catch(checkFail);
 }
 
+// 🆕 13 層公式（對應最新 ARRAYFORMULA）
 function calcBet(hw, dw, aw, ho, doo, ao) {
+  // Layer 1
   if (dw >= PARAMS.p1_cbmin && Math.abs(hw - aw) <= PARAMS.p1_cgap) return "D";
+  // Layer 2
   if (hw >= PARAMS.p2_hmin && aw <= PARAMS.p2_cmax && ho >= PARAMS.p2_dmin/100 && ho <= PARAMS.p2_dmax/100 && ao >= PARAMS.p2_fmin/100 && ao <= PARAMS.p2_fmax/100) return "H";
+  // Layer 3
   if (Math.abs(hw - aw) <= PARAMS.p3_wgap && doo * 100 < PARAMS.p3_emax && Math.abs(ho - ao) * 100 < PARAMS.p3_ogap) return "D";
+  // Layer 4
   if (hw >= PARAMS.p4_hmin && aw <= PARAMS.p4_cmax && Math.abs(ho - ao) * 100 < PARAMS.p4_ogap && ho < PARAMS.p4_dmax/100) return "D";
+  // Layer 5（<18）
   if (Math.abs(ho - ao) * 100 < PARAMS.p5_ogap) return "D";
+  // Layer 6
   if (hw >= PARAMS.p6_hmin && ho >= PARAMS.p6_dmin/100 && ho < PARAMS.p6_dmax/100 && ho !== ao && ao > ho && Math.abs(hw - aw) >= PARAMS.p6_wgap) return "D";
+  // Layer 7
   if (hw >= PARAMS.p7_hmin && ho >= PARAMS.p7_dmin/100 && ho < PARAMS.p7_dmax/100 && ho !== ao) return "H";
+  // Layer 8
   if (hw >= PARAMS.p8_hmin && ho > PARAMS.p8_dmin/100 && ho <= PARAMS.p8_dmax/100 && ho !== ao) return "D";
+  // Layer 9
   if (ho >= PARAMS.p9_dmin/100 && hw >= PARAMS.p9_hmin && ao < PARAMS.p9_fmax/100 && ho > ao) return "D";
+  // Layer 10
   if (aw > hw && ao > ho && ao < PARAMS.p10_fmax/100 && doo * 100 > PARAMS.p10_emin) return "H";
+  // Layer 11
   if (aw > hw && ao >= PARAMS.p11_fmin/100 && ao <= PARAMS.p11_fmax/100) return "A";
+  // Layer 12（新）
+  if (aw > hw && ao > ho && ao < PARAMS.p12_fmax/100 && aw < PARAMS.p12_cmax && ho < PARAMS.p12_dmax/100) return "D";
+  // Layer 13 兜底
   if (ho > ao) {
+    if (ho >= PARAMS.pd_skip/100) return "skip";                                    // 主賠過高直接 skip
     if (hw >= PARAMS.pb_hmin && ho >= PARAMS.pb_dmin/100) return "D";
     return "H";
   } else if (ao > ho) {
@@ -1326,7 +1355,8 @@ function calcLayer(hw, dw, aw, ho, doo, ao) {
   if (ho >= PARAMS.p9_dmin/100 && hw >= PARAMS.p9_hmin && ao < PARAMS.p9_fmax/100 && ho > ao) return 9;
   if (aw > hw && ao > ho && ao < PARAMS.p10_fmax/100 && doo * 100 > PARAMS.p10_emin) return 10;
   if (aw > hw && ao >= PARAMS.p11_fmin/100 && ao <= PARAMS.p11_fmax/100) return 11;
-  return 12;
+  if (aw > hw && ao > ho && ao < PARAMS.p12_fmax/100 && aw < PARAMS.p12_cmax && ho < PARAMS.p12_dmax/100) return 12;
+  return 13;
 }
 
 function calculate() {
@@ -1349,7 +1379,7 @@ function calculate() {
   var bet = calcBet(hw, dw, aw, ho, doo, ao);
   var layer = calcLayer(hw, dw, aw, ho, doo, ao);
   var isReverse = false;
-  if (layer === 12 && ho > ao && hw >= PARAMS.pb_hmin && ho >= PARAMS.pb_dmin/100) isReverse = true;
+  if (layer === 13 && ho > ao && hw >= PARAMS.pb_hmin && ho >= PARAMS.pb_dmin/100) isReverse = true;
   let text = "", className = "", ev = null;
   if (bet === "H") { text = t.resultH; className = "result-H"; ev = (hw / 100) * ho - 1; }
   else if (bet === "A") { text = t.resultA; className = "result-A"; ev = (aw / 100) * ao - 1; }
@@ -1395,6 +1425,7 @@ function showResult(text, className, layer, bet, ev, isReverse, errKey) {
       case 10: hintText = t.hint10; break;
       case 11: hintText = t.hint11; break;
       case 12: hintText = t.hint12; break;
+      case 13: hintText = t.hint13; break;
     }
   }
   hintBox.innerText = hintText;
@@ -2124,7 +2155,6 @@ function buildLeaderboardRow(row, idx, compact) {
   else if (rank === 2) { rankClass = "silver"; rowClass = "top2"; }
   else if (rank === 3) { rankClass = "bronze"; rowClass = "top3"; }
 
-  // 🆕 用 normalizePercent 處理 0~1 小數，再計算綜合分數
   var hitRateNum = normalizePercent(row.hitRate);
   var roiNum = normalizePercent(row.roi);
   var scoreNum = calcOverallScore(hitRateNum, roiNum);
@@ -2175,7 +2205,6 @@ function loadLeaderboard() {
         content.innerHTML = '<div class="leaderboard-empty">' + (t.leaderboardEmpty || "📭 暫無記錄") + "</div>";
         return;
       }
-      // 🆕 用 normalizePercent 計算的分數重新排序
       filtered.sort(function(a, b) {
         var sa = calcOverallScore(normalizePercent(a.hitRate), normalizePercent(a.roi));
         var sb = calcOverallScore(normalizePercent(b.hitRate), normalizePercent(b.roi));
@@ -2214,7 +2243,6 @@ function loadLeaderboardMini() {
         mini.innerHTML = '<div class="leaderboard-empty">' + (t.leaderboardEmpty || "📭 暫無記錄") + "</div>";
         return;
       }
-      // 🆕 用 normalizePercent 計算的分數重新排序
       filtered.sort(function(a, b) {
         var sa = calcOverallScore(normalizePercent(a.hitRate), normalizePercent(a.roi));
         var sb = calcOverallScore(normalizePercent(b.hitRate), normalizePercent(b.roi));
