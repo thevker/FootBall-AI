@@ -691,7 +691,7 @@
         </div>
       </div>
       <div class="dev-layer">
-        <div class="dev-layer-title">🆕 第 13 層：賠率博弈（兜底）</div>
+        <div class="dev-layer-title">第 13 層：賠率博弈（兜底）</div>
         <div class="dev-param-grid">
           <div class="dev-param-item"><label>主賠 skip 門檻</label><input type="text" id="pd_skip" value="1500" inputmode="numeric"></div>
           <div class="dev-param-item"><label>主賠極端時客勝率下限</label><input type="text" id="pd_cAmin" value="50" inputmode="numeric"></div>
@@ -748,8 +748,9 @@ var DEFAULT_PARAMS = JSON.parse(JSON.stringify(PARAMS));
 var currentLang = "zh-HK";
 var devMode = false;
 var TIER_MIN_PLAYED = 5;
-var TIER_WEIGHT_HITRATE = 0.7;
-var TIER_WEIGHT_ROI = 0.3;
+// 🆕 綜合分數權重：50:50
+var TIER_WEIGHT_HITRATE = 0.5;
+var TIER_WEIGHT_ROI = 0.5;
 var MAX_PLAYS = 50;
 var comboCount = 0;
 var DEV_PASSWORD = "football";
@@ -874,7 +875,7 @@ const translations = {
     tierA:"⭐ 優秀！表現出色！", tierB:"🎯 表現不俗！繼續努力！",
     tierC:"📊 一般水平，仍有進步空間",
     tierD:"⚠️ 需要改進，加油！", tierE:"💪 繼續努力！多練習！",
-    tierFormula:"綜合分數 = 命中率 × 70% + ROI × 30%",
+    tierFormula:"綜合分數 = 命中率 × 50% + ROI × 50%",
     scoreUnit:" 分",
     comboStreak:"連勝 x",
     gameSkipBtn:"⏭️ 跳過本場", gameSkipInfoPrefix:"剩 ", gameSkipInfoSuffix:" 次",
@@ -983,7 +984,7 @@ const translations = {
     tierA:"⭐ 优秀！表现出色！", tierB:"🎯 表现不俗！继续努力！",
     tierC:"📊 一般水平，仍有进步空间",
     tierD:"⚠️ 需要改进，加油！", tierE:"💪 继续努力！多练习！",
-    tierFormula:"综合分数 = 命中率 × 70% + ROI × 30%",
+    tierFormula:"综合分数 = 命中率 × 50% + ROI × 50%",
     scoreUnit:" 分",
     comboStreak:"连胜 x",
     gameSkipBtn:"⏭️ 跳过本场", gameSkipInfoPrefix:"剩 ", gameSkipInfoSuffix:" 次",
@@ -1092,7 +1093,7 @@ const translations = {
     tierA:"⭐ Excellent! Outstanding performance!", tierB:"🎯 Decent performance! Keep pushing!",
     tierC:"📊 Average, room to improve",
     tierD:"⚠️ Needs improvement, keep going!", tierE:"💪 Keep practicing! You will get there!",
-    tierFormula:"Score = Hit Rate × 70% + ROI × 30%",
+    tierFormula:"Score = Hit Rate × 50% + ROI × 50%",
     scoreUnit:" pts",
     comboStreak:"STREAK x",
     gameSkipBtn:"⏭️ Skip Match", gameSkipInfoPrefix:"Left ", gameSkipInfoSuffix:"",
@@ -1655,11 +1656,9 @@ function randRange(min, max) {
   return min + Math.random() * (max - min);
 }
 
-// 帶賽果方向性的微調：80% 順方向、20% 反方向打破規律
 function jitterMatchData(m) {
   var result = m.result;
   var directional = Math.random() < 0.8;
-
   var signH, signA;
   if (result === "H") {
     signH = directional ? 1 : -1;
@@ -1670,9 +1669,7 @@ function jitterMatchData(m) {
   } else {
     signH = 0; signA = 0;
   }
-
   var newHw, newDw, newAw, newHo, newDoo, newAo;
-
   if (result === "H" || result === "A") {
     newHw = m.hw + signH * randRange(0, 2);
     newAw = m.aw + signA * randRange(0, 2);
@@ -1688,21 +1685,14 @@ function jitterMatchData(m) {
     newDoo = m.doo * (1 + randRange(-0.01, 0.01));
     newAo = m.ao * (1 + randRange(-0.01, 0.01));
   }
-
-  newHw = Math.round(newHw);
-  newDw = Math.round(newDw);
-  newAw = Math.round(newAw);
-  newHo = Math.round(newHo);
-  newDoo = Math.round(newDoo);
-  newAo = Math.round(newAo);
-
+  newHw = Math.round(newHw); newDw = Math.round(newDw); newAw = Math.round(newAw);
+  newHo = Math.round(newHo); newDoo = Math.round(newDoo); newAo = Math.round(newAo);
   newHw = Math.max(1, Math.min(99, newHw));
   newDw = Math.max(1, Math.min(99, newDw));
   newAw = Math.max(1, Math.min(99, newAw));
   newHo = Math.max(100, Math.min(9999, newHo));
   newDoo = Math.max(100, Math.min(9999, newDoo));
   newAo = Math.max(100, Math.min(9999, newAo));
-
   var over = newHw + newDw + newAw - 100;
   var safety = 0;
   while (over > 0 && safety < 500) {
@@ -1719,7 +1709,6 @@ function jitterMatchData(m) {
     else break;
     safety++;
   }
-
   return {
     hw: newHw, dw: newDw, aw: newAw,
     ho: newHo, doo: newDoo, ao: newAo,
@@ -2310,25 +2299,26 @@ function escapeHtml(str) {
   });
 }
 
+// 🆕 等級門檻：EX ≥85、E- <15（配合 50:50 權重）
 function getTier(rate) {
-  if (rate >= 90)   return { tier:"EX", descKey:"tierEX" };
-  if (rate >= 85)   return { tier:"S+", descKey:"tierS" };
-  if (rate >= 80)   return { tier:"S",  descKey:"tierS" };
-  if (rate >= 75)   return { tier:"S-", descKey:"tierS" };
-  if (rate >= 70)   return { tier:"A+", descKey:"tierA" };
+  if (rate >= 85)   return { tier:"EX", descKey:"tierEX" };
+  if (rate >= 81)   return { tier:"S+", descKey:"tierS" };
+  if (rate >= 77)   return { tier:"S",  descKey:"tierS" };
+  if (rate >= 73)   return { tier:"S-", descKey:"tierS" };
+  if (rate >= 69)   return { tier:"A+", descKey:"tierA" };
   if (rate >= 65)   return { tier:"A",  descKey:"tierA" };
-  if (rate >= 60)   return { tier:"A-", descKey:"tierA" };
-  if (rate >= 55)   return { tier:"B+", descKey:"tierB" };
-  if (rate >= 50)   return { tier:"B",  descKey:"tierB" };
-  if (rate >= 45)   return { tier:"B-", descKey:"tierB" };
-  if (rate >= 40)   return { tier:"C+", descKey:"tierC" };
-  if (rate >= 35)   return { tier:"C",  descKey:"tierC" };
-  if (rate >= 30)   return { tier:"C-", descKey:"tierC" };
-  if (rate >= 25)   return { tier:"D+", descKey:"tierD" };
-  if (rate >= 20)   return { tier:"D",  descKey:"tierD" };
-  if (rate >= 15)   return { tier:"D-", descKey:"tierD" };
-  if (rate >= 10)   return { tier:"E+", descKey:"tierE" };
-  if (rate >= 5)    return { tier:"E",  descKey:"tierE" };
+  if (rate >= 61)   return { tier:"A-", descKey:"tierA" };
+  if (rate >= 57)   return { tier:"B+", descKey:"tierB" };
+  if (rate >= 53)   return { tier:"B",  descKey:"tierB" };
+  if (rate >= 49)   return { tier:"B-", descKey:"tierB" };
+  if (rate >= 45)   return { tier:"C+", descKey:"tierC" };
+  if (rate >= 41)   return { tier:"C",  descKey:"tierC" };
+  if (rate >= 37)   return { tier:"C-", descKey:"tierC" };
+  if (rate >= 33)   return { tier:"D+", descKey:"tierD" };
+  if (rate >= 29)   return { tier:"D",  descKey:"tierD" };
+  if (rate >= 25)   return { tier:"D-", descKey:"tierD" };
+  if (rate >= 21)   return { tier:"E+", descKey:"tierE" };
+  if (rate >= 15)   return { tier:"E",  descKey:"tierE" };
   return { tier:"E-", descKey:"tierE" };
 }
 function getTierRank(tier) {
@@ -2401,8 +2391,8 @@ function updateTierDisplay(withAnimation) {
   if (detailEl) {
     var lbHitRateLabel = t.hitRate || "命中率";
     var lbRoiLabel = t.roi || "ROI";
-    detailEl.innerHTML = (t.tierFormula || "綜合分數 = 命中率 × 70% + ROI × 30%") +
-      "<br>（" + lbHitRateLabel + " " + hitRateNorm.toFixed(2) + " × 70% + " + lbRoiLabel + " " + roiNorm.toFixed(2) + " × 30%）";
+    detailEl.innerHTML = (t.tierFormula || "綜合分數 = 命中率 × 50% + ROI × 50%") +
+      "<br>（" + lbHitRateLabel + " " + hitRateNorm.toFixed(2) + " × 50% + " + lbRoiLabel + " " + roiNorm.toFixed(2) + " × 50%）";
   }
 
   tierEl.style.display = "block";
