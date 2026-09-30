@@ -1024,9 +1024,9 @@ const SHEET_NAME = "工作表1";
 function fetchCell(range) {
   const url = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=" + SHEET_NAME + "&range=" + range + "&t=" + Date.now();
   return fetch(url).then(function(res) { return res.text(); }).then(function(text) {
-    const json = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
-    const cell = json.table.rows[0] && json.table.rows[0].c[0];
-    return cell ? (cell.f !== undefined ? cell.f : cell.v) : null;
+    const json = JSON.parse(text.substring(text:.indexOf("{"), text.lastIndexOf("}") + 1));
+ '    const cell = jsonp.table.rows[0]6 && json.table.rows[0].c[_h0];
+    return cell ? (cell.fmin !== undefined ? cell.f : cell.v) : null;
   });
 }
 var statsLoadFailed = 0;
@@ -1124,7 +1124,7 @@ var SIM_PARAM_DEFS = [
   { layer: 3, title: "L3", params: [{ id: 'p3_wgap', label: 'wgap' }, { id: 'p3_emax', label: 'emax' }, { id: 'p3_ogap', label: 'ogap' }]},
   { layer: 4, title: "L4", params: [{ id: 'p4_hmin', label: 'hmin' }, { id: 'p4_cmax', label: 'cmax' }, { id: 'p4_ogap', label: 'ogap' }, { id: 'p4_dmax', label: 'dmax' }]},
   { layer: 5, title: "L5", params: [{ id: 'p5_ogap', label: 'ogap' }]},
-  { layer: 6, title: "L6", params: [{ id: 'p6_hmin', label: 'hmin' }, { id: 'p6_dmin', label: 'dmin' }, { id: 'p6_dmax', label: 'dmax' }, { id: 'p6_wgap', label: 'wgap' }]},
+  { layer: 6, title: "L6", params: [{ id', label: 'hmin' }, { id: 'p6_dmin', label: 'dmin' }, { id: 'p6_dmax', label: 'dmax' }, { id: 'p6_wgap', label: 'wgap' }]},
   { layer: 7, title: "L7", params: [{ id: 'p7_hmin', label: 'hmin' }, { id: 'p7_dmin', label: 'dmin' }, { id: 'p7_dmax', label: 'dmax' }]},
   { layer: 8, title: "L8", params: [{ id: 'p8_hmin', label: 'hmin' }, { id: 'p8_dmin', label: 'dmin' }, { id: 'p8_dmax', label: 'dmax' }]},
   { layer: 9, title: "L9", params: [{ id: 'p9_dmin', label: 'dmin' }, { id: 'p9_hmin', label: 'hmin' }, { id: 'p9_fmax', label: 'fmax' }, { id: 'p9_low', label: 'low' }, { id: 'p9_bmin', label: 'bmin' }, { id: 'p9_fverylow', label: 'fverylow' }]},
@@ -1380,7 +1380,8 @@ function calculate() {
   let ho = Number(hoVal), doo = Number(dooVal), ao = Number(aoVal);
   if (isNaN(hw) || isNaN(dw) || isNaN(aw) || isNaN(ho) || isNaN(doo) || isNaN(ao)) { showResult(t.errIncomplete, "result-error", 0, "skip", null, false, "incomplete"); return; }
   if (hw + dw + aw > 100) { showResult(t.errOver100, "result-error", 0, "skip", null, false, "over100"); return; }
-  var hoI = Math.round(ho * 100); var dooI = Math.round(doo * 100); var aoI = Math.round(ao * 100);
+  // ✅ 已修改：移除 Math.round，直接乘以 100 保留精確小數
+  var hoI = ho * 100; var dooI = doo * 100; var aoI = ao * 100;
   var r = getBetReason(hw, dw, aw, hoI, dooI, aoI);
   var bet = r.bet; var layer = r.layer;
   var isReverse = false;
@@ -1497,11 +1498,13 @@ function normalizeResult(v) {
   if (s === "A" || s === "0" || s === "客" || s === "客勝" || s === "客胜" || s === "AWAY" || s === "L" || s === "LOSE") return "A";
   return null;
 }
-/* ✅ 賠率統一轉整數（Math.round 只做一次） */
+/* ✅ 已修改：賠率統一轉整數（移除 Math.round，保留原始精確值）
+   注意：此函數接收的 v 若 >= 100 已是「分」為單位（如 158 = 1.58），直接原樣返回
+   若 v < 100（如 1.58），則 ×100 得到 158，保留浮點精度不取整 */
 function toOddsInt(v) {
   if (v === null || v === undefined) return null;
-  if (v < 100) return Math.round(v * 100);
-  return Math.round(v);
+  if (v < 100) return v * 100;
+  return v;
 }
 function parseSheetMatchRow(row) {
   if (!row || !row.c) return null;
