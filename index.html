@@ -665,7 +665,7 @@ var MAX_PLAYS = 50;
 var comboCount = 0;
 var DEV_PASSWORD = "football";
 var LEADERBOARD_API = "https://script.google.com/macros/s/AKfycbxwY95XQNs8vOTVdzvWJMoYPffto3PiSvt6S2xwRItsy-TcYsD89sF_W_1GnqJwXY4G/exec";
-var DEBUG_SIM = true; // 開啟除錯模式，記錄每場判定
+var DEBUG_SIM = true;
 
 function normalizePercent(v) {
   if (v === null || v === undefined || v === "") return 0;
@@ -1070,12 +1070,17 @@ function loadStatsWithRetry() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ✅ 精確匹配 Google Sheets ARRAYFORMULA
-   - 賠率以整數比較（hoI、dooI、aoI）
-   - 勝率以小數比較（原始值）
-   - 加入除錯函數 getBetReason() 方便診斷
+   ✅ 完全對齊 Google Sheets ARRAYFORMULA
+   - 賠率統一取整為整數（與 Sheets 的 140、190、380 一致）
+   - 勝率保持小數比較（與 Sheets 一致）
+   - 三個入口（模擬／遊戲／手動）結果 100% 一致
    ═══════════════════════════════════════════════════════════ */
 function getBetReason(hw, dw, aw, hoI, dooI, aoI) {
+  // ✅ 強制取整：避免 JS 浮點誤差（1.58*100=158.00000000000003）影響邊界比較
+  // 與 Google Sheets 的整數比較 100% 對齊
+  hoI  = Math.round(hoI);
+  dooI = Math.round(dooI);
+  aoI  = Math.round(aoI);
   if (dw >= PARAMS.p1_cbmin && Math.abs(hw - aw) <= PARAMS.p1_cgap) return { layer: 1, bet: "D" };
   if (hw >= PARAMS.p2_hmin && aw <= PARAMS.p2_cmax && hoI >= PARAMS.p2_dmin && hoI <= PARAMS.p2_dmax && aoI >= PARAMS.p2_fmin && aoI <= PARAMS.p2_fmax) return { layer: 2, bet: "H" };
   if (Math.abs(hw - aw) <= PARAMS.p3_wgap && dooI < PARAMS.p3_emax && Math.abs(hoI - aoI) < PARAMS.p3_ogap) return { layer: 3, bet: "D" };
@@ -1190,7 +1195,6 @@ function runSimulation() {
   var total = sheetMatchPool.length;
   var stats = { total: 0, betH: 0, betD: 0, betA: 0, betSkip: 0, hitH: 0, hitD: 0, hitA: 0, pnl: 0, layerCount: {} };
   for (var L = 1; L <= 14; L++) stats.layerCount[L] = 0;
-  // 除錯統計：記錄每層出手 D
   var layerDBets = {}; for (var L = 1; L <= 14; L++) layerDBets[L] = 0;
 
   var idx = 0;
@@ -1319,7 +1323,6 @@ function runSimulation() {
     html += '<div class="sim-note">' + (t.simNote || "※ 使用原始數據，每注固定 $100") + '<br>※ ' + (t.simFinishTime || "完成時間") + '：' + new Date().toLocaleString() + '</div>';
     summary.innerHTML = html;
 
-    // 🆕 除錯輸出：印出和局投注數與各層 D 投注數
     if (DEBUG_SIM) {
       console.log("═══════════════════════════════");
       console.log("[模擬除錯] 總樣本:", stats.total);
@@ -1380,8 +1383,8 @@ function calculate() {
   let ho = Number(hoVal), doo = Number(dooVal), ao = Number(aoVal);
   if (isNaN(hw) || isNaN(dw) || isNaN(aw) || isNaN(ho) || isNaN(doo) || isNaN(ao)) { showResult(t.errIncomplete, "result-error", 0, "skip", null, false, "incomplete"); return; }
   if (hw + dw + aw > 100) { showResult(t.errOver100, "result-error", 0, "skip", null, false, "over100"); return; }
-  // ✅ 已修改：移除 Math.round，直接乘以 100 保留精確小數
-  var hoI = ho * 100; var dooI = doo * 100; var aoI = ao * 100;
+  // ✅ 復原：Math.round 取整，與 Sheets 整數比較一致
+  var hoI = Math.round(ho * 100); var dooI = Math.round(doo * 100); var aoI = Math.round(ao * 100);
   var r = getBetReason(hw, dw, aw, hoI, dooI, aoI);
   var bet = r.bet; var layer = r.layer;
   var isReverse = false;
@@ -1498,13 +1501,11 @@ function normalizeResult(v) {
   if (s === "A" || s === "0" || s === "客" || s === "客勝" || s === "客胜" || s === "AWAY" || s === "L" || s === "LOSE") return "A";
   return null;
 }
-/* ✅ 已修改：賠率統一轉整數（移除 Math.round，保留原始精確值）
-   注意：此函數接收的 v 若 >= 100 已是「分」為單位（如 158 = 1.58），直接原樣返回
-   若 v < 100（如 1.58），則 ×100 得到 158，保留浮點精度不取整 */
+/* ✅ 復原：賠率統一轉整數（Math.round），與 Sheets 的整數比較一致 */
 function toOddsInt(v) {
   if (v === null || v === undefined) return null;
-  if (v < 100) return v * 100;
-  return v;
+  if (v < 100) return Math.round(v * 100);
+  return Math.round(v);
 }
 function parseSheetMatchRow(row) {
   if (!row || !row.c) return null;
