@@ -3,92 +3,122 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>智能量化足球預測系統 v2.0</title>
+<title>智能量化足球預測系統 v2.0 Pro</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root[data-theme="dark"]{--bg:#0d0d14;--bg2:#14141f;--card:linear-gradient(135deg,#1a1a2e,#16213e);--panel:rgba(255,255,255,0.05);--stat:rgba(255,255,255,0.06);--input:rgba(255,255,255,0.08);--tx1:#fff;--tx2:#a0c4ff;--tx3:#8db4e2;--tx4:#6b7f9e;--tx5:#ccc;--bd:rgba(255,255,255,0.1);--bdi:rgba(255,255,255,0.2);--ph:rgba(255,255,255,0.4);--thumb:#555;--sw:rgba(26,26,46,0.92)}
-:root[data-theme="light"]{--bg:#eef1f6;--bg2:#fff;--card:linear-gradient(135deg,#fff,#eef3ff);--panel:rgba(0,0,0,0.03);--stat:rgba(0,0,0,0.05);--input:rgba(0,0,0,0.04);--tx1:#1a1a2e;--tx2:#3b5aa0;--tx3:#5a7bc0;--tx4:#8a9ab0;--tx5:#444;--bd:rgba(0,0,0,0.1);--bdi:rgba(0,0,0,0.15);--ph:rgba(0,0,0,0.35);--thumb:#c0c0c0;--sw:rgba(255,255,255,0.95)}
+:root[data-theme="dark"]{--bg:#121212;--card:linear-gradient(135deg,#1a1a2e,#16213e);--sw:rgba(26,26,46,.9);--panel:rgba(255,255,255,.05);--stat:rgba(255,255,255,.08);--input:rgba(255,255,255,.08);--inputF:rgba(255,255,255,.12);--tx1:#fff;--tx2:#a0c4ff;--tx3:#8db4e2;--tx4:#6b7f9e;--tx5:#ccc;--txDis:#888;--bd:rgba(255,255,255,.1);--bdi:rgba(255,255,255,.2);--swB:rgba(255,255,255,.2);--ph:rgba(255,255,255,.4);--th:#555}
+:root[data-theme="light"]{--bg:#eef1f6;--card:linear-gradient(135deg,#fff,#eef3ff);--sw:rgba(255,255,255,.95);--panel:rgba(0,0,0,.03);--stat:rgba(0,0,0,.05);--input:rgba(0,0,0,.04);--inputF:rgba(0,0,0,.07);--tx1:#1a1a2e;--tx2:#3b5aa0;--tx3:#5a7bc0;--tx4:#8a9ab0;--tx5:#444;--txDis:#aaa;--bd:rgba(0,0,0,.1);--bdi:rgba(0,0,0,.15);--swB:rgba(0,0,0,.15);--ph:rgba(0,0,0,.35);--th:#c0c0c0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx1);min-height:100vh;transition:background .3s}
-button,input,select{font-family:inherit}
-.fixed-btn{position:fixed;top:12px;z-index:9999;background:var(--sw);border:1px solid var(--bdi);border-radius:10px;height:36px;padding:0 14px;display:flex;align-items:center;color:var(--tx1);font-size:14px;cursor:pointer;backdrop-filter:blur(12px);user-select:none;transition:transform .15s}
-.fixed-btn:active{transform:scale(.95)}
-#themeSwitcher{left:12px}
-.lang-box{right:12px}
-.lang-box select{background:transparent;color:var(--tx2);border:none;outline:none;font-size:13px;font-weight:bold;cursor:pointer}
-.lang-box select option{background:var(--bg2);color:var(--tx1)}
-.toast-wrap{position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:99999;display:flex;flex-direction:column;gap:8px;pointer-events:none;align-items:center}
-.toast{padding:12px 24px;border-radius:12px;font-size:14px;font-weight:700;backdrop-filter:blur(12px);box-shadow:0 8px 24px rgba(0,0,0,0.4);animation:toastIn .3s}
-.toast.s{background:rgba(34,197,94,.95);color:#fff}
-.toast.e{background:rgba(239,68,68,.95);color:#fff}
-.toast.i{background:rgba(96,165,250,.95);color:#fff}
-@keyframes toastIn{from{opacity:0;transform:translateY(-20px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes toastOut{to{opacity:0;transform:translateY(-20px) scale(.9)}}
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:99998;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(8px)}
-.overlay.on{display:flex}
-#termsPage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px 20px 40px}
-.terms-box{background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:28px;max-width:440px;width:100%;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.4)}
-.terms-box h2{text-align:center;font-size:20px;margin-bottom:16px;color:var(--tx1)}
-.terms-scroll{flex:1;overflow-y:auto;padding:16px;background:var(--panel);border-radius:12px;margin-bottom:16px;border:1px solid var(--bd);-webkit-overflow-scrolling:touch}
-.terms-scroll h3{font-size:15px;color:var(--tx2);margin:14px 0 8px}
-.terms-scroll p,.terms-scroll li{font-size:13.5px;line-height:1.7;color:var(--tx5);margin:6px 0}
+.theme-sw{position:fixed!important;top:12px!important;left:12px!important;z-index:99999!important;background:var(--sw);border:1px solid var(--swB);border-radius:8px;height:32px;padding:0 12px;display:flex;align-items:center;justify-content:center;color:var(--tx1);font-size:16px;cursor:pointer;backdrop-filter:blur(10px);user-select:none}
+.lang-sw{position:fixed!important;top:12px!important;right:12px!important;z-index:99999!important;background:var(--sw);border:1px solid var(--swB);border-radius:8px;height:32px;padding:0 10px;display:flex;align-items:center;color:var(--tx1);font-size:13px;cursor:pointer;backdrop-filter:blur(10px)}
+.lang-sw select{background:transparent;color:var(--tx2);border:none;outline:none;font-size:13px;cursor:pointer;font-weight:bold;height:100%}
+.lang-sw select option{background:var(--bg);color:var(--tx1)}
+.wa{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9998;background:var(--sw);border:1px solid rgba(37,211,102,.5);border-radius:24px;padding:10px 20px;backdrop-filter:blur(10px);white-space:nowrap}
+.wa a{color:#25D366;font-size:14px;font-weight:bold;text-decoration:none}
+.toasts{position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:999999;display:flex;flex-direction:column;gap:8px;pointer-events:none;align-items:center}
+.toast{padding:12px 22px;border-radius:10px;font-size:14px;font-weight:bold;backdrop-filter:blur(12px);box-shadow:0 6px 20px rgba(0,0,0,.35);animation:tIn .3s ease-out;white-space:nowrap}
+.toast.ok{background:rgba(34,197,94,.95);color:#fff}
+.toast.er{background:rgba(239,68,68,.95);color:#fff}
+.toast.inf{background:rgba(96,165,250,.95);color:#fff}
+@keyframes tIn{from{opacity:0;transform:translateY(-20px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes tOut{to{opacity:0;transform:translateY(-20px) scale(.9)}}
+.combo{position:fixed;top:110px;left:50%;transform:translateX(-50%);z-index:999998;pointer-events:none;display:none}
+.combo.show{display:block;animation:cf 3s ease-out forwards}
+.combo-in{background:linear-gradient(135deg,#FF6B00,#FF3D00,#FF8C00);border:3px solid #FFD700;border-radius:18px;padding:14px 32px;box-shadow:0 0 30px rgba(255,100,0,.85);color:#fff;font-weight:900;display:flex;align-items:center;gap:12px;white-space:nowrap;font-size:26px}
+@keyframes cf{0%{opacity:0;transform:translateX(-50%) translateY(-20px) scale(.8)}15%{opacity:1;transform:translateX(-50%) translateY(0) scale(1.08)}25%,85%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}100%{opacity:0;transform:translateX(-50%) translateY(-20px) scale(1)}}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999998;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)}
+.ov.show{display:flex}
+.go-box,.lb-box,.sim-box{background:var(--card);border:2px solid var(--bd);border-radius:18px}
+.go-box{padding:26px 22px;max-width:380px;width:100%;text-align:center}
+.go-title{font-size:22px;font-weight:900;margin-bottom:10px}
+.go-tier{display:inline-flex;align-items:center;justify-content:center;width:130px;height:80px;border-radius:16px;font-size:42px;font-weight:900;letter-spacing:3px;margin:10px 0 14px;border:2px solid rgba(255,255,255,.35)}
+.go-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 18px}
+.go-stat{background:var(--stat);border-radius:8px;padding:10px}
+.go-stat-l{font-size:11px;color:var(--tx3);margin-bottom:3px}
+.go-stat-v{font-size:18px;font-weight:900}
+.go-btn{width:100%;padding:14px;border-radius:10px;font-size:16px;font-weight:900;cursor:pointer;border:none;margin-top:8px}
+.go-btn-p{background:linear-gradient(135deg,#007aff,#0051d5);color:#fff}
+.go-btn-s{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff}
+.lb-box{padding:0;max-width:440px;width:100%;max-height:85vh;display:flex;flex-direction:column}
+.lb-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bd)}
+.lb-title{font-size:17px;font-weight:900}
+.lb-close{background:transparent;border:none;font-size:18px;color:var(--tx4);cursor:pointer;padding:4px 8px}
+.lb-content{flex:1;overflow-y:auto;padding:12px 16px}
+.lb-loading,.lb-empty{text-align:center;color:var(--tx4);font-size:14px;padding:40px 0}
+.lb-row{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;padding:10px 8px;border-radius:8px;border-bottom:1px solid var(--bd)}
+.lb-row.t1{background:linear-gradient(90deg,rgba(255,215,0,.12),transparent);border-left:3px solid #FFD700}
+.lb-row.t2{background:linear-gradient(90deg,rgba(192,192,192,.10),transparent);border-left:3px solid #C0C0C0}
+.lb-row.t3{background:linear-gradient(90deg,rgba(205,127,50,.10),transparent);border-left:3px solid #CD7F32}
+.lb-rank{font-size:15px;font-weight:900;text-align:center;color:var(--tx4)}
+.lb-rank.g{color:#FFD700}
+.lb-rank.s{color:#C0C0C0}
+.lb-rank.b{color:#CD7F32}
+.lb-name{font-size:14px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-meta{font-size:11px;color:var(--tx3);margin-top:2px}
+.lb-tier{display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:900}
+.lb-score{font-size:11px;color:var(--tx2);margin-top:2px;font-weight:bold}
+.lb-foot{padding:12px 16px;border-top:1px solid var(--bd);text-align:center}
+.lb-refresh{padding:9px 20px;border-radius:7px;font-size:13px;font-weight:bold;cursor:pointer;background:rgba(96,165,250,.15);color:#60a5fa;border:1px solid rgba(96,165,250,.5)}
+.lb-sect{margin-top:20px}
+.lb-sect-t{text-align:center;font-size:16px;margin:0 0 10px;color:var(--tx2)}
+.lb-mini{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:6px 10px;margin-bottom:10px}
+.lb-showall{width:100%;padding:10px;border-radius:7px;font-size:13px;font-weight:bold;cursor:pointer;background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,165,0,.15));color:#fbbf24;border:1px solid rgba(255,215,0,.5)}
+#termsPage{display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px;padding-top:60px}
+.terms-box{background:var(--card);color:var(--tx1);border-radius:16px;padding:25px;width:100%;max-width:400px;display:flex;flex-direction:column;max-height:80vh;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.terms-box h2{text-align:center;margin:0 0 15px;font-size:20px}
+.terms-scroll{overflow-y:auto;flex:1;padding:15px;margin-bottom:15px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);-webkit-overflow-scrolling:touch}
+.terms-scroll h3{color:var(--tx2);font-size:15px;margin:15px 0 8px}
+.terms-scroll p,.terms-scroll li{font-size:14px;line-height:1.6;color:var(--tx5);margin:5px 0}
 .terms-scroll ul{padding-left:20px}
 .terms-scroll::-webkit-scrollbar{width:6px}
-.terms-scroll::-webkit-scrollbar-thumb{background:var(--thumb);border-radius:3px}
-#agreeBtn{width:100%;padding:16px;background:#2a2a3a;color:#666;border:none;border-radius:12px;font-size:16px;font-weight:900;cursor:pointer;transition:all .3s}
-#agreeBtn.on{background:linear-gradient(135deg,#007aff,#0051d5);color:#fff;box-shadow:0 8px 24px rgba(0,122,255,.4)}
-#app{display:none;flex-direction:column;align-items:center;padding:20px 16px 120px;min-height:100vh}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:24px;width:100%;max-width:420px;margin-bottom:16px;box-shadow:0 10px 32px rgba(0,0,0,.15)}
-.card h3{font-size:15px;color:var(--tx2);text-align:center;margin-bottom:16px;letter-spacing:.5px}
-.badge{display:inline-block;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:800;letter-spacing:.5px}
-.badge-v2{background:linear-gradient(135deg,#c084fc,#7c3aed);color:#fff}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.stat{background:var(--stat);border-radius:12px;padding:12px 8px;text-align:center}
-.stat .lbl{font-size:10.5px;color:var(--tx4);margin-bottom:5px;font-weight:600;letter-spacing:.3px}
-.stat .val{font-size:18px;font-weight:900;color:var(--tx1)}
-.stat .val.p{color:#22c55e}
-.stat .val.n{color:#ef4444}
-.stat .val.w{color:#f59e0b}
-:root[data-theme="dark"] .stat .val.p{color:#4ade80}
-:root[data-theme="dark"] .stat .val.n{color:#f87171}
-:root[data-theme="dark"] .stat .val.w{color:#fbbf24}
-.note{text-align:center;font-size:11px;color:var(--tx4);margin-top:12px}
-.inp-group{margin-bottom:14px}
-.inp-group label{display:block;font-size:13px;color:var(--tx2);margin-bottom:6px;font-weight:600}
-.inp-wrap{position:relative}
-.inp-wrap input{width:100%;padding:13px 14px;background:var(--input);border:1.5px solid var(--bdi);border-radius:12px;font-size:16px;color:var(--tx1);outline:none;transition:all .2s;font-weight:600}
-.inp-wrap input:focus{border-color:#60a5fa;background:var(--stat)}
-.inp-wrap input::placeholder{color:var(--ph);font-weight:400}
-.inp-wrap .suf{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--tx3);font-size:14px;font-weight:800;pointer-events:none}
-.btn-calc{width:100%;padding:16px;background:linear-gradient(135deg,#007aff,#0051d5);color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:900;cursor:pointer;margin-top:8px;letter-spacing:.5px;box-shadow:0 8px 20px rgba(0,122,255,.35);transition:transform .15s}
-.btn-calc:active{transform:scale(.97)}
-.btn-sec{padding:11px 18px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;border:none;transition:transform .15s;letter-spacing:.3px}
-.btn-sec:active:not(:disabled){transform:scale(.96)}
-.btn-sec:disabled{opacity:.4;cursor:not-allowed}
-/* 結果卡 */
-.result{margin-top:18px;display:none;animation:fadeUp .4s}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.result-main{padding:20px;border-radius:16px;text-align:center;margin-bottom:12px}
-.rm-H{background:linear-gradient(135deg,rgba(74,222,128,.15),rgba(34,197,94,.1));border:2px solid rgba(74,222,128,.5)}
-.rm-D{background:linear-gradient(135deg,rgba(251,191,36,.15),rgba(245,158,11,.1));border:2px solid rgba(251,191,36,.5)}
-.rm-A{background:linear-gradient(135deg,rgba(96,165,250,.15),rgba(59,130,246,.1));border:2px solid rgba(96,165,250,.5)}
-.rm-S{background:rgba(156,163,175,.1);border:2px solid rgba(156,163,175,.4)}
-.rm-E{background:rgba(248,113,113,.1);border:2px solid rgba(248,113,113,.5)}
-.result-title{font-size:24px;font-weight:900;margin-bottom:6px}
-.rm-H .result-title{color:#16a34a}
-.rm-D .result-title{color:#d97706}
-.rm-A .result-title{color:#2563eb}
-.rm-S .result-title{color:#6b7280}
-.rm-E .result-title{color:#dc2626}
-:root[data-theme="dark"] .rm-H .result-title{color:#4ade80}
-:root[data-theme="dark"] .rm-D .result-title{color:#fbbf24}
-:root[data-theme="dark"] .rm-A .result-title{color:#60a5fa}
-:root[data-theme="dark"] .rm-S .result-title{color:#9ca3af}
-:root[data-theme="dark"] .rm-E .result-title{color:#f87171}
-.stars{font-size:20px;letter-spacing:2px;margin:4px 0}
-.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
-.metric{background:var(--stat);border-radius:12px;padding:14px 8px;text-align:center}
-.metric .ml{font-size:10.5px;color:var(--tx4);margin-bottom:5px;font-weight:700;letter-spacing:.3px}
-.metric .mv{font-size:17px;font-weight:900}
+.terms-scroll::-webkit-scrollbar-thumb{background:var(--th);border-radius:3px}
+#agreeBtn{width:100%;padding:15px;background:#333;color:var(--txDis);border:none;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;transition:background .3s}
+#agreeBtn.on{background:#007aff;color:#fff}
+#app{display:none;flex-direction:column;justify-content:center;align-items:center;min-height:100vh;padding:20px;padding-top:60px;padding-bottom:100px}
+.card{width:100%;max-width:400px;background:var(--card);color:var(--tx1);border-radius:16px;padding:25px;box-shadow:0 10px 30px rgba(0,0,0,.3);margin-bottom:20px}
+.card h3{text-align:center;font-size:15px;margin:0 0 15px;color:var(--tx2);letter-spacing:1px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat{background:var(--stat);border-radius:10px;padding:12px;text-align:center}
+.stat .l{font-size:11px;color:var(--tx3);margin-bottom:4px}
+.stat .v{font-size:20px;font-weight:bold}
+.stat .v.p{color:#16a34a}
+.stat .v.n{color:#dc2626}
+.stat .v.w{color:#d97706}
+:root[data-theme="dark"] .stat .v.p{color:#4ade80}
+:root[data-theme="dark"] .stat .v.n{color:#f87171}
+:root[data-theme="dark"] .stat .v.w{color:#fbbf24}
+.stats-note{text-align:center;font-size:11px;color:var(--tx4);margin-top:12px}
+.container h2{text-align:center;margin-bottom:5px;font-size:20px}
+.container .sub{text-align:center;font-size:13px;color:var(--tx3);margin:3px 0}
+.mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;background:var(--panel);padding:4px;border-radius:10px}
+.mode-tab{padding:10px;border-radius:8px;font-size:13px;font-weight:900;cursor:pointer;border:none;background:transparent;color:var(--tx3);transition:all .2s}
+.mode-tab.on{background:linear-gradient(135deg,#007aff,#0051d5);color:#fff;box-shadow:0 4px 12px rgba(0,122,255,.35)}
+.mode-tab.on.v2{background:linear-gradient(135deg,#c084fc,#7c3aed);box-shadow:0 4px 12px rgba(192,132,252,.35)}
+.ig{margin-bottom:15px}
+.ig label{display:block;font-size:14px;margin-bottom:5px;color:var(--tx2)}
+.iw{position:relative}
+.iw input{width:100%;padding:12px;padding-right:32px;background:var(--input);border:1px solid var(--bdi);border-radius:8px;font-size:16px;color:var(--tx1);outline:none}
+.iw input:focus{border-color:#60a5fa;background:var(--inputF)}
+.iw .s{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--tx2);font-size:15px;font-weight:bold;pointer-events:none}
+#calcBtn{width:100%;padding:15px;background:linear-gradient(135deg,#007aff,#0051d5);color:#fff;border:none;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;margin-top:10px}
+#calcBtn.v2{background:linear-gradient(135deg,#c084fc,#7c3aed)}
+.rb{margin-top:25px;padding:20px;border-radius:12px;text-align:center;font-size:22px;font-weight:bold;display:none}
+.rb.H{background:rgba(74,222,128,.15);color:#16a34a;border:1px solid rgba(74,222,128,.4)}
+.rb.A{background:rgba(96,165,250,.15);color:#2563eb;border:1px solid rgba(96,165,250,.4)}
+.rb.D{background:rgba(251,191,36,.15);color:#d97706;border:1px solid rgba(251,191,36,.4)}
+.rb.S{background:rgba(156,163,175,.15);color:#6b7280;border:1px solid rgba(156,163,175,.4)}
+.rb.E{background:rgba(248,113,113,.15);color:#dc2626;border:1px solid rgba(248,113,113,.4)}
+:root[data-theme="dark"] .rb.H{color:#4ade80}
+:root[data-theme="dark"] .rb.A{color:#60a5fa}
+:root[data-theme="dark"] .rb.D{color:#fbbf24}
+:root[data-theme="dark"] .rb.S{color:#9ca3af}
+:root[data-theme="dark"] .rb.E{color:#f87171}
+.stars{font-size:22px;letter-spacing:3px;margin:6px 0}
+.metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px;display:none}
+.metrics.show{display:grid}
+.metric{background:var(--stat);border-radius:10px;padding:12px 6px;text-align:center}
+.metric .ml{font-size:10px;color:var(--tx4);margin-bottom:4px;font-weight:700}
+.metric .mv{font-size:18px;font-weight:900}
 .metric .mv.p{color:#22c55e}
 .metric .mv.n{color:#ef4444}
 .metric .mv.w{color:#f59e0b}
@@ -97,156 +127,190 @@ button,input,select{font-family:inherit}
 :root[data-theme="dark"] .metric .mv.n{color:#f87171}
 :root[data-theme="dark"] .metric .mv.w{color:#fbbf24}
 :root[data-theme="dark"] .metric .mv.b{color:#60a5fa}
-.compare{background:var(--panel);border-radius:12px;padding:14px;border:1px solid var(--bd);margin-bottom:12px}
-.compare-title{font-size:12px;color:var(--tx2);margin-bottom:10px;font-weight:800;letter-spacing:.5px}
-.compare-row{display:grid;grid-template-columns:60px 1fr 1fr;gap:8px;align-items:center;padding:6px 0;font-size:12px;border-bottom:1px solid var(--bd)}
-.compare-row:last-child{border-bottom:none}
-.compare-row .lbl{font-weight:800;color:var(--tx3)}
-.compare-row .v1,.compare-row .v2{font-family:monospace;text-align:right;font-weight:700}
-.compare-row .v1{color:var(--tx4)}
-.compare-row .v2{color:var(--tx1)}
-.reason{padding:14px;border-radius:12px;background:var(--panel);border-left:3px solid #60a5fa;font-size:12.5px;line-height:1.7;color:var(--tx5)}
-/* 遊戲 */
-.game-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
-.gc{text-align:center}
-.gc .gl{display:block;font-size:10px;color:var(--tx4);margin-bottom:2px;font-weight:700}
-.gc .gv{display:block;font-size:14px;font-weight:900}
-.game-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
-.gbtn{padding:11px 4px;border-radius:10px;font-size:13.5px;font-weight:800;cursor:pointer;transition:transform .15s}
+.cmp{margin-top:12px;background:var(--panel);border-radius:10px;padding:12px;border:1px solid var(--bd);display:none}
+.cmp.show{display:block}
+.cmp-t{font-size:12px;color:var(--tx2);margin-bottom:8px;font-weight:800}
+.cmp-r{display:grid;grid-template-columns:60px 1fr 1fr;gap:8px;align-items:center;padding:5px 0;font-size:12px;border-bottom:1px solid var(--bd)}
+.cmp-r:last-child{border-bottom:none}
+.cmp-r .l{font-weight:800;color:var(--tx3)}
+.cmp-r .v1,.cmp-r .v2{font-family:monospace;text-align:right;font-weight:700}
+.cmp-r .v1{color:var(--tx4)}
+.cmp-r .v2{color:var(--tx1)}
+.ev-box{margin-top:10px;padding:12px;border-radius:8px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);font-size:15px;text-align:center;color:#2563eb;font-weight:bold;display:none}
+.ev-box .p{color:#16a34a}
+.ev-box .n{color:#dc2626}
+:root[data-theme="dark"] .ev-box{color:#60a5fa}
+:root[data-theme="dark"] .ev-box .p{color:#4ade80}
+:root[data-theme="dark"] .ev-box .n{color:#f87171}
+.hint{margin-top:10px;padding:12px;border-radius:8px;background:var(--panel);border:1px solid var(--bd);font-size:13px;line-height:1.6;color:var(--tx2);text-align:left;display:none}
+.game-panel{margin-top:20px}
+.game-panel h2{text-align:center;margin:0 0 3px;font-size:19px}
+.game-panel .gs{text-align:center;font-size:12px;color:var(--tx3);margin:2px 0 6px}
+.db-info{text-align:center;font-size:11px;color:var(--tx4);margin-bottom:6px;padding:4px 10px;background:var(--panel);border-radius:6px;border:1px dashed var(--bd)}
+.tier-hint{text-align:center;font-size:11px;color:var(--tx4);margin-bottom:8px;padding:6px 10px;background:var(--panel);border-radius:6px;border:1px dashed var(--bd);line-height:1.5}
+.game-tier{display:none;text-align:center;margin-bottom:8px;padding:10px;border-radius:12px;background:var(--panel);border:1px solid var(--bd)}
+.tier-wrap{position:relative;display:inline-block}
+.tier-badge{display:inline-flex;align-items:center;justify-content:center;width:120px;height:70px;border-radius:14px;font-size:36px;font-weight:900;letter-spacing:2px;transition:all .6s;border:2px solid rgba(255,255,255,.35)}
+.tier-arrow{position:absolute;top:-14px;right:-10px;font-size:38px;font-weight:900;pointer-events:none;opacity:0}
+.tier-arrow.up{color:#22c55e;animation:aUp 1.8s ease-out}
+.tier-arrow.dn{color:#ef4444;animation:aDn 1.8s ease-out}
+@keyframes aUp{0%{opacity:0;transform:translateY(24px) scale(.3)}25%{opacity:1;transform:translateY(-8px) scale(1.4)}50%,80%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-24px) scale(1)}}
+@keyframes aDn{0%{opacity:0;transform:translateY(-24px) scale(.3)}25%{opacity:1;transform:translateY(8px) scale(1.4)}50%,80%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(24px) scale(1)}}
+.tier-desc{font-size:11px;margin-top:6px;font-weight:bold}
+.tier-score{margin-top:6px;padding:6px 14px;display:inline-block;border-radius:9px;background:linear-gradient(135deg,rgba(96,165,250,.10),rgba(192,132,252,.10));border:1px solid rgba(96,165,250,.35)}
+.tier-score-l{font-size:9px;color:var(--tx3);margin-bottom:2px;letter-spacing:1px;font-weight:bold}
+.tier-score-v{font-size:24px;font-weight:900;letter-spacing:1px;line-height:1}
+.tier-score-d{font-size:9px;color:var(--tx4);margin-top:3px;line-height:1.3}
+.game-stats{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;margin-bottom:6px}
+.gstat{background:var(--stat);border-radius:6px;padding:5px 3px;text-align:center}
+.gstat .l{font-size:9px;color:var(--tx3);margin-bottom:1px}
+.gstat .v{font-size:14px;font-weight:bold}
+.gstat .v.p{color:#16a34a}
+.gstat .v.n{color:#dc2626}
+:root[data-theme="dark"] .gstat .v.p{color:#4ade80}
+:root[data-theme="dark"] .gstat .v.n{color:#f87171}
+.game-match{background:var(--panel);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin-bottom:6px}
+.gm-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:4px}
+.gm-row:last-child{margin-bottom:0}
+.gm-c{text-align:center}
+.gm-c .l{display:block;font-size:9px;color:var(--tx3);margin-bottom:1px}
+.gm-c .v{display:block;font-size:13px;font-weight:bold}
+.gbtn-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
+.gbtn{padding:10px 4px;border-radius:7px;font-size:13px;font-weight:bold;cursor:pointer;transition:transform .15s}
 .gbtn:active:not(:disabled){transform:scale(.95)}
-.gbtn:disabled{opacity:.4;cursor:not-allowed}
-.gbtn.H{background:rgba(74,222,128,.15);color:#16a34a;border:1.5px solid rgba(74,222,128,.5)}
-.gbtn.D{background:rgba(251,191,36,.15);color:#d97706;border:1.5px solid rgba(251,191,36,.5)}
-.gbtn.A{background:rgba(96,165,250,.15);color:#2563eb;border:1.5px solid rgba(96,165,250,.5)}
+.gbtn.H{background:rgba(74,222,128,.15);color:#16a34a;border:1px solid rgba(74,222,128,.5)}
+.gbtn.D{background:rgba(251,191,36,.15);color:#d97706;border:1px solid rgba(251,191,36,.5)}
+.gbtn.A{background:rgba(96,165,250,.15);color:#2563eb;border:1px solid rgba(96,165,250,.5)}
 :root[data-theme="dark"] .gbtn.H{color:#4ade80}
 :root[data-theme="dark"] .gbtn.D{color:#fbbf24}
 :root[data-theme="dark"] .gbtn.A{color:#60a5fa}
-.gbtn.Next{background:#007aff;color:#fff;border:none}
-.gbtn.Auto{background:linear-gradient(135deg,rgba(192,132,252,.25),rgba(96,165,250,.25));color:#c084fc;border:1.5px solid rgba(192,132,252,.55)}
-.gbtn.Skip{background:rgba(156,163,175,.15);color:#9ca3af;border:1.5px solid rgba(156,163,175,.5)}
-.gstats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
-.gstat{background:var(--stat);border-radius:10px;padding:8px 4px;text-align:center}
-.gstat .l{font-size:9.5px;color:var(--tx4);font-weight:700}
-.gstat .v{font-size:14px;font-weight:900;margin-top:2px}
-.gmsg{padding:12px;border-radius:10px;text-align:center;font-size:13px;font-weight:700;margin-bottom:10px;line-height:1.5;display:none}
-.gmsg.win{background:rgba(74,222,128,.15);color:#16a34a;border:1px solid rgba(74,222,128,.4);display:block}
-.gmsg.lose{background:rgba(248,113,113,.15);color:#dc2626;border:1px solid rgba(248,113,113,.4);display:block}
-.gmsg.info{background:rgba(96,165,250,.12);color:#2563eb;border:1px solid rgba(96,165,250,.35);display:block}
-:root[data-theme="dark"] .gmsg.win{color:#4ade80}
-:root[data-theme="dark"] .gmsg.lose{color:#f87171}
-:root[data-theme="dark"] .gmsg.info{color:#60a5fa}
-/* 排行榜 */
-.lb-row{display:grid;grid-template-columns:40px 1fr auto;gap:10px;padding:10px 8px;border-radius:10px;border-bottom:1px solid var(--bd);align-items:center}
-.lb-row.t1{background:linear-gradient(90deg,rgba(255,215,0,.1),transparent);border-left:3px solid #FFD700}
-.lb-row.t2{background:linear-gradient(90deg,rgba(192,192,192,.1),transparent);border-left:3px solid #C0C0C0}
-.lb-row.t3{background:linear-gradient(90deg,rgba(205,127,50,.1),transparent);border-left:3px solid #CD7F32}
-.lb-rank{font-size:15px;font-weight:900;text-align:center;color:var(--tx4)}
-.lb-rank.g{color:#FFD700}
-.lb-rank.s{color:#C0C0C0}
-.lb-rank.b{color:#CD7F32}
-.lb-name{font-size:13.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lb-meta{font-size:10.5px;color:var(--tx4);margin-top:2px}
-.lb-tier{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:900}
-.lb-score{font-size:11px;color:var(--tx2);margin-top:2px;text-align:right;font-weight:700}
-.lb-box{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:6px 10px;margin-bottom:10px}
-/* 模擬 */
-.sim-box{background:var(--card);border:2px solid var(--bd);border-radius:20px;max-width:700px;width:100%;max-height:94vh;display:flex;flex-direction:column;overflow:hidden}
-.sim-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bd)}
+.gbtn.next{background:#007aff;color:#fff;border:none}
+.gbtn.auto{background:linear-gradient(135deg,rgba(192,132,252,.25),rgba(96,165,250,.25));color:#c084fc;border:1px solid rgba(192,132,252,.55)}
+.gbtn.skip{background:rgba(156,163,175,.15);color:#9ca3af;border:1px solid rgba(156,163,175,.5)}
+.gbtn:disabled{opacity:.4;cursor:not-allowed}
+.gbtn.dev{width:100%;padding:10px;border-radius:7px;font-size:13px;font-weight:900;cursor:pointer;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border:2px solid #4ade80;margin-bottom:6px;display:none}
+.dev-special{display:none;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
+.dev-special.show{display:grid}
+.dev-special button{padding:10px 4px;border-radius:7px;font-size:13px;font-weight:900;cursor:pointer}
+.dev-special .H{background:linear-gradient(135deg,rgba(74,222,128,.35),rgba(22,163,74,.25));color:#4ade80;border:2px solid rgba(74,222,128,.75)}
+.dev-special .D{background:linear-gradient(135deg,rgba(251,191,36,.35),rgba(217,119,6,.25));color:#fbbf24;border:2px solid rgba(251,191,36,.75)}
+.dev-special .A{background:linear-gradient(135deg,rgba(96,165,250,.35),rgba(37,99,235,.25));color:#60a5fa;border:2px solid rgba(96,165,250,.75)}
+.game-msg{padding:10px 12px;border-radius:8px;text-align:center;font-size:14px;font-weight:bold;margin-bottom:6px;display:none;line-height:1.4}
+.game-msg.win{background:rgba(74,222,128,.15);color:#16a34a;border:1px solid rgba(74,222,128,.4);display:block}
+.game-msg.lose{background:rgba(248,113,113,.15);color:#dc2626;border:1px solid rgba(248,113,113,.4);display:block}
+.game-msg.info{background:rgba(96,165,250,.12);color:#2563eb;border:1px solid rgba(96,165,250,.35);display:block}
+:root[data-theme="dark"] .game-msg.win{color:#4ade80}
+:root[data-theme="dark"] .game-msg.lose{color:#f87171}
+:root[data-theme="dark"] .game-msg.info{color:#60a5fa}
+.game-msg .pnl{display:inline-block;font-size:18px;font-weight:900;margin-left:8px}
+.skip-help{font-size:10px;color:var(--tx4);text-align:center;margin-bottom:6px;padding:5px 8px;background:var(--panel);border-radius:5px;border:1px dashed var(--bd)}
+.dev-unlock{text-align:center;margin-top:8px}
+.dev-unlock button{background:transparent;border:1px dashed var(--bd);color:var(--tx4);font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer}
+.dev-settings{display:none;margin-top:6px;grid-template-columns:1fr 1fr;gap:8px}
+.dev-settings.show{display:grid}
+.dev-settings button{padding:10px 12px;border-radius:7px;font-size:13px;font-weight:bold;cursor:pointer}
+.dev-settings .s1{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.5)}
+.dev-settings .s2{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.5)}
+.dev-panel{display:none;margin-top:10px;padding:12px;background:rgba(34,197,94,.05);border:2px dashed rgba(34,197,94,.4);border-radius:10px}
+.dev-panel.show{display:block}
+.dev-panel-t{font-size:13px;font-weight:900;color:#22c55e;text-align:center;margin-bottom:10px}
+.dev-layer{background:var(--panel);border:1px solid var(--bd);border-radius:7px;padding:8px;margin-bottom:8px}
+.dev-layer-t{font-size:11px;font-weight:bold;color:#22c55e;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--bd)}
+.dev-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dev-item{display:flex;flex-direction:column}
+.dev-item label{font-size:9px;color:var(--tx3);margin-bottom:2px;font-weight:bold}
+.dev-item input{width:100%;padding:5px 7px;background:var(--input);border:1px solid var(--bdi);border-radius:5px;font-size:12px;color:var(--tx1);outline:none;font-family:monospace}
+.dev-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.dev-btns button{padding:10px;border-radius:5px;font-size:12px;font-weight:bold;cursor:pointer;border:none}
+.dev-btns .r{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.4)}
+.dev-btns .a{background:rgba(34,197,94,.2);color:#22c55e;border:1px solid rgba(34,197,94,.5)}
+.dev-close{width:100%;padding:8px;margin-top:6px;border-radius:5px;background:transparent;color:var(--tx4);border:1px dashed var(--bd);cursor:pointer;font-size:11px;font-weight:bold}
+@keyframes tierPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes tierGrad{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.sim-row{text-align:center;margin-top:8px}
+.sim-btn{padding:10px 22px;border-radius:7px;font-size:13px;font-weight:900;cursor:pointer;background:linear-gradient(135deg,rgba(96,165,250,.25),rgba(192,132,252,.25));color:#c084fc;border:2px solid rgba(192,132,252,.6)}
+.sim-box{padding:0;max-width:700px;width:100%;max-height:94vh;display:flex;flex-direction:column}
+.sim-head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--bd)}
 .sim-title{font-size:16px;font-weight:900}
-.sim-close{background:transparent;border:none;font-size:20px;color:var(--tx4);cursor:pointer;padding:4px 8px}
-.sim-progress{padding:12px 20px 8px}
-.sim-bar{height:8px;background:rgba(128,128,128,.15);border-radius:4px;overflow:hidden}
-.sim-fill{height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#16a34a);transition:width .2s}
-.sim-ptext{font-size:11px;color:var(--tx3);text-align:center;margin-top:6px;font-family:monospace}
-.sim-term{background:#050508;color:#0f8;font-family:'Courier New',monospace;font-size:11px;line-height:1.5;padding:12px;margin:10px 16px;border-radius:10px;height:280px;overflow-y:auto;border:1px solid rgba(0,255,136,.2);white-space:pre}
+.sim-close{background:transparent;border:none;font-size:18px;color:var(--tx4);cursor:pointer;padding:4px 8px}
+.sim-prog{padding:10px 18px 6px}
+.sim-bar{height:8px;border-radius:4px;background:rgba(128,128,128,.15);overflow:hidden}
+.sim-fill{height:100%;width:0;background:linear-gradient(90deg,#22c55e,#16a34a);transition:width .15s}
+.sim-pt{font-size:11px;color:var(--tx3);margin-top:5px;text-align:center;font-family:monospace}
+.sim-term{background:#050505;color:#0f8;font-family:'Courier New',Consolas,monospace;font-size:11px;line-height:1.5;padding:10px 12px;margin:8px 14px;border-radius:8px;height:260px;overflow-y:auto;border:1px solid rgba(0,255,136,.25);white-space:pre}
 .sim-term::-webkit-scrollbar{width:6px}
 .sim-term::-webkit-scrollbar-thumb{background:#1a3d2a;border-radius:3px}
 .sim-term .hit{color:#4ade80}
 .sim-term .miss{color:#f87171}
 .sim-term .skip{color:#94a3b8}
 .sim-term .head{color:#60a5fa;font-weight:bold}
-.sim-term .info{color:#c084fc}
-.sim-sum{padding:8px 20px 16px;overflow-y:auto;max-height:240px}
+.sim-sum{padding:4px 18px 12px;overflow-y:auto;max-height:200px}
 .sim-sum::-webkit-scrollbar{width:5px}
-.sim-sum::-webkit-scrollbar-thumb{background:var(--thumb);border-radius:3px}
-.sim-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.sim-stat{background:var(--stat);border-radius:10px;padding:10px 6px;text-align:center}
-.sim-stat .sl{font-size:10px;color:var(--tx4);font-weight:700}
-.sim-stat .sv{font-size:16px;font-weight:900;margin-top:3px}
-.sim-stat .sv.p{color:#22c55e}
-.sim-stat .sv.n{color:#ef4444}
-:root[data-theme="dark"] .sim-stat .sv.p{color:#4ade80}
-:root[data-theme="dark"] .sim-stat .sv.n{color:#f87171}
-.sim-tier{text-align:center;margin:10px 0}
-.sim-tier span{display:inline-flex;padding:6px 24px;border-radius:12px;font-size:20px;font-weight:900;letter-spacing:2px}
-.sim-sect{font-size:12px;font-weight:900;color:var(--tx2);margin:12px 0 6px;letter-spacing:.5px}
-.sim-tbl{width:100%;border-collapse:collapse;font-size:11.5px}
-.sim-tbl th,.sim-tbl td{padding:5px 6px;text-align:left;border-bottom:1px solid var(--bd)}
-.sim-tbl th{color:var(--tx4);font-weight:800;font-size:10.5px}
+.sim-sum::-webkit-scrollbar-thumb{background:var(--th);border-radius:3px}
+.sim-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.sim-stat{background:var(--stat);border-radius:8px;padding:8px 6px;text-align:center}
+.sim-stat .l{font-size:10px;color:var(--tx3);margin-bottom:2px}
+.sim-stat .v{font-size:16px;font-weight:900}
+.sim-stat .v.p{color:#22c55e}
+.sim-stat .v.n{color:#ef4444}
+:root[data-theme="dark"] .sim-stat .v.p{color:#4ade80}
+:root[data-theme="dark"] .sim-stat .v.n{color:#f87171}
+.sim-tier{text-align:center;margin:8px 0}
+.sim-tier span{display:inline-flex;padding:6px 22px;border-radius:10px;font-size:20px;font-weight:900;letter-spacing:2px}
+.sim-sect{font-size:12px;font-weight:900;color:var(--tx2);margin:10px 0 4px;letter-spacing:1px}
+.sim-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.sim-tbl th,.sim-tbl td{padding:4px 6px;text-align:left;border-bottom:1px solid var(--bd)}
+.sim-tbl th{color:var(--tx3);font-weight:bold;font-size:10px}
 .sim-tbl td.num{text-align:right;font-family:monospace}
-.sim-foot{padding:12px 20px 16px;border-top:1px solid var(--bd);display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.sim-foot button{padding:12px;border-radius:10px;font-size:13.5px;font-weight:900;cursor:pointer;border:none}
-.sim-btn-rerun{background:linear-gradient(135deg,#c084fc,#7c3aed);color:#fff}
-.sim-btn-reset{background:rgba(239,68,68,.15);color:#f87171;border:1.5px solid rgba(239,68,68,.5)!important}
-/* WhatsApp */
-.whatsapp{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9998;background:var(--sw);border:1.5px solid rgba(37,211,102,.5);border-radius:26px;padding:12px 24px;backdrop-filter:blur(12px);box-shadow:0 8px 24px rgba(0,0,0,.25);white-space:nowrap}
-.whatsapp a{color:#25D366;font-size:14px;font-weight:900;text-decoration:none}
-@media (min-width:900px){
-  #app{padding:80px 20px 100px}
-  .grid-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:16px;max-width:1600px;width:100%;align-items:start}
-  .grid-wrap .card{margin-bottom:0;max-width:none}
+.sim-note{font-size:10px;color:var(--tx4);text-align:center;margin-top:8px;line-height:1.4}
+.sim-foot{padding:10px 18px 14px;border-top:1px solid var(--bd);display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sim-foot button{padding:10px;border-radius:7px;font-size:13px;font-weight:900;cursor:pointer;border:none}
+.sim-rerun{background:linear-gradient(135deg,#c084fc,#7c3aed);color:#fff}
+.sim-reset{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.5)}
+@media (min-width:1024px){
+  #app{flex-direction:row;align-items:flex-start;justify-content:center;flex-wrap:wrap;gap:16px;padding:80px 20px 40px;min-height:auto}
+  #app .card{flex:1 1 0;max-width:380px;min-width:280px;max-height:calc(100vh - 130px);overflow-y:auto;margin-bottom:0}
 }
 </style>
 </head>
 <body>
 
-<div class="fixed-btn" id="themeSwitcher" title="Theme"><span id="themeIcon">🌙</span></div>
-<div class="fixed-btn lang-box">🌐 <select id="langSelect"><option value="zh-HK">繁體中文</option><option value="zh-CN">简体中文</option><option value="en-US">English</option></select></div>
-<div class="toast-wrap" id="toasts"></div>
+<div class="theme-sw" id="themeSwitcher" title="切換主題"><span id="themeIcon">🌙</span></div>
+<div class="lang-sw">🌐 <select id="langSelect"><option value="zh-HK">繁體中文 (HK/TW)</option><option value="zh-CN">简体中文 (CN)</option><option value="en-US">English (US)</option></select></div>
+<div class="toasts" id="toasts"></div>
+<div class="combo" id="comboBox"><div class="combo-in"><span>🔥</span><span id="comboText">連勝 x3 !!!</span><span>🔥</span></div></div>
 
-<div class="overlay" id="gameOverOv">
-<div class="terms-box" style="max-width:380px">
-<h2 id="goTitle">🏁 挑戰結束！</h2>
-<div style="text-align:center;font-size:12px;color:var(--tx4);margin-bottom:8px" id="goSub">已玩 50 場</div>
-<div id="goTier" style="display:flex;justify-content:center;margin:10px 0"><span style="display:inline-flex;align-items:center;justify-content:center;width:130px;height:80px;border-radius:16px;font-size:42px;font-weight:900;letter-spacing:3px;border:2px solid rgba(255,255,255,.35)">—</span></div>
-<div class="stats" style="grid-template-columns:1fr 1fr;margin-bottom:16px">
-<div class="stat"><div class="lbl" id="goLH">命中率</div><div class="val" id="goHitRate">—</div></div>
-<div class="stat"><div class="lbl">ROI</div><div class="val" id="goRoi">—</div></div>
-<div class="stat"><div class="lbl" id="goLS">綜合分</div><div class="val" id="goScore">—</div></div>
-<div class="stat"><div class="lbl" id="goLP">總盈虧</div><div class="val" id="goPnl">—</div></div>
+<div class="ov" id="gameOverOv">
+<div class="go-box">
+<div class="go-title" id="goTitle">🏁 挑戰結束！</div>
+<div style="font-size:12px;color:var(--tx4);margin-bottom:6px" id="goSub">已玩 50 場</div>
+<div id="goTier" class="go-tier">—</div>
+<div class="go-stats">
+<div class="go-stat"><div class="go-stat-l" data-i18n="goHitRate">命中率</div><div class="go-stat-v" id="goHitRate">—</div></div>
+<div class="go-stat"><div class="go-stat-l" data-i18n="goRoi">ROI</div><div class="go-stat-v" id="goRoi">—</div></div>
+<div class="go-stat"><div class="go-stat-l" data-i18n="goScore">綜合分數</div><div class="go-stat-v" id="goScore">—</div></div>
+<div class="go-stat"><div class="go-stat-l" data-i18n="goPnl">總盈虧</div><div class="go-stat-v" id="goPnl">—</div></div>
 </div>
-<button class="btn-calc" id="goShare" style="display:none;background:linear-gradient(135deg,#22c55e,#16a34a)">📤 上傳排行榜</button>
-<button class="btn-calc" id="goRestart">🔄 重新挑戰</button>
-</div>
-</div>
-
-<div class="overlay" id="lbOv">
-<div class="terms-box" style="max-width:460px">
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-<h2 style="margin:0;font-size:17px" id="lbTitle">🏆 排行榜 Top 100</h2>
-<button class="sim-close" id="lbClose">✖</button>
-</div>
-<div id="lbContent" style="overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch"><div class="note">⏳ 載入中...</div></div>
-<button class="btn-calc" style="margin-top:12px;background:rgba(96,165,250,.15);color:#60a5fa;box-shadow:none" id="lbRefresh">🔄 重新載入</button>
+<button class="go-btn go-btn-s" id="goShare" style="display:none" data-i18n="goShare">📤 上傳排行榜</button>
+<button class="go-btn go-btn-p" id="goRestart" data-i18n="goRestart">🔄 重新挑戰</button>
 </div>
 </div>
 
-<div class="overlay" id="simOv">
+<div class="ov" id="lbOv">
+<div class="lb-box">
+<div class="lb-head"><div class="lb-title" data-i18n="lbTitle">🏆 排行榜 Top 100</div><button class="lb-close" id="lbClose">✖</button></div>
+<div class="lb-content" id="lbContent"><div class="lb-loading" data-i18n="lbLoading">⏳ 載入中...</div></div>
+<div class="lb-foot"><button class="lb-refresh" id="lbRefresh" data-i18n="lbRefresh">🔄 重新載入</button></div>
+</div>
+</div>
+
+<div class="ov" id="simOv">
 <div class="sim-box">
-<div class="sim-head">
-<div class="sim-title" id="simTitle">🧪 模擬測試</div>
-<button class="sim-close" id="simClose">✖</button>
-</div>
-<div class="sim-progress">
-<div class="sim-bar"><div class="sim-fill" id="simFill"></div></div>
-<div class="sim-ptext" id="simPT">準備中…</div>
-</div>
+<div class="sim-head"><div class="sim-title" id="simTitle" data-i18n="simTitle">🧪 模擬測試</div><button class="sim-close" id="simClose">✖</button></div>
+<div class="sim-prog"><div class="sim-bar"><div class="sim-fill" id="simFill"></div></div><div class="sim-pt" id="simPT" data-i18n="simPreparing">準備中…</div></div>
 <div class="sim-term" id="simTerm"></div>
 <div class="sim-sum" id="simSum"></div>
-<div class="sim-foot">
-<button class="sim-btn-reset" id="simReset">🔄 恢復預設</button>
-<button class="sim-btn-rerun" id="simRerun">🔁 再次模擬</button>
-</div>
+<div class="sim-foot"><button class="sim-reset" id="simReset" data-i18n="simResetDefault">🔄 恢復預設</button><button class="sim-rerun" id="simRerun" data-i18n="simRerun">🔁 再次模擬</button></div>
 </div>
 </div>
 
@@ -255,63 +319,54 @@ button,input,select{font-family:inherit}
 <h2 id="termsTitle">📋 使用守則與風險聲明</h2>
 <div class="terms-scroll" id="termsScroll">
 <div id="terms-zh-HK">
-<h3>📊 智能量化足球預測系統 v2.0</h3>
-<p>感謝您使用本系統。v2.0 已全面升級為 <strong>EV / Edge / Kelly 三重量化引擎</strong>，徹底廢除舊版硬編碼判定邏輯。使用前請務必閱讀以下所有條款。您必須滾動到最底部，才能點擊「同意」進入系統。</p>
-<h3>🎯 核心革新</h3>
-<p><strong>1. 期望值（EV）驅動</strong></p>
-<ul><li>EV = 模型概率 × 賠率 - 1。EV > 0 表示長期正回報。</li></ul>
-<p><strong>2. 價值差（Edge）分析</strong></p>
-<ul><li>Edge = 模型概率 ÷ 市場隱含概率 - 1，找出市場定價錯誤。</li></ul>
-<p><strong>3. 凱利公式（Kelly Criterion）</strong></p>
-<ul><li>計算數學最優下注比例，並以 ¼ 凱利折扣 + 5% 上限控制風險。</li></ul>
-<p><strong>4. 信心分級系統</strong></p>
-<ul><li>依 EV 與 Edge 綜合評分，1～5 星直觀顯示。</li></ul>
-<p><strong>5. 純數學決策</strong></p>
-<ul><li>無任何人為硬編碼規則，所有決策 100% 基於數學模型。</li></ul>
-<h3>⚠️ 風險聲明</h3>
-<ul><li>歷史不等於未來：本系統基於概率模型，歷史表現不代表未來必贏。</li><li>長期複利思維：單場比賽隨機性極高，系統優勢在於長期複利。</li><li>嚴格注碼管理：建議採用凱利建議注碼，切勿重注。</li></ul>
-<h3>🛡️ 法律合規聲明</h3>
-<ul><li>本系統僅供學術研究、數據分析之用，不構成任何投資建議。</li><li>博彩涉及風險，請嚴格控制注碼，量力而為。</li><li>切勿沉迷賭博，如發現成癮傾向請尋求專業協助。</li><li>本系統為純娛樂工具，非賺錢捷徑。</li></ul>
+<h3>📊 智能量化足球預測系統 v2.0 Pro</h3>
+<p>感謝您使用本系統。v2.0 Pro 融合 <strong>V1 經典 15 層判定</strong> 與 <strong>V2 量化引擎（EV/Edge/Kelly）</strong>，提供雙模式分析。使用前請務必仔細閱讀以下所有條款。您必須滾動到最底部，才能點擊「同意」按鈕進入系統。</p>
+<h3>🎯 系統核心定位</h3>
+<p>本系統是一套結合機率模型、市場定價（賠率）與極致風控的自動化量化分析工具。系統嚴格執行數學邏輯，旨在杜絕人為情緒干擾，協助用戶進行數據分析。</p>
+<h3>🛠️ 雙模式架構</h3>
+<p><strong>V1 經典模式（15 層公式）</strong></p>
+<ul><li>和勝率高 + 主客接近 → 買和</li><li>主強 + 客極弱 + 主賠中低 → 買主</li><li>主賠極高 + 主強 → 買和（新增第 9 層）</li><li>客賠價值區間 → 買客</li><li>共 15 層精細化判定</li></ul>
+<p><strong>V2 量化模式（EV/Edge/Kelly）</strong></p>
+<ul><li>期望值 EV = 模型概率 × 賠率 − 1</li><li>價值差 Edge = 模型概率 ÷ 市場隱含概率 − 1</li><li>凱利公式 Kelly = (p×(b+1)−1) ÷ b</li><li>建議注碼 = ¼ Kelly，上限 5% 資金</li><li>信心評級 ⭐⭐⭐⭐⭐</li></ul>
+<h3>📈 系統核心優勢</h3>
+<ul><li>絕對紀律：所有公式均已設定好，觸發條件自動給出訊號。</li><li>攻守兼備：兼具捕捉冷門的進攻邏輯與極端賠率跳過的防守邏輯。</li><li>持續進化：ver 2.0 Pro 版本，雙引擎融合。</li></ul>
+<h3>⚠️ 給客人的誠信風險聲明</h3>
+<ul><li>歷史不等於未來：本系統基於歷史數據回測與概率模型，歷史表現不代表未來必贏。</li><li>長期複利思維：足球比賽充滿不可抗力（紅牌、點球、烏龍等），單場比賽的盈虧隨機性極高。系統的優勢在於長期複利的穩定，而非一夜暴富。</li><li>嚴格注碼管理：強烈建議客戶採用固定比例注碼（例如總資金的 1%-2%）。切勿因為短期連續黑單而手動干預公式或盲目重注。</li></ul>
+<h3>🛡️ 法律合規與負責任博彩聲明</h3>
+<ul><li>只作研究用途：本系統及所有相關數據、圖表與分析結果，僅供學術研究、數據分析及個人興趣之用，不構成任何形式的投資建議或博彩邀約。</li><li>必須控制注碼：博彩涉及風險，用戶在參與任何相關活動時，必須嚴格控制注碼，量力而為，切勿將無法承受損失的資金投入其中。</li><li>切勿沉迷賭博：請保持理性，切勿沉迷賭博。若發現自己或身邊的人有賭博成癮的傾向，請立即尋求專業協助。</li><li>只供娛樂：請將本系統視為純粹的娛樂工具，享受數據分析與策略驗證的樂趣，而非視為賺錢的捷徑。</li></ul>
 <p style="text-align:center;margin-top:20px;font-weight:bold;color:#60a5fa">理性參與，享受數據分析的樂趣。</p>
+<p style="text-align:center;font-size:12px;color:var(--tx4)">—— 以上為完整條款，滾動到最底部即可點擊同意 ——</p>
 </div>
 <div id="terms-zh-CN" style="display:none">
-<h3>📊 智能量化足球预测系统 v2.0</h3>
-<p>感谢您使用本系统。v2.0 已全面升级为 <strong>EV / Edge / Kelly 三重量化引擎</strong>。使用前请务必阅读以下所有条款。您必须滚动到最底部，才能点击"同意"进入系统。</p>
-<h3>🎯 核心革新</h3>
-<p><strong>1. 期望值（EV）驱动</strong></p>
-<ul><li>EV = 模型概率 × 赔率 - 1。EV > 0 表示长期正回报。</li></ul>
-<p><strong>2. 价值差（Edge）分析</strong></p>
-<ul><li>Edge = 模型概率 ÷ 市场隐含概率 - 1。</li></ul>
-<p><strong>3. 凯利公式</strong></p>
-<ul><li>计算数学最优下注比例，¼ 凯利 + 5% 上限控制风险。</li></ul>
-<p><strong>4. 信心分级</strong></p>
-<ul><li>依 EV 与 Edge 综合评分，1~5 星显示。</li></ul>
-<p><strong>5. 纯数学决策</strong></p>
-<ul><li>无人为硬编码规则，100% 基于数学模型。</li></ul>
+<h3>📊 智能量化足球预测系统 v2.0 Pro</h3>
+<p>感谢您使用本系统。v2.0 Pro 融合 <strong>V1 经典 15 层判定</strong> 与 <strong>V2 量化引擎（EV/Edge/Kelly）</strong>。使用前请务必仔细阅读以下所有条款。您必须滚动到最底部，才能点击"同意"进入系统。</p>
+<h3>🎯 系统核心定位</h3>
+<p>本系统是一套结合概率模型、市场定价（赔率）与极致风控的自动化量化分析工具。系统严格执行数学逻辑，旨在杜绝人为情绪干扰，协助用户进行数据分析。</p>
+<h3>🛠️ 双模式架构</h3>
+<p><strong>V1 经典模式（15 层公式）</strong></p>
+<ul><li>和胜率高 + 主客接近 → 买和</li><li>主强 + 客极弱 + 主赔中低 → 买主</li><li>主赔极高 + 主强 → 买和</li><li>共 15 层精细化判定</li></ul>
+<p><strong>V2 量化模式（EV/Edge/Kelly）</strong></p>
+<ul><li>期望值 EV = 模型概率 × 赔率 − 1</li><li>价值差 Edge = 模型概率 ÷ 市场隐含概率 − 1</li><li>凯利公式 Kelly</li><li>建议注码 ¼ Kelly，上限 5%</li><li>信心评级 ⭐⭐⭐⭐⭐</li></ul>
 <h3>⚠️ 风险声明</h3>
-<ul><li>历史不等于未来：本系统基于概率模型。</li><li>长期复利思维：单场随机性极高。</li><li>严格注码管理：建议采用凯利建议注码。</li></ul>
+<ul><li>历史不等于未来：本系统基于历史数据回测与概率模型。</li><li>长期复利思维：单场比赛的盈亏随机性极高。</li><li>严格注码管理：强烈建议客户采用固定比例注码。</li></ul>
 <h3>🛡️ 法律合规声明</h3>
-<ul><li>本系统仅供学术研究、数据分析之用。</li><li>博彩涉及风险，请严格控制注码。</li><li>切勿沉迷赌博，如发现成瘾请寻求专业协助。</li><li>本系统为纯娱乐工具。</li></ul>
+<ul><li>只作研究用途：本系统仅供学术研究、数据分析及个人兴趣之用。</li><li>必须控制注码：博彩涉及风险。</li><li>切勿沉迷赌博：若发现赌博成瘾倾向请寻求专业协助。</li><li>只供娱乐：本系统为纯娱乐工具。</li></ul>
 <p style="text-align:center;margin-top:20px;font-weight:bold;color:#60a5fa">理性参与，享受数据分析的乐趣。</p>
 </div>
 <div id="terms-en-US" style="display:none">
-<h3>📊 Quant Football Prediction System v2.0</h3>
-<p>Thank you for using this system. v2.0 is fully upgraded to <strong>EV / Edge / Kelly quantitative engine</strong>. Please read all terms carefully. Scroll to bottom to click "Agree".</p>
-<h3>🎯 Core Innovations</h3>
-<p><strong>1. Expected Value (EV) Driven</strong></p>
-<ul><li>EV = Model Probability × Odds - 1. EV > 0 means long-term positive return.</li></ul>
-<p><strong>2. Edge Analysis</strong></p>
-<ul><li>Edge = Model Prob ÷ Market Implied Prob - 1.</li></ul>
-<p><strong>3. Kelly Criterion</strong></p>
-<ul><li>Optimal stake calculation with ¼ Kelly + 5% cap.</li></ul>
-<p><strong>4. Confidence Rating</strong></p>
-<ul><li>1-5 star based on EV and Edge.</li></ul>
-<p><strong>5. Pure Math Decision</strong></p>
-<ul><li>100% model-based, no hardcoded rules.</li></ul>
+<h3>📊 Quant Football Prediction System v2.0 Pro</h3>
+<p>Thank you for using this system. v2.0 Pro integrates <strong>V1 Classic 15-Layer</strong> and <strong>V2 Quant Engine (EV/Edge/Kelly)</strong>. Please read all terms. You must scroll to bottom to click "Agree".</p>
+<h3>🎯 System Positioning</h3>
+<p>Automated quantitative analysis tool combining probability models, market pricing and strict risk control.</p>
+<h3>🛠️ Dual-Mode Architecture</h3>
+<p><strong>V1 Classic Mode (15 Layers)</strong></p>
+<ul><li>High draw rate + close H/A → Draw</li><li>Strong home + weak away → Home</li><li>Extreme home odds + strong home → Draw</li><li>15 refined layers</li></ul>
+<p><strong>V2 Quant Mode (EV/Edge/Kelly)</strong></p>
+<ul><li>EV = Model Prob × Odds − 1</li><li>Edge = Model Prob ÷ Market Implied Prob − 1</li><li>Kelly Criterion</li><li>¼ Kelly stake, 5% cap</li><li>1-5 star confidence</li></ul>
 <h3>⚠️ Risk Statement</h3>
-<ul><li>History ≠ Future: past performance doesn't guarantee wins.</li><li>Single match variance is extremely high.</li><li>Strict stake management recommended.</li></ul>
+<ul><li>History ≠ Future: based on backtest and probability models.</li><li>Long-term compounding mindset.</li><li>Strict stake management recommended.</li></ul>
 <h3>🛡️ Legal Compliance</h3>
-<ul><li>Research purpose only.</li><li>Betting involves risk.</li><li>Don't become addicted.</li><li>Entertainment tool only.</li></ul>
+<ul><li>Research purpose only.</li><li>Betting involves risk.</li><li>Do not become addicted.</li><li>Entertainment only.</li></ul>
 <p style="text-align:center;margin-top:20px;font-weight:bold;color:#60a5fa">Play rationally.</p>
 </div>
 </div>
@@ -320,1051 +375,831 @@ button,input,select{font-family:inherit}
 </div>
 
 <div id="app">
-<div class="grid-wrap">
-
-<!-- 統計卡 -->
 <div class="card">
-<h3>📊 <span data-i18n="statsTitle">歷史數據統計</span> <span class="badge badge-v2">V2</span></h3>
+<h3 data-i18n="statsTitle">📊 歷史數據統計</h3>
 <div class="stats">
-<div class="stat"><div class="lbl" data-i18n="totalPnl">總盈虧</div><div class="val w" id="stat-pnl">—</div></div>
-<div class="stat"><div class="lbl" data-i18n="wins">命中數</div><div class="val" id="stat-wins">—</div></div>
-<div class="stat"><div class="lbl" data-i18n="cost">總成本</div><div class="val" id="stat-cost">—</div></div>
-<div class="stat"><div class="lbl" data-i18n="bets">出手數</div><div class="val" id="stat-bets">—</div></div>
-<div class="stat"><div class="lbl">ROI</div><div class="val" id="stat-roi">—</div></div>
-<div class="stat"><div class="lbl" data-i18n="hitRate">命中率</div><div class="val" id="stat-hitrate">—</div></div>
+<div class="stat"><div class="l" data-i18n="totalPnl">總盈虧</div><div class="v w" id="stat-pnl">—</div></div>
+<div class="stat"><div class="l" data-i18n="winsCount">命中數</div><div class="v" id="stat-wins">—</div></div>
+<div class="stat"><div class="l" data-i18n="totalCost">總成本</div><div class="v" id="stat-cost">—</div></div>
+<div class="stat"><div class="l" data-i18n="betsCount">出手數</div><div class="v" id="stat-bets">—</div></div>
+<div class="stat"><div class="l" data-i18n="roi">盈虧率 (ROI)</div><div class="v" id="stat-roi">—</div></div>
+<div class="stat"><div class="l" data-i18n="hitRate">命中率</div><div class="v" id="stat-hitrate">—</div></div>
 </div>
-<div class="note" data-i18n="statsNote">※ 每注固定 $100，所有數據實時同步</div>
-<div class="note"><span data-i18n="dbUpdate">📅 資料庫更新：</span><span id="stat-date">—</span></div>
+<div class="stats-note" data-i18n="statsNote">※ 每注固定 $100，所有數據實時同步</div>
+<div class="stats-note"><span data-i18n="dbUpdate">📅 資料庫更新日期：</span><span id="stat-date">—</span></div>
 </div>
 
-<!-- 主計算卡 -->
-<div class="card">
-<h3 data-i18n="mainTitle">⚽ 智能量化預測系統 v2.0</h3>
-<p style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:14px" data-i18n="subTitle">EV / Edge / Kelly 三重量化分析引擎</p>
-<div class="inp-group"><label data-i18n="hWinRate">主勝率</label><div class="inp-wrap"><input type="text" id="hw" inputmode="numeric" placeholder="例如：45"><span class="suf">%</span></div></div>
-<div class="inp-group"><label data-i18n="dWinRate">和勝率</label><div class="inp-wrap"><input type="text" id="dw" inputmode="numeric" placeholder="例如：28"><span class="suf">%</span></div></div>
-<div class="inp-group"><label data-i18n="aWinRate">客勝率</label><div class="inp-wrap"><input type="text" id="aw" inputmode="numeric" placeholder="例如：27"><span class="suf">%</span></div></div>
-<div class="inp-group"><label data-i18n="hOdds">主賠</label><div class="inp-wrap"><input type="text" id="ho" inputmode="decimal" placeholder="例如：1.85 或 185"></div></div>
-<div class="inp-group"><label data-i18n="dOdds">和賠</label><div class="inp-wrap"><input type="text" id="doo" inputmode="decimal" placeholder="例如：3.60 或 360"></div></div>
-<div class="inp-group"><label data-i18n="aOdds">客賠</label><div class="inp-wrap"><input type="text" id="ao" inputmode="decimal" placeholder="例如：4.20 或 420"></div></div>
-<button class="btn-calc" id="calcBtn" data-i18n="calcBtn">🎯 開始量化分析</button>
-<div class="result" id="result">
-<div class="result-main" id="resMain">
-<div class="result-title" id="resTitle">—</div>
-<div class="stars" id="resStars">—</div>
-<div style="font-size:12px;color:var(--tx3)" id="resSubtitle"></div>
+<div class="card container">
+<h2 data-i18n="mainTitle">⚽ 智能量化預測系統</h2>
+<p class="sub" data-i18n="sub1">勝率數據建議使用 FootballForecastAI 勝率</p>
+<p class="sub" data-i18n="sub2">賠率數據建議使用 Tipsme 內的馬會(HKJC) 賠率</p>
+<div class="mode-tabs">
+<button class="mode-tab on" id="tabV1">📐 V1 經典</button>
+<button class="mode-tab v2" id="tabV2">🚀 V2 量化</button>
 </div>
-<div class="metrics">
+<div class="ig"><label data-i18n="labelHW">主勝率</label><div class="iw"><input type="text" id="hw" inputmode="numeric" placeholder="例如：40"><span class="s">%</span></div></div>
+<div class="ig"><label data-i18n="labelDW">和勝率</label><div class="iw"><input type="text" id="dw" inputmode="numeric" placeholder="例如：30"><span class="s">%</span></div></div>
+<div class="ig"><label data-i18n="labelAW">客勝率</label><div class="iw"><input type="text" id="aw" inputmode="numeric" placeholder="例如：30"><span class="s">%</span></div></div>
+<div class="ig"><label data-i18n="labelHO">主賠</label><div class="iw"><input type="text" id="ho" inputmode="decimal" placeholder="例如：1.58"></div></div>
+<div class="ig"><label data-i18n="labelDO">和賠</label><div class="iw"><input type="text" id="doo" inputmode="decimal" placeholder="例如：3.95"></div></div>
+<div class="ig"><label data-i18n="labelAO">客賠</label><div class="iw"><input type="text" id="ao" inputmode="decimal" placeholder="例如：4.05"></div></div>
+<button id="calcBtn" data-i18n="calcBtn">計算結果</button>
+<div id="resultBox" class="rb"></div>
+<div class="stars" id="starsBox" style="text-align:center;display:none"></div>
+<div class="metrics" id="metricsBox">
 <div class="metric"><div class="ml">EV</div><div class="mv" id="mEV">—</div></div>
 <div class="metric"><div class="ml">EDGE</div><div class="mv" id="mEdge">—</div></div>
 <div class="metric"><div class="ml" data-i18n="stake">建議注碼</div><div class="mv b" id="mKelly">—</div></div>
 </div>
-<div class="compare">
-<div class="compare-title" data-i18n="compareTitle">📊 市場隱含概率 vs 模型概率</div>
-<div class="compare-row"><span class="lbl">主勝</span><span class="v1" id="cMktH">—</span><span class="v2" id="cModH">—</span></div>
-<div class="compare-row"><span class="lbl">和局</span><span class="v1" id="cMktD">—</span><span class="v2" id="cModD">—</span></div>
-<div class="compare-row"><span class="lbl">客勝</span><span class="v1" id="cMktA">—</span><span class="v2" id="cModA">—</span></div>
+<div class="cmp" id="cmpBox">
+<div class="cmp-t" data-i18n="compareTitle">📊 市場隱含概率 vs 模型概率</div>
+<div class="cmp-r"><span class="l">主勝</span><span class="v1" id="cMktH">—</span><span class="v2" id="cModH">—</span></div>
+<div class="cmp-r"><span class="l">和局</span><span class="v1" id="cMktD">—</span><span class="v2" id="cModD">—</span></div>
+<div class="cmp-r"><span class="l">客勝</span><span class="v1" id="cMktA">—</span><span class="v2" id="cModA">—</span></div>
 </div>
-<div class="reason" id="resReason">—</div>
+<div id="evBox" class="ev-box"></div>
+<div id="hintBox" class="hint"></div>
+</div>
+
+<div class="card game-panel">
+<h2 data-i18n="gameTitle">🎮 猜賽果挑戰</h2>
+<p class="gs" data-i18n="gameSub">📚 從資料庫真實數據隨機抽樣，試下你嘅眼光！</p>
+<div class="db-info" id="dbInfo">📚 資料庫載入中...</div>
+<div class="tier-hint" data-i18n="gameDataHint">🔒 每場從資料庫真實數據抽樣，並約略微調 ±5%；賽果保持真實。</div>
+<div class="tier-hint" data-i18n="tierInfoHint">📊 猜 5 場以上顯示等級　|　🏆 猜滿 50 場可上傳排行榜</div>
+<div class="game-tier" id="gameTier">
+<div class="tier-wrap"><div class="tier-badge" id="tierBadge" style="color:#9ca3af;background:rgba(156,163,175,.18)">—</div><div class="tier-arrow" id="tierArrow"></div></div>
+<div id="tierDesc" class="tier-desc"></div>
+<div class="tier-score"><div class="tier-score-l" data-i18n="tierScoreLabel">🎯 綜合分數</div><div class="tier-score-v" id="tierScoreV">—</div><div class="tier-score-d" id="tierScoreD"></div></div>
+</div>
+<div class="game-stats">
+<div class="gstat"><div class="l" data-i18n="gamePlayed">已玩</div><div class="v" id="gPlayed">0</div></div>
+<div class="gstat"><div class="l" data-i18n="gameHits">命中</div><div class="v" id="gHits">0</div></div>
+<div class="gstat"><div class="l" data-i18n="gameRate">命中率</div><div class="v" id="gRate">—</div></div>
+<div class="gstat"><div class="l" data-i18n="gamePnl">盈虧</div><div class="v" id="gPnl">0</div></div>
+</div>
+<div class="game-match">
+<div class="gm-row">
+<div class="gm-c"><span class="l" data-i18n="gameHW">主勝率</span><span class="v" id="gmHW">—</span></div>
+<div class="gm-c"><span class="l" data-i18n="gameDW">和勝率</span><span class="v" id="gmDW">—</span></div>
+<div class="gm-c"><span class="l" data-i18n="gameAW">客勝率</span><span class="v" id="gmAW">—</span></div>
+</div>
+<div class="gm-row">
+<div class="gm-c"><span class="l" data-i18n="gameHO">主賠</span><span class="v" id="gmHO">—</span></div>
+<div class="gm-c"><span class="l" data-i18n="gameDO">和賠</span><span class="v" id="gmDO">—</span></div>
+<div class="gm-c"><span class="l" data-i18n="gameAO">客賠</span><span class="v" id="gmAO">—</span></div>
+</div>
+</div>
+<div class="gbtn-row">
+<button class="gbtn H" id="gbH" data-i18n="resultHShort">主勝</button>
+<button class="gbtn D" id="gbD" data-i18n="resultDShort">和局</button>
+<button class="gbtn A" id="gbA" data-i18n="resultAShort">客勝</button>
+</div>
+<div class="gbtn-row">
+<button class="gbtn next" id="gbNext" data-i18n="gameNewBtn">下一場</button>
+<button class="gbtn auto" id="gbAuto" data-i18n="gameAutoBtnShort">🤖 預測</button>
+<button class="gbtn skip" id="gbSkip" data-i18n="gameSkipBtnShort">⏭️ 跳過</button>
+</div>
+<button class="gbtn dev" id="gbDev">⚡ 開發者連按模式 DEV</button>
+<div class="dev-special" id="devSpecial">
+<button class="H" id="gbSpecH">🎯 主專用</button>
+<button class="D" id="gbSpecD">🎯 和專用</button>
+<button class="A" id="gbSpecA">🎯 客專用</button>
+</div>
+<div class="skip-help" data-i18n="gameSkipHelp">💡 每場從資料庫真實數據隨機抽樣，預設 2 次跳過機會，每玩 10 場 +1 次</div>
+<div id="gameResult" class="game-msg"></div>
+<div class="dev-unlock"><button id="devUnlockBtn">🔒 開發者模式</button></div>
+<div class="sim-row"><button class="sim-btn" id="simBtn" data-i18n="simBtn">🧪 模擬測試（即時運算）</button></div>
+<div class="dev-settings" id="devSettings">
+<button class="s1" id="devSettingsBtn">⚙️ 系統設定</button>
+<button class="s2" id="devResetGameBtn">🔄 重置遊戲</button>
+</div>
+
+<div class="dev-panel" id="devPanel">
+<div class="dev-panel-t">⚙️ V1 系統公式參數調整</div>
+<div class="dev-layer"><div class="dev-layer-t">第 1 層：和勝率高 + 主客接近</div><div class="dev-grid"><div class="dev-item"><label>和勝率下限</label><input type="text" id="p1_cbmin" value="32"></div><div class="dev-item"><label>主客勝率差上限</label><input type="text" id="p1_cgap" value="6"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">第 2 層：主強 + 客極弱 + 主賠中低</div><div class="dev-grid"><div class="dev-item"><label>主勝率下限</label><input type="text" id="p2_hmin" value="60"></div><div class="dev-item"><label>客勝率上限</label><input type="text" id="p2_cmax" value="11"></div><div class="dev-item"><label>主賠下限</label><input type="text" id="p2_dmin" value="140"></div><div class="dev-item"><label>主賠上限</label><input type="text" id="p2_dmax" value="190"></div><div class="dev-item"><label>客賠下限</label><input type="text" id="p2_fmin" value="400"></div><div class="dev-item"><label>客賠上限</label><input type="text" id="p2_fmax" value="480"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">第 3 層：勝率差 + 和賠低 + 主客賠近</div><div class="dev-grid"><div class="dev-item"><label>勝率差上限</label><input type="text" id="p3_wgap" value="3"></div><div class="dev-item"><label>和賠上限</label><input type="text" id="p3_emax" value="380"></div><div class="dev-item"><label>主客賠差上限</label><input type="text" id="p3_ogap" value="40"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">第 4 層：主強 + 客弱 + 主客賠近</div><div class="dev-grid"><div class="dev-item"><label>主勝率下限</label><input type="text" id="p4_hmin" value="45"></div><div class="dev-item"><label>客勝率上限</label><input type="text" id="p4_cmax" value="20"></div><div class="dev-item"><label>主客賠差上限</label><input type="text" id="p4_ogap" value="70"></div><div class="dev-item"><label>主賠上限</label><input type="text" id="p4_dmax" value="400"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">第 5 層：主客賠差小</div><div class="dev-grid"><div class="dev-item"><label>賠率差上限</label><input type="text" id="p5_ogap" value="18"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">第 6 層：主強 + 客賠高 + 勝率差極大</div><div class="dev-grid"><div class="dev-item"><label>主勝率下限</label><input type="text" id="p6_hmin" value="42"></div><div class="dev-item"><label>主賠下限</label><input type="text" id="p6_dmin" value="155"></div><div class="dev-item"><label>主賠上限</label><input type="text" id="p6_dmax" value="205"></div><div class="dev-item"><label>勝率差下限</label><input type="text" id="p6_wgap" value="50"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">第 7 層：主強 + 主賠低中</div><div class="dev-grid"><div class="dev-item"><label>主勝率下限</label><input type="text" id="p7_hmin" value="42"></div><div class="dev-item"><label>主賠下限</label><input type="text" id="p7_dmin" value="155"></div><div class="dev-item"><label>主賠上限</label><input type="text" id="p7_dmax" value="205"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">第 8 層：主強 + 主賠中（A≥34）</div><div class="dev-grid"><div class="dev-item"><label>主勝率下限</label><input type="text" id="p8_hmin" value="34"></div><div class="dev-item"><label>主賠下限</label><input type="text" id="p8_dmin" value="205"></div><div class="dev-item"><label>主賠上限</label><input type="text" id="p8_dmax" value="235"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">🆕 第 9 層：主賠極高 + 主強（D≥400）</div><div class="dev-grid"><div class="dev-item"><label>主賠下限</label><input type="text" id="p9b_dmin" value="400"></div><div class="dev-item"><label>主勝率下限</label><input type="text" id="p9b_hmin" value="42"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">第 10 層：主賠極高 + 客賠低</div><div class="dev-grid"><div class="dev-item"><label>主賠下限</label><input type="text" id="p9_dmin" value="340"></div><div class="dev-item"><label>主勝率下限</label><input type="text" id="p9_hmin" value="40"></div><div class="dev-item"><label>客賠上限</label><input type="text" id="p9_fmax" value="250"></div><div class="dev-item"><label>客賠極低下限</label><input type="text" id="p9_low" value="200"></div><div class="dev-item"><label>和勝率下限</label><input type="text" id="p9_bmin" value="28"></div><div class="dev-item"><label>客賠極低門檻</label><input type="text" id="p9_fverylow" value="150"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">第 11 層：客強 + 客賠極高 + 主賠低</div><div class="dev-grid"><div class="dev-item"><label>客賠下限</label><input type="text" id="p10a_fmin" value="500"></div><div class="dev-item"><label>客賠上限</label><input type="text" id="p10a_fmax" value="550"></div><div class="dev-item"><label>主賠上限</label><input type="text" id="p10a_dmax" value="200"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">第 12 層：客強客冷反向買主</div><div class="dev-grid"><div class="dev-item"><label>客賠上限</label><input type="text" id="p10_fmax" value="550"></div><div class="dev-item"><label>和賠下限</label><input type="text" id="p10_emin" value="300"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">第 13 層：客賠價值（190-210）</div><div class="dev-grid"><div class="dev-item"><label>客賠下限</label><input type="text" id="p11_fmin" value="190"></div><div class="dev-item"><label>客賠上限</label><input type="text" id="p11_fmax" value="210"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">第 14 層：客略強 + 客賠中 + 主賠低</div><div class="dev-grid"><div class="dev-item"><label>客勝率上限</label><input type="text" id="p12_cmax" value="45"></div><div class="dev-item"><label>客賠上限</label><input type="text" id="p12_fmax" value="300"></div><div class="dev-item"><label>主賠上限</label><input type="text" id="p12_dmax" value="250"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">第 15 層：賠率博弈（兜底）</div><div class="dev-grid"><div class="dev-item"><label>主賠 skip 門檻</label><input type="text" id="pd_skip" value="1500"></div><div class="dev-item"><label>主賠極端時客勝率下限</label><input type="text" id="pd_cAmin" value="50"></div><div class="dev-item"><label>主勝率下限(買和)</label><input type="text" id="pb_hmin" value="33"></div><div class="dev-item"><label>主賠下限(買和)</label><input type="text" id="pb_dmin" value="350"></div><div class="dev-item"><label>客賠 skip 門檻</label><input type="text" id="pb_fskip" value="700"></div><div class="dev-item"><label>客賠極端時主勝率下限</label><input type="text" id="pb_hAmin" value="50"></div><div class="dev-item"><label>客賠非極端時主勝率下限</label><input type="text" id="pb_honly" value="50"></div><div class="dev-item"><label>客賠非極端時主賠上限</label><input type="text" id="pb_donly" value="140"></div></div></div>
+<div class="dev-btns"><button class="r" id="devResetBtn">🔄 重設預設</button><button class="a" id="devApplyBtn">✅ 套用參數</button></div>
+<button class="dev-close" id="devCloseBtn">✖️ 收起面板</button>
 </div>
 </div>
 
-<!-- 遊戲卡 -->
 <div class="card">
-<h3>🎮 <span data-i18n="gameTitle">猜賽果挑戰</span></h3>
-<div class="note" style="margin-top:0;margin-bottom:10px" id="dbInfo" data-i18n="dbLoading">📚 資料庫載入中...</div>
-<div class="gstats">
-<div class="gstat"><div class="l" data-i18n="played">已玩</div><div class="v" id="gPlayed">0</div></div>
-<div class="gstat"><div class="l" data-i18n="hits">命中</div><div class="v" id="gHits">0</div></div>
-<div class="gstat"><div class="l" data-i18n="rate">命中率</div><div class="v" id="gRate">—</div></div>
-<div class="gstat"><div class="l" data-i18n="pnl">盈虧</div><div class="v" id="gPnl">0</div></div>
-</div>
-<div class="game-grid">
-<div class="gc"><span class="gl" data-i18n="hWinRate">主勝率</span><span class="gv" id="ghw">—</span></div>
-<div class="gc"><span class="gl" data-i18n="dWinRate">和勝率</span><span class="gv" id="gdw">—</span></div>
-<div class="gc"><span class="gl" data-i18n="aWinRate">客勝率</span><span class="gv" id="gaw">—</span></div>
-</div>
-<div class="game-grid">
-<div class="gc"><span class="gl" data-i18n="hOdds">主賠</span><span class="gv" id="gho">—</span></div>
-<div class="gc"><span class="gl" data-i18n="dOdds">和賠</span><span class="gv" id="gdoo">—</span></div>
-<div class="gc"><span class="gl" data-i18n="aOdds">客賠</span><span class="gv" id="gao">—</span></div>
-</div>
-<div class="gmsg" id="gMsg"></div>
-<div class="game-row">
-<button class="gbtn H" id="gbH" data-i18n="homeWin">主勝</button>
-<button class="gbtn D" id="gbD" data-i18n="draw">和局</button>
-<button class="gbtn A" id="gbA" data-i18n="awayWin">客勝</button>
-</div>
-<div class="game-row">
-<button class="gbtn Next" id="gbNext" data-i18n="next">下一場</button>
-<button class="gbtn Auto" id="gbAuto" data-i18n="autoBtn">🤖 系統推薦</button>
-<button class="gbtn Skip" id="gbSkip" data-i18n="skipBtn">跳過</button>
-</div>
-<div class="note" data-i18n="skipHelp">💡 每場 ±5% 抖動，預設 2 次跳過，每玩 10 場 +1 次</div>
-<div style="display:flex;gap:10px;margin-top:14px">
-<button class="btn-sec" id="simBtn" style="flex:1;background:linear-gradient(135deg,rgba(96,165,250,.25),rgba(192,132,252,.25));color:#c084fc;border:1.5px solid rgba(192,132,252,.6)" data-i18n="simBtn">🧪 模擬測試</button>
+<h3 data-i18n="leaderboardTop10">🏆 排行榜 Top 10</h3>
+<div class="lb-mini" id="lbMini"><div class="lb-loading" data-i18n="lbLoading">⏳ 載入中...</div></div>
+<button class="lb-showall" id="lbShowAllBtn" data-i18n="leaderboardShowAll">📋 顯示所有排行榜</button>
 </div>
 </div>
 
-<!-- 排行榜卡 -->
-<div class="card">
-<h3>🏆 <span data-i18n="lbTitle">排行榜 Top 10</span></h3>
-<div class="lb-box" id="lbMini"><div class="note" style="margin:0">⏳ 載入中...</div></div>
-<button class="btn-calc" style="background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,165,0,.15));color:#fbbf24;box-shadow:none" id="lbShowAll" data-i18n="showAll">📋 顯示完整排行榜</button>
-</div>
-
-</div>
-</div>
-
-<div class="whatsapp"><a href="https://chat.whatsapp.com/GgUVLCyny4VDGx6yF8ARDd" target="_blank">📱 WhatsApp 群組</a></div>
+<div class="wa"><a href="https://chat.whatsapp.com/GgUVLCyny4VDGx6yF8ARDd" target="_blank" data-i18n="whatsapp">📱 加入WhatsApp群組</a></div>
 
 <script>
-window.onerror=function(msg,src,line,col,err){console.error("[JS Error]",msg,src+":"+line,err);return false};
+window.onerror=function(m,s,l,c,e){console.error("[JS]",m,s+":"+l,e);return false};
 
-/* ═══════════════════════════════════════════════════════════
-   翻譯字典
-   ═══════════════════════════════════════════════════════════ */
-const LANG = {
-"zh-HK":{statsTitle:"歷史數據統計",totalPnl:"總盈虧",wins:"命中數",cost:"總成本",bets:"出手數",hitRate:"命中率",statsNote:"※ 每注固定 $100，所有數據實時同步",dbUpdate:"📅 資料庫更新：",mainTitle:"⚽ 智能量化預測系統 v2.0",subTitle:"EV / Edge / Kelly 三重量化分析引擎",hWinRate:"主勝率",dWinRate:"和勝率",aWinRate:"客勝率",hOdds:"主賠",dOdds:"和賠",aOdds:"客賠",calcBtn:"🎯 開始量化分析",stake:"建議注碼",compareTitle:"📊 市場隱含概率 vs 模型概率",gameTitle:"猜賽果挑戰",played:"已玩",hits:"命中",rate:"命中率",pnl:"盈虧",homeWin:"主勝",draw:"和局",awayWin:"客勝",next:"下一場",autoBtn:"🤖 系統推薦",skipBtn:"跳過",skipHelp:"💡 每場 ±5% 抖動，預設 2 次跳過，每玩 10 場 +1 次",simBtn:"🧪 模擬測試",lbTitle:"排行榜 Top 10",showAll:"📋 顯示完整排行榜",dbLoading:"📚 資料庫載入中...",dbLoaded:"📚 資料庫共 {n} 場真實比賽",dbFail:"📚 資料庫載入失敗",agreeScroll:"請滾動閱讀至最底部",agreeReady:"✅ 我已閱讀並同意，進入系統",errIncomplete:"⚠️ 數據不完整",errOver100:"⚠️ 勝率總和超過 100%",errOdds:"⚠️ 賠率格式錯誤",noBet:"⛔ 建議不出手",betH:"✅ 建議出手：買主勝",betD:"✅ 建議出手：買和局",betA:"✅ 建議出手：買客勝",simTitle:"🧪 模擬測試（EV/Edge/Kelly 引擎）",simRunning:"⏳ 運算中...",simNoData:"⚠️ 數據尚未載入",simStart:"═══ 模擬開始 ═══",simEnd:"═══ 模擬完成 ═══",simTotal:"總樣本",simBets:"出手",simSkips:"跳過",simRoi:"ROI",simTotalPnl:"總盈虧",simScore:"綜合分數",simDist:"📊 出手分佈",simConf:"🎯 各信心等級觸發",simH:"主",simD:"和",simA:"客",simSkip:"跳過",simNote:"※ 使用原始數據，每注固定 $100",simFinish:"完成時間",simComplete:"完成",simPreparing:"準備中…",simReset:"🔄 已恢復預設",simRerun:"🔁 再次模擬",simRerunToast:"✅ 已套用新參數，重新模擬…",stakeUnit:"% 資金",goTitle:"🏁 挑戰結束！",goSub:"已完成 {n} 場",goHit:"命中率",goRoi:"ROI",goScore:"綜合分",goPnl:"總盈虧",goShare:"📤 上傳排行榜",goRestart:"🔄 重新挑戰",uploaded:"✅ 已上傳",uploadFail:"❌ 上傳失敗",enterName:"請輸入你的名字：",lbLoading:"⏳ 載入中...",lbEmpty:"📭 暫無記錄",lbFail:"⚠️ 載入失敗",maxPlay:"⚠️ 已達 50 場上限",mustGuess:"⚠️ 請先預測本場",skipToast:"⏭️ 已跳過",skipNoMore:"❌ 跳過次數已用完",combo:"連勝 x{n} !!!",reason_H:"模型認為主勝被市場低估，EV 為正，建議買主勝。",reason_D:"市場低估和局概率，EV 為正，建議買和局。",reason_A:"模型認為客勝被市場低估，EV 為正，建議買客勝。",reason_skip:"所有選項 EV 均為負或低於門檻，建議不出手。",reason_skip_odds:"賠率過於極端（可能數據異常），建議跳過。"},
-"zh-CN":{statsTitle:"历史数据统计",totalPnl:"总盈亏",wins:"命中数",cost:"总成本",bets:"出手数",hitRate:"命中率",statsNote:"※ 每注固定 $100，所有数据实时同步",dbUpdate:"📅 数据库更新：",mainTitle:"⚽ 智能量化预测系统 v2.0",subTitle:"EV / Edge / Kelly 三重量化分析引擎",hWinRate:"主胜率",dWinRate:"和胜率",aWinRate:"客胜率",hOdds:"主赔",dOdds:"和赔",aOdds:"客赔",calcBtn:"🎯 开始量化分析",stake:"建议注码",compareTitle:"📊 市场隐含概率 vs 模型概率",gameTitle:"猜赛果挑战",played:"已玩",hits:"命中",rate:"命中率",pnl:"盈亏",homeWin:"主胜",draw:"和局",awayWin:"客胜",next:"下一场",autoBtn:"🤖 系统推荐",skipBtn:"跳过",skipHelp:"💡 每场 ±5% 抖动，预设 2 次跳过，每玩 10 场 +1 次",simBtn:"🧪 模拟测试",lbTitle:"排行榜 Top 10",showAll:"📋 显示完整排行榜",dbLoading:"📚 数据库加载中...",dbLoaded:"📚 数据库共 {n} 场真实比赛",dbFail:"📚 数据库加载失败",agreeScroll:"请滚动阅读至最底部",agreeReady:"✅ 我已阅读并同意，进入系统",errIncomplete:"⚠️ 数据不完整",errOver100:"⚠️ 胜率总和超过 100%",errOdds:"⚠️ 赔率格式错误",noBet:"⛔ 建议不出手",betH:"✅ 建议出手：买主胜",betD:"✅ 建议出手：买和局",betA:"✅ 建议出手：买客胜",simTitle:"🧪 模拟测试（EV/Edge/Kelly 引擎）",simRunning:"⏳ 运算中...",simNoData:"⚠️ 数据尚未载入",simStart:"═══ 模拟开始 ═══",simEnd:"═══ 模拟完成 ═══",simTotal:"总样本",simBets:"出手",simSkips:"跳过",simRoi:"ROI",simTotalPnl:"总盈亏",simScore:"综合分数",simDist:"📊 出手分布",simConf:"🎯 各信心等级触发",simH:"主",simD:"和",simA:"客",simSkip:"跳过",simNote:"※ 使用原始数据，每注固定 $100",simFinish:"完成时间",simComplete:"完成",simPreparing:"准备中…",simReset:"🔄 已恢复预设",simRerun:"🔁 再次模拟",simRerunToast:"✅ 已套用新参数，重新模拟…",stakeUnit:"% 资金",goTitle:"🏁 挑战结束！",goSub:"已完成 {n} 场",goHit:"命中率",goRoi:"ROI",goScore:"综合分",goPnl:"总盈亏",goShare:"📤 上传排行榜",goRestart:"🔄 重新挑战",uploaded:"✅ 已上传",uploadFail:"❌ 上传失败",enterName:"请输入你的名字：",lbLoading:"⏳ 加载中...",lbEmpty:"📭 暂无记录",lbFail:"⚠️ 加载失败",maxPlay:"⚠️ 已达 50 场上限",mustGuess:"⚠️ 请先预测本场",skipToast:"⏭️ 已跳过",skipNoMore:"❌ 跳过次数已用完",combo:"连胜 x{n} !!!",reason_H:"模型认为主胜被市场低估，EV 为正，建议买主胜。",reason_D:"市场低估和局概率，EV 为正，建议买和局。",reason_A:"模型认为客胜被市场低估，EV 为正，建议买客胜。",reason_skip:"所有选项 EV 均为负或低于门槛，建议不出手。",reason_skip_odds:"赔率过于极端，建议跳过。"},
-"en-US":{statsTitle:"Historical Stats",totalPnl:"Total P/L",wins:"Wins",cost:"Cost",bets:"Bets",hitRate:"Hit Rate",statsNote:"※ $100 per bet, real-time sync",dbUpdate:"📅 DB updated: ",mainTitle:"⚽ Quant Football System v2.0",subTitle:"EV / Edge / Kelly Triple Engine",hWinRate:"Home Win %",dWinRate:"Draw %",aWinRate:"Away Win %",hOdds:"Home Odds",dOdds:"Draw Odds",aOdds:"Away Odds",calcBtn:"🎯 Analyze",stake:"Stake",compareTitle:"📊 Market vs Model Probability",gameTitle:"Guess the Result",played:"Played",hits:"Correct",rate:"Accuracy",pnl:"P/L",homeWin:"Home",draw:"Draw",awayWin:"Away",next:"Next",autoBtn:"🤖 Auto",skipBtn:"Skip",skipHelp:"💡 ±5% jitter, 2 skips default, +1 per 10 plays",simBtn:"🧪 Simulation",lbTitle:"Leaderboard Top 10",showAll:"📋 Show Full Leaderboard",dbLoading:"📚 Loading DB...",dbLoaded:"📚 {n} real matches loaded",dbFail:"📚 DB load failed",agreeScroll:"Scroll to bottom",agreeReady:"✅ I Agree, Enter System",errIncomplete:"⚠️ Incomplete Data",errOver100:"⚠️ Probability exceeds 100%",errOdds:"⚠️ Invalid odds",noBet:"⛔ No Bet",betH:"✅ Bet Home Win",betD:"✅ Bet Draw",betA:"✅ Bet Away Win",simTitle:"🧪 Simulation (EV/Edge/Kelly)",simRunning:"⏳ Running...",simNoData:"⚠️ Data not loaded",simStart:"═══ SIMULATION START ═══",simEnd:"═══ SIMULATION COMPLETE ═══",simTotal:"Total",simBets:"Bets",simSkips:"Skips",simRoi:"ROI",simTotalPnl:"Total P/L",simScore:"Score",simDist:"📊 Bet Distribution",simConf:"🎯 Confidence Level Triggers",simH:"H",simD:"D",simA:"A",simSkip:"Skip",simNote:"※ Original data, $100/bet",simFinish:"Finished",simComplete:"Done",simPreparing:"Preparing…",simReset:"🔄 Reset",simRerun:"🔁 Re-run",simRerunToast:"✅ Re-running...",stakeUnit:"% bankroll",goTitle:"🏁 Challenge Complete!",goSub:"{n} matches played",goHit:"Hit Rate",goRoi:"ROI",goScore:"Score",goPnl:"Total P/L",goShare:"📤 Upload",goRestart:"🔄 Play Again",uploaded:"✅ Uploaded",uploadFail:"❌ Upload failed",enterName:"Your name: ",lbLoading:"⏳ Loading...",lbEmpty:"📭 No records",lbFail:"⚠️ Load failed",maxPlay:"⚠️ 50-match limit reached",mustGuess:"⚠️ Guess current match first",skipToast:"⏭️ Skipped",skipNoMore:"❌ No skips left",combo:"STREAK x{n} !!!",reason_H:"Model sees Home Win undervalued by market, positive EV. Bet Home.",reason_D:"Model sees Draw undervalued, positive EV. Bet Draw.",reason_A:"Model sees Away Win undervalued, positive EV. Bet Away.",reason_skip:"All options negative EV or below threshold. Skip.",reason_skip_odds:"Extreme odds detected. Skip."}
+/* ═══ 翻譯字典 ═══ */
+const TR={
+"zh-HK":{statsTitle:"📊 歷史數據統計",totalPnl:"總盈虧",winsCount:"命中數",totalCost:"總成本",betsCount:"出手數",roi:"盈虧率 (ROI)",hitRate:"命中率",statsNote:"※ 每注固定 $100，所有數據實時同步",dbUpdate:"📅 資料庫更新日期：",mainTitle:"⚽ 智能量化預測系統",sub1:"勝率數據建議使用 FootballForecastAI 勝率",sub2:"賠率數據建議使用 Tipsme 內的馬會(HKJC) 賠率",labelHW:"主勝率",labelDW:"和勝率",labelAW:"客勝率",labelHO:"主賠",labelDO:"和賠",labelAO:"客賠",calcBtn:"計算結果",whatsapp:"📱 加入WhatsApp群組",gameTitle:"🎮 猜賽果挑戰",gameSub:"📚 從資料庫真實數據隨機抽樣，試下你嘅眼光！",gameDataHint:"🔒 每場從資料庫真實數據抽樣，並約略微調 ±5% 以避免被搜尋反查作弊；賽果保持真實。",tierInfoHint:"📊 猜 5 場以上顯示等級　|　🏆 猜滿 50 場可上傳排行榜",tierScoreLabel:"🎯 綜合分數",gamePlayed:"已玩",gameHits:"命中",gameRate:"命中率",gamePnl:"盈虧",gameHW:"主勝率",gameDW:"和勝率",gameAW:"客勝率",gameHO:"主賠",gameDO:"和賠",gameAO:"客賠",gameNewBtn:"下一場",gameAutoBtnShort:"🤖 預測",gameSkipBtnShort:"⏭️ 跳過",gameSkipHelp:"💡 每場從資料庫真實數據隨機抽樣，預設 2 次跳過機會，每玩 10 場 +1 次",resultHShort:"主勝",resultDShort:"和局",resultAShort:"客勝",resultH:"✅ 建議出手：買主勝",resultA:"✅ 建議出手：買客勝",resultD:"✅ 建議出手：買和局",resultSkip:"⛔ 建議不出手",errIncomplete:"⚠️ 數據不完整",errOver100:"⚠️ 命中率大於100%",evLabel:"期望值 EV-1：",dbLoading:"📚 資料庫載入中...",dbLoadedPrefix:"📚 資料庫共 ",dbLoadedSuffix:" 場真實比賽",dbLoadFailed:"📚 資料庫載入失敗",simTitle:"🧪 模擬測試（即時運算）",simPreparing:"準備中…",simBtn:"🧪 模擬測試（即時運算）",simQuickParams:"⚙️ 快速調整參數",simExpand:"▼ 展開",simCollapse:"▲ 收起",simResetDefault:"🔄 恢復預設",simRerun:"🔁 再次模擬",simRunningBtn:"⏳ 運算中...",simNoData:"⚠️ 數據尚未載入",simApplied:"✅ 已套用新參數",simReset:"🔄 已恢復預設參數",simStart:"════════ 模擬開始 ════════",simEnd:"════════ 模擬完成 ════════",simTotalSamples:"總樣本",simBets:"出手",simSkips:"跳過",simHitRate:"命中率",simRoi:"ROI",simTotalPnl:"總盈虧",simScore:"綜合分數",simPerBetCost:"每注成本",simBetDist:"📊 出手分佈",simLayerTriggers:"🎯 各層觸發場次",simType:"類型",simBetCol:"出手",simHitCol:"命中",simRateCol:"命中率",simHomeWin:"🟢 主勝 (H)",simDraw:"🟡 和局 (D)",simAwayWin:"🔵 客勝 (A)",simSkip:"⚪ 跳過",simProgress:"進度",simComplete:"完成",simNote:"※ 使用原始數據，每注固定 $100",simFinishTime:"完成時間",simHideData:"（為保護數據，勝率與賠率以 *** 顯示）",simActual:"實際",simCumulative:"累計",simBatch:"批次",simPerFrame:"場/幀",leaderboardTitle:"🏆 排行榜 Top 100",leaderboardTop10:"🏆 排行榜 Top 10",leaderboardShowAll:"📋 顯示所有排行榜",leaderboardRefresh:"🔄 重新載入",lbTitle:"🏆 排行榜 Top 100",lbLoading:"⏳ 載入中...",lbEmpty:"📭 暫無記錄",lbFail:"⚠️ 載入失敗",goTitle:"🏁 挑戰結束！",goSub:"已完成 50 場",goHitRate:"命中率",goRoi:"ROI",goScore:"綜合分數",goPnl:"總盈虧",goShare:"📤 上傳排行榜",goRestart:"🔄 重新挑戰",goUploaded:"✅ 已上傳",goUploadFailed:"❌ 上傳失敗",goEnterName:"請輸入你的名字：",maxPlayReached:"⚠️ 已達 50 場上限，請重新挑戰",mustGuess:"⚠️ 請先預測本場答案，才能開始新一局",skipToast:"⏭️ 已跳過本場",skipExhausted:"❌ 跳過次數已用完",comboStreak:"連勝 x",stake:"建議注碼",compareTitle:"📊 市場隱含概率 vs 模型概率",agreeScroll:"請滾動閱讀至最底部",agreeReady:"✅ 我已閱讀並同意，進入系統",tipV1:"📐 V1 經典（15 層公式）",tipV2:"🚀 V2 量化（EV/Edge/Kelly）"},
+"zh-CN":{statsTitle:"📊 历史数据统计",totalPnl:"总盈亏",winsCount:"命中数",totalCost:"总成本",betsCount:"出手数",roi:"盈亏率 (ROI)",hitRate:"命中率",statsNote:"※ 每注固定 $100，所有数据实时同步",dbUpdate:"📅 数据库更新日期：",mainTitle:"⚽ 智能量化预测系统",sub1:"胜率数据建议使用 FootballForecastAI 胜率",sub2:"赔率数据建议使用 Tipsme 内的马会(HKJC) 赔率",labelHW:"主胜率",labelDW:"和胜率",labelAW:"客胜率",labelHO:"主赔",labelDO:"和赔",labelAO:"客赔",calcBtn:"计算结果",whatsapp:"📱 加入WhatsApp群组",gameTitle:"🎮 猜赛果挑战",gameSub:"📚 从数据库真实数据随机抽样，试试你的眼光！",gameDataHint:"🔒 每场从数据库真实数据抽样，并约略微调 ±5% 以避免被搜寻反查作弊；赛果保持真实。",tierInfoHint:"📊 猜 5 场以上显示等级　|　🏆 猜满 50 场可上传排行榜",tierScoreLabel:"🎯 综合分数",gamePlayed:"已玩",gameHits:"命中",gameRate:"命中率",gamePnl:"盈亏",gameHW:"主胜率",gameDW:"和胜率",gameAW:"客胜率",gameHO:"主赔",gameDO:"和赔",gameAO:"客赔",gameNewBtn:"下一场",gameAutoBtnShort:"🤖 预测",gameSkipBtnShort:"⏭️ 跳过",gameSkipHelp:"💡 每场从数据库真实数据随机抽样，预设 2 次跳过机会，每玩 10 场 +1 次",resultHShort:"主胜",resultDShort:"和局",resultAShort:"客胜",resultH:"✅ 建议出手：买主胜",resultA:"✅ 建议出手：买客胜",resultD:"✅ 建议出手：买和局",resultSkip:"⛔ 建议不出手",errIncomplete:"⚠️ 数据不完整",errOver100:"⚠️ 命中率大于100%",evLabel:"期望值 EV-1：",dbLoading:"📚 数据库加载中...",dbLoadedPrefix:"📚 数据库共 ",dbLoadedSuffix:" 场真实比赛",dbLoadFailed:"📚 数据库加载失败",simTitle:"🧪 模拟测试（即时运算）",simPreparing:"准备中…",simBtn:"🧪 模拟测试（即时运算）",simQuickParams:"⚙️ 快速调整参数",simExpand:"▼ 展开",simCollapse:"▲ 收起",simResetDefault:"🔄 恢复预设",simRerun:"🔁 再次模拟",simRunningBtn:"⏳ 运算中...",simNoData:"⚠️ 数据尚未载入",simApplied:"✅ 已套用新参数",simReset:"🔄 已恢复预设参数",simStart:"════════ 模拟开始 ════════",simEnd:"════════ 模拟完成 ════════",simTotalSamples:"总样本",simBets:"出手",simSkips:"跳过",simHitRate:"命中率",simRoi:"ROI",simTotalPnl:"总盈亏",simScore:"综合分数",simPerBetCost:"每注成本",simBetDist:"📊 出手分布",simLayerTriggers:"🎯 各层触发场次",simType:"类型",simBetCol:"出手",simHitCol:"命中",simRateCol:"命中率",simHomeWin:"🟢 主胜 (H)",simDraw:"🟡 和局 (D)",simAwayWin:"🔵 客胜 (A)",simSkip:"⚪ 跳过",simProgress:"进度",simComplete:"完成",simNote:"※ 使用原始数据，每注固定 $100",simFinishTime:"完成时间",simHideData:"（为保护数据，胜率与赔率以 *** 显示）",simActual:"实际",simCumulative:"累计",simBatch:"批次",simPerFrame:"场/帧",leaderboardTitle:"🏆 排行榜 Top 100",leaderboardTop10:"🏆 排行榜 Top 10",leaderboardShowAll:"📋 显示所有排行榜",leaderboardRefresh:"🔄 重新加载",lbTitle:"🏆 排行榜 Top 100",lbLoading:"⏳ 加载中...",lbEmpty:"📭 暂无记录",lbFail:"⚠️ 加载失败",goTitle:"🏁 挑战结束！",goSub:"已完成 50 场",goHitRate:"命中率",goRoi:"ROI",goScore:"综合分数",goPnl:"总盈亏",goShare:"📤 上传排行榜",goRestart:"🔄 重新挑战",goUploaded:"✅ 已上传",goUploadFailed:"❌ 上传失败",goEnterName:"请输入你的名字：",maxPlayReached:"⚠️ 已达 50 场上限，请重新挑战",mustGuess:"⚠️ 请先预测本场答案",skipToast:"⏭️ 已跳过本场",skipExhausted:"❌ 跳过次数已用完",comboStreak:"连胜 x",stake:"建议注码",compareTitle:"📊 市场隐含概率 vs 模型概率",agreeScroll:"请滚动阅读至最底部",agreeReady:"✅ 我已阅读并同意，进入系统",tipV1:"📐 V1 经典（15 层公式）",tipV2:"🚀 V2 量化（EV/Edge/Kelly）"},
+"en-US":{statsTitle:"📊 Historical Statistics",totalPnl:"Total P/L",winsCount:"Wins",totalCost:"Total Cost",betsCount:"Bets",roi:"ROI",hitRate:"Hit Rate",statsNote:"※ Fixed $100 per bet, synced real-time",dbUpdate:"📅 DB updated: ",mainTitle:"⚽ Quant Football Prediction System",sub1:"Win rate: FootballForecastAI",sub2:"Odds: Tipsme (HKJC)",labelHW:"Home Win Rate",labelDW:"Draw Rate",labelAW:"Away Win Rate",labelHO:"Home Odds",labelDO:"Draw Odds",labelAO:"Away Odds",calcBtn:"Calculate",whatsapp:"📱 Join WhatsApp",gameTitle:"🎮 Guess the Result",gameSub:"📚 Randomly sampled from real database!",gameDataHint:"🔒 Each match sampled from real database with ±5% jitter; results stay authentic.",tierInfoHint:"📊 Rank at 5+ rounds　|　🏆 Upload at 50 rounds",tierScoreLabel:"🎯 Overall Score",gamePlayed:"Played",gameHits:"Correct",gameRate:"Accuracy",gamePnl:"P/L",gameHW:"Home %",gameDW:"Draw %",gameAW:"Away %",gameHO:"Home Odds",gameDO:"Draw Odds",gameAO:"Away Odds",gameNewBtn:"Next",gameAutoBtnShort:"🤖 Auto",gameSkipBtnShort:"⏭️ Skip",gameSkipHelp:"💡 Each match is randomly sampled. Default 2 skips, +1 every 10 plays",resultHShort:"Home",resultDShort:"Draw",resultAShort:"Away",resultH:"✅ Bet Home Win",resultA:"✅ Bet Away Win",resultD:"✅ Bet Draw",resultSkip:"⛔ No Bet",errIncomplete:"⚠️ Incomplete Data",errOver100:"⚠️ Probability exceeds 100%",evLabel:"Expected Value EV-1: ",dbLoading:"📚 Loading database...",dbLoadedPrefix:"📚 Database has ",dbLoadedSuffix:" real matches",dbLoadFailed:"📚 Database load failed",simTitle:"🧪 Simulation Test",simPreparing:"Preparing…",simBtn:"🧪 Simulation Test",simQuickParams:"⚙️ Quick Params",simExpand:"▼ Expand",simCollapse:"▲ Collapse",simResetDefault:"🔄 Reset Default",simRerun:"🔁 Re-run",simRunningBtn:"⏳ Running...",simNoData:"⚠️ Data not loaded",simApplied:"✅ New params applied",simReset:"🔄 Default params restored",simStart:"════════ SIMULATION START ════════",simEnd:"════════ SIMULATION COMPLETE ════════",simTotalSamples:"Total",simBets:"Bets",simSkips:"Skips",simHitRate:"Hit Rate",simRoi:"ROI",simTotalPnl:"Total P/L",simScore:"Score",simPerBetCost:"Per-bet Cost",simBetDist:"📊 Bet Distribution",simLayerTriggers:"🎯 Layer Triggers",simType:"Type",simBetCol:"Bets",simHitCol:"Hits",simRateCol:"Rate",simHomeWin:"🟢 Home (H)",simDraw:"🟡 Draw (D)",simAwayWin:"🔵 Away (A)",simSkip:"⚪ Skip",simProgress:"Progress",simComplete:"Done",simNote:"※ Original data, $100 per bet",simFinishTime:"Finish time",simHideData:"(rates shown as ***)",simActual:"Actual",simCumulative:"Cum",simBatch:"Batch",simPerFrame:"per frame",leaderboardTitle:"🏆 Leaderboard Top 100",leaderboardTop10:"🏆 Leaderboard Top 10",leaderboardShowAll:"📋 Show Full Leaderboard",leaderboardRefresh:"🔄 Refresh",lbTitle:"🏆 Leaderboard Top 100",lbLoading:"⏳ Loading...",lbEmpty:"📭 No records",lbFail:"⚠️ Load failed",goTitle:"🏁 Challenge Complete!",goSub:"50 matches played",goHitRate:"Hit Rate",goRoi:"ROI",goScore:"Score",goPnl:"Total P/L",goShare:"📤 Upload",goRestart:"🔄 Play Again",goUploaded:"✅ Uploaded",goUploadFailed:"❌ Upload failed",goEnterName:"Your name: ",maxPlayReached:"⚠️ 50-match limit reached",mustGuess:"⚠️ Guess current match first",skipToast:"⏭️ Skipped",skipExhausted:"❌ No skips left",comboStreak:"STREAK x",stake:"Stake",compareTitle:"📊 Market vs Model Probability",agreeScroll:"Scroll to bottom",agreeReady:"✅ I Agree, Enter System",tipV1:"📐 V1 Classic (15 Layers)",tipV2:"🚀 V2 Quant (EV/Edge/Kelly)"}
 };
-let curLang = "zh-HK";
-const t = k => (LANG[curLang] && LANG[curLang][k]) || LANG["zh-HK"][k] || k;
-function applyLang(lang){
-  curLang = lang;
-  document.querySelectorAll("[data-i18n]").forEach(el => {
-    const k = el.getAttribute("data-i18n");
-    const v = LANG[lang] && LANG[lang][k];
-    if (v) el.textContent = v;
-  });
-  ["zh-HK","zh-CN","en-US"].forEach(l => {
-    const el = document.getElementById("terms-" + l);
-    if (el) el.style.display = (l === lang) ? "block" : "none";
-  });
-  document.getElementById("langSelect").value = lang;
-  const btn = document.getElementById("agreeBtn");
-  if (btn) btn.textContent = btn.classList.contains("on") ? t("agreeReady") : t("agreeScroll");
-  updateDbInfo();
-}
+let curLang="zh-HK";
+const t=k=>(TR[curLang]&&TR[curLang][k])||TR["zh-HK"][k]||k;
 
-/* ═══════════════════════════════════════════════════════════
-   核心引擎 v2.0：EV / Edge / Kelly
-   ═══════════════════════════════════════════════════════════ */
-const CONFIG = {
-  minEV: 0.03,        // 最低 EV 3%
-  minEdge: 0.02,      // 最低 Edge 2%
-  kellyFactor: 0.25,  // ¼ Kelly
-  maxStake: 5.0,      // 最大 5% 資金
-  minOdds: 1.15,      // 極熱跳過
-  maxOdds: 20.0       // 極冷跳過
+/* ═══ 參數 ═══ */
+const DEF_PARAMS={
+p1_cbmin:32,p1_cgap:6,p2_hmin:60,p2_cmax:11,p2_dmin:140,p2_dmax:190,p2_fmin:400,p2_fmax:480,
+p3_wgap:3,p3_emax:380,p3_ogap:40,p4_hmin:45,p4_cmax:20,p4_ogap:70,p4_dmax:400,
+p5_ogap:18,p6_hmin:42,p6_dmin:155,p6_dmax:205,p6_wgap:50,p7_hmin:42,p7_dmin:155,p7_dmax:205,
+p8_hmin:34,p8_dmin:205,p8_dmax:235,p9b_dmin:400,p9b_hmin:42,
+p9_dmin:340,p9_hmin:40,p9_fmax:250,p9_low:200,p9_bmin:28,p9_fverylow:150,
+p10a_fmin:500,p10a_fmax:550,p10a_dmax:200,p10_fmax:550,p10_emin:300,
+p11_fmin:190,p11_fmax:210,p12_cmax:45,p12_fmax:300,p12_dmax:250,
+pd_skip:1500,pd_cAmin:50,pb_hmin:33,pb_dmin:350,pb_fskip:700,pb_hAmin:50,pb_honly:50,pb_donly:140
 };
+let PARAMS=JSON.parse(JSON.stringify(DEF_PARAMS));
 
-const Engine = {
-  parseOdds(v){
-    if (v === null || v === undefined || v === "") return null;
-    const n = parseFloat(String(v).trim());
-    if (isNaN(n) || n <= 0) return null;
-    if (n < 20) return n;
-    if (n < 100) return n / 10;
-    return n / 100;
-  },
-  analyze(hw, dw, aw, ho, doo, ao){
-    // 輸入驗證
-    if ([hw, dw, aw, ho, doo, ao].some(v => v === null || isNaN(v))) {
-      return { error: "incomplete" };
-    }
-    if (hw + dw + aw > 100) return { error: "over100" };
-    if ([ho, doo, ao].some(v => v < CONFIG.minOdds || v > CONFIG.maxOdds)) {
-      return { error: "odds", recommended: "SKIP", reason: t("reason_skip_odds") };
-    }
+const V2_CFG={minEV:0.03,minEdge:0.02,kellyFactor:0.25,maxStake:5,minOdds:1.15,maxOdds:20};
 
-    // 機率
-    const pH = hw / 100, pD = dw / 100, pA = aw / 100;
+const MAX_PLAYS=50,DEV_PWD="football";
+const LEADERBOARD_API="https://script.google.com/macros/s/AKfycbxwY95XQNs8vOTVdzvWJMoYPffto3PiSvt6S2xwRItsy-TcYsD89sF_W_1GnqJwXY4G/exec";
+const SHEET_ID="1zIJSl7Qt3eVkd3qXStZItuFvtcatEnLdfScy95se0WM",SHEET_NAME="工作表1";
 
-    // EV
-    const evH = pH * ho - 1;
-    const evD = pD * doo - 1;
-    const evA = pA * ao - 1;
+/* ═══ 狀態 ═══ */
+let devMode=false,currentMode="V1",matchPool=null,poolPromise=null,simRunning=false;
+let gameState={current:null,played:0,hits:0,waiting:false,lastGuess:null,totalPnl:0,skipsUsed:0,combo:0};
 
-    // 市場隱含概率
-    const impH = 1 / ho, impD = 1 / doo, impA = 1 / ao;
-    const totImp = impH + impD + impA;
-    const mktH = impH / totImp, mktD = impD / totImp, mktA = impA / totImp;
+/* ═══ 工具 ═══ */
+function showToast(msg,type){const c=document.getElementById("toasts");const el=document.createElement("div");el.className="toast "+(type==="success"?"ok":type==="error"?"er":"inf");el.textContent=msg;c.appendChild(el);setTimeout(()=>{el.style.animation="tOut .3s forwards";setTimeout(()=>el.remove(),300)},2200)}
+function showCombo(n){const p=document.getElementById("comboBox");document.getElementById("comboText").textContent=t("comboStreak")+n+" !!!";p.classList.remove("show");void p.offsetWidth;p.classList.add("show");setTimeout(()=>p.classList.remove("show"),3000)}
+function applyTheme(th){document.documentElement.setAttribute("data-theme",th);document.getElementById("themeIcon").textContent=th==="dark"?"🌙":"☀️";try{localStorage.setItem("qfp_theme",th)}catch(e){}}
+function toggleTheme(){const c=document.documentElement.getAttribute("data-theme")||"dark";applyTheme(c==="dark"?"light":"dark")}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function applyLang(lang){curLang=lang;document.querySelectorAll("[data-i18n]").forEach(el=>{const k=el.getAttribute("data-i18n");if(TR[lang]&&TR[lang][k])el.textContent=TR[lang][k]});["zh-HK","zh-CN","en-US"].forEach(l=>{const el=document.getElementById("terms-"+l);if(el)el.style.display=(l===lang)?"block":"none"});const ls=document.getElementById("langSelect");if(ls)ls.value=lang;const btn=document.getElementById("agreeBtn");if(btn)btn.textContent=btn.classList.contains("on")?t("agreeReady"):t("agreeScroll");updateDbInfo()}
 
-    // Edge
-    const edgeH = (mktH > 0) ? (pH / mktH - 1) : 0;
-    const edgeD = (mktD > 0) ? (pD / mktD - 1) : 0;
-    const edgeA = (mktA > 0) ? (pA / mktA - 1) : 0;
+/* ═══ 賠率解析 ═══ */
+function parseOdds(v){if(v===null||v===undefined||v==="")return null;const n=parseFloat(String(v).trim());if(isNaN(n)||n<=0)return null;if(n<20)return Math.round(n*100);if(n<100)return Math.round(n*10);return Math.round(n)}
+function oddsToFloat(v){if(v===null||v===undefined)return null;const n=parseFloat(String(v).trim());if(isNaN(n)||n<=0)return null;if(n<20)return n;if(n<100)return n/10;return n/100}
 
-    // Kelly
-    const kellyH = ho > 1 ? (pH * (ho - 1) - (1 - pH)) / (ho - 1) : 0;
-    const kellyD = doo > 1 ? (pD * (doo - 1) - (1 - pD)) / (doo - 1) : 0;
-    const kellyA = ao > 1 ? (pA * (ao - 1) - (1 - pA)) / (ao - 1) : 0;
-
-    const options = [
-      { key: "H", ev: evH, edge: edgeH, kelly: kellyH, odds: ho, mkt: mktH, prob: pH },
-      { key: "D", ev: evD, edge: edgeD, kelly: kellyD, odds: doo, mkt: mktD, prob: pD },
-      { key: "A", ev: evA, edge: edgeA, kelly: kellyA, odds: ao, mkt: mktA, prob: pA }
-    ];
-
-    // 決策：最高 EV
-    const best = options.slice().sort((x, y) => y.ev - x.ev)[0];
-
-    // 判斷
-    if (best.ev < CONFIG.minEV || best.edge < CONFIG.minEdge || best.kelly <= 0) {
-      return {
-        recommended: "SKIP",
-        confidence: 0,
-        options: options,
-        ev: best.ev,
-        edge: best.edge,
-        kelly: 0,
-        stake: 0,
-        reason: t("reason_skip")
-      };
-    }
-
-    // 信心等級
-    let confidence = 1;
-    if (best.ev >= 0.25 && best.edge >= 0.20) confidence = 5;
-    else if (best.ev >= 0.15 && best.edge >= 0.10) confidence = 4;
-    else if (best.ev >= 0.08 && best.edge >= 0.05) confidence = 3;
-    else if (best.ev >= 0.03) confidence = 2;
-
-    // 建議注碼
-    const stake = Math.min(best.kelly * CONFIG.kellyFactor * 100, CONFIG.maxStake);
-
-    return {
-      recommended: best.key,
-      confidence: confidence,
-      ev: best.ev,
-      edge: best.edge,
-      kelly: best.kelly * 100,
-      stake: stake,
-      options: options,
-      reason: best.key === "H" ? t("reason_H") : best.key === "D" ? t("reason_D") : t("reason_A")
-    };
-  }
-};
-
-/* ═══════════════════════════════════════════════════════════
-   Google Sheet 讀取
-   ═══════════════════════════════════════════════════════════ */
-const SHEET_ID = "1zIJSl7Qt3eVkd3qXStZItuFvtcatEnLdfScy95se0WM";
-const SHEET_NAME = "工作表1";
-let matchPool = null, poolPromise = null;
-
-async function fetchCell(range){
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}&range=${range}&t=${Date.now()}`;
-  const res = await fetch(url);
-  const text = await res.text();
-  const json = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
-  const cell = json.table.rows[0] && json.table.rows[0].c[0];
-  return cell ? (cell.f !== undefined ? cell.f : cell.v) : null;
+/* ═══ V1：15 層判定（保留） ═══ */
+function getV1Reason(hw,dw,aw,hoI,dooI,aoI){
+hoI=Math.round(hoI);dooI=Math.round(dooI);aoI=Math.round(aoI);
+if(dw>=PARAMS.p1_cbmin&&Math.abs(hw-aw)<=PARAMS.p1_cgap)return{layer:1,bet:"D"};
+if(hw>=PARAMS.p2_hmin&&aw<=PARAMS.p2_cmax&&hoI>=PARAMS.p2_dmin&&hoI<=PARAMS.p2_dmax&&aoI>=PARAMS.p2_fmin&&aoI<=PARAMS.p2_fmax)return{layer:2,bet:"H"};
+if(Math.abs(hw-aw)<=PARAMS.p3_wgap&&dooI<PARAMS.p3_emax&&Math.abs(hoI-aoI)<PARAMS.p3_ogap)return{layer:3,bet:"D"};
+if(hw>=PARAMS.p4_hmin&&aw<=PARAMS.p4_cmax&&Math.abs(hoI-aoI)<PARAMS.p4_ogap&&hoI<PARAMS.p4_dmax)return{layer:4,bet:"D"};
+if(Math.abs(hoI-aoI)<PARAMS.p5_ogap)return{layer:5,bet:"D"};
+if(hw>=PARAMS.p6_hmin&&hoI>=PARAMS.p6_dmin&&hoI<PARAMS.p6_dmax&&hoI!==aoI&&aoI>hoI&&Math.abs(hw-aw)>=PARAMS.p6_wgap)return{layer:6,bet:"D"};
+if(hw>=PARAMS.p7_hmin&&hoI>=PARAMS.p7_dmin&&hoI<PARAMS.p7_dmax&&hoI!==aoI)return{layer:7,bet:"H"};
+if(hw>=PARAMS.p8_hmin&&hoI>PARAMS.p8_dmin&&hoI<=PARAMS.p8_dmax&&hoI!==aoI)return{layer:8,bet:"D"};
+if(hoI>=PARAMS.p9b_dmin&&hw>=PARAMS.p9b_hmin)return{layer:9,bet:"D"};
+if(hoI>=PARAMS.p9_dmin&&hw>=PARAMS.p9_hmin&&aoI<PARAMS.p9_fmax&&hoI>aoI){if(dw>=PARAMS.p9_bmin&&aoI<PARAMS.p9_fverylow)return{layer:10,bet:"D"};if(aoI<PARAMS.p9_low)return{layer:10,bet:"A"};return{layer:10,bet:"D"}}
+if(aw>hw&&aoI>=PARAMS.p10a_fmin&&aoI<=PARAMS.p10a_fmax&&hoI<PARAMS.p10a_dmax)return{layer:11,bet:"D"};
+if(aw>hw&&aoI>hoI&&aoI<PARAMS.p10_fmax&&dooI>PARAMS.p10_emin)return{layer:12,bet:"H"};
+if(aw>hw&&aoI>=PARAMS.p11_fmin&&aoI<=PARAMS.p11_fmax)return{layer:13,bet:"A"};
+if(aw>hw&&aoI>hoI&&aoI<PARAMS.p12_fmax&&aw<PARAMS.p12_cmax&&hoI<PARAMS.p12_dmax)return{layer:14,bet:"D"};
+if(hoI>aoI){if(hoI>PARAMS.pd_skip){if(aw>=PARAMS.pd_cAmin)return{layer:15,bet:"A"};if(hw>aw)return{layer:15,bet:"D"};return{layer:15,bet:"skip"}}if(hw>=PARAMS.pb_hmin&&hoI>=PARAMS.pb_dmin)return{layer:15,bet:"D"};return{layer:15,bet:"H"}}
+else if(aoI>hoI){if(aoI>=PARAMS.pb_fskip){if(hw>=PARAMS.pb_hAmin)return{layer:15,bet:"H"};if(aw>hw)return{layer:15,bet:"D"};return{layer:15,bet:"skip"}}if(hw>=PARAMS.pb_honly&&hoI<=PARAMS.pb_donly)return{layer:15,bet:"H"};return{layer:15,bet:"A"}}
+else{if(hw>aw)return{layer:15,bet:"H"};if(aw>hw)return{layer:15,bet:"A"};return{layer:15,bet:"skip"}}
 }
 
-async function loadStats(){
-  try {
-    const [pnl, cost, bets, wins, date, roi, hr] = await Promise.all([
-      fetchCell("L7"), fetchCell("L8"), fetchCell("L10"), fetchCell("L11"),
-      fetchCell("M2"), fetchCell("L9"), fetchCell("L12")
-    ]);
-    if (pnl !== null) {
-      const n = Number(String(pnl).replace(/,/g, ""));
-      const el = document.getElementById("stat-pnl");
-      if (n > 0) { el.textContent = "+" + pnl; el.className = "val p"; }
-      else if (n < 0) { el.textContent = pnl; el.className = "val n"; }
-      else { el.textContent = "0"; el.className = "val w"; }
-    }
-    if (cost !== null) document.getElementById("stat-cost").textContent = cost;
-    if (bets !== null) document.getElementById("stat-bets").textContent = bets;
-    if (wins !== null) document.getElementById("stat-wins").textContent = wins;
-    if (date !== null) document.getElementById("stat-date").textContent = date;
-    if (roi !== null) {
-      let n, s = String(roi).trim();
-      if (s.includes("%")) n = parseFloat(s.replace("%", ""));
-      else { n = parseFloat(s); if (Math.abs(n) <= 1 && n !== 0) n *= 100; }
-      if (!isNaN(n)) {
-        const el = document.getElementById("stat-roi");
-        el.textContent = (n > 0 ? "+" : "") + n.toFixed(2) + "%";
-        el.className = "val " + (n > 0 ? "p" : n < 0 ? "n" : "w");
-      }
-    }
-    if (hr !== null) {
-      let n, s = String(hr).trim();
-      if (s.includes("%")) n = parseFloat(s.replace("%", ""));
-      else { n = parseFloat(s); if (Math.abs(n) <= 1 && n !== 0) n *= 100; }
-      if (!isNaN(n)) document.getElementById("stat-hitrate").textContent = n.toFixed(2) + "%";
-    }
-  } catch(e){ console.warn("stats err", e); }
+/* ═══ V2：EV/Edge/Kelly 引擎 ═══ */
+function getV2Reason(hw,dw,aw,ho,doo,ao){
+if([hw,dw,aw,ho,doo,ao].some(v=>v===null||isNaN(v)))return{error:"incomplete"};
+if(hw+dw+aw>100)return{error:"over100"};
+if([ho,doo,ao].some(v=>v<V2_CFG.minOdds||v>V2_CFG.maxOdds))return{recommended:"SKIP",confidence:0,ev:0,edge:0,kelly:0,stake:0,reason:"賠率極端，跳過。",error:"odds"};
+const pH=hw/100,pD=dw/100,pA=aw/100;
+const evH=pH*ho-1,evD=pD*doo-1,evA=pA*ao-1;
+const impH=1/ho,impD=1/doo,impA=1/ao,totI=impH+impD+impA;
+const mktH=impH/totI,mktD=impD/totI,mktA=impA/totI;
+const edgeH=mktH>0?pH/mktH-1:0,edgeD=mktD>0?pD/mktD-1:0,edgeA=mktA>0?pA/mktA-1:0;
+const kellyH=ho>1?(pH*(ho-1)-(1-pH))/(ho-1):0;
+const kellyD=doo>1?(pD*(doo-1)-(1-pD))/(doo-1):0;
+const kellyA=ao>1?(pA*(ao-1)-(1-pA))/(ao-1):0;
+const opts=[{key:"H",ev:evH,edge:edgeH,kelly:kellyH,odds:ho,mkt:mktH,prob:pH},{key:"D",ev:evD,edge:edgeD,kelly:kellyD,odds:doo,mkt:mktD,prob:pD},{key:"A",ev:evA,edge:edgeA,kelly:kellyA,odds:ao,mkt:mktA,prob:pA}];
+const best=opts.slice().sort((a,b)=>b.ev-a.ev)[0];
+if(best.ev<V2_CFG.minEV||best.edge<V2_CFG.minEdge||best.kelly<=0){
+return{recommended:"SKIP",confidence:0,ev:best.ev,edge:best.edge,kelly:0,stake:0,options:opts,reason:"所有選項 EV 均為負或低於門檻，建議不出手。"};
+}
+let conf=1;
+if(best.ev>=0.25&&best.edge>=0.20)conf=5;
+else if(best.ev>=0.15&&best.edge>=0.10)conf=4;
+else if(best.ev>=0.08&&best.edge>=0.05)conf=3;
+else if(best.ev>=0.03)conf=2;
+const stake=Math.min(best.kelly*V2_CFG.kellyFactor*100,V2_CFG.maxStake);
+let reason="";
+if(best.key==="H")reason="模型認為主勝被市場低估，EV 為正，建議買主勝。";
+else if(best.key==="D")reason="市場低估和局概率，EV 為正，建議買和局。";
+else reason="模型認為客勝被市場低估，EV 為正，建議買客勝。";
+return{recommended:best.key,confidence:conf,ev:best.ev,edge:best.edge,kelly:best.kelly*100,stake:stake,options:opts,reason:reason};
 }
 
-function normalizeResult(v){
-  if (v === null || v === undefined) return null;
-  const s = String(v).trim().toUpperCase();
-  if (!s) return null;
-  if (["H","3","主","主勝","主胜","HOME","W","WIN"].includes(s)) return "H";
-  if (["D","1","和","和局","DRAW","X"].includes(s)) return "D";
-  if (["A","0","客","客勝","客胜","AWAY","L","LOSE"].includes(s)) return "A";
-  return null;
+/* ═══ 統一判定（依模式） ═══ */
+function analyze(hw,dw,aw,ho,doo,ao,mode){
+if(mode==="V2")return getV2Reason(hw,dw,aw,ho,doo,ao);
+const hoI=Math.round(ho*100),dooI=Math.round(doo*100),aoI=Math.round(ao*100);
+const r=getV1Reason(hw,dw,aw,hoI,dooI,aoI);
+const evMap={H:(hw/100)*ho-1,D:(dw/100)*doo-1,A:(aw/100)*ao-1};
+return{...r,ev:r.bet==="skip"?null:evMap[r.bet],recommended:r.bet==="skip"?"SKIP":r.bet,confidence:r.bet==="skip"?0:3};
 }
+
+/* ═══ Sheet 讀取 ═══ */
+async function fetchCell(range){const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}&range=${range}&t=${Date.now()}`;const res=await fetch(url);const text=await res.text();const json=JSON.parse(text.substring(text.indexOf("{"),text.lastIndexOf("}")+1));const cell=json.table.rows[0]&&json.table.rows[0].c[0];return cell?(cell.f!==undefined?cell.f:cell.v):null}
+async function loadStats(){try{
+const[pnl,cost,bets,wins,date,roi,hr]=await Promise.all([fetchCell("L7"),fetchCell("L8"),fetchCell("L10"),fetchCell("L11"),fetchCell("M2"),fetchCell("L9"),fetchCell("L12")]);
+if(pnl!==null){const n=Number(String(pnl).replace(/,/g,""));const el=document.getElementById("stat-pnl");if(n>0){el.textContent="+"+pnl;el.className="v p"}else if(n<0){el.textContent=pnl;el.className="v n"}else{el.textContent="0";el.className="v w"}}
+if(cost!==null)document.getElementById("stat-cost").textContent=cost;
+if(bets!==null)document.getElementById("stat-bets").textContent=bets;
+if(wins!==null)document.getElementById("stat-wins").textContent=wins;
+if(date!==null)document.getElementById("stat-date").textContent=date;
+if(roi!==null){let n,s=String(roi).trim();if(s.indexOf("%")>=0)n=parseFloat(s.replace("%",""));else{n=parseFloat(s);if(!isNaN(n)&&Math.abs(n)<=1&&n!==0)n*=100}if(!isNaN(n)){const el=document.getElementById("stat-roi");el.textContent=(n>0?"+":"")+n.toFixed(2)+"%";el.className="v "+(n>0?"p":n<0?"n":"w")}}
+if(hr!==null){let n,s=String(hr).trim();if(s.indexOf("%")>=0)n=parseFloat(s.replace("%",""));else{n=parseFloat(s);if(!isNaN(n)&&Math.abs(n)<=1&&n!==0)n*=100}if(!isNaN(n))document.getElementById("stat-hitrate").textContent=n.toFixed(2)+"%"}
+}catch(e){console.warn("stats err",e)}}
+
+function normalizeResult(v){if(v===null||v===undefined)return null;const s=String(v).trim().toUpperCase();if(!s)return null;if(["H","3","主","主勝","主胜","HOME","W","WIN"].includes(s))return"H";if(["D","1","和","和局","DRAW","X"].includes(s))return"D";if(["A","0","客","客勝","客胜","AWAY","L","LOSE"].includes(s))return"A";return null}
 
 function parseRow(row){
-  if (!row || !row.c) return null;
-  const cell = i => { const c = row.c[i]; if (!c) return null; return c.v !== undefined && c.v !== null ? c.v : (c.f !== undefined ? c.f : null); };
-  const num = i => { const v = cell(i); if (v === null || v === "") return null; const n = Number(String(v).replace(/,/g, "").replace("%", "").trim()); return isNaN(n) ? null : n; };
-  let hw = num(0), dw = num(1), aw = num(2);
-  const hoRaw = num(3), dooRaw = num(4), aoRaw = num(5);
-  const scoreRaw = cell(6), resultRaw = cell(7);
-  if (hw === null || dw === null || aw === null) return null;
-  if (hoRaw === null || dooRaw === null || aoRaw === null) return null;
-  if (hw > 0 && hw <= 1) hw *= 100;
-  if (dw > 0 && dw <= 1) dw *= 100;
-  if (aw > 0 && aw <= 1) aw *= 100;
-  const ho = Engine.parseOdds(hoRaw), doo = Engine.parseOdds(dooRaw), ao = Engine.parseOdds(aoRaw);
-  if (!ho || !doo || !ao) return null;
-  const result = normalizeResult(resultRaw);
-  if (!result) return null;
-  return { hw, dw, aw, ho, doo, ao, score: scoreRaw ? String(scoreRaw).trim() : "", result };
+if(!row||!row.c)return null;
+const cell=i=>{const c=row.c[i];if(!c)return null;return c.v!==undefined&&c.v!==null?c.v:(c.f!==undefined?c.f:null)};
+const num=i=>{const v=cell(i);if(v===null||v==="")return null;const n=Number(String(v).replace(/,/g,"").replace("%","").trim());return isNaN(n)?null:n};
+let hw=num(0),dw=num(1),aw=num(2);
+const hoRaw=num(3),dooRaw=num(4),aoRaw=num(5);
+const scoreRaw=cell(6),resultRaw=cell(7);
+if(hw===null||dw===null||aw===null)return null;
+if(hoRaw===null||dooRaw===null||aoRaw===null)return null;
+if(hw>0&&hw<=1)hw*=100;if(dw>0&&dw<=1)dw*=100;if(aw>0&&aw<=1)aw*=100;
+const ho=oddsToFloat(hoRaw),doo=oddsToFloat(dooRaw),ao=oddsToFloat(aoRaw);
+if(!ho||!doo||!ao)return null;
+const result=normalizeResult(resultRaw);if(!result)return null;
+return{hw,dw,aw,ho,doo,ao,score:scoreRaw?String(scoreRaw).trim():"",result};
 }
 
 async function fetchMatches(){
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&range=A2:H&t=${Date.now()}`;
-  const res = await fetch(url);
-  const text = await res.text();
-  const json = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
-  const rows = (json.table && json.table.rows) || [];
-  const pool = [];
-  rows.forEach(r => { const m = parseRow(r); if (m) pool.push(m); });
-  matchPool = pool;
-  console.log("✅ 載入 " + pool.length + " 場");
-  updateDbInfo();
-  return pool;
+const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&range=A2:H&t=${Date.now()}`;
+const res=await fetch(url);const text=await res.text();
+const json=JSON.parse(text.substring(text.indexOf("{"),text.lastIndexOf("}")+1));
+const rows=(json.table&&json.table.rows)||[];
+const pool=[];rows.forEach(r=>{const m=parseRow(r);if(m)pool.push(m)});
+matchPool=pool;console.log("✅ 載入 "+pool.length+" 場");updateDbInfo();return pool;
 }
 
 function ensurePool(force){
-  if (!force && matchPool && matchPool.length > 0) return Promise.resolve(matchPool);
-  if (poolPromise) return poolPromise;
-  poolPromise = fetchMatches().then(p => { poolPromise = null; return p; }).catch(e => {
-    poolPromise = null;
-    console.error("❌", e);
-    const el = document.getElementById("dbInfo");
-    if (el) el.textContent = t("dbFail");
-    throw e;
-  });
-  return poolPromise;
+if(!force&&matchPool&&matchPool.length>0)return Promise.resolve(matchPool);
+if(poolPromise)return poolPromise;
+poolPromise=fetchMatches().then(p=>{poolPromise=null;return p}).catch(e=>{poolPromise=null;console.error("❌",e);const el=document.getElementById("dbInfo");if(el)el.textContent=t("dbLoadFailed");throw e});
+return poolPromise;
 }
 
-function updateDbInfo(){
-  const el = document.getElementById("dbInfo");
-  if (!el) return;
-  if (matchPool && matchPool.length > 0) {
-    el.textContent = t("dbLoaded").replace("{n}", matchPool.length);
-  } else {
-    el.textContent = t("dbLoading");
-  }
-}
+function updateDbInfo(){const el=document.getElementById("dbInfo");if(!el)return;if(matchPool&&matchPool.length>0)el.textContent=t("dbLoadedPrefix")+matchPool.length+t("dbLoadedSuffix");else el.textContent=t("dbLoading")}
 
-/* ═══════════════════════════════════════════════════════════
-   UI 工具
-   ═══════════════════════════════════════════════════════════ */
-function toast(msg, type = "info"){
-  const wrap = document.getElementById("toasts");
-  const el = document.createElement("div");
-  el.className = "toast " + (type === "success" ? "s" : type === "error" ? "e" : "i");
-  el.textContent = msg;
-  wrap.appendChild(el);
-  setTimeout(() => {
-    el.style.animation = "toastOut .3s forwards";
-    setTimeout(() => el.remove(), 300);
-  }, 2200);
-}
-
-function applyTheme(th){
-  document.documentElement.setAttribute("data-theme", th);
-  document.getElementById("themeIcon").textContent = th === "dark" ? "🌙" : "☀️";
-  try { localStorage.setItem("qfp_theme", th); } catch(e){}
-}
-
-function toggleTheme(){
-  const c = document.documentElement.getAttribute("data-theme") || "dark";
-  applyTheme(c === "dark" ? "light" : "dark");
-}
-
-function esc(s){ return String(s).replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
-
-/* ═══════════════════════════════════════════════════════════
-   主計算面板
-   ═══════════════════════════════════════════════════════════ */
+/* ═══ 主計算 ═══ */
 function doCalc(){
-  const hwV = document.getElementById("hw").value.trim();
-  const dwV = document.getElementById("dw").value.trim();
-  const awV = document.getElementById("aw").value.trim();
-  const hoV = document.getElementById("ho").value.trim();
-  const dooV = document.getElementById("doo").value.trim();
-  const aoV = document.getElementById("ao").value.trim();
-  if (!hwV || !dwV || !awV || !hoV || !dooV || !aoV) return showRes({ error: "incomplete" });
-  const hw = Number(hwV), dw = Number(dwV), aw = Number(awV);
-  const ho = Engine.parseOdds(hoV), doo = Engine.parseOdds(dooV), ao = Engine.parseOdds(aoV);
-  if (isNaN(hw) || isNaN(dw) || isNaN(aw) || !ho || !doo || !ao) return showRes({ error: "incomplete" });
-  const r = Engine.analyze(hw, dw, aw, ho, doo, ao);
-  showRes(r, hw, dw, aw, ho, doo, ao);
+const hwV=document.getElementById("hw").value.trim(),dwV=document.getElementById("dw").value.trim(),awV=document.getElementById("aw").value.trim();
+const hoV=document.getElementById("ho").value.trim(),dooV=document.getElementById("doo").value.trim(),aoV=document.getElementById("ao").value.trim();
+if(!hwV||!dwV||!awV||!hoV||!dooV||!aoV){showResult({error:"incomplete"});return}
+const hw=Number(hwV),dw=Number(dwV),aw=Number(awV);
+const hoI=parseOdds(hoV),dooI=parseOdds(dooV),aoI=parseOdds(aoV);
+if(isNaN(hw)||isNaN(dw)||isNaN(aw)||hoI===null||dooI===null||aoI===null){showResult({error:"incomplete"});return}
+const ho=hoI/100,doo=dooI/100,ao=aoI/100;
+if(hw+dw+aw>100){showResult({error:"over100"});return}
+const r=analyze(hw,dw,aw,ho,doo,ao,currentMode);
+showResult(r,hw,dw,aw,ho,doo,ao);
 }
 
-function showRes(r, hw, dw, aw, ho, doo, ao){
-  const box = document.getElementById("result");
-  box.style.display = "block";
-
-  if (r.error){
-    const rm = document.getElementById("resMain");
-    rm.className = "result-main rm-E";
-    document.getElementById("resTitle").textContent = r.error === "over100" ? t("errOver100") : r.error === "odds" ? t("errOdds") : t("errIncomplete");
-    document.getElementById("resStars").textContent = "";
-    document.getElementById("resSubtitle").textContent = "";
-    document.getElementById("mEV").textContent = "—";
-    document.getElementById("mEdge").textContent = "—";
-    document.getElementById("mKelly").textContent = "—";
-    document.getElementById("resReason").textContent = r.reason || "";
-    return;
-  }
-
-  const rm = document.getElementById("resMain");
-  const clsMap = { H: "rm-H", D: "rm-D", A: "rm-A", SKIP: "rm-S" };
-  rm.className = "result-main " + clsMap[r.recommended];
-
-  const titleMap = { H: t("betH"), D: t("betD"), A: t("betA"), SKIP: t("noBet") };
-  document.getElementById("resTitle").textContent = titleMap[r.recommended];
-
-  const stars = "⭐".repeat(r.confidence) + "☆".repeat(5 - r.confidence);
-  document.getElementById("resStars").textContent = r.confidence > 0 ? stars : "";
-  document.getElementById("resSubtitle").textContent = r.confidence > 0 ?
-    (curLang === "en-US" ? `Confidence ${r.confidence}/5` : curLang === "zh-CN" ? `信心等级 ${r.confidence}/5` : `信心等級 ${r.confidence}/5`) : "";
-
-  const evEl = document.getElementById("mEV");
-  evEl.textContent = (r.ev >= 0 ? "+" : "") + (r.ev * 100).toFixed(2) + "%";
-  evEl.className = "mv " + (r.ev > 0.05 ? "p" : r.ev > 0 ? "w" : "n");
-
-  const edgeEl = document.getElementById("mEdge");
-  edgeEl.textContent = (r.edge >= 0 ? "+" : "") + (r.edge * 100).toFixed(2) + "%";
-  edgeEl.className = "mv " + (r.edge > 0.05 ? "p" : r.edge > 0 ? "w" : "n");
-
-  document.getElementById("mKelly").textContent = r.stake > 0 ? r.stake.toFixed(2) + t("stakeUnit") : "—";
-
-  // 市場 vs 模型
-  if (r.options){
-    const get = k => r.options.find(o => o.key === k);
-    const formatPct = v => (v * 100).toFixed(1) + "%";
-    document.getElementById("cMktH").textContent = formatPct(get("H").mkt);
-    document.getElementById("cModH").textContent = formatPct(get("H").prob);
-    document.getElementById("cMktD").textContent = formatPct(get("D").mkt);
-    document.getElementById("cModD").textContent = formatPct(get("D").prob);
-    document.getElementById("cMktA").textContent = formatPct(get("A").mkt);
-    document.getElementById("cModA").textContent = formatPct(get("A").prob);
-  }
-
-  document.getElementById("resReason").textContent = r.reason;
+function showResult(r,hw,dw,aw,ho,doo,ao){
+const box=document.getElementById("resultBox");box.style.display="block";
+const starsBox=document.getElementById("starsBox");const metricsBox=document.getElementById("metricsBox");const cmpBox=document.getElementById("cmpBox");const evBox=document.getElementById("evBox");const hintBox=document.getElementById("hintBox");
+if(r.error){box.className="rb E";box.innerText=r.error==="over100"?t("errOver100"):t("errIncomplete");starsBox.style.display="none";metricsBox.classList.remove("show");cmpBox.classList.remove("show");evBox.style.display="none";hintBox.style.display="none";return}
+const bet=r.bet||r.recommended;
+const clsMap={H:"H",D:"D",A:"A",skip:"S",SKIP:"S"};
+box.className="rb "+(clsMap[bet]||"S");
+let text="";
+if(bet==="H")text=t("resultH");else if(bet==="A")text=t("resultA");else if(bet==="D")text=t("resultD");else text=t("resultSkip");
+box.innerText=text;
+// 星星（V2 有 confidence）
+if(currentMode==="V2"&&r.confidence>0){starsBox.style.display="block";starsBox.textContent="⭐".repeat(r.confidence)+"☆".repeat(5-r.confidence)}
+else if(currentMode==="V1"&&bet!=="skip"){starsBox.style.display="block";starsBox.textContent="📐 V1 層 "+(r.layer||"—")}
+else{starsBox.style.display="none"}
+// Metrics（僅 V2）
+if(currentMode==="V2"&&r.ev!==undefined&&bet!=="SKIP"&&bet!=="skip"){
+metricsBox.classList.add("show");
+const evEl=document.getElementById("mEV");evEl.textContent=(r.ev>=0?"+":"")+(r.ev*100).toFixed(2)+"%";evEl.className="mv "+(r.ev>0.05?"p":r.ev>0?"w":"n");
+const edgeEl=document.getElementById("mEdge");edgeEl.textContent=(r.edge>=0?"+":"")+(r.edge*100).toFixed(2)+"%";edgeEl.className="mv "+(r.edge>0.05?"p":r.edge>0?"w":"n");
+document.getElementById("mKelly").textContent=r.stake>0?r.stake.toFixed(2)+"%":"—";
+if(r.options){
+const get=k=>r.options.find(o=>o.key===k);const f=v=>(v*100).toFixed(1)+"%";
+document.getElementById("cMktH").textContent=f(get("H").mkt);document.getElementById("cModH").textContent=f(get("H").prob);
+document.getElementById("cMktD").textContent=f(get("D").mkt);document.getElementById("cModD").textContent=f(get("D").prob);
+document.getElementById("cMktA").textContent=f(get("A").mkt);document.getElementById("cModA").textContent=f(get("A").prob);
+cmpBox.classList.add("show");
+}
+}else{metricsBox.classList.remove("show");cmpBox.classList.remove("show")}
+// EV box（V1 顯示）
+if(currentMode==="V1"&&r.ev!==null&&r.ev!==undefined&&!isNaN(r.ev)){
+const evPct=(r.ev*100).toFixed(2),sign=r.ev>=0?"+:";const cls=r.ev>=0?"p":"n";
+evBox.innerHTML=t("evLabel")+'<span class="'+cls+'">'+sign+evPct+"%</span>";evBox.style.display="block";
+}else if(currentMode==="V2"&&r.ev!==undefined&&bet!=="SKIP"&&bet!=="skip"){evBox.style.display="none"}
+else{evBox.style.display="none"}
+// Hint
+const hintMap={1:"和勝率達 32% 以上且主客勝率差距小於 6%，和局概率明顯上升。",2:"主勝率達 60%、客勝率極低、主賠 1.40~1.90、客賠 4.00~4.80，極端大熱主場。",3:"主客勝率相近、和賠偏低、主客賠率差距小，和局概率高。",4:"主勝率達 45% 以上、客勝率低、主客賠率接近、主賠低於 4.00。",5:"主客賠率非常接近（相差 0.18 以內），和局概率上升。",6:"主勝率達 42%、主賠 1.55~2.05、客賠高於主賠、勝率差極大。",7:"主隊勝率明顯佔優且主賠處於合理回報區間。",8:"主隊勝率達 34% 以上但主賠處於 2.05~2.35，防冷。",9:"🆕 主賠極高（≥4.00）且主勝率仍達 42% 以上，市場嚴重低估主隊。",10:"主賠極高（≥3.40）、主勝率仍達 40% 以上、客賠 <2.50。",11:"客勝率高於主勝率、客賠極高（5.00~5.50）、主賠偏低。",12:"客勝率高於主勝率，客隊略為冷門，和賠合理，反向買主隊。",13:"客勝率高於主勝率，客賠 1.90~2.10 高價值區間。",14:"客勝率略高於主勝率、客賠中高、主賠低。",15:"市場賠率與勝率模型出現分歧。"};
+let hintText="";
+if(bet==="skip"||bet==="SKIP")hintText="數據信號不明，系統選擇跳過本次投注，避免風險。";
+else if(currentMode==="V2"&&r.reason)hintText=r.reason;
+else hintText=hintMap[r.layer]||"";
+hintBox.innerText=hintText;hintBox.style.display=hintText?"block":"none";
 }
 
-/* ═══════════════════════════════════════════════════════════
-   遊戲模式
-   ═══════════════════════════════════════════════════════════ */
-const G = { current: null, played: 0, hits: 0, waiting: false, pnl: 0, skips: 0, lastGuess: null, combo: 0 };
-const MAX_PLAYS = 50;
-
-function randRange(a, b){ return a + Math.random() * (b - a); }
-
+/* ═══ 遊戲 ═══ */
+function randRange(a,b){return a+Math.random()*(b-a)}
 function jitter(m){
-  const directional = Math.random() < 0.8;
-  let sH = 0, sA = 0;
-  if (m.result === "H") { sH = directional ? 1 : -1; sA = -sH; }
-  else if (m.result === "A") { sH = directional ? -1 : 1; sA = -sH; }
-  let hw = m.hw + sH * randRange(0, 2);
-  let dw = m.dw + randRange(-1, 1);
-  let aw = m.aw + sA * randRange(0, 2);
-  let ho = m.ho * (1 + sH * randRange(0, 0.01));
-  let doo = m.doo * (1 + randRange(-0.01, 0.01));
-  let ao = m.ao * (1 + sA * randRange(0, 0.01));
-  hw = Math.max(1, Math.min(99, Math.round(hw)));
-  dw = Math.max(1, Math.min(99, Math.round(dw)));
-  aw = Math.max(1, Math.min(99, Math.round(aw)));
-  let over = hw + dw + aw - 100, safety = 0;
-  while (over > 0 && safety < 100) {
-    if (hw >= dw && hw >= aw && hw > 1) { hw--; over--; }
-    else if (dw >= aw && dw > 1) { dw--; over--; }
-    else if (aw > 1) { aw--; over--; }
-    else break;
-    safety++;
-  }
-  while (over < 0 && safety < 100) {
-    if (hw <= dw && hw <= aw && hw < 99) { hw++; over++; }
-    else if (dw <= aw && dw < 99) { dw++; over++; }
-    else if (aw < 99) { aw++; over++; }
-    else break;
-    safety++;
-  }
-  ho = Math.round(Math.max(1.15, Math.min(20, ho)) * 100) / 100;
-  doo = Math.round(Math.max(1.15, Math.min(20, doo)) * 100) / 100;
-  ao = Math.round(Math.max(1.15, Math.min(20, ao)) * 100) / 100;
-  return { hw, dw, aw, ho, doo, ao, score: m.score, result: m.result };
+const directional=Math.random()<0.8;let sH=0,sA=0;
+if(m.result==="H"){sH=directional?1:-1;sA=-sH}
+else if(m.result==="A"){sH=directional?-1:1;sA=-sH}
+let hw=m.hw+sH*randRange(0,2),dw=m.dw+randRange(-1,1),aw=m.aw+sA*randRange(0,2);
+let ho=m.ho*(1+sH*randRange(0,0.01)),doo=m.doo*(1+randRange(-0.01,0.01)),ao=m.ao*(1+sA*randRange(0,0.01));
+hw=Math.max(1,Math.min(99,Math.round(hw)));dw=Math.max(1,Math.min(99,Math.round(dw)));aw=Math.max(1,Math.min(99,Math.round(aw)));
+let over=hw+dw+aw-100,safety=0;
+while(over>0&&safety<100){if(hw>=dw&&hw>=aw&&hw>1){hw--;over--}else if(dw>=aw&&dw>1){dw--;over--}else if(aw>1){aw--;over--}else break;safety++}
+while(over<0&&safety<100){if(hw<=dw&&hw<=aw&&hw<99){hw++;over++}else if(dw<=aw&&dw<99){dw++;over++}else if(aw<99){aw++;over++}else break;safety++}
+ho=Math.round(Math.max(1.15,Math.min(20,ho))*100)/100;
+doo=Math.round(Math.max(1.15,Math.min(20,doo))*100)/100;
+ao=Math.round(Math.max(1.15,Math.min(20,ao))*100)/100;
+return{hw,dw,aw,ho,doo,ao,score:m.score,result:m.result};
 }
-
-function genMatch(){
-  if (!matchPool || matchPool.length === 0) return null;
-  return jitter(matchPool[Math.floor(Math.random() * matchPool.length)]);
-}
+function genMatch(){if(!matchPool||matchPool.length===0)return null;return jitter(matchPool[Math.floor(Math.random()*matchPool.length)])}
 
 function renderMatch(m){
-  if (!m) return;
-  document.getElementById("ghw").textContent = Math.round(m.hw) + "%";
-  document.getElementById("gdw").textContent = Math.round(m.dw) + "%";
-  document.getElementById("gaw").textContent = Math.round(m.aw) + "%";
-  document.getElementById("gho").textContent = m.ho.toFixed(2);
-  document.getElementById("gdoo").textContent = m.doo.toFixed(2);
-  document.getElementById("gao").textContent = m.ao.toFixed(2);
+if(!m)return;
+document.getElementById("gmHW").textContent=Math.round(m.hw)+"%";
+document.getElementById("gmDW").textContent=Math.round(m.dw)+"%";
+document.getElementById("gmAW").textContent=Math.round(m.aw)+"%";
+document.getElementById("gmHO").textContent=m.ho.toFixed(2);
+document.getElementById("gmDO").textContent=m.doo.toFixed(2);
+document.getElementById("gmAO").textContent=m.ao.toFixed(2);
 }
 
-function maxSkips(){ return 2 + Math.floor(G.played / 10); }
-function remainSkips(){ return maxSkips() - G.skips; }
-
-function updateSkips(){
-  const btn = document.getElementById("gbSkip");
-  btn.textContent = t("skipBtn") + " (" + remainSkips() + ")";
-  btn.disabled = remainSkips() <= 0;
-}
-
-function gMsg(text, type){
-  const el = document.getElementById("gMsg");
-  el.className = "gmsg " + type;
-  el.innerHTML = text;
-}
-
-function clearGMsg(){
-  document.getElementById("gMsg").className = "gmsg";
-  document.getElementById("gMsg").innerHTML = "";
-}
+function maxSkips(){return 2+Math.floor(gameState.played/10)}
+function remainSkips(){return maxSkips()-gameState.skipsUsed}
+function updateSkips(){const btn=document.getElementById("gbSkip");btn.textContent=t("gameSkipBtnShort")+" ("+remainSkips()+")";btn.disabled=remainSkips()<=0}
+function gMsg(text,type){const el=document.getElementById("gameResult");el.className="game-msg "+type;el.innerHTML=text}
+function clearGMsg(){const el=document.getElementById("gameResult");el.className="game-msg";el.innerHTML=""}
 
 function newRound(){
-  if (G.played >= MAX_PLAYS) { toast(t("maxPlay"), "info"); return showGameOver(); }
-  if (G.waiting && G.current) { gMsg(t("mustGuess"), "info"); setTimeout(() => { if (G.waiting) clearGMsg(); }, 1800); return; }
-  if (!matchPool || matchPool.length === 0) {
-    gMsg("⏳...", "info");
-    ensurePool().then(p => { if (!p || p.length === 0) { gMsg(t("dbFail"), "lose"); return; } newRound(); }).catch(() => gMsg(t("dbFail"), "lose"));
-    return;
-  }
-  const m = genMatch();
-  if (!m) return gMsg(t("dbFail"), "lose");
-  G.current = m;
-  G.waiting = true;
-  G.lastGuess = null;
-  renderMatch(m);
-  clearGMsg();
-  ["gbH","gbD","gbA","gbAuto"].forEach(id => { const b = document.getElementById(id); if (b) b.disabled = false; });
-  updateSkips();
+if(gameState.played>=MAX_PLAYS){showToast(t("maxPlayReached"),"info");return showGameOver()}
+if(gameState.waiting&&gameState.current){gMsg(t("mustGuess"),"info");setTimeout(()=>{if(gameState.waiting)clearGMsg()},1800);return}
+if(!matchPool||matchPool.length===0){gMsg("⏳...","info");ensurePool().then(p=>{if(!p||p.length===0){gMsg(t("dbLoadFailed"),"lose");return}newRound()}).catch(()=>gMsg(t("dbLoadFailed"),"lose"));return}
+const m=genMatch();if(!m)return gMsg(t("dbLoadFailed"),"lose");
+gameState.current=m;gameState.waiting=true;gameState.lastGuess=null;
+renderMatch(m);clearGMsg();
+["gbH","gbD","gbA","gbAuto"].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=false});
+updateSkips();
 }
 
 function doSkip(){
-  if (G.played >= MAX_PLAYS) return showGameOver();
-  if (!G.waiting || !G.current) return;
-  if (remainSkips() <= 0) { gMsg(t("skipNoMore"), "lose"); setTimeout(() => { if (!G.waiting) clearGMsg(); }, 1500); return; }
-  G.skips++;
-  gMsg(t("skipToast"), "info");
-  setTimeout(() => {
-    const m = genMatch();
-    if (!m) return;
-    G.current = m;
-    G.waiting = true;
-    G.lastGuess = null;
-    renderMatch(m);
-    clearGMsg();
-    ["gbH","gbD","gbA","gbAuto"].forEach(id => { const b = document.getElementById(id); if (b) b.disabled = false; });
-    updateSkips();
-  }, 350);
-  updateSkips();
+if(gameState.played>=MAX_PLAYS)return showGameOver();
+if(!gameState.waiting||!gameState.current)return;
+if(remainSkips()<=0){gMsg(t("skipExhausted"),"lose");setTimeout(()=>{if(!gameState.waiting)clearGMsg()},1500);return}
+gameState.skipsUsed++;
+gMsg(t("skipToast"),"info");
+setTimeout(()=>{
+const m=genMatch();if(!m)return;
+gameState.current=m;gameState.waiting=true;gameState.lastGuess=null;
+renderMatch(m);clearGMsg();
+["gbH","gbD","gbA","gbAuto"].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=false});
+updateSkips();
+},350);
+updateSkips();
 }
 
 function autoPredict(){
-  if (G.played >= MAX_PLAYS) return showGameOver();
-  if (!G.waiting || !G.current) return;
-  const m = G.current;
-  const r = Engine.analyze(m.hw, m.dw, m.aw, m.ho, m.doo, m.ao);
-  if (!r.recommended || r.recommended === "SKIP" || r.error) {
-    gMsg(t("noBet") + " (EV " + ((r.ev || 0) * 100).toFixed(1) + "%)", "info");
-    setTimeout(() => { if (G.waiting) clearGMsg(); }, 2000);
-    return;
-  }
-  guess(r.recommended, true);
+if(gameState.played>=MAX_PLAYS)return showGameOver();
+if(!gameState.waiting||!gameState.current)return;
+const m=gameState.current;
+const r=analyze(m.hw,m.dw,m.aw,m.ho,m.doo,m.ao,currentMode);
+const bet=r.bet||r.recommended;
+if(!bet||bet==="skip"||bet==="SKIP"){
+gMsg(t("resultSkip")+" (EV "+(r.ev!==null&&r.ev!==undefined?((r.ev*100).toFixed(1)+"%"):"—")+")","info");
+setTimeout(()=>{if(gameState.waiting)clearGMsg()},2000);
+return;
+}
+doGuess(bet,true);
 }
 
-function guess(bet, isAuto){
-  if (G.played >= MAX_PLAYS) return;
-  const m = G.current;
-  if (!m) return;
-  G.lastGuess = bet;
-  const isWin = bet === m.result;
-  let roundPnl = 0;
-  if (isWin) {
-    const odds = m.result === "H" ? m.ho : m.result === "D" ? m.doo : m.ao;
-    roundPnl = Math.round((odds - 1) * 100);
-    G.hits++;
-    G.combo++;
-    if (G.combo >= 3) showCombo(G.combo);
-  } else {
-    roundPnl = -100;
-    G.combo = 0;
-  }
-  G.played++;
-  G.pnl += roundPnl;
-  G.waiting = false;
-
-  showResult(bet, isWin, roundPnl, m, isAuto);
-
-  ["gbH","gbD","gbA","gbAuto"].forEach(id => { const b = document.getElementById(id); if (b) b.disabled = true; });
-  document.getElementById("gPlayed").textContent = G.played;
-  document.getElementById("gHits").textContent = G.hits;
-  document.getElementById("gRate").textContent = G.played > 0 ? (G.hits / G.played * 100).toFixed(1) + "%" : "—";
-  updatePnl();
-  updateSkips();
-
-  if (G.played >= MAX_PLAYS) setTimeout(showGameOver, 800);
+function doGuess(bet,isAuto){
+if(gameState.played>=MAX_PLAYS)return;
+const m=gameState.current;if(!m)return;
+gameState.lastGuess=bet;
+const isWin=bet===m.result;
+let roundPnl=0;
+if(isWin){
+const odds=m.result==="H"?m.ho:m.result==="D"?m.doo:m.ao;
+roundPnl=Math.round((odds-1)*100);
+gameState.hits++;gameState.combo++;
+if(gameState.combo>=3)showCombo(gameState.combo);
+}else{roundPnl=-100;gameState.combo=0}
+gameState.played++;gameState.totalPnl+=roundPnl;gameState.waiting=false;
+showGameResult(bet,isWin,roundPnl,m,isAuto);
+["gbH","gbD","gbA","gbAuto"].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=true});
+document.getElementById("gPlayed").textContent=gameState.played;
+document.getElementById("gHits").textContent=gameState.hits;
+document.getElementById("gRate").textContent=gameState.played>0?(gameState.hits/gameState.played*100).toFixed(1)+"%":"—";
+updateGamePnl();updateSkips();
+if(gameState.played>=MAX_PLAYS)setTimeout(showGameOver,800);
 }
 
-function showResult(bet, isWin, pnl, m, isAuto){
-  const resultText = m.result === "H" ? t("homeWin") : m.result === "D" ? t("draw") : t("awayWin");
-  const guessText = bet === "H" ? t("homeWin") : bet === "D" ? t("draw") : t("awayWin");
-  const pnlText = pnl >= 0 ? "+" + pnl : "" + pnl;
-  const autoLabel = isAuto ? "🤖 " : "";
-  const icon = isWin ? "🎉" : "❌";
-  const cls = isWin ? "win" : "lose";
-  gMsg(`${autoLabel}${icon} <b>${resultText}</b> · <span style="font-size:16px">${pnlText}</span><br><span style="font-size:11px;font-weight:normal;opacity:.85">⚽ ${m.score || "—"} · 你選 ${guessText}</span>`, cls);
+function showGameResult(bet,isWin,pnl,m,isAuto){
+const resultText=m.result==="H"?t("resultHShort"):m.result==="D"?t("resultDShort"):t("resultAShort");
+const guessText=bet==="H"?t("resultHShort"):bet==="D"?t("resultDShort"):t("resultAShort");
+const pnlText=pnl>=0?"+"+pnl:""+pnl;
+const autoLabel=isAuto?"🤖 ":"";
+const icon=isWin?"🎉":"❌";
+const cls=isWin?"win":"lose";
+const scoreStr=m.score?"⚽ "+m.score:"";
+gMsg(`${autoLabel}${icon} <b>${resultText}</b><span class="pnl">${pnlText}</span><br><span style="font-size:11px;font-weight:normal;opacity:.85">${scoreStr} · 你選 ${guessText}</span>`,cls);
 }
 
-function updatePnl(){
-  const el = document.getElementById("gPnl");
-  const v = G.pnl;
-  el.textContent = v > 0 ? "+" + v : v;
-  el.style.color = v > 0 ? "#22c55e" : v < 0 ? "#ef4444" : "var(--tx1)";
-}
-
-function showCombo(n){
-  toast(t("combo").replace("{n}", n), "success");
-}
-
-function gameGuess(bet){
-  if (G.played >= MAX_PLAYS) return showGameOver();
-  if (!G.waiting || !G.current) return;
-  guess(bet, false);
+function updateGamePnl(){
+const el=document.getElementById("gPnl");
+const v=gameState.totalPnl;
+el.textContent=v>0?"+"+v:v;
+el.className="v "+(v>0?"p":v<0?"n":"");
 }
 
 function showGameOver(){
-  const hitRate = G.played > 0 ? (G.hits / G.played * 100) : 0;
-  const cost = G.played * 100;
-  const roi = cost > 0 ? (G.pnl / cost * 100) : 0;
-  const score = Math.min(100, Math.max(0, hitRate * 0.5 + Math.max(0, Math.min(100, roi)) * 1.0));
-  const tier = getTier(score);
-  document.getElementById("goSub").textContent = t("goSub").replace("{n}", G.played);
-  document.getElementById("goHitRate").textContent = hitRate.toFixed(2) + "%";
-  document.getElementById("goRoi").textContent = (roi >= 0 ? "+" : "") + roi.toFixed(2) + "%";
-  document.getElementById("goScore").textContent = score.toFixed(2);
-  document.getElementById("goPnl").textContent = (G.pnl >= 0 ? "+" : "") + G.pnl;
-  document.getElementById("goPnl").className = "val " + (G.pnl > 0 ? "p" : G.pnl < 0 ? "n" : "w");
-  const tierEl = document.getElementById("goTier").firstElementChild;
-  tierEl.textContent = tier.tier;
-  tierEl.style.background = tier.grad;
-  tierEl.style.color = tier.color;
-  document.getElementById("goShare").style.display = LEADERBOARD_API ? "block" : "none";
-  document.getElementById("gameOverOv").classList.add("on");
+const hr=gameState.played>0?(gameState.hits/gameState.played*100):0;
+const cost=gameState.played*100;
+const roi=cost>0?(gameState.totalPnl/cost*100):0;
+const score=Math.min(100,Math.max(0,hr*0.5+Math.max(0,Math.min(100,roi))*1.0));
+const tier=getTier(score);
+document.getElementById("goSub").textContent=t("goSub").replace("50",MAX_PLAYS);
+document.getElementById("goHitRate").textContent=hr.toFixed(2)+"%";
+document.getElementById("goRoi").textContent=(roi>=0?"+":"")+roi.toFixed(2)+"%";
+document.getElementById("goScore").textContent=score.toFixed(2);
+document.getElementById("goPnl").textContent=(gameState.totalPnl>=0?"+":"")+gameState.totalPnl;
+const tierEl=document.getElementById("goTier");
+tierEl.textContent=tier.tier;
+tierEl.style.background=tier.grad;
+tierEl.style.color=tier.color||"#fff";
+document.getElementById("goShare").style.display=LEADERBOARD_API?"block":"none";
+document.getElementById("gameOverOv").classList.add("show");
 }
 
-function restart(){
-  G.played = 0; G.hits = 0; G.pnl = 0; G.skips = 0; G.combo = 0;
-  G.current = null; G.waiting = false; G.lastGuess = null;
-  document.getElementById("gPlayed").textContent = "0";
-  document.getElementById("gHits").textContent = "0";
-  document.getElementById("gRate").textContent = "—";
-  updatePnl(); updateSkips();
-  document.getElementById("gameOverOv").classList.remove("on");
-  newRound();
+function restartGame(){
+gameState={current:null,played:0,hits:0,waiting:false,lastGuess:null,totalPnl:0,skipsUsed:0,combo:0};
+document.getElementById("gPlayed").textContent="0";
+document.getElementById("gHits").textContent="0";
+document.getElementById("gRate").textContent="—";
+updateGamePnl();updateSkips();
+updateTier(false);
+document.getElementById("gameOverOv").classList.remove("show");
+newRound();
 }
 
-/* ═══════════════════════════════════════════════════════════
-   排行榜
-   ═══════════════════════════════════════════════════════════ */
-const LEADERBOARD_API = "https://script.google.com/macros/s/AKfycbxwY95XQNs8vOTVdzvWJMoYPffto3PiSvt6S2xwRItsy-TcYsD89sF_W_1GnqJwXY4G/exec";
+function gameGuess(bet){if(gameState.played>=MAX_PLAYS)return showGameOver();if(!gameState.waiting||!gameState.current)return;doGuess(bet,false)}
 
+/* 開發者自動模式 */
+function devAuto(){
+if(!devMode||gameState.played>=MAX_PLAYS)return;
+if(!matchPool||matchPool.length===0){ensurePool().then(devAuto).catch(()=>{});return}
+const m=genMatch();if(!m)return;
+const r=analyze(m.hw,m.dw,m.aw,m.ho,m.doo,m.ao,currentMode);
+const bet=r.bet||r.recommended;
+if(!bet||bet==="skip"||bet==="SKIP"){gameState.current=genMatch();gameState.waiting=true;if(gameState.current)renderMatch(gameState.current);return}
+gameState.current=m;renderMatch(m);
+doGuess(bet,true);
+setTimeout(()=>{gameState.current=genMatch();gameState.waiting=true;gameState.lastGuess=null;if(gameState.current)renderMatch(gameState.current)},100);
+}
+
+let specialRunning=false;
+function devSpecial(target){
+if(!devMode||specialRunning||gameState.played>=MAX_PLAYS)return;
+if(!matchPool||matchPool.length===0){ensurePool().then(()=>devSpecial(target)).catch(()=>{});return}
+specialRunning=true;
+let tries=0,maxTries=500;
+const label=target==="H"?"主":target==="D"?"和":"客";
+gMsg("⏳ 搜尋中... (🎯 "+label+")","info");
+function tryOne(){
+if(tries>=maxTries){specialRunning=false;showToast("⚠️ 未找到符合條件的場次","info");clearGMsg();return}
+if(gameState.played>=MAX_PLAYS){specialRunning=false;showGameOver();return}
+const m=genMatch();if(!m){specialRunning=false;return}
+const r=analyze(m.hw,m.dw,m.aw,m.ho,m.doo,m.ao,currentMode);
+const bet=r.bet||r.recommended;
+if(bet===target){specialRunning=false;gameState.current=m;renderMatch(m);doGuess(target,true);return}
+tries++;setTimeout(tryOne,25);
+}
+tryOne();
+}
+
+/* ═══ Tier ═══ */
 function getTier(score){
-  if (score >= 85) return { tier: "EX", color: "#e879f9", grad: "linear-gradient(135deg,#1a0033,#4a148c)" };
-  if (score >= 81) return { tier: "S+", color: "#fff", grad: "linear-gradient(135deg,#FFE44E,#FFB800)" };
-  if (score >= 77) return { tier: "S", color: "#fff", grad: "linear-gradient(135deg,#FFE44E,#FFB800)" };
-  if (score >= 73) return { tier: "S-", color: "#fff", grad: "linear-gradient(135deg,#FFE44E,#FFB800)" };
-  if (score >= 69) return { tier: "A+", color: "#fff", grad: "linear-gradient(135deg,#93c5fd,#3b82f6)" };
-  if (score >= 65) return { tier: "A", color: "#fff", grad: "linear-gradient(135deg,#93c5fd,#3b82f6)" };
-  if (score >= 61) return { tier: "A-", color: "#fff", grad: "linear-gradient(135deg,#93c5fd,#3b82f6)" };
-  if (score >= 57) return { tier: "B+", color: "#fff", grad: "linear-gradient(135deg,#86efac,#22c55e)" };
-  if (score >= 53) return { tier: "B", color: "#fff", grad: "linear-gradient(135deg,#86efac,#22c55e)" };
-  if (score >= 49) return { tier: "B-", color: "#fff", grad: "linear-gradient(135deg,#86efac,#22c55e)" };
-  if (score >= 45) return { tier: "C+", color: "#fff", grad: "linear-gradient(135deg,#fca5a5,#ef4444)" };
-  if (score >= 41) return { tier: "C", color: "#fff", grad: "linear-gradient(135deg,#fca5a5,#ef4444)" };
-  if (score >= 37) return { tier: "C-", color: "#fff", grad: "linear-gradient(135deg,#fca5a5,#ef4444)" };
-  if (score >= 33) return { tier: "D+", color: "#fff", grad: "linear-gradient(135deg,#d1d5db,#6b7280)" };
-  if (score >= 29) return { tier: "D", color: "#fff", grad: "linear-gradient(135deg,#d1d5db,#6b7280)" };
-  if (score >= 25) return { tier: "D-", color: "#fff", grad: "linear-gradient(135deg,#d1d5db,#6b7280)" };
-  if (score >= 21) return { tier: "E+", color: "#fff", grad: "linear-gradient(135deg,#d4a373,#6b4423)" };
-  if (score >= 15) return { tier: "E", color: "#fff", grad: "linear-gradient(135deg,#d4a373,#6b4423)" };
-  return { tier: "E-", color: "#fff", grad: "linear-gradient(135deg,#d4a373,#6b4423)" };
+if(score>=85)return{tier:"EX",color:"#e879f9",grad:"linear-gradient(135deg,#1a0033,#4a148c,#2d0845)"};
+if(score>=81)return{tier:"S+",color:"#fff",grad:"linear-gradient(135deg,#FFE44E,#FFD700,#FFB800)"};
+if(score>=77)return{tier:"S",color:"#fff",grad:"linear-gradient(135deg,#FFE44E,#FFD700,#FFB800)"};
+if(score>=73)return{tier:"S-",color:"#fff",grad:"linear-gradient(135deg,#FFE44E,#FFD700,#FFB800)"};
+if(score>=69)return{tier:"A+",color:"#fff",grad:"linear-gradient(135deg,#93c5fd,#60a5fa,#3b82f6)"};
+if(score>=65)return{tier:"A",color:"#fff",grad:"linear-gradient(135deg,#93c5fd,#60a5fa,#3b82f6)"};
+if(score>=61)return{tier:"A-",color:"#fff",grad:"linear-gradient(135deg,#93c5fd,#60a5fa,#3b82f6)"};
+if(score>=57)return{tier:"B+",color:"#fff",grad:"linear-gradient(135deg,#86efac,#4ade80,#22c55e)"};
+if(score>=53)return{tier:"B",color:"#fff",grad:"linear-gradient(135deg,#86efac,#4ade80,#22c55e)"};
+if(score>=49)return{tier:"B-",color:"#fff",grad:"linear-gradient(135deg,#86efac,#4ade80,#22c55e)"};
+if(score>=45)return{tier:"C+",color:"#fff",grad:"linear-gradient(135deg,#fca5a5,#f87171,#ef4444)"};
+if(score>=41)return{tier:"C",color:"#fff",grad:"linear-gradient(135deg,#fca5a5,#f87171,#ef4444)"};
+if(score>=37)return{tier:"C-",color:"#fff",grad:"linear-gradient(135deg,#fca5a5,#f87171,#ef4444)"};
+if(score>=33)return{tier:"D+",color:"#fff",grad:"linear-gradient(135deg,#d1d5db,#9ca3af,#6b7280)"};
+if(score>=29)return{tier:"D",color:"#fff",grad:"linear-gradient(135deg,#d1d5db,#9ca3af,#6b7280)"};
+if(score>=25)return{tier:"D-",color:"#fff",grad:"linear-gradient(135deg,#d1d5db,#9ca3af,#6b7280)"};
+if(score>=21)return{tier:"E+",color:"#fff",grad:"linear-gradient(135deg,#d4a373,#a16207,#6b4423)"};
+if(score>=15)return{tier:"E",color:"#fff",grad:"linear-gradient(135deg,#d4a373,#a16207,#6b4423)"};
+return{tier:"E-",color:"#fff",grad:"linear-gradient(135deg,#d4a373,#a16207,#6b4423)"};
+}
+function tierRank(t){return{EX:19,"S+":18,S:17,"S-":16,"A+":15,A:14,"A-":13,"B+":12,B:11,"B-":10,"C+":9,C:8,"C-":7,"D+":6,D:5,"D-":4,"E+":3,E:2,"E-":1}[t]||0}
+
+function updateTier(anim){
+const tierEl=document.getElementById("gameTier");if(!tierEl)return;
+if(gameState.played<5){tierEl.style.display="none";return}
+const hr=(gameState.hits/gameState.played)*100;
+const cost=gameState.played*100;
+const roi=cost>0?(gameState.totalPnl/cost)*100:0;
+const score=Math.min(100,Math.max(0,hr*0.5+Math.max(0,Math.min(100,roi))*1.0));
+const tier=getTier(score);
+const badge=document.getElementById("tierBadge"),arrow=document.getElementById("tierArrow"),desc=document.getElementById("tierDesc"),scoreV=document.getElementById("tierScoreV"),scoreD=document.getElementById("tierScoreD");
+const prev=badge.getAttribute("data-tier")||"",pr=prev?tierRank(prev):0,nr=tierRank(tier.tier);
+const up=pr>0&&nr>pr,dn=pr>0&&nr<pr;
+badge.style.display="inline-flex";badge.style.background=tier.grad;badge.style.backgroundSize="400% 400%";
+badge.style.color=tier.color||"#fff";badge.textContent=tier.tier;badge.setAttribute("data-tier",tier.tier);
+badge.style.animation="tierGrad 3s ease infinite, tierPulse 2.5s ease-in-out infinite";
+const fam=tier.tier.charAt(0);
+const famMsg={E:"🏆 傳奇！",S:"🔥 頂尖！",A:"⭐ 優秀！",B:"🎯 不錯！",C:"📊 一般",D:"⚠️ 待改進"};
+desc.style.color=tier.color||"#fff";desc.textContent=famMsg[fam]||"💪 加油！";
+scoreV.textContent=score.toFixed(2);scoreV.style.color=tier.color||"#fff";
+scoreD.innerHTML="綜合分數 = 命中率 × 50% + ROI × 100%<br>("+hr.toFixed(2)+" × 50% + "+roi.toFixed(2)+" × 100%)";
+tierEl.style.display="block";
+if(anim&&up){arrow.classList.remove("up","dn");void arrow.offsetWidth;arrow.textContent="▲";arrow.classList.add("up");setTimeout(()=>arrow.classList.remove("up"),1800)}
+else if(anim&&dn){arrow.classList.remove("up","dn");void arrow.offsetWidth;arrow.textContent="▼";arrow.classList.add("dn");setTimeout(()=>arrow.classList.remove("dn"),1800)}
 }
 
-function normalizePct(v){
-  if (v === null || v === undefined || v === "") return 0;
-  let s = String(v).replace(/%/g, "").replace(/\+/g, "").trim();
-  let n = parseFloat(s);
-  if (isNaN(n)) return 0;
-  if (Math.abs(n) <= 1 && n !== 0) n *= 100;
-  return n;
-}
-
-function buildLbRow(r, i){
-  const rank = i + 1;
-  const rankCls = rank === 1 ? "g" : rank === 2 ? "s" : rank === 3 ? "b" : "";
-  const rowCls = rank <= 3 ? "t" + rank : "";
-  const hr = normalizePct(r.hitRate);
-  const roi = normalizePct(r.roi);
-  const score = Math.min(100, Math.max(0, hr * 0.5 + Math.max(0, Math.min(100, roi))));
-  const tier = getTier(score);
-  return `<div class="lb-row ${rowCls}">
-    <div class="lb-rank ${rankCls}">${rank}</div>
-    <div><div class="lb-name">${esc(r.name || "—")}</div>
-    <div class="lb-meta">🎯 ${hr.toFixed(1)}% · 💰 ${roi >= 0 ? "+" : ""}${roi.toFixed(1)}%</div></div>
-    <div><div class="lb-tier" style="background:${tier.grad};color:${tier.color}">${tier.tier}</div>
-    <div class="lb-score">${score.toFixed(1)}</div></div>
-  </div>`;
+/* ═══ 排行榜 ═══ */
+function normPct(v){if(v===null||v===undefined||v==="")return 0;let s=String(v).replace(/%/g,"").replace(/\+/g,"").trim();let n=parseFloat(s);if(isNaN(n))return 0;if(Math.abs(n)<=1&&n!==0)n*=100;return n}
+function validRow(r){if(!r)return false;const hr=normPct(r.hitRate),rr=normPct(r.roi);return!(hr<0||hr>100||rr<-100||rr>1000)}
+function fmtPct(v,plus){const n=normPct(v);if(n===0&&!v)return"—";return((plus&&n>0)?"+":"")+n.toFixed(2)+"%"}
+function buildRow(r,i,compact){
+const rank=i+1;
+const rankCls=rank===1?"g":rank===2?"s":rank===3?"b":"";
+const rowCls=rank<=3?"t"+rank:"";
+const hr=normPct(r.hitRate),roi=normPct(r.roi);
+const score=Math.min(100,Math.max(0,hr*0.5+Math.max(0,Math.min(100,roi))*1.0));
+const tier=getTier(score);
+return`<div class="lb-row ${rowCls}"><div class="lb-rank ${rankCls}">${rank}</div><div><div class="lb-name">${esc(r.name||"—")}</div><div class="lb-meta">🎯 ${fmtPct(r.hitRate,false)} · 💰 ${fmtPct(r.roi,true)}</div></div><div style="text-align:right"><div class="lb-tier" style="background:${tier.grad};color:${tier.color||'#fff'}">${tier.tier}</div><div class="lb-score">${score.toFixed(2)}</div></div></div>`;
 }
 
 function loadLbMini(){
-  const el = document.getElementById("lbMini");
-  el.innerHTML = `<div class="note" style="margin:0">${t("lbLoading")}</div>`;
-  if (!LEADERBOARD_API) { el.innerHTML = `<div class="note" style="margin:0">${t("lbFail")}</div>`; return; }
-  fetch(LEADERBOARD_API + "?t=" + Date.now())
-    .then(r => r.json())
-    .then(res => {
-      if (!res.ok || !res.data || res.data.length === 0) { el.innerHTML = `<div class="note" style="margin:0">${t("lbEmpty")}</div>`; return; }
-      const valid = res.data.filter(r => {
-        const hr = normalizePct(r.hitRate), rr = normalizePct(r.roi);
-        return hr >= 0 && hr <= 100 && rr >= -100 && rr <= 1000;
-      });
-      valid.sort((a, b) => {
-        const sa = normalizePct(a.hitRate) * 0.5 + Math.max(0, Math.min(100, normalizePct(a.roi)));
-        const sb = normalizePct(b.hitRate) * 0.5 + Math.max(0, Math.min(100, normalizePct(b.roi)));
-        return sb - sa;
-      });
-      el.innerHTML = valid.slice(0, 10).map((r, i) => buildLbRow(r, i)).join("");
-    })
-    .catch(() => { el.innerHTML = `<div class="note" style="margin:0">${t("lbFail")}</div>`; });
+const el=document.getElementById("lbMini");if(!el)return;
+el.innerHTML='<div class="lb-loading">'+t("lbLoading")+"</div>";
+if(!LEADERBOARD_API){el.innerHTML='<div class="lb-empty">'+t("lbFail")+"</div>";return}
+fetch(LEADERBOARD_API+"?t="+Date.now()).then(r=>r.json()).then(res=>{
+if(!res.ok||!res.data){el.innerHTML='<div class="lb-empty">'+t("lbFail")+"</div>";return}
+const valid=res.data.filter(validRow);
+if(valid.length===0){el.innerHTML='<div class="lb-empty">'+t("lbEmpty")+"</div>";return}
+valid.sort((a,b)=>{const sa=normPct(a.hitRate)*0.5+Math.max(0,Math.min(100,normPct(a.roi)));const sb=normPct(b.hitRate)*0.5+Math.max(0,Math.min(100,normPct(b.roi)));return sb-sa});
+el.innerHTML=valid.slice(0,10).map((r,i)=>buildRow(r,i,true)).join("");
+}).catch(()=>{el.innerHTML='<div class="lb-empty">'+t("lbFail")+"</div>"});
 }
 
 function openLb(){
-  document.getElementById("lbOv").classList.add("on");
-  const content = document.getElementById("lbContent");
-  content.innerHTML = `<div class="note">${t("lbLoading")}</div>`;
-  if (!LEADERBOARD_API) { content.innerHTML = `<div class="note">${t("lbFail")}</div>`; return; }
-  fetch(LEADERBOARD_API + "?t=" + Date.now())
-    .then(r => r.json())
-    .then(res => {
-      if (!res.ok || !res.data || res.data.length === 0) { content.innerHTML = `<div class="note">${t("lbEmpty")}</div>`; return; }
-      const valid = res.data.filter(r => {
-        const hr = normalizePct(r.hitRate), rr = normalizePct(r.roi);
-        return hr >= 0 && hr <= 100 && rr >= -100 && rr <= 1000;
-      });
-      valid.sort((a, b) => {
-        const sa = normalizePct(a.hitRate) * 0.5 + Math.max(0, Math.min(100, normalizePct(a.roi)));
-        const sb = normalizePct(b.hitRate) * 0.5 + Math.max(0, Math.min(100, normalizePct(b.roi)));
-        return sb - sa;
-      });
-      content.innerHTML = valid.slice(0, 100).map((r, i) => buildLbRow(r, i)).join("");
-    })
-    .catch(() => { content.innerHTML = `<div class="note">${t("lbFail")}</div>`; });
+document.getElementById("lbOv").classList.add("show");
+const c=document.getElementById("lbContent");c.innerHTML='<div class="lb-loading">'+t("lbLoading")+"</div>";
+if(!LEADERBOARD_API){c.innerHTML='<div class="lb-empty">'+t("lbFail")+"</div>";return}
+fetch(LEADERBOARD_API+"?t="+Date.now()).then(r=>r.json()).then(res=>{
+if(!res.ok||!res.data){c.innerHTML='<div class="lb-empty">'+t("lbFail")+"</div>";return}
+const valid=res.data.filter(validRow);
+if(valid.length===0){c.innerHTML='<div class="lb-empty">'+t("lbEmpty")+"</div>";return}
+valid.sort((a,b)=>{const sa=normPct(a.hitRate)*0.5+Math.max(0,Math.min(100,normPct(a.roi)));const sb=normPct(b.hitRate)*0.5+Math.max(0,Math.min(100,normPct(b.roi)));return sb-sa});
+c.innerHTML=valid.slice(0,100).map((r,i)=>buildRow(r,i)).join("");
+}).catch(()=>{c.innerHTML='<div class="lb-empty">'+t("lbFail")+"</div>"});
 }
 
 function uploadScore(){
-  if (!LEADERBOARD_API) return;
-  const name = prompt(t("enterName"));
-  if (!name || !name.trim()) return;
-  const hitRate = G.played > 0 ? (G.hits / G.played * 100) : 0;
-  const cost = G.played * 100;
-  const roi = cost > 0 ? (G.pnl / cost * 100) : 0;
-  const score = Math.min(100, Math.max(0, hitRate * 0.5 + Math.max(0, Math.min(100, roi))));
-  const btn = document.getElementById("goShare");
-  btn.disabled = true;
-  btn.textContent = "⏳ ...";
-  fetch(LEADERBOARD_API, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: name.trim().slice(0, 20), score: +score.toFixed(2), hitRate: +hitRate.toFixed(2), roi: +roi.toFixed(2), pnl: G.pnl, played: G.played })
-  }).then(() => { toast(t("uploaded"), "success"); setTimeout(loadLbMini, 1500); })
-    .catch(() => { toast(t("uploadFail"), "error"); btn.disabled = false; btn.textContent = t("goShare"); });
+if(!LEADERBOARD_API)return;
+const name=prompt(t("goEnterName"));if(!name||!name.trim())return;
+const hr=gameState.played>0?(gameState.hits/gameState.played*100):0;
+const cost=gameState.played*100;
+const roi=cost>0?(gameState.totalPnl/cost*100):0;
+const score=Math.min(100,Math.max(0,hr*0.5+Math.max(0,Math.min(100,roi))*1.0));
+const btn=document.getElementById("goShare");btn.disabled=true;btn.textContent="⏳ ...";
+fetch(LEADERBOARD_API,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:name.trim().slice(0,20),score:+score.toFixed(2),hitRate:+hr.toFixed(2),roi:+roi.toFixed(2),pnl:gameState.totalPnl,played:gameState.played})})
+.then(()=>{showToast(t("goUploaded"),"success");btn.textContent=t("goUploaded");setTimeout(loadLbMini,1500)})
+.catch(()=>{showToast(t("goUploadFailed"),"error");btn.disabled=false;btn.textContent=t("goShare")});
 }
 
-/* ═══════════════════════════════════════════════════════════
-   模擬測試
-   ═══════════════════════════════════════════════════════════ */
-let simRunning = false;
-
+/* ═══ 模擬 ═══ */
 function runSim(){
-  if (simRunning) return;
-  if (!matchPool || matchPool.length === 0) {
-    toast(t("simNoData"), "error");
-    ensurePool().then(runSim).catch(() => {});
-    return;
-  }
-  simRunning = true;
-  const btn = document.getElementById("simBtn");
-  btn.disabled = true;
-  btn.textContent = t("simRunning");
-
-  const term = document.getElementById("simTerm");
-  const sum = document.getElementById("simSum");
-  const fill = document.getElementById("simFill");
-  const pt = document.getElementById("simPT");
-  term.innerHTML = ""; sum.innerHTML = ""; fill.style.width = "0%";
-
-  const total = matchPool.length;
-  const stats = {
-    total: 0, betH: 0, betD: 0, betA: 0, skip: 0,
-    hitH: 0, hitD: 0, hitA: 0, pnl: 0,
-    conf: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-  };
-
-  let idx = 0;
-  const batchSize = Math.max(1, Math.ceil(total / 100));
-
-  // 起始
-  const head = document.createElement("div");
-  head.className = "head";
-  head.textContent = t("simStart") + "\n" + t("simTotal") + ": " + total + " | " + new Date().toLocaleString() + "\n" + t("simNote") + "\n" + "─".repeat(60) + "\n";
-  term.appendChild(head);
-
-  function process(){
-    if (idx >= total) return finish();
-    let lines = "";
-    const end = Math.min(idx + batchSize, total);
-    for (; idx < end; idx++) {
-      const m = matchPool[idx];
-      stats.total++;
-      const r = Engine.analyze(m.hw, m.dw, m.aw, m.ho, m.doo, m.ao);
-      let bet = r.recommended || "SKIP";
-      if (r.error) bet = "SKIP";
-
-      let cls = "skip", mark = "—", pnl = 0;
-      if (bet === "H") stats.betH++;
-      else if (bet === "D") stats.betD++;
-      else if (bet === "A") stats.betA++;
-      else stats.skip++;
-
-      if (r.confidence > 0 && r.confidence <= 5) stats.conf[r.confidence]++;
-
-      if (bet !== "SKIP") {
-        const odds = bet === "H" ? m.ho : bet === "D" ? m.doo : m.ao;
-        if (bet === m.result) {
-          if (bet === "H") stats.hitH++;
-          else if (bet === "D") stats.hitD++;
-          else stats.hitA++;
-          pnl = Math.round((odds - 1) * 100);
-          cls = "hit"; mark = "✓";
-        } else {
-          pnl = -100;
-          cls = "miss"; mark = "✗";
-        }
-        stats.pnl += pnl;
-      }
-
-      const line = `[${String(idx + 1).padStart(4)}/${total}] L${(r.confidence || 0)} │ ${bet.padEnd(4)} │ 實際 ${m.result} │ ${mark} ${pnl >= 0 ? "+" : ""}${pnl}`.padEnd(58) + `│ 累計 ${stats.pnl >= 0 ? "+" : ""}${stats.pnl}\n`;
-      lines += `<span class="${cls}">${esc(line)}</span>`;
-    }
-    const div = document.createElement("div");
-    div.innerHTML = lines;
-    term.appendChild(div);
-    term.scrollTop = term.scrollHeight;
-
-    const pct = (idx / total * 100).toFixed(1);
-    fill.style.width = pct + "%";
-    pt.textContent = idx + " / " + total + " (" + pct + "%)";
-    setTimeout(process, 25);
-  }
-
-  function finish(){
-    const totalBets = stats.betH + stats.betD + stats.betA;
-    const totalHits = stats.hitH + stats.hitD + stats.hitA;
-    const hitRate = totalBets > 0 ? totalHits / totalBets * 100 : 0;
-    const cost = totalBets * 100;
-    const roi = cost > 0 ? stats.pnl / cost * 100 : 0;
-    const score = Math.min(100, Math.max(0, hitRate * 0.5 + Math.max(0, Math.min(100, roi))));
-    const tier = getTier(score);
-
-    const end = document.createElement("div");
-    end.className = "head";
-    end.textContent = "\n" + t("simEnd") + "\n";
-    term.appendChild(end);
-    term.scrollTop = term.scrollHeight;
-    fill.style.width = "100%";
-    pt.textContent = t("simComplete") + " " + total + " / " + total;
-
-    const hr = (h, tt) => tt > 0 ? (h / tt * 100).toFixed(1) + "%" : "—";
-    let html = "";
-    html += `<div class="sim-tier"><span style="background:${tier.grad};color:${tier.color}">${tier.tier}</span></div>`;
-    html += `<div class="sim-grid">`;
-    html += `<div class="sim-stat"><div class="sl">${t("simTotal")}</div><div class="sv">${stats.total}</div></div>`;
-    html += `<div class="sim-stat"><div class="sl">${t("simBets")}</div><div class="sv">${totalBets}</div></div>`;
-    html += `<div class="sim-stat"><div class="sl">${t("simSkips")}</div><div class="sv">${stats.skip}</div></div>`;
-    html += `<div class="sim-stat"><div class="sl">${t("hitRate")}</div><div class="sv">${hitRate.toFixed(2)}%</div></div>`;
-    html += `<div class="sim-stat"><div class="sl">${t("simRoi")}</div><div class="sv ${roi >= 0 ? 'p' : 'n'}">${(roi >= 0 ? "+" : "")}${roi.toFixed(2)}%</div></div>`;
-    html += `<div class="sim-stat"><div class="sl">${t("simTotalPnl")}</div><div class="sv ${stats.pnl >= 0 ? 'p' : 'n'}">${stats.pnl >= 0 ? "+" : ""}${stats.pnl}</div></div>`;
-    html += `<div class="sim-stat"><div class="sl">${t("simScore")}</div><div class="sv">${score.toFixed(2)}</div></div>`;
-    html += `<div class="sim-stat"><div class="sl">H</div><div class="sv">${stats.betH}/${stats.hitH}</div></div>`;
-    html += `<div class="sim-stat"><div class="sl">D</div><div class="sv">${stats.betD}/${stats.hitD}</div></div>`;
-    html += `<div class="sim-stat"><div class="sl">A</div><div class="sv">${stats.betA}/${stats.hitA}</div></div>`;
-    html += `</div>`;
-
-    html += `<div class="sim-sect">${t("simDist")}</div>`;
-    html += `<table class="sim-tbl">`;
-    html += `<tr><th>${t("simBets")}</th><th class="num">N</th><th class="num">Hit</th><th class="num">Rate</th></tr>`;
-    html += `<tr><td>🟢 主勝 (H)</td><td class="num">${stats.betH}</td><td class="num">${stats.hitH}</td><td class="num">${hr(stats.hitH, stats.betH)}</td></tr>`;
-    html += `<tr><td>🟡 和局 (D)</td><td class="num">${stats.betD}</td><td class="num">${stats.hitD}</td><td class="num">${hr(stats.hitD, stats.betD)}</td></tr>`;
-    html += `<tr><td>🔵 客勝 (A)</td><td class="num">${stats.betA}</td><td class="num">${stats.hitA}</td><td class="num">${hr(stats.hitA, stats.betA)}</td></tr>`;
-    html += `<tr><td>⚪ 跳過</td><td class="num">${stats.skip}</td><td class="num">—</td><td class="num">—</td></tr>`;
-    html += `</table>`;
-
-    html += `<div class="sim-sect">${t("simConf")}</div>`;
-    html += `<table class="sim-tbl">`;
-    html += `<tr><th>Level</th><th class="num">Count</th><th class="num">%</th></tr>`;
-    for (let c = 5; c >= 1; c--) {
-      const cnt = stats.conf[c] || 0;
-      const pct = stats.total > 0 ? (cnt / stats.total * 100).toFixed(1) : "0.0";
-      html += `<tr><td>${"⭐".repeat(c)}</td><td class="num">${cnt}</td><td class="num">${pct}%</td></tr>`;
-    }
-    html += `</table>`;
-    html += `<div class="note">${t("simNote")}<br>${t("simFinish")}: ${new Date().toLocaleString()}</div>`;
-    sum.innerHTML = html;
-
-    console.log("═══ SIM DEBUG ═══");
-    console.log("Total:", stats.total, "| H:", stats.betH + "/" + stats.hitH, "| D:", stats.betD + "/" + stats.hitD, "| A:", stats.betA + "/" + stats.hitA, "| Skip:", stats.skip, "| PnL:", stats.pnl);
-
-    simRunning = false;
-    btn.disabled = false;
-    btn.textContent = t("simBtn");
-  }
-
-  document.getElementById("simOv").classList.add("on");
-  setTimeout(process, 50);
+if(simRunning)return;
+if(!matchPool||matchPool.length===0){showToast(t("simNoData"),"error");ensurePool().then(runSim).catch(()=>{});return}
+simRunning=true;
+const btn=document.getElementById("simBtn");btn.disabled=true;btn.textContent=t("simRunningBtn");
+const term=document.getElementById("simTerm"),sum=document.getElementById("simSum"),fill=document.getElementById("simFill"),pt=document.getElementById("simPT");
+term.innerHTML="";sum.innerHTML="";fill.style.width="0%";
+const total=matchPool.length;
+const st={total:0,betH:0,betD:0,betA:0,skip:0,hitH:0,hitD:0,hitA:0,pnl:0,layerCount:{},conf:{1:0,2:0,3:0,4:0,5:0}};
+for(let L=1;L<=15;L++)st.layerCount[L]=0;
+let idx=0;const batch=Math.max(1,Math.ceil(total/120));
+const head=document.createElement("div");head.className="head";
+head.textContent=t("simStart")+"\n"+t("simTotalSamples")+"："+total+" ｜ "+t("simBatch")+"："+batch+" "+t("simPerFrame")+" ｜ "+new Date().toLocaleString()+"\n"+t("simHideData")+"\n"+"─".repeat(60)+"\n";
+term.appendChild(head);
+function padL(s,n){s=String(s);while(s.length<n)s=" "+s;return s}
+function padR(s,n){s=String(s);while(s.length<n)s=s+" ";return s}
+function pS(v){return(v>=0?"+":"")+v}
+function process(){
+if(idx>=total)return finish();
+let lines="";const end=Math.min(idx+batch,total);
+for(;idx<end;idx++){
+const m=matchPool[idx];st.total++;
+const r=analyze(m.hw,m.dw,m.aw,m.ho,m.doo,m.ao,currentMode);
+let bet=r.bet||r.recommended||"SKIP";
+if(r.error)bet="SKIP";
+if(r.layer)st.layerCount[r.layer]=(st.layerCount[r.layer]||0)+1;
+if(r.confidence>0&&r.confidence<=5)st.conf[r.confidence]++;
+let cls="skip",mark="—",pnl=0;
+if(bet==="H")st.betH++;else if(bet==="D")st.betD++;else if(bet==="A")st.betA++;else st.skip++;
+if(bet!=="SKIP"&&bet!=="skip"){
+const odds=bet==="H"?m.ho:bet==="D"?m.doo:m.ao;
+if(bet===m.result){
+if(bet==="H")st.hitH++;else if(bet==="D")st.hitD++;else st.hitA++;
+pnl=Math.round((odds-1)*100);cls="hit";mark="✓";
+}else{pnl=-100;cls="miss";mark="✗"}
+st.pnl+=pnl;
+}
+const line="["+padL(idx+1,String(total).length)+"/"+total+"] L"+padL(r.layer||r.confidence||0,2)+" → "+padR(bet,4)+" │ "+t("simActual")+" "+padR(m.result,2)+" │ "+mark+" "+padL(pS(pnl),5)+" │ "+t("simCumulative")+" "+padL(pS(st.pnl),7)+"\n";
+lines+='<span class="'+cls+'">'+esc(line)+"</span>";
+}
+const div=document.createElement("div");div.innerHTML=lines;term.appendChild(div);term.scrollTop=term.scrollHeight;
+const pct=(idx/total*100).toFixed(1);fill.style.width=pct+"%";pt.textContent=t("simProgress")+" "+idx+" / "+total+" ("+pct+"%)";
+setTimeout(process,25);
+}
+function finish(){
+const totalBets=st.betH+st.betD+st.betA,totalHits=st.hitH+st.hitD+st.hitA;
+const hitRate=totalBets>0?totalHits/totalBets*100:0;
+const cost=totalBets*100,roi=cost>0?st.pnl/cost*100:0;
+const score=Math.min(100,Math.max(0,hitRate*0.5+Math.max(0,Math.min(100,roi))*1.0));
+const tier=getTier(score);
+const el=document.createElement("div");el.className="head";el.textContent="\n"+t("simEnd")+"\n";term.appendChild(el);term.scrollTop=term.scrollHeight;
+fill.style.width="100%";pt.textContent=t("simComplete")+" "+total+" / "+total;
+const hr=(h,tt)=>tt>0?(h/tt*100).toFixed(1)+"%":"—";
+const pc=v=>(v>=0?"+":"")+v.toFixed(2)+"%";
+const nm=v=>(v>=0?"+":"")+v;
+let html="";
+html+=`<div class="sim-tier"><span style="background:${tier.grad};color:${tier.color||'#fff'}">${tier.tier}</span></div>`;
+html+=`<div class="sim-grid">`;
+html+=`<div class="sim-stat"><div class="l">${t("simTotalSamples")}</div><div class="v">${st.total}</div></div>`;
+html+=`<div class="sim-stat"><div class="l">${t("simBets")}</div><div class="v">${totalBets}</div></div>`;
+html+=`<div class="sim-stat"><div class="l">${t("simSkips")}</div><div class="v">${st.skip}</div></div>`;
+html+=`<div class="sim-stat"><div class="l">${t("simHitRate")}</div><div class="v">${hitRate.toFixed(2)}%</div></div>`;
+html+=`<div class="sim-stat"><div class="l">${t("simRoi")}</div><div class="v ${roi>=0?'p':'n'}">${pc(roi)}</div></div>`;
+html+=`<div class="sim-stat"><div class="l">${t("simTotalPnl")}</div><div class="v ${st.pnl>=0?'p':'n'}">${nm(st.pnl)}</div></div>`;
+html+=`<div class="sim-stat"><div class="l">${t("simScore")}</div><div class="v">${score.toFixed(2)}</div></div>`;
+html+=`<div class="sim-stat"><div class="l">H</div><div class="v">${st.betH}/${st.hitH}</div></div>`;
+html+=`<div class="sim-stat"><div class="l">D</div><div class="v">${st.betD}/${st.hitD}</div></div>`;
+html+=`<div class="sim-stat"><div class="l">A</div><div class="v">${st.betA}/${st.hitA}</div></div>`;
+html+=`</div>`;
+html+=`<div class="sim-sect">${t("simBetDist")}</div>`;
+html+=`<table class="sim-tbl"><tr><th>${t("simType")}</th><th class="num">${t("simBetCol")}</th><th class="num">${t("simHitCol")}</th><th class="num">${t("simRateCol")}</th></tr>`;
+html+=`<tr><td>${t("simHomeWin")}</td><td class="num">${st.betH}</td><td class="num">${st.hitH}</td><td class="num">${hr(st.hitH,st.betH)}</td></tr>`;
+html+=`<tr><td>${t("simDraw")}</td><td class="num">${st.betD}</td><td class="num">${st.hitD}</td><td class="num">${hr(st.hitD,st.betD)}</td></tr>`;
+html+=`<tr><td>${t("simAwayWin")}</td><td class="num">${st.betA}</td><td class="num">${st.hitA}</td><td class="num">${hr(st.hitA,st.betA)}</td></tr>`;
+html+=`<tr><td>${t("simSkip")}</td><td class="num">${st.skip}</td><td class="num">—</td><td class="num">—</td></tr></table>`;
+if(currentMode==="V1"){
+html+=`<div class="sim-sect">${t("simLayerTriggers")}</div>`;
+html+=`<table class="sim-tbl"><tr><th>Layer</th><th class="num">Count</th><th class="num">%</th></tr>`;
+for(let L=1;L<=15;L++){const cnt=st.layerCount[L]||0,p=st.total>0?(cnt/st.total*100).toFixed(1):"0.0";html+=`<tr><td>L${L}</td><td class="num">${cnt}</td><td class="num">${p}%</td></tr>`}
+html+=`</table>`;
+}else{
+html+=`<div class="sim-sect">🎯 Confidence Triggers</div>`;
+html+=`<table class="sim-tbl"><tr><th>Level</th><th class="num">Count</th><th class="num">%</th></tr>`;
+for(let c=5;c>=1;c--){const cnt=st.conf[c]||0,p=st.total>0?(cnt/st.total*100).toFixed(1):"0.0";html+=`<tr><td>${"⭐".repeat(c)}</td><td class="num">${cnt}</td><td class="num">${p}%</td></tr>`}
+html+=`</table>`;
+}
+html+=`<div class="sim-note">${t("simNote")}<br>※ ${t("simFinishTime")}：${new Date().toLocaleString()}</div>`;
+sum.innerHTML=html;
+console.log("═══ SIM ═══",st);
+simRunning=false;btn.disabled=false;btn.textContent=t("simBtn");
+}
+document.getElementById("simOv").classList.add("show");
+setTimeout(process,50);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   同意條款
-   ═══════════════════════════════════════════════════════════ */
-function checkAgreeBtn(){
-  const s = document.getElementById("termsScroll"), btn = document.getElementById("agreeBtn");
-  if (!s || !btn || btn.classList.contains("on")) return;
-  const bottom = s.scrollTop + s.clientHeight >= s.scrollHeight - 200;
-  if (bottom || s.scrollHeight <= s.clientHeight + 200) {
-    btn.classList.add("on");
-    btn.textContent = t("agreeReady");
-  }
+/* ═══ 開發者 ═══ */
+function devUnlock(){const pwd=prompt("🔒 請輸入開發者密碼：");if(pwd===null)return;if(pwd===DEV_PWD){devMode=true;document.getElementById("gbDev").style.display="block";document.getElementById("devSpecial").classList.add("show");document.getElementById("devUnlockBtn").style.display="none";document.getElementById("devSettings").classList.add("show");showToast("✅ 開發者模式已啟用","success")}else showToast("❌ 密碼錯誤","error")}
+function openDev(){document.getElementById("devPanel").classList.add("show")}
+function closeDev(){document.getElementById("devPanel").classList.remove("show")}
+function applyParams(){Object.keys(DEF_PARAMS).forEach(k=>{const el=document.getElementById(k);if(el)PARAMS[k]=Number(el.value)||DEF_PARAMS[k]});try{localStorage.setItem("qfp_params",JSON.stringify(PARAMS))}catch(e){}closeDev();showToast("✅ 參數套用成功","success")}
+function resetParams(){PARAMS=JSON.parse(JSON.stringify(DEF_PARAMS));Object.keys(PARAMS).forEach(k=>{const el=document.getElementById(k);if(el)el.value=PARAMS[k]});try{localStorage.setItem("qfp_params",JSON.stringify(PARAMS))}catch(e){}closeDev();showToast("🔄 已重設為預設值","info")}
+function loadSavedParams(){try{const s=localStorage.getItem("qfp_params");if(s){const p=JSON.parse(s);PARAMS=Object.assign({},DEF_PARAMS,p);Object.keys(PARAMS).forEach(k=>{const el=document.getElementById(k);if(el)el.value=PARAMS[k]})}}catch(e){}}
+
+/* ═══ 模式切換 ═══ */
+function setMode(m){
+currentMode=m;
+document.getElementById("tabV1").classList.toggle("on",m==="V1");
+document.getElementById("tabV2").classList.toggle("on",m==="V2");
+document.getElementById("calcBtn").classList.toggle("v2",m==="V2");
 }
+
+/* ═══ 同意 ═══ */
+function checkAgree(){const s=document.getElementById("termsScroll"),btn=document.getElementById("agreeBtn");if(!s||!btn||btn.classList.contains("on"))return;const bottom=s.scrollTop+s.clientHeight>=s.scrollHeight-200;if(bottom||s.scrollHeight<=s.clientHeight+200){btn.classList.add("on");btn.textContent=t("agreeReady")}}
 
 function handleAgree(){
-  const btn = document.getElementById("agreeBtn"), s = document.getElementById("termsScroll");
-  let bottom = false;
-  if (s) bottom = s.scrollTop + s.clientHeight >= s.scrollHeight - 200 || s.scrollHeight <= s.clientHeight + 200;
-  if (!btn.classList.contains("on") && !bottom) {
-    alert(curLang === "en-US" ? "Please scroll to bottom first." : curLang === "zh-CN" ? "请滚动到最底部才能同意。" : "請滾動到最底部才能同意。");
-    return;
-  }
-  btn.classList.add("on");
-  document.getElementById("termsPage").style.display = "none";
-  document.getElementById("app").style.display = "flex";
-  window.scrollTo(0, 0);
-  loadStats();
-  ensurePool().then(() => newRound()).catch(() => newRound());
-  loadLbMini();
+const btn=document.getElementById("agreeBtn"),s=document.getElementById("termsScroll");
+let bottom=false;
+if(s)bottom=s.scrollTop+s.clientHeight>=s.scrollHeight-200||s.scrollHeight<=s.clientHeight+200;
+if(!btn.classList.contains("on")&&!bottom){alert(curLang==="en-US"?"Scroll to bottom first.":curLang==="zh-CN"?"请滚动到最底部才能同意。":"請滾動到最底部才能同意。");return}
+btn.classList.add("on");
+document.getElementById("termsPage").style.display="none";
+document.getElementById("app").style.display="flex";
+window.scrollTo(0,0);
+loadStats();
+ensurePool().then(()=>newRound()).catch(()=>newRound());
+loadLbMini();
 }
 
-/* ═══════════════════════════════════════════════════════════
-   初始化
-   ═══════════════════════════════════════════════════════════ */
+/* ═══ 初始化 ═══ */
 function init(){
-  if (window._v2_init) return;
-  window._v2_init = true;
+if(window._v2p)return;window._v2p=true;
+try{applyTheme(localStorage.getItem("qfp_theme")||"dark")}catch(e){applyTheme("dark")}
+let savedLang="zh-HK";try{savedLang=localStorage.getItem("qfp_lang")||"zh-HK"}catch(e){}
+applyLang(savedLang);
 
-  try { applyTheme(localStorage.getItem("qfp_theme") || "dark"); } catch(e) { applyTheme("dark"); }
-  let savedLang = "zh-HK";
-  try { savedLang = localStorage.getItem("qfp_lang") || "zh-HK"; } catch(e){}
-  applyLang(savedLang);
+document.getElementById("themeSwitcher").addEventListener("click",toggleTheme);
+document.getElementById("langSelect").addEventListener("change",function(){
+try{localStorage.setItem("qfp_lang",this.value)}catch(e){}
+applyLang(this.value);
+if(gameState.current)renderMatch(gameState.current);
+updateSkips();
+});
 
-  document.getElementById("themeSwitcher").addEventListener("click", toggleTheme);
-  document.getElementById("langSelect").addEventListener("change", function(){
-    try { localStorage.setItem("qfp_lang", this.value); } catch(e){}
-    applyLang(this.value);
-    if (G.current) renderMatch(G.current);
-    updateSkips();
-  });
+const ts=document.getElementById("termsScroll");
+if(ts){ts.addEventListener("scroll",checkAgree);ts.addEventListener("touchmove",checkAgree,{passive:true});ts.addEventListener("wheel",checkAgree,{passive:true});setTimeout(checkAgree,300);setInterval(checkAgree,500)}
+document.getElementById("agreeBtn").addEventListener("click",handleAgree);
 
-  // 條款滾動
-  const ts = document.getElementById("termsScroll");
-  if (ts) {
-    ts.addEventListener("scroll", checkAgreeBtn);
-    ts.addEventListener("touchmove", checkAgreeBtn, { passive: true });
-    ts.addEventListener("wheel", checkAgreeBtn, { passive: true });
-    setTimeout(checkAgreeBtn, 300);
-    setInterval(checkAgreeBtn, 500);
-  }
-  document.getElementById("agreeBtn").addEventListener("click", handleAgree);
+["hw","dw","aw"].forEach(id=>{document.getElementById(id).addEventListener("input",function(){this.value=this.value.replace(/[^0-9]/g,"")})});
+["ho","doo","ao"].forEach(id=>{document.getElementById(id).addEventListener("input",function(){this.value=this.value.replace(/[^0-9.]/g,"")})});
 
-  // 數字輸入過濾
-  ["hw","dw","aw"].forEach(id => {
-    document.getElementById(id).addEventListener("input", function(){ this.value = this.value.replace(/[^0-9]/g, ""); });
-  });
-  ["ho","doo","ao"].forEach(id => {
-    document.getElementById(id).addEventListener("input", function(){ this.value = this.value.replace(/[^0-9.]/g, ""); });
-  });
+document.getElementById("calcBtn").addEventListener("click",doCalc);
 
-  // 主按鈕
-  document.getElementById("calcBtn").addEventListener("click", doCalc);
+document.getElementById("tabV1").addEventListener("click",()=>setMode("V1"));
+document.getElementById("tabV2").addEventListener("click",()=>setMode("V2"));
 
-  // 遊戲按鈕
-  document.getElementById("gbH").addEventListener("click", () => gameGuess("H"));
-  document.getElementById("gbD").addEventListener("click", () => gameGuess("D"));
-  document.getElementById("gbA").addEventListener("click", () => gameGuess("A"));
-  document.getElementById("gbNext").addEventListener("click", newRound);
-  document.getElementById("gbAuto").addEventListener("click", autoPredict);
-  document.getElementById("gbSkip").addEventListener("click", doSkip);
+document.getElementById("gbH").addEventListener("click",()=>gameGuess("H"));
+document.getElementById("gbD").addEventListener("click",()=>gameGuess("D"));
+document.getElementById("gbA").addEventListener("click",()=>gameGuess("A"));
+document.getElementById("gbNext").addEventListener("click",newRound);
+document.getElementById("gbAuto").addEventListener("click",autoPredict);
+document.getElementById("gbSkip").addEventListener("click",doSkip);
+document.getElementById("gbDev").addEventListener("click",devAuto);
+document.getElementById("gbSpecH").addEventListener("click",()=>devSpecial("H"));
+document.getElementById("gbSpecD").addEventListener("click",()=>devSpecial("D"));
+document.getElementById("gbSpecA").addEventListener("click",()=>devSpecial("A"));
 
-  // 排行榜
-  document.getElementById("lbShowAll").addEventListener("click", openLb);
-  document.getElementById("lbClose").addEventListener("click", () => document.getElementById("lbOv").classList.remove("on"));
-  document.getElementById("lbRefresh").addEventListener("click", openLb);
-  document.getElementById("goShare").addEventListener("click", uploadScore);
-  document.getElementById("goRestart").addEventListener("click", restart);
+document.getElementById("devUnlockBtn").addEventListener("click",devUnlock);
+document.getElementById("devSettingsBtn").addEventListener("click",openDev);
+document.getElementById("devResetGameBtn").addEventListener("click",()=>{if(!confirm("確定要重置遊戲進度嗎？"))return;restartGame();showToast("🔄 遊戲進度已重置","success")});
+document.getElementById("devCloseBtn").addEventListener("click",closeDev);
+document.getElementById("devApplyBtn").addEventListener("click",applyParams);
+document.getElementById("devResetBtn").addEventListener("click",resetParams);
 
-  // 模擬
-  document.getElementById("simBtn").addEventListener("click", () => { document.getElementById("simOv").classList.add("on"); setTimeout(runSim, 100); });
-  document.getElementById("simClose").addEventListener("click", () => document.getElementById("simOv").classList.remove("on"));
-  document.getElementById("simRerun").addEventListener("click", () => { toast(t("simRerunToast"), "success"); setTimeout(runSim, 200); });
-  document.getElementById("simReset").addEventListener("click", () => { toast(t("simReset"), "info"); });
+document.getElementById("lbShowAllBtn").addEventListener("click",openLb);
+document.getElementById("lbClose").addEventListener("click",()=>document.getElementById("lbOv").classList.remove("show"));
+document.getElementById("lbRefresh").addEventListener("click",openLb);
+document.getElementById("goShare").addEventListener("click",uploadScore);
+document.getElementById("goRestart").addEventListener("click",restartGame);
 
-  // Overlay 點擊外部關閉
-  ["simOv","lbOv"].forEach(id => {
-    document.getElementById(id).addEventListener("click", function(e){ if (e.target === this) this.classList.remove("on"); });
-  });
+document.getElementById("simBtn").addEventListener("click",()=>{document.getElementById("simOv").classList.add("show");setTimeout(runSim,100)});
+document.getElementById("simClose").addEventListener("click",()=>document.getElementById("simOv").classList.remove("show"));
+document.getElementById("simRerun").addEventListener("click",()=>{showToast(t("simApplied"),"success");setTimeout(runSim,200)});
+document.getElementById("simReset").addEventListener("click",()=>{resetParams();showToast(t("simReset"),"info")});
 
-  // 定期更新統計
-  setInterval(loadStats, 20000);
+["simOv","lbOv","gameOverOv"].forEach(id=>{document.getElementById(id).addEventListener("click",function(e){if(e.target===this)this.classList.remove("show")})});
 
-  // 預先載入資料
-  ensurePool().catch(() => {});
+setInterval(loadStats,20000);
+
+try{loadSavedParams()}catch(e){}
+ensurePool().catch(()=>{});
+setMode("V1");
+updateSkips();
 }
-if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);
 else init();
-setTimeout(init, 1000);
+setTimeout(init,1000);
 </script>
 </body>
 </html>
