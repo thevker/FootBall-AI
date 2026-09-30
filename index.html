@@ -1070,34 +1070,48 @@ function loadStatsWithRetry() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ✅ 完全對齊 Google Sheets ARRAYFORMULA
-   - 賠率統一取整為整數（與 Sheets 的 140、190、380 一致）
-   - 勝率保持小數比較（與 Sheets 一致）
-   - 三個入口（模擬／遊戲／手動）結果 100% 一致
+   ✅ 完全對應 Google Sheets 逐行公式
+   公式：=IF((A2="")+(B2="")+...),"",IF((B2>=32)*(ABS(A2-C2)<=6),"D",...))
+   對應關係：A→hw, B→dw, C→aw, D→hoI, E→dooI, F→aoI
+   賠率統一取整為整數（與 Sheets 的 140、190、380 一致）
    ═══════════════════════════════════════════════════════════ */
 function getBetReason(hw, dw, aw, hoI, dooI, aoI) {
-  // ✅ 強制取整：避免 JS 浮點誤差（1.58*100=158.00000000000003）影響邊界比較
-  // 與 Google Sheets 的整數比較 100% 對齊
+  // ✅ 強制取整：與 Google Sheets 整數比較 100% 對齊
   hoI  = Math.round(hoI);
   dooI = Math.round(dooI);
   aoI  = Math.round(aoI);
+
+  // 第 1 層：(B>=32)*(ABS(A-C)<=6) → "D"
   if (dw >= PARAMS.p1_cbmin && Math.abs(hw - aw) <= PARAMS.p1_cgap) return { layer: 1, bet: "D" };
+  // 第 2 層：(A>=60)*(C<=11)*(D>=140)*(D<=190)*(F>=400)*(F<=480) → "H"
   if (hw >= PARAMS.p2_hmin && aw <= PARAMS.p2_cmax && hoI >= PARAMS.p2_dmin && hoI <= PARAMS.p2_dmax && aoI >= PARAMS.p2_fmin && aoI <= PARAMS.p2_fmax) return { layer: 2, bet: "H" };
+  // 第 3 層：(ABS(A-C)<=3)*(E<380)*(ABS(D-F)<40) → "D"
   if (Math.abs(hw - aw) <= PARAMS.p3_wgap && dooI < PARAMS.p3_emax && Math.abs(hoI - aoI) < PARAMS.p3_ogap) return { layer: 3, bet: "D" };
+  // 第 4 層：(A>=45)*(C<=20)*(ABS(D-F)<70)*(D<400) → "D"
   if (hw >= PARAMS.p4_hmin && aw <= PARAMS.p4_cmax && Math.abs(hoI - aoI) < PARAMS.p4_ogap && hoI < PARAMS.p4_dmax) return { layer: 4, bet: "D" };
+  // 第 5 層：ABS(D-F)<18 → "D"
   if (Math.abs(hoI - aoI) < PARAMS.p5_ogap) return { layer: 5, bet: "D" };
+  // 第 6 層：(A>=42)*(D>=155)*(D<205)*(D<>F)*(F>D)*(ABS(A-C)>=50) → "D"
   if (hw >= PARAMS.p6_hmin && hoI >= PARAMS.p6_dmin && hoI < PARAMS.p6_dmax && hoI !== aoI && aoI > hoI && Math.abs(hw - aw) >= PARAMS.p6_wgap) return { layer: 6, bet: "D" };
+  // 第 7 層：(A>=42)*(D>=155)*(D<205)*(D<>F) → "H"
   if (hw >= PARAMS.p7_hmin && hoI >= PARAMS.p7_dmin && hoI < PARAMS.p7_dmax && hoI !== aoI) return { layer: 7, bet: "H" };
+  // 第 8 層：(A>=36)*(D>205)*(D<=235)*(D<>F) → "D"
   if (hw >= PARAMS.p8_hmin && hoI > PARAMS.p8_dmin && hoI <= PARAMS.p8_dmax && hoI !== aoI) return { layer: 8, bet: "D" };
+  // 第 9 層：(D>=340)*(A>=40)*(F<250)*(D>F) → 內層
   if (hoI >= PARAMS.p9_dmin && hw >= PARAMS.p9_hmin && aoI < PARAMS.p9_fmax && hoI > aoI) {
     if (dw >= PARAMS.p9_bmin && aoI < PARAMS.p9_fverylow) return { layer: 9, bet: "D" };
     if (aoI < PARAMS.p9_low) return { layer: 9, bet: "A" };
     return { layer: 9, bet: "D" };
   }
+  // 第 10 層：(C>A)*(F>=500)*(F<=550)*(D<200) → "D"
   if (aw > hw && aoI >= PARAMS.p10a_fmin && aoI <= PARAMS.p10a_fmax && hoI < PARAMS.p10a_dmax) return { layer: 10, bet: "D" };
+  // 第 11 層：(C>A)*(F>D)*(F<550)*(E>300) → "H"
   if (aw > hw && aoI > hoI && aoI < PARAMS.p10_fmax && dooI > PARAMS.p10_emin) return { layer: 11, bet: "H" };
+  // 第 12 層：(C>A)*(F>=185)*(F<=215) → "A"
   if (aw > hw && aoI >= PARAMS.p11_fmin && aoI <= PARAMS.p11_fmax) return { layer: 12, bet: "A" };
+  // 第 13 層：(C>A)*(F>D)*(F<300)*(C<45)*(D<250) → "D"
   if (aw > hw && aoI > hoI && aoI < PARAMS.p12_fmax && aw < PARAMS.p12_cmax && hoI < PARAMS.p12_dmax) return { layer: 13, bet: "D" };
+  // 第 14 層：兜底
   if (hoI > aoI) {
     if (hoI > PARAMS.pd_skip) {
       if (aw >= PARAMS.pd_cAmin) return { layer: 14, bet: "A" };
@@ -1383,7 +1397,6 @@ function calculate() {
   let ho = Number(hoVal), doo = Number(dooVal), ao = Number(aoVal);
   if (isNaN(hw) || isNaN(dw) || isNaN(aw) || isNaN(ho) || isNaN(doo) || isNaN(ao)) { showResult(t.errIncomplete, "result-error", 0, "skip", null, false, "incomplete"); return; }
   if (hw + dw + aw > 100) { showResult(t.errOver100, "result-error", 0, "skip", null, false, "over100"); return; }
-  // ✅ 復原：Math.round 取整，與 Sheets 整數比較一致
   var hoI = Math.round(ho * 100); var dooI = Math.round(doo * 100); var aoI = Math.round(ao * 100);
   var r = getBetReason(hw, dw, aw, hoI, dooI, aoI);
   var bet = r.bet; var layer = r.layer;
@@ -1501,7 +1514,7 @@ function normalizeResult(v) {
   if (s === "A" || s === "0" || s === "客" || s === "客勝" || s === "客胜" || s === "AWAY" || s === "L" || s === "LOSE") return "A";
   return null;
 }
-/* ✅ 復原：賠率統一轉整數（Math.round），與 Sheets 的整數比較一致 */
+/* ✅ 賠率統一轉整數（Math.round），與 Sheets 的整數比較一致 */
 function toOddsInt(v) {
   if (v === null || v === undefined) return null;
   if (v < 100) return Math.round(v * 100);
