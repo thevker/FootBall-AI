@@ -171,6 +171,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .gbtn.skip{background:rgba(156,163,175,.15);color:#9ca3af;border:1px solid rgba(156,163,175,.5)}
 .gbtn:disabled{opacity:.4;cursor:not-allowed}
 .gbtn.dev{width:100%;padding:10px;border-radius:7px;font-size:13px;font-weight:900;cursor:pointer;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border:2px solid #4ade80;margin-bottom:6px;display:none}
+.gbtn.devV2{background:linear-gradient(135deg,#10b981,#059669);border:2px solid #34d399;color:#fff}
 .dev-special{display:none;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
 .dev-special.show{display:grid}
 .dev-special button{padding:10px 4px;border-radius:7px;font-size:13px;font-weight:900;cursor:pointer}
@@ -195,6 +196,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .dev-panel-t{font-size:13px;font-weight:900;color:#22c55e;text-align:center;margin-bottom:10px}
 .dev-layer{background:var(--panel);border:1px solid var(--bd);border-radius:7px;padding:8px;margin-bottom:8px}
 .dev-layer-t{font-size:11px;font-weight:bold;color:#22c55e;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--bd)}
+.dev-layer-t.v2{color:#10b981}
 .dev-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .dev-item{display:flex;flex-direction:column}
 .dev-item label{font-size:9px;color:var(--tx3);margin-bottom:2px;font-weight:bold}
@@ -210,18 +212,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .sim-head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--bd)}
 .sim-title{font-size:16px;font-weight:900}
 .sim-close{background:transparent;border:none;font-size:18px;color:var(--tx4);cursor:pointer;padding:4px 8px}
+.sim-mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 20px 0;background:var(--panel)}
+.sim-mode-tab{padding:9px;border-radius:8px;font-size:12px;font-weight:900;cursor:pointer;border:1px solid var(--bd);background:transparent;color:var(--tx3);transition:all .2s}
+.sim-mode-tab.on{background:linear-gradient(135deg,#007aff,#0051d5);color:#fff;border-color:transparent}
+.sim-mode-tab.on.v2{background:linear-gradient(135deg,#10b981,#059669)}
+.sim-mode-hint{font-size:10px;color:var(--tx4);text-align:center;padding:6px 20px 8px;background:var(--panel);line-height:1.4}
 .sim-prog{padding:10px 18px 6px}
 .sim-bar{height:8px;border-radius:4px;background:rgba(128,128,128,.15);overflow:hidden}
 .sim-fill{height:100%;width:0;background:linear-gradient(90deg,#22c55e,#16a34a);transition:width .15s}
 .sim-pt{font-size:11px;color:var(--tx3);margin-top:5px;text-align:center;font-family:monospace}
-.sim-term{background:#050505;color:#0f8;font-family:'Courier New',monospace;font-size:11px;line-height:1.5;padding:10px 12px;margin:8px 14px;border-radius:8px;height:260px;overflow-y:auto;border:1px solid rgba(0,255,136,.25);white-space:pre}
+.sim-term{background:#050505;color:#0f8;font-family:'Courier New',monospace;font-size:11px;line-height:1.5;padding:10px 12px;margin:8px 14px;border-radius:8px;height:240px;overflow-y:auto;border:1px solid rgba(0,255,136,.25);white-space:pre}
 .sim-term::-webkit-scrollbar{width:6px}
 .sim-term::-webkit-scrollbar-thumb{background:#1a3d2a;border-radius:3px}
 .sim-term .hit{color:#4ade80}
 .sim-term .miss{color:#f87171}
 .sim-term .skip{color:#94a3b8}
 .sim-term .head{color:#60a5fa;font-weight:bold}
-.sim-sum{padding:4px 18px 12px;overflow-y:auto;max-height:200px}
+.sim-sum{padding:4px 18px 12px;overflow-y:auto;max-height:220px}
+.sim-sum::-webkit-scrollbar{width:5px}
 .sim-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
 .sim-stat{background:var(--stat);border-radius:8px;padding:8px 6px;text-align:center}
 .sim-stat .l{font-size:10px;color:var(--tx3);margin-bottom:2px}
@@ -277,6 +285,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <div class="ov" id="simOv">
 <div class="sim-box">
 <div class="sim-head"><div class="sim-title">🧪 模擬測試</div><button class="sim-close" id="simClose">✖</button></div>
+<div class="sim-mode-tabs">
+<button class="sim-mode-tab on" id="simTabV1">📐 V1 經典引擎</button>
+<button class="sim-mode-tab v2" id="simTabV2">🏦 V2 多莊家引擎</button>
+</div>
+<div class="sim-mode-hint" id="simModeHint">📐 V1 經典 15 層公式（命中率不限）</div>
 <div class="sim-prog"><div class="sim-bar"><div class="sim-fill" id="simFill"></div></div><div class="sim-pt" id="simPT">準備中…</div></div>
 <div class="sim-term" id="simTerm"></div>
 <div class="sim-sum" id="simSum"></div>
@@ -295,7 +308,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <p><strong>V1 經典模式（15 層公式）</strong></p>
 <ul><li>逐層硬編碼判定，對應 Google Sheets 公式。</li><li>共 15 層精細化判定（含主賠極高、客賠價值等）。</li></ul>
 <p><strong>V2 多莊家價值引擎</strong></p>
-<ul><li>把「市場賠率」當作莊家 A、把「量化模型」當作莊家 B。</li><li>計算莊家抽水 Vig = (1/主賠 + 1/和賠 + 1/客賠) − 1。</li><li>去除抽水後得出市場公平概率。</li><li><strong>價值差 = 模型概率 − 市場公平概率</strong>（正數 = 模型認為被低估）。</li><li><strong>EV = 模型概率 × 賠率 − 1</strong>（長期正回報指標）。</li><li>只有 EV > 3% 且 價值差 > 2% 才會出手。</li><li>凱利公式計算建議注碼，¼ Kelly 折扣 + 上限 5% 資金。</li></ul>
+<ul><li>把「市場賠率」當作莊家 A、把「量化模型」當作莊家 B。</li><li>計算莊家抽水 Vig = (1/主賠 + 1/和賠 + 1/客賠) − 1。</li><li>去除抽水後得出市場公平概率。</li><li><strong>價值差 = 模型概率 − 市場公平概率</strong>（正數 = 模型認為被低估）。</li><li><strong>EV = 模型概率 × 賠率 − 1</strong>（長期正回報指標）。</li><li>只有 EV > 3% 且 價值差 > 2% 才會出手。</li><li>凱利公式計算建議注碼，¼ Kelly 折扣 + 上限 5% 資金。</li><li>信心評級 ⭐～⭐⭐⭐⭐⭐，**模擬測試只採用 4-5 星**。</li></ul>
 <h3>📈 系統核心優勢</h3>
 <ul><li>絕對紀律：所有公式均已設定好，觸發條件自動給出訊號。</li><li>攻守兼備：兼具捕捉冷門的進攻邏輯與極端賠率跳過的防守邏輯。</li><li>持續進化：ver 2.0 Pro 版本，雙引擎融合。</li></ul>
 <h3>⚠️ 給客人的誠信風險聲明</h3>
@@ -396,7 +409,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <button class="gbtn auto" id="gbAuto">🤖 預測</button>
 <button class="gbtn skip" id="gbSkip">⏭️ 跳過</button>
 </div>
-<button class="gbtn dev" id="gbDev">⚡ 開發者連按模式 DEV</button>
+<button class="gbtn dev" id="gbDev">⚡ 連按模式 V1 DEV</button>
+<button class="gbtn dev devV2" id="gbDevV2">⚡ 連按模式 V2 DEV</button>
 <div class="dev-special" id="devSpecial">
 <button class="H" id="gbSpecH">🎯 主專用</button>
 <button class="D" id="gbSpecD">🎯 和專用</button>
@@ -405,14 +419,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <div class="skip-help">💡 每場從資料庫真實數據隨機抽樣，預設 2 次跳過機會，每玩 10 場 +1 次</div>
 <div id="gameResult" class="game-msg"></div>
 <div class="dev-unlock"><button id="devUnlockBtn">🔒 開發者模式</button></div>
-<div class="sim-row"><button class="sim-btn" id="simBtn">🧪 模擬測試（即時運算）</button></div>
+<div class="sim-row"><button class="sim-btn" id="simBtn">🧪 模擬測試（V1/V2 可選）</button></div>
 <div class="dev-settings" id="devSettings">
-<button class="s1" id="devSettingsBtn">⚙️ 系統設定</button>
+<button class="s1" id="devSettingsBtn">⚙️ V1 系統設定</button>
 <button class="s2" id="devResetGameBtn">🔄 重置遊戲</button>
 </div>
 
 <div class="dev-panel" id="devPanel">
-<div class="dev-panel-t">⚙️ V1 系統公式參數調整</div>
+<div class="dev-panel-t">⚙️ 系統參數調整</div>
+<div class="dev-layer"><div class="dev-layer-t v2">🏦 V2 引擎參數</div><div class="dev-grid"><div class="dev-item"><label>minEV</label><input type="text" id="v2_minEV" value="0.03"></div><div class="dev-item"><label>minValue</label><input type="text" id="v2_minValue" value="0.02"></div><div class="dev-item"><label>kellyFactor</label><input type="text" id="v2_kellyFactor" value="0.25"></div><div class="dev-item"><label>maxStake</label><input type="text" id="v2_maxStake" value="5"></div><div class="dev-item"><label>minOdds</label><input type="text" id="v2_minOdds" value="1.15"></div><div class="dev-item"><label>maxOdds</label><input type="text" id="v2_maxOdds" value="20"></div><div class="dev-item"><label>simMinConfidence</label><input type="text" id="v2_simMinConf" value="4"></div></div></div>
 <div class="dev-layer"><div class="dev-layer-t">L1</div><div class="dev-grid"><div class="dev-item"><label>B min</label><input type="text" id="p1_cbmin" value="32"></div><div class="dev-item"><label>cgap</label><input type="text" id="p1_cgap" value="6"></div></div></div>
 <div class="dev-layer"><div class="dev-layer-t">L2</div><div class="dev-grid"><div class="dev-item"><label>hmin</label><input type="text" id="p2_hmin" value="60"></div><div class="dev-item"><label>cmax</label><input type="text" id="p2_cmax" value="11"></div><div class="dev-item"><label>dmin</label><input type="text" id="p2_dmin" value="140"></div><div class="dev-item"><label>dmax</label><input type="text" id="p2_dmax" value="190"></div><div class="dev-item"><label>fmin</label><input type="text" id="p2_fmin" value="400"></div><div class="dev-item"><label>fmax</label><input type="text" id="p2_fmax" value="480"></div></div></div>
 <div class="dev-layer"><div class="dev-layer-t">L3</div><div class="dev-grid"><div class="dev-item"><label>wgap</label><input type="text" id="p3_wgap" value="3"></div><div class="dev-item"><label>emax</label><input type="text" id="p3_emax" value="380"></div><div class="dev-item"><label>ogap</label><input type="text" id="p3_ogap" value="40"></div></div></div>
@@ -420,14 +435,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <div class="dev-layer"><div class="dev-layer-t">L5</div><div class="dev-grid"><div class="dev-item"><label>ogap</label><input type="text" id="p5_ogap" value="18"></div></div></div>
 <div class="dev-layer"><div class="dev-layer-t">L6</div><div class="dev-grid"><div class="dev-item"><label>hmin</label><input type="text" id="p6_hmin" value="42"></div><div class="dev-item"><label>dmin</label><input type="text" id="p6_dmin" value="155"></div><div class="dev-item"><label>dmax</label><input type="text" id="p6_dmax" value="205"></div><div class="dev-item"><label>wgap</label><input type="text" id="p6_wgap" value="50"></div></div></div>
 <div class="dev-layer"><div class="dev-layer-t">L7</div><div class="dev-grid"><div class="dev-item"><label>hmin</label><input type="text" id="p7_hmin" value="42"></div><div class="dev-item"><label>dmin</label><input type="text" id="p7_dmin" value="155"></div><div class="dev-item"><label>dmax</label><input type="text" id="p7_dmax" value="205"></div></div></div>
-<div class="dev-layer"><div class="dev-layer-t">L8 (A≥34)</div><div class="dev-grid"><div class="dev-item"><label>hmin</label><input type="text" id="p8_hmin" value="34"></div><div class="dev-item"><label>dmin</label><input type="text" id="p8_dmin" value="205"></div><div class="dev-item"><label>dmax</label><input type="text" id="p8_dmax" value="235"></div></div></div>
-<div class="dev-layer"><div class="dev-layer-t">L9 (D≥400)</div><div class="dev-grid"><div class="dev-item"><label>dmin</label><input type="text" id="p9b_dmin" value="400"></div><div class="dev-item"><label>hmin</label><input type="text" id="p9b_hmin" value="42"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">L8</div><div class="dev-grid"><div class="dev-item"><label>hmin</label><input type="text" id="p8_hmin" value="34"></div><div class="dev-item"><label>dmin</label><input type="text" id="p8_dmin" value="205"></div><div class="dev-item"><label>dmax</label><input type="text" id="p8_dmax" value="235"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">L9</div><div class="dev-grid"><div class="dev-item"><label>dmin</label><input type="text" id="p9b_dmin" value="400"></div><div class="dev-item"><label>hmin</label><input type="text" id="p9b_hmin" value="42"></div></div></div>
 <div class="dev-layer"><div class="dev-layer-t">L10</div><div class="dev-grid"><div class="dev-item"><label>dmin</label><input type="text" id="p9_dmin" value="340"></div><div class="dev-item"><label>hmin</label><input type="text" id="p9_hmin" value="40"></div><div class="dev-item"><label>fmax</label><input type="text" id="p9_fmax" value="250"></div><div class="dev-item"><label>low</label><input type="text" id="p9_low" value="200"></div><div class="dev-item"><label>bmin</label><input type="text" id="p9_bmin" value="28"></div><div class="dev-item"><label>fverylow</label><input type="text" id="p9_fverylow" value="150"></div></div></div>
-<div class="dev-layer"><div class="dev-layer-t">L11 (490~560)</div><div class="dev-grid"><div class="dev-item"><label>fmin</label><input type="text" id="p10a_fmin" value="490"></div><div class="dev-item"><label>fmax</label><input type="text" id="p10a_fmax" value="560"></div><div class="dev-item"><label>dmax</label><input type="text" id="p10a_dmax" value="200"></div></div></div>
-<div class="dev-layer"><div class="dev-layer-t">L12 (E>320)</div><div class="dev-grid"><div class="dev-item"><label>fmax</label><input type="text" id="p10_fmax" value="550"></div><div class="dev-item"><label>emin</label><input type="text" id="p10_emin" value="320"></div></div></div>
-<div class="dev-layer"><div class="dev-layer-t">L13 (184~216)</div><div class="dev-grid"><div class="dev-item"><label>fmin</label><input type="text" id="p11_fmin" value="184"></div><div class="dev-item"><label>fmax</label><input type="text" id="p11_fmax" value="216"></div><div class="dev-item"><label>cmin</label><input type="text" id="p11_cmin" value="40"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">L11</div><div class="dev-grid"><div class="dev-item"><label>fmin</label><input type="text" id="p10a_fmin" value="490"></div><div class="dev-item"><label>fmax</label><input type="text" id="p10a_fmax" value="560"></div><div class="dev-item"><label>dmax</label><input type="text" id="p10a_dmax" value="200"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">L12</div><div class="dev-grid"><div class="dev-item"><label>fmax</label><input type="text" id="p10_fmax" value="550"></div><div class="dev-item"><label>emin</label><input type="text" id="p10_emin" value="320"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">L13</div><div class="dev-grid"><div class="dev-item"><label>fmin</label><input type="text" id="p11_fmin" value="184"></div><div class="dev-item"><label>fmax</label><input type="text" id="p11_fmax" value="216"></div><div class="dev-item"><label>cmin</label><input type="text" id="p11_cmin" value="40"></div></div></div>
 <div class="dev-layer"><div class="dev-layer-t">L14</div><div class="dev-grid"><div class="dev-item"><label>cmax</label><input type="text" id="p12_cmax" value="45"></div><div class="dev-item"><label>fmax</label><input type="text" id="p12_fmax" value="300"></div><div class="dev-item"><label>dmax</label><input type="text" id="p12_dmax" value="250"></div></div></div>
-<div class="dev-layer"><div class="dev-layer-t">L15 兜底</div><div class="dev-grid"><div class="dev-item"><label>pd_skip</label><input type="text" id="pd_skip" value="1500"></div><div class="dev-item"><label>pd_cAmin</label><input type="text" id="pd_cAmin" value="50"></div><div class="dev-item"><label>pb_hmin</label><input type="text" id="pb_hmin" value="33"></div><div class="dev-item"><label>pb_dmin</label><input type="text" id="pb_dmin" value="350"></div><div class="dev-item"><label>pb_fskip</label><input type="text" id="pb_fskip" value="700"></div><div class="dev-item"><label>pb_hAmin</label><input type="text" id="pb_hAmin" value="50"></div><div class="dev-item"><label>pb_honly</label><input type="text" id="pb_honly" value="47"></div><div class="dev-item"><label>pb_donly</label><input type="text" id="pb_donly" value="140"></div><div class="dev-item"><label>p15_fl150</label><input type="text" id="p15_fl150" value="150"></div><div class="dev-item"><label>p15_c65</label><input type="text" id="p15_c65" value="65"></div><div class="dev-item"><label>p15_e470</label><input type="text" id="p15_e470" value="470"></div><div class="dev-item"><label>p15_f500</label><input type="text" id="p15_f500" value="500"></div></div></div>
+<div class="dev-layer"><div class="dev-layer-t">L15</div><div class="dev-grid"><div class="dev-item"><label>pd_skip</label><input type="text" id="pd_skip" value="1500"></div><div class="dev-item"><label>pd_cAmin</label><input type="text" id="pd_cAmin" value="50"></div><div class="dev-item"><label>pb_hmin</label><input type="text" id="pb_hmin" value="33"></div><div class="dev-item"><label>pb_dmin</label><input type="text" id="pb_dmin" value="350"></div><div class="dev-item"><label>pb_fskip</label><input type="text" id="pb_fskip" value="700"></div><div class="dev-item"><label>pb_hAmin</label><input type="text" id="pb_hAmin" value="50"></div><div class="dev-item"><label>pb_honly</label><input type="text" id="pb_honly" value="47"></div><div class="dev-item"><label>pb_donly</label><input type="text" id="pb_donly" value="140"></div><div class="dev-item"><label>fl150</label><input type="text" id="p15_fl150" value="150"></div><div class="dev-item"><label>c65</label><input type="text" id="p15_c65" value="65"></div><div class="dev-item"><label>e470</label><input type="text" id="p15_e470" value="470"></div><div class="dev-item"><label>f500</label><input type="text" id="p15_f500" value="500"></div></div></div>
 <div class="dev-btns"><button class="r" id="devResetBtn">🔄 重設預設</button><button class="a" id="devApplyBtn">✅ 套用參數</button></div>
 <button class="dev-close" id="devCloseBtn">✖️ 收起面板</button>
 </div>
@@ -456,11 +471,14 @@ function t(k){var l=TR[curLang]||TR["zh-HK"];return l[k]||TR["zh-HK"][k]||k}
 
 var DEF_PARAMS={p1_cbmin:32,p1_cgap:6,p2_hmin:60,p2_cmax:11,p2_dmin:140,p2_dmax:190,p2_fmin:400,p2_fmax:480,p3_wgap:3,p3_emax:380,p3_ogap:40,p4_hmin:45,p4_cmax:20,p4_ogap:70,p4_dmax:400,p5_ogap:18,p6_hmin:42,p6_dmin:155,p6_dmax:205,p6_wgap:50,p7_hmin:42,p7_dmin:155,p7_dmax:205,p8_hmin:34,p8_dmin:205,p8_dmax:235,p9b_dmin:400,p9b_hmin:42,p9_dmin:340,p9_hmin:40,p9_fmax:250,p9_low:200,p9_bmin:28,p9_fverylow:150,p10a_fmin:490,p10a_fmax:560,p10a_dmax:200,p10_fmax:550,p10_emin:320,p11_fmin:184,p11_fmax:216,p11_cmin:40,p12_cmax:45,p12_fmax:300,p12_dmax:250,pd_skip:1500,pd_cAmin:50,p15_fl150:150,p15_c65:65,p15_e470:470,p15_f500:500,pb_hmin:33,pb_dmin:350,pb_fskip:700,pb_hAmin:50,pb_honly:47,pb_donly:140};
 var PARAMS=JSON.parse(JSON.stringify(DEF_PARAMS));
-var V2_CFG={minEV:0.03,minValue:0.02,kellyFactor:0.25,maxStake:5,minOdds:1.15,maxOdds:20};
+
+var DEF_V2={minEV:0.03,minValue:0.02,kellyFactor:0.25,maxStake:5,minOdds:1.15,maxOdds:20,simMinConf:4};
+var V2_CFG=JSON.parse(JSON.stringify(DEF_V2));
+
 var MAX_PLAYS=50,DEV_PWD="football";
 var LEADERBOARD_API="https://script.google.com/macros/s/AKfycbxwY95XQNs8vOTVdzvWJMoYPffto3PiSvt6S2xwRItsy-TcYsD89sF_W_1GnqJwXY4G/exec";
 var SHEET_ID="1zIJSl7Qt3eVkd3qXStZItuFvtcatEnLdfScy95se0WM",SHEET_NAME="工作表1";
-var devMode=false,currentMode="V1",matchPool=null,poolPromise=null,simRunning=false;
+var devMode=false,currentMode="V1",simMode="V1",matchPool=null,poolPromise=null,simRunning=false;
 var gameState={current:null,played:0,hits:0,waiting:false,lastGuess:null,totalPnl:0,skipsUsed:0,combo:0};
 
 function showToast(msg,type){try{var c=document.getElementById("toasts");var el=document.createElement("div");el.className="toast "+(type==="success"?"ok":type==="error"?"er":"inf");el.textContent=msg;c.appendChild(el);setTimeout(function(){el.style.animation="tOut .3s forwards";setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el)},300)},2200)}catch(e){}}
@@ -548,16 +566,24 @@ else reason="莊家A（市場）低估客勝，模型B認為客勝概率高於�
 return{recommended:winner.key,confidence:conf,ev:winner.ev,value:winner.value,kelly:winner.kelly*100,stake:stake,options:opts,vig:vig,reason:reason};
 }
 
+/* mode: "V1" | "V2"。V2 模式下若 confidence < V2_CFG.simMinConf，視為 SKIP */
 function analyze(hw,dw,aw,ho,doo,ao,mode){
-if(mode==="V2")return getV2Reason(hw,dw,aw,ho,doo,ao);
-var hoI=Math.round(ho*100),dooI=Math.round(doo*100),aoI=Math.round(ao*100);
-var r=getV1Reason(hw,dw,aw,hoI,dooI,aoI);
-var evMap={H:(hw/100)*ho-1,D:(dw/100)*doo-1,A:(aw/100)*ao-1};
-var ev=r.bet==="skip"?null:evMap[r.bet];
-var rec=r.bet==="skip"?"SKIP":r.bet;
-var conf=r.bet==="skip"?0:3;
-r.ev=ev;r.recommended=rec;r.confidence=conf;
+if(mode==="V2"){
+var r=getV2Reason(hw,dw,aw,ho,doo,ao);
+if(r.error)return r;
+if(r.confidence<V2_CFG.simMinConf){
+return{recommended:"SKIP",confidence:r.confidence,ev:r.ev,value:r.value,kelly:0,stake:0,options:r.options,vig:r.vig,reason:"信心不足 "+(r.confidence||0)+" 星（< "+V2_CFG.simMinConf+" 星），跳過。"};
+}
 return r;
+}
+var hoI=Math.round(ho*100),dooI=Math.round(doo*100),aoI=Math.round(ao*100);
+var r1=getV1Reason(hw,dw,aw,hoI,dooI,aoI);
+var evMap={H:(hw/100)*ho-1,D:(dw/100)*doo-1,A:(aw/100)*ao-1};
+var ev=r1.bet==="skip"?null:evMap[r1.bet];
+var rec=r1.bet==="skip"?"SKIP":r1.bet;
+var conf=r1.bet==="skip"?0:3;
+r1.ev=ev;r1.recommended=rec;r1.confidence=conf;
+return r1;
 }
 
 function fetchCell(range){
@@ -798,11 +824,14 @@ document.getElementById("gameOverOv").classList.remove("show");
 newRound();
 }
 function gameGuess(bet){if(gameState.played>=MAX_PLAYS)return showGameOver();if(!gameState.waiting||!gameState.current)return;doGuess(bet,false)}
-function devAuto(){
+
+/* 開發者連按：可指定 mode */
+function devAuto(mode){
+var useMode=mode||currentMode;
 if(!devMode||gameState.played>=MAX_PLAYS)return;
-if(!matchPool||matchPool.length===0){ensurePool().then(devAuto).catch(function(){});return}
+if(!matchPool||matchPool.length===0){ensurePool().then(function(){devAuto(useMode)}).catch(function(){});return}
 var m=genMatch();if(!m)return;
-var r=analyze(m.hw,m.dw,m.aw,m.ho,m.doo,m.ao,currentMode);
+var r=analyze(m.hw,m.dw,m.aw,m.ho,m.doo,m.ao,useMode);
 var bet=r.bet||r.recommended;
 if(!bet||bet==="skip"||bet==="SKIP"){gameState.current=genMatch();gameState.waiting=true;if(gameState.current)renderMatch(gameState.current);return}
 gameState.current=m;renderMatch(m);doGuess(bet,true);
@@ -919,6 +948,17 @@ fetch(LEADERBOARD_API,{method:"POST",mode:"no-cors",headers:{"Content-Type":"app
 .then(function(){showToast("✅ 已上傳","success");btn.textContent="✅ 已上傳";setTimeout(loadLbMini,1500)})
 .catch(function(){showToast("❌ 上傳失敗","error");btn.disabled=false;btn.textContent="📤 上傳排行榜"});
 }
+
+/* ═══ 模擬測試（支援 V1/V2 引擎切換） ═══ */
+function setSimMode(m){
+simMode=m;
+document.getElementById("simTabV1").classList.toggle("on",m==="V1");
+document.getElementById("simTabV2").classList.toggle("on",m==="V2");
+document.getElementById("simTabV2").classList.toggle("v2",true);
+var hint=document.getElementById("simModeHint");
+if(m==="V1")hint.textContent="📐 V1 經典 15 層公式（命中率不限）";
+else hint.textContent="🏦 V2 多莊家引擎（只採用 ⭐⭐⭐⭐ 及 ⭐⭐⭐⭐⭐ 信心）";
+}
 function runSim(){
 if(simRunning)return;
 if(!matchPool||matchPool.length===0){showToast("⚠️ 數據尚未載入","error");ensurePool().then(runSim).catch(function(){});return}
@@ -932,7 +972,8 @@ for(var L=1;L<=15;L++)st.layerCount[L]=0;
 var idx=0;
 var batch=Math.max(1,Math.ceil(total/120));
 var head=document.createElement("div");head.className="head";
-head.textContent="════════ 模擬開始 ════════\n總樣本："+total+" ｜ 批次："+batch+" 場/幀 ｜ "+new Date().toLocaleString()+"\n───────────────────────────────────\n";
+var modeLabel=simMode==="V1"?"V1 經典":"V2 多莊家（只採 4-5 星）";
+head.textContent="════════ 模擬開始（"+modeLabel+"）════════\n總樣本："+total+" ｜ 批次："+batch+" 場/幀 ｜ "+new Date().toLocaleString()+"\n───────────────────────────────────\n";
 term.appendChild(head);
 function padL(s,n){s=String(s);while(s.length<n)s=" "+s;return s}
 function padR(s,n){s=String(s);while(s.length<n)s=s+" ";return s}
@@ -942,7 +983,7 @@ if(idx>=total)return finish();
 var lines="",end=Math.min(idx+batch,total);
 for(;idx<end;idx++){
 var m=matchPool[idx];st.total++;
-var r=analyze(m.hw,m.dw,m.aw,m.ho,m.doo,m.ao,currentMode);
+var r=analyze(m.hw,m.dw,m.aw,m.ho,m.doo,m.ao,simMode);
 var bet=r.bet||r.recommended||"SKIP";
 if(r.error)bet="SKIP";
 if(r.layer)st.layerCount[r.layer]=(st.layerCount[r.layer]||0)+1;
@@ -955,7 +996,8 @@ if(bet===m.result){if(bet==="H")st.hitH++;else if(bet==="D")st.hitD++;else st.hi
 else{pnl=-100;cls="miss";mark="✗"}
 st.pnl+=pnl;
 }
-var line="["+padL(idx+1,String(total).length)+"/"+total+"] L"+padL(r.layer||r.confidence||0,2)+" → "+padR(bet,4)+" │ 實際 "+padR(m.result,2)+" │ "+mark+" "+padL(pS(pnl),5)+" │ 累計 "+padL(pS(st.pnl),7)+"\n";
+var tag=simMode==="V1"?("L"+padL(r.layer||0,2)):("⭐"+padL(r.confidence||0,1));
+var line="["+padL(idx+1,String(total).length)+"/"+total+"] "+tag+" → "+padR(bet,4)+" │ 實際 "+padR(m.result,2)+" │ "+mark+" "+padL(pS(pnl),5)+" │ 累計 "+padL(pS(st.pnl),7)+"\n";
 lines+='<span class="'+cls+'">'+esc(line)+"</span>";
 }
 var div=document.createElement("div");div.innerHTML=lines;term.appendChild(div);term.scrollTop=term.scrollHeight;
@@ -993,30 +1035,51 @@ html+='<tr><td>🟢 主勝 (H)</td><td class="num">'+st.betH+'</td><td class="nu
 html+='<tr><td>🟡 和局 (D)</td><td class="num">'+st.betD+'</td><td class="num">'+st.hitD+'</td><td class="num">'+hr(st.hitD,st.betD)+'</td></tr>';
 html+='<tr><td>🔵 客勝 (A)</td><td class="num">'+st.betA+'</td><td class="num">'+st.hitA+'</td><td class="num">'+hr(st.hitA,st.betA)+'</td></tr>';
 html+='<tr><td>⚪ 跳過</td><td class="num">'+st.skip+'</td><td class="num">—</td><td class="num">—</td></tr></table>';
-if(currentMode==="V1"){
+if(simMode==="V1"){
 html+='<div class="sim-sect">🎯 各層觸發場次</div>';
 html+='<table class="sim-tbl"><tr><th>Layer</th><th class="num">Count</th><th class="num">%</th></tr>';
 for(var L=1;L<=15;L++){var cnt=st.layerCount[L]||0,p=st.total>0?(cnt/st.total*100).toFixed(1):"0.0";html+='<tr><td>L'+L+'</td><td class="num">'+cnt+'</td><td class="num">'+p+'%</td></tr>'}
 html+='</table>';
 }else{
-html+='<div class="sim-sect">🎯 信心等級分佈</div>';
+html+='<div class="sim-sect">🎯 信心等級分佈（只採 4-5 星為出手）</div>';
 html+='<table class="sim-tbl"><tr><th>Level</th><th class="num">Count</th><th class="num">%</th></tr>';
 for(var c=5;c>=1;c--){var cnt2=st.conf[c]||0,p2=st.total>0?(cnt2/st.total*100).toFixed(1):"0.0";html+='<tr><td>'+"⭐".repeat(c)+'</td><td class="num">'+cnt2+'</td><td class="num">'+p2+'%</td></tr>'}
 html+='</table>';
 }
-html+='<div class="sim-note">※ 使用原始數據，每注固定 $100<br>※ 完成時間：'+new Date().toLocaleString()+'</div>';
+html+='<div class="sim-note">※ 模式：'+modeLabel+' ｜ 使用原始數據，每注固定 $100<br>※ 完成時間：'+new Date().toLocaleString()+'</div>';
+var modeLabel=simMode==="V1"?"V1 經典":"V2 多莊家（只採 4-5 星）";
 sum.innerHTML=html;
-simRunning=false;btn.disabled=false;btn.textContent="🧪 模擬測試（即時運算）";
+simRunning=false;btn.disabled=false;btn.textContent="🧪 模擬測試（V1/V2 可選）";
 }
 document.getElementById("simOv").classList.add("show");
 setTimeout(process,50);
 }
-function devUnlock(){var pwd=prompt("🔒 請輸入開發者密碼：");if(pwd===null)return;if(pwd===DEV_PWD){devMode=true;document.getElementById("gbDev").style.display="block";document.getElementById("devSpecial").classList.add("show");document.getElementById("devUnlockBtn").style.display="none";document.getElementById("devSettings").classList.add("show");showToast("✅ 開發者模式已啟用","success")}else showToast("❌ 密碼錯誤","error")}
+function devUnlock(){var pwd=prompt("🔒 請輸入開發者密碼：");if(pwd===null)return;if(pwd===DEV_PWD){devMode=true;document.getElementById("gbDev").style.display="block";document.getElementById("gbDevV2").style.display="block";document.getElementById("devSpecial").classList.add("show");document.getElementById("devUnlockBtn").style.display="none";document.getElementById("devSettings").classList.add("show");showToast("✅ 開發者模式已啟用","success")}else showToast("❌ 密碼錯誤","error")}
 function openDev(){document.getElementById("devPanel").classList.add("show")}
 function closeDev(){document.getElementById("devPanel").classList.remove("show")}
-function applyParams(){Object.keys(DEF_PARAMS).forEach(function(k){var el=document.getElementById(k);if(el)PARAMS[k]=Number(el.value)||DEF_PARAMS[k]});try{localStorage.setItem("qfp_params",JSON.stringify(PARAMS))}catch(e){}closeDev();showToast("✅ 參數套用成功","success")}
-function resetParams(){PARAMS=JSON.parse(JSON.stringify(DEF_PARAMS));Object.keys(PARAMS).forEach(function(k){var el=document.getElementById(k);if(el)el.value=PARAMS[k]});try{localStorage.setItem("qfp_params",JSON.stringify(PARAMS))}catch(e){}closeDev();showToast("🔄 已重設為預設值","info")}
-function loadSavedParams(){try{var s=localStorage.getItem("qfp_params");if(s){var p=JSON.parse(s);PARAMS=Object.assign({},DEF_PARAMS,p);Object.keys(PARAMS).forEach(function(k){var el=document.getElementById(k);if(el)el.value=PARAMS[k]})}}catch(e){}}
+function applyParams(){
+Object.keys(DEF_PARAMS).forEach(function(k){var el=document.getElementById(k);if(el)PARAMS[k]=Number(el.value)||DEF_PARAMS[k]});
+/* V2 參數 */
+var v2map=[["v2_minEV","minEV"],["v2_minValue","minValue"],["v2_kellyFactor","kellyFactor"],["v2_maxStake","maxStake"],["v2_minOdds","minOdds"],["v2_maxOdds","maxOdds"],["v2_simMinConf","simMinConf"]];
+v2map.forEach(function(p){var el=document.getElementById(p[0]);if(el){var v=Number(el.value);if(!isNaN(v))V2_CFG[p[1]]=v}});
+try{localStorage.setItem("qfp_params",JSON.stringify(PARAMS))}catch(e){}
+try{localStorage.setItem("qfp_v2",JSON.stringify(V2_CFG))}catch(e){}
+closeDev();showToast("✅ 參數套用成功","success");
+}
+function resetParams(){
+PARAMS=JSON.parse(JSON.stringify(DEF_PARAMS));
+V2_CFG=JSON.parse(JSON.stringify(DEF_V2));
+Object.keys(PARAMS).forEach(function(k){var el=document.getElementById(k);if(el)el.value=PARAMS[k]});
+var v2map=[["v2_minEV","minEV"],["v2_minValue","minValue"],["v2_kellyFactor","kellyFactor"],["v2_maxStake","maxStake"],["v2_minOdds","minOdds"],["v2_maxOdds","maxOdds"],["v2_simMinConf","simMinConf"]];
+v2map.forEach(function(p){var el=document.getElementById(p[0]);if(el)el.value=V2_CFG[p[1]]});
+try{localStorage.setItem("qfp_params",JSON.stringify(PARAMS))}catch(e){}
+try{localStorage.setItem("qfp_v2",JSON.stringify(V2_CFG))}catch(e){}
+closeDev();showToast("🔄 已重設為預設值","info");
+}
+function loadSavedParams(){
+try{var s=localStorage.getItem("qfp_params");if(s){var p=JSON.parse(s);PARAMS=Object.assign({},DEF_PARAMS,p);Object.keys(PARAMS).forEach(function(k){var el=document.getElementById(k);if(el)el.value=PARAMS[k]})}}catch(e){}
+try{var s2=localStorage.getItem("qfp_v2");if(s2){var p2=JSON.parse(s2);V2_CFG=Object.assign({},DEF_V2,p2);var v2map=[["v2_minEV","minEV"],["v2_minValue","minValue"],["v2_kellyFactor","kellyFactor"],["v2_maxStake","maxStake"],["v2_minOdds","minOdds"],["v2_maxOdds","maxOdds"],["v2_simMinConf","simMinConf"]];v2map.forEach(function(p){var el=document.getElementById(p[0]);if(el)el.value=V2_CFG[p[1]]})}}catch(e){}
+}
 function setMode(m){
 currentMode=m;
 document.getElementById("tabV1").classList.toggle("on",m==="V1");
@@ -1037,10 +1100,7 @@ function handleAgree(){
 var btn=document.getElementById("agreeBtn"),s=document.getElementById("termsScroll");
 var bottom=false;
 if(s)bottom=s.scrollTop+s.clientHeight>=s.scrollHeight-30||s.scrollHeight<=s.clientHeight+30;
-if(!btn.classList.contains("on")&&!bottom){
-alert("請滾動到最底部才能同意。");
-return;
-}
+if(!btn.classList.contains("on")&&!bottom){alert("請滾動到最底部才能同意。");return}
 document.getElementById("termsPage").style.display="none";
 document.getElementById("app").style.display="flex";
 window.scrollTo(0,0);
@@ -1051,8 +1111,7 @@ loadLbMini();
 function init(){
 if(window._v2p)return;window._v2p=true;
 try{applyTheme(localStorage.getItem("qfp_theme")||"dark")}catch(e){applyTheme("dark")}
-var savedLang="zh-HK";
-try{savedLang=localStorage.getItem("qfp_lang")||"zh-HK"}catch(e){}
+var savedLang="zh-HK";try{savedLang=localStorage.getItem("qfp_lang")||"zh-HK"}catch(e){}
 applyLang(savedLang);
 on("themeSwitcher","click",toggleTheme);
 on("langSelect","change",function(){applyLang(this.value)});
@@ -1068,7 +1127,8 @@ on("gbA","click",function(){gameGuess("A")});
 on("gbNext","click",newRound);
 on("gbAuto","click",autoPredict);
 on("gbSkip","click",doSkip);
-on("gbDev","click",devAuto);
+on("gbDev","click",function(){devAuto("V1")});
+on("gbDevV2","click",function(){devAuto("V2")});
 on("gbSpecH","click",function(){devSpecial("H")});
 on("gbSpecD","click",function(){devSpecial("D")});
 on("gbSpecA","click",function(){devSpecial("A")});
@@ -1087,8 +1147,9 @@ on("simBtn","click",function(){document.getElementById("simOv").classList.add("s
 on("simClose","click",function(){document.getElementById("simOv").classList.remove("show")});
 on("simRerun","click",function(){showToast("✅ 重新運算...","success");setTimeout(runSim,200)});
 on("simReset","click",function(){resetParams();showToast("🔄 已恢復預設","info")});
+on("simTabV1","click",function(){setSimMode("V1")});
+on("simTabV2","click",function(){setSimMode("V2")});
 ["simOv","lbOv","gameOverOv"].forEach(function(id){on(id,"click",function(e){if(e.target===this)this.classList.remove("show")})});
-/* 條款滾動監聽 */
 try{
 var ts=document.getElementById("termsScroll");
 if(ts){
@@ -1103,6 +1164,7 @@ setInterval(loadStats,20000);
 try{loadSavedParams()}catch(e){}
 ensurePool().catch(function(){});
 setMode("V1");
+setSimMode("V1");
 updateSkips();
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);
