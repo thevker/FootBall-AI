@@ -1,10 +1,10 @@
-# ⚽ 智能量化足球預測系統 ver 1.0
+# ⚽ 智能量化足球預測系統 v2.0 Pro
 
 工具: https://thevker.github.io/FootBall-AI/
 
-> 一套結合**機率模型、市場定價（賠率）與極致風控**的自動化足球分析工具。用數學邏輯取代人為情緒，適用於足球賽前數據分析與策略驗證。
+> 一套結合**機率模型、市場定價（賠率）與極致風控**的自動化足球分析工具。內建 **V1 經典 15 層公式** 與 **V2 多莊家價值引擎** 雙模式，用數學邏輯取代人為情緒，適用於足球賽前數據分析與策略驗證。
 
-![Version](https://img.shields.io/badge/version-1.0-blue)
+![Version](https://img.shields.io/badge/version-2.0--pro-purple)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![HTML](https://img.shields.io/badge/HTML-5-orange)
 ![CSS](https://img.shields.io/badge/CSS-3-blue)
@@ -12,16 +12,31 @@
 
 ---
 
+## 🆕 v2.0 Pro 更新重點
+
+| 功能 | v1.0 | **v2.0 Pro** |
+|------|------|-------------|
+| 預測引擎 | 14 層公式 | **V1 經典 15 層** + **V2 多莊家價值引擎** |
+| 賠率輸入 | 整數分（158）| **自動識別**（1.58 / 158 均可）|
+| 價值分析 | 無 | **莊家抽水（Vig）+ 價值差 + EV** 三維度 |
+| 信心評級 | 無 | **⭐～⭐⭐⭐⭐⭐ 五級** |
+| 建議注碼 | 無 | **¼ Kelly + 5% 上限** |
+| 對比表 | 無 | **市場% vs 模型% vs 價值差%** |
+| 模擬統計 | 各層觸發 | **V1: 各層觸發 / V2: 信心等級分佈** |
+
+---
+
 ## 📸 預覽
 
-> 五合一系統：**條款同意頁 + 智能預測計算器 + 猜賽果挑戰 + 排行榜 + 即時模擬測試**
+> 六合一系統：**條款同意頁 + 雙引擎預測計算器 + 猜賽果挑戰 + 排行榜 + 即時模擬測試 + 開發者面板**
 
-- 🌙 直接深淺色主題切換
-- 🌐 繁中 / 簡中 / 英文
+- 🌙 深淺色主題切換（localStorage 記憶）
+- 🌐 繁中 / 簡中 / 英文三語言
 - 📊 實時讀取 Google Sheets 真實賽事數據
 - 🎮 遊戲化猜賽果 + Tier 等級系統 + 連勝特效
 - 🏆 Top 10 / Top 100 排行榜 + 玩家上傳成績
 - 🧪 即時模擬測試（終端機風格，逐場顯示）
+- 🏢 **V2 多莊家引擎**：市場 vs 模型價值對比
 - 📱 響應式設計（手機 / 平板 / 電腦）
 - 🔒 賽果數據 ±5% 隨機微調，防止玩家搜尋反查作弊
 
@@ -29,12 +44,26 @@
 
 ## ✨ 功能特色
 
-### 🧮 智能預測計算器
+### 🧮 雙引擎預測計算器
+
+#### 📐 V1 經典模式（15 層公式）
 - 輸入 **6 個數據**（主/和/客勝率 + 主/和/客賠）
-- **14 層公式** 輸出建議：**買主 / 買和 / 買客 / 不出手**
+- **15 層公式** 輸出建議：**買主 / 買和 / 買客 / 不出手**
 - 自動計算 **期望值 EV-1**
 - 顯示該層策略邏輯說明
 - 勝率總和必須 ≤ 100%
+- 賠率**自動識別**：輸入 `1.58` 或 `158` 都能正確處理
+
+#### 🏦 V2 多莊家價值引擎
+- 把「**市場賠率**」當作 **莊家 A**、把「**量化模型**」當作 **莊家 B**
+- 計算莊家抽水 **Vig = (1/主賠 + 1/和賠 + 1/客賠) − 1**
+- 去除抽水後得出 **市場公平概率**
+- **價值差 = 模型概率 − 市場公平概率**（正數 = 模型認為被低估）
+- **EV = 模型概率 × 賠率 − 1**（長期正回報指標）
+- 只有 **EV > 3% 且 價值差 > 2%** 才會出手
+- 凱利公式計算建議注碼：**¼ Kelly + 上限 5% 資金**
+- 顯示 **⭐ 1-5 星信心評級**
+- **對比表**：市場% / 模型% / 價值差% 三欄並排
 
 ### 🎮 猜賽果挑戰
 - **從 Google Sheets 真實數據隨機抽樣**
@@ -42,30 +71,30 @@
 - 顯示真實比分與賽果
 - 每注固定 **$100**
 - **⏭️ 跳過功能**：預設 2 次，每玩 10 場 +1 次
-- **🔥 連勝特效**：連續命中 3 場以上彈出火焰連勝提示（固定大小，不遮擋按鈕）
+- **🔥 連勝特效**：連續命中 3 場以上彈出火焰連勝提示
 - **Tier 等級系統**（5 場後顯示）：
   - 綜合分數 = **命中率 × 50% + ROI × 100%**（上限 100 分）
-  - **分數範圍 0.00 ~ 100.00**（ROI 負值視為 0，ROI 上限封頂 100）
-  - 🟣 **EX**：紫色幻彩漸變色 + 紫色文字 + 發光呼吸特效
+  - **分數範圍 0.00 ~ 100.00**（ROI 負值視為 0）
+  - 🟣 **EX**：紫色幻彩漸變 + 發光呼吸特效
   - 🟡 **S / S+ / S-**：金色漸變
   - 🔵 **A / A+ / A-**：冰藍漸變
   - 🟢 **B / B+ / B-**：淺綠漸變
   - 🔴 **C / C+ / C-**：紅色漸變
   - ⚪ **D / D+ / D-**：灰色漸變
   - 🟤 **E / E+ / E-**：啡色漸變
-  - **同級同**，換級有漸變過渡效果
   - **⬆️ 升級** 顯示綠色箭頭 + 邊框閃光
   - **⬇️ 降級** 顯示紅色箭頭 + 邊框閃光
 - 賽事描述：💥 史詩級大爆冷 / 💰 高賠和局 / ✅ 正常賽果 …
 
 ### 🧪 即時模擬測試
-- 使用**當前公式參數**對**資料庫全部真實數據**回測
+- 使用**當前公式參數 + 當前模式**對**資料庫全部真實數據**回測
 - **逐場即時計算**（終端機風格，綠色＝命中 / 紅色＝落敗 / 灰色＝跳過）
-- 顯示：場次編號 / 勝率 / 賠率 / 觸發層 / 出手選擇 / 實際賽果 / 盈虧 / 累計盈虧
+- 顯示：場次編號 / 觸發層或信心級 / 出手選擇 / 實際賽果 / 盈虧 / 累計盈虧
 - 完成後顯示完整報告：
   - 總樣本 / 出手 / 跳過 / 命中率 / ROI / 總盈虧 / 綜合分數 / 等級
   - 出手分佈（H / D / A 各命中率）
-  - 各層觸發場次及佔比
+  - **V1**：各層觸發場次及佔比
+  - **V2**：各信心等級（⭐～⭐⭐⭐⭐⭐）觸發場次
 - **不影響**遊戲進度與排行榜數據
 - **原始數據**計算，**不經 ±5% 抖動**
 
@@ -74,28 +103,28 @@
 - **Top 100 完整榜**（彈窗顯示）
 - 玩家完成 50 場後可 **📤 上傳成績**（名字 / 綜合分數 / 命中率 / ROI / 盈虧 / 場次）
 - **Tier 由前端根據分數即時計算**（不上傳 tier，日後調門檻自動套用）
-- **過濾機制**：只顯示 0 ~ 100 分的合法紀錄，> 100 視為作弊自動隱藏
+- **過濾機制**：只顯示 0 ~ 100 分的合法紀錄
 - 通過 Google Apps Script API 實時讀寫
-- **更新時機**：首次進入 / 玩家上傳後 / 手動點「🔄 重新載入」
 
 ### 📊 歷史數據統計
 - 實時讀取 Google Sheets 數據
-- 每 **15 秒** 自動同步
+- 每 **20 秒** 自動同步
 - 顯示：總盈虧 / 命中數 / 總成本 / 出手數 / ROI / 命中率 / 資料庫更新日期
 - 讀取位置：`L7`～`L12` + `M2`（更新日期）
 
 ### 🎨 UI / UX
 - 🌙 / ☀️ **深淺色主題**（localStorage 記憶）
-- 🌐 **三語言**：繁中 / 簡中 / 英文（完整覆蓋所有按鈕、提示、開發者面板）
+- 🌐 **三語言**：繁中 / 簡中 / 英文
 - 滾動時頂部按鈕自動淡出
 - 玻璃擬態（Glassmorphism）設計
-- 綜合分數**獨立大字顯示**（含公式明細）
+- 綜合分數**獨立大字顯示**
 
 ### ⚙️ 開發者模式（隱藏）
 - 密碼解鎖（預設 `football`）
-- **⚙️ 系統設定**：彈出式面板，修改 **14 層公式參數**
+- **⚙️ 系統設定**：彈出式面板，修改 **15 層公式參數**
 - **🔄 重置遊戲**：一鍵清空遊戲進度
-- 套用後自動收起，Toast 提示成功
+- **⚡ 連按模式**：開發者快速驗證公式
+- **🎯 專用預測**：主專用 / 和專用 / 客專用（強制搜尋符合指定結果的場次）
 - **📚 資料庫資訊**：實時顯示載入的真實比賽場數
 
 ---
@@ -133,7 +162,7 @@ npx serve
 
 ---
 
-## 📐 核心公式（14 層）
+## 📐 V1 經典模式：15 層公式
 
 | 層 | 條件 | 結果 |
 |---|---|---|
@@ -144,15 +173,16 @@ npx serve
 | 5 | `\|D−F\|<18` | **D**（買和）|
 | 6 | `A≥42` 且 `155≤D<205` 且 `D≠F` 且 `F>D` 且 `\|A−C\|≥50` | **D**（買和）|
 | 7 | `A≥42` 且 `155≤D<205` 且 `D≠F` | **H**（買主）|
-| 8 | `A≥36` 且 `205<D≤235` 且 `D≠F` | **D**（買和）|
-| 9 | `D≥340` 且 `A≥40` 且 `F<250` 且 `D>F` | **D/A**（見下）|
-| 10 | `C>A` 且 `500≤F≤550` 且 `D<200` | **D**（買和）|
-| 11 | `C>A` 且 `F>D` 且 `F<550` 且 `E>300` | **H**（反向買主）|
-| 12 | `C>A` 且 `185≤F≤215` | **A**（買客）|
-| 13 | `C>A` 且 `F>D` 且 `F<300` 且 `C<45` 且 `D<250` | **D**（買和）|
-| 14（兜底）| 賠率博弈 | 見下 |
+| 8 | `A≥34` 且 `205<D≤235` 且 `D≠F` | **D**（買和）|
+| 9 | `D≥400` 且 `A≥42` | **D**（買和）🆕 |
+| 10 | `D≥340` 且 `A≥40` 且 `F<250` 且 `D>F` | **D / A**（見下）|
+| 11 | `C>A` 且 `490≤F≤560` 且 `D<200` | **D**（買和）|
+| 12 | `C>A` 且 `F>D` 且 `F<550` 且 `E>320` | **H**（反向買主）|
+| 13 | `C>A` 且 `184≤F≤216` 且 `C≥40` | **A**（買客）|
+| 14 | `C>A` 且 `F>D` 且 `F<300` 且 `C<45` 且 `D<250` | **D**（買和）|
+| 15（兜底）| 賠率博弈 | 見下 |
 
-**第 9 層細分：**
+**第 10 層細分：**
 ```
 D≥340 且 A≥40 且 F<250 且 D>F：
   ├─ B≥28 且 F<150 → D
@@ -160,15 +190,17 @@ D≥340 且 A≥40 且 F<250 且 D>F：
   └─ 其餘 → D
 ```
 
-**兜底層（第 14 層）：**
+**兜底層（第 15 層）：**
 ```
 D>F：
+  ├─ F≤150 且 C≥65 → A（🆕 極冷客隊）
   ├─ D≥1500：C≥50 → A；A>C → D；否則 skip
   └─ 其餘：A≥33 且 D≥350 → D；否則 H
 
 F>D：
   ├─ F≥700：A≥50 → H；C>A → D；否則 skip
-  └─ 其餘：A≥50 且 D≤140 → H；否則 A
+  ├─ E≥470 且 F≥500 → D（🆕 高賠和局保護）
+  └─ 其餘：A≥47 且 D≤140 → H；否則 A
 
 D=F：A>C → H；C>A → A；否則 skip
 ```
@@ -185,6 +217,33 @@ D=F：A>C → H；C>A → A；否則 skip
 | F | 客賠（×100）|
 | G | 比分（例如 2:1）|
 | H | 賽果（H / D / A）|
+
+---
+
+## 🏦 V2 多莊家引擎：核心公式
+
+| 指標 | 公式 | 說明 |
+|------|------|------|
+| **莊家抽水** | `Vig = (1/主賠 + 1/和賠 + 1/客賠) − 1` | 通常 2%~8% |
+| **市場公平概率** | `市場賠率反推 ÷ (1 + Vig)` | 去除抽水後的真實概率 |
+| **價值差** | `模型概率 − 市場公平概率` | 正數 = 模型認為被低估 |
+| **期望值** | `EV = 模型概率 × 賠率 − 1` | 長期正回報指標 |
+| **凱利公式** | `f = (p×(b+1) − 1) ÷ b` | b = 賠率 − 1 |
+| **建議注碼** | `min(¼ Kelly, 5%) × 100%` | 上限 5% 資金 |
+
+**決策門檻：**
+- ✅ EV ≥ 3%
+- ✅ 價值差 ≥ 2%
+- ✅ Kelly > 0
+
+**信心評級：**
+| 評級 | 條件 |
+|------|------|
+| ⭐⭐⭐⭐⭐ | EV ≥ 25% 且 價值差 ≥ 20% |
+| ⭐⭐⭐⭐ | EV ≥ 15% 且 價值差 ≥ 10% |
+| ⭐⭐⭐ | EV ≥ 8% 且 價值差 ≥ 5% |
+| ⭐⭐ | EV ≥ 3% 且 價值差 ≥ 2% |
+| ⭐ | 其他通過門檻情況 |
 
 ---
 
@@ -230,9 +289,10 @@ FootBall-AI/
 ├── README.md           # 本文件
 ├── LICENSE             # MIT License
 └── screenshots/
-    ├── dark-mode.png
-    ├── light-mode.png
-    ├── tier-example.png
+    ├── v2-main.png
+    ├── v1-calculator.png
+    ├── v2-bookmaker.png
+    ├── game-tier.png
     ├── combo-streak.png
     └── simulation.png
 ```
@@ -248,7 +308,7 @@ FootBall-AI/
 | **Vanilla JavaScript** | 邏輯、狀態管理 |
 | **Google Sheets gviz API** | 實時讀取歷史數據與賽事 |
 | **Google Apps Script** | 排行榜讀寫 API |
-| **localStorage** | 主題偏好 + 參數記憶 |
+| **localStorage** | 主題偏好 + 語言 + 參數記憶 |
 | **CSS Keyframes** | Tier 動畫、連勝火焰、升降箭頭、EX 發光 |
 
 **零依賴** — 唔需要 npm、webpack、任何框架。
@@ -278,14 +338,30 @@ var LEADERBOARD_API = '你的_APPS_SCRIPT_URL';
 
 改成你部署的 Apps Script Web App URL。
 
-### 修改公式參數
+### 修改 V2 引擎參數
+
+搵到 `index.html` 內：
+
+```javascript
+const V2_CFG = {
+  minEV: 0.03,        // 最低 EV (3%)
+  minValue: 0.02,     // 最低價值差 (2%)
+  kellyFactor: 0.25,  // ¼ Kelly
+  maxStake: 5,        // 上限 5%
+  minOdds: 1.15,      // 極熱跳過
+  maxOdds: 20,        // 極冷跳過
+  maxVig: 0.15        // 抽水 > 15% 視為異常
+};
+```
+
+### 修改 V1 公式參數
 
 **方法 A**：解鎖開發者模式（點「🔒 開發者模式」→ 輸入密碼 `football`），點「⚙️ 系統設定」彈出面板調整。
 
-**方法 B**：直接改 `index.html` 內的 `PARAMS`：
+**方法 B**：直接改 `index.html` 內的 `DEF_PARAMS`：
 
 ```javascript
-var PARAMS = {
+var DEF_PARAMS = {
   // Layer 1: 和勝率高 + 主客接近 → 買和
   p1_cbmin: 32, p1_cgap: 6,
   // Layer 2: 主強 + 客極弱 + 主賠中低 + 客賠中高 → 買主
@@ -296,54 +372,56 @@ var PARAMS = {
   p4_hmin: 45, p4_cmax: 20, p4_ogap: 70, p4_dmax: 400,
   // Layer 5: 主客賠差小 → 買和
   p5_ogap: 18,
-  // Layer 6: 主強 + 客賠高 + 勝率差極大 → 買和
+  // Layer 6-7: 主賠中 + 強弱差
   p6_hmin: 42, p6_dmin: 155, p6_dmax: 205, p6_wgap: 50,
-  // Layer 7: 主強 + 主賠低中 → 買主
   p7_hmin: 42, p7_dmin: 155, p7_dmax: 205,
-  // Layer 8: 主強 + 主賠中 → 買和（A≥36）
-  p8_hmin: 36, p8_dmin: 205, p8_dmax: 235,
-  // Layer 9: 主賠極高 + 主強 + 客賠低 → 買和（含極低買客）
+  // Layer 8: 主強 + 主賠中 → 買和（A≥34）
+  p8_hmin: 34, p8_dmin: 205, p8_dmax: 235,
+  // Layer 9: 主賠極高 + 主強 → 買和（D≥400）
+  p9b_dmin: 400, p9b_hmin: 42,
+  // Layer 10: 主賠極高 + 客賠低
   p9_dmin: 340, p9_hmin: 40, p9_fmax: 250, p9_low: 200, p9_bmin: 28, p9_fverylow: 150,
-  // Layer 10: 客強 + 客賠極高 + 主賠低 → 買和
-  p10a_fmin: 500, p10a_fmax: 550, p10a_dmax: 200,
-  // Layer 11: 客強客冷 → 反向買主
-  p10_fmax: 550, p10_emin: 300,
-  // Layer 12: 客強 + 客賠價值 → 買客
-  p11_fmin: 185, p11_fmax: 215,
-  // Layer 13: 客略強 + 客賠中 + 客勝率低 + 主賠低 → 買和
+  // Layer 11: 客賠 490~560 + 主賠低
+  p10a_fmin: 490, p10a_fmax: 560, p10a_dmax: 200,
+  // Layer 12: 客強 + 和賠 > 320
+  p10_fmax: 550, p10_emin: 320,
+  // Layer 13: 客賠 184~216 + C≥40
+  p11_fmin: 184, p11_fmax: 216, p11_cmin: 40,
+  // Layer 14: 客略強 + 客賠中 + 主賠低
   p12_cmax: 45, p12_fmax: 300, p12_dmax: 250,
-  // Layer 14: 賠率博弈（兜底）
+  // Layer 15: 兜底
   pd_skip: 1500, pd_cAmin: 50,
   pb_hmin: 33, pb_dmin: 350, pb_fskip: 700, pb_hAmin: 50,
-  pb_honly: 50, pb_donly: 140
+  pb_honly: 47, pb_donly: 140,
+  p15_fl150: 150, p15_c65: 65, p15_e470: 470, p15_f500: 500
 };
 ```
 
 ### 修改 Tier 分佈
 
-搵到 `function getTier(rate)`，目前分佈為 **19 級**：
+搵到 `function getTier(score)`，目前分佈為 **19 級**：
 
 ```javascript
-function getTier(rate) {
-  if (rate >= 85)   return { tier:'EX', descKey:'tierEX' };
-  if (rate >= 81)   return { tier:'S+', descKey:'tierS' };
-  if (rate >= 77)   return { tier:'S',  descKey:'tierS' };
-  if (rate >= 73)   return { tier:'S-', descKey:'tierS' };
-  if (rate >= 69)   return { tier:'A+', descKey:'tierA' };
-  if (rate >= 65)   return { tier:'A',  descKey:'tierA' };
-  if (rate >= 61)   return { tier:'A-', descKey:'tierA' };
-  if (rate >= 57)   return { tier:'B+', descKey:'tierB' };
-  if (rate >= 53)   return { tier:'B',  descKey:'tierB' };
-  if (rate >= 49)   return { tier:'B-', descKey:'tierB' };
-  if (rate >= 45)   return { tier:'C+', descKey:'tierC' };
-  if (rate >= 41)   return { tier:'C',  descKey:'tierC' };
-  if (rate >= 37)   return { tier:'C-', descKey:'tierC' };
-  if (rate >= 33)   return { tier:'D+', descKey:'tierD' };
-  if (rate >= 29)   return { tier:'D',  descKey:'tierD' };
-  if (rate >= 25)   return { tier:'D-', descKey:'tierD' };
-  if (rate >= 21)   return { tier:'E+', descKey:'tierE' };
-  if (rate >= 15)   return { tier:'E',  descKey:'tierE' };
-  return { tier:'E-', descKey:'tierE' };
+function getTier(score){
+  if (score >= 85) return {tier:"EX"};
+  if (score >= 81) return {tier:"S+"};
+  if (score >= 77) return {tier:"S"};
+  if (score >= 73) return {tier:"S-"};
+  if (score >= 69) return {tier:"A+"};
+  if (score >= 65) return {tier:"A"};
+  if (score >= 61) return {tier:"A-"};
+  if (score >= 57) return {tier:"B+"};
+  if (score >= 53) return {tier:"B"};
+  if (score >= 49) return {tier:"B-"};
+  if (score >= 45) return {tier:"C+"};
+  if (score >= 41) return {tier:"C"};
+  if (score >= 37) return {tier:"C-"};
+  if (score >= 33) return {tier:"D+"};
+  if (score >= 29) return {tier:"D"};
+  if (score >= 25) return {tier:"D-"};
+  if (score >= 21) return {tier:"E+"};
+  if (score >= 15) return {tier:"E"};
+  return {tier:"E-"};
 }
 ```
 
@@ -359,21 +437,20 @@ function getTier(rate) {
 - `D` → 灰
 - `E` → 啡
 
-### 修改 Tier 顯示門檻
+### 修改核心參數
 
 ```javascript
 var TIER_MIN_PLAYED = 5;           // 玩幾場才顯示 Tier
-var TIER_WEIGHT_HITRATE = 0.5;     // 命中率權重
-var TIER_WEIGHT_ROI = 1.0;         // ROI 權重
 var MAX_PLAYS = 50;                // 挑戰上限場次
+var DEV_PWD = "football";          // 開發者密碼
 ```
 
 ### 修改跳過次數
 
-搵到 `function getMaxSkips()`：
+搵到 `function maxSkips()`：
 
 ```javascript
-function getMaxSkips() {
+function maxSkips() {
   return 2 + Math.floor(gameState.played / 10);
   //      ↑ 預設次數    ↑ 每 N 場 +1 次
 }
@@ -381,12 +458,12 @@ function getMaxSkips() {
 
 ### 修改防作弊微調範圍
 
-搵到 `function jitterMatchData(m)`，核心抖動邏輯：
+搵到 `function jitter(m)`，核心抖動邏輯：
 
 ```javascript
-newHw = m.hw + signH * randRange(0, 2);      // 勝率 ±2%
-newHo = m.ho * (1 + signH * randRange(0, 0.01));  // 賠率 ±1%
-newDoo = m.doo * (1 + randRange(-0.01, 0.01));
+var hw = m.hw + sH * randRange(0, 2);              // 勝率 ±2%
+var ho = m.ho * (1 + sH * randRange(0, 0.01));     // 賠率 ±1%
+var doo = m.doo * (1 + randRange(-0.01, 0.01));
 ```
 
 將 `0.01` 改成 `0.03` 即為 ±3%；改成 `0.05` 即為 ±5%。
@@ -401,12 +478,13 @@ newDoo = m.doo * (1 + randRange(-0.01, 0.01));
 2. 閱讀條款（滾到底）→ 按「我已閱讀並同意」
    ↓
 3. 進入主頁面
-   ├─ 頂部：歷史數據統計（每 15 秒自動同步）
-   ├─ 中間：智能預測計算器
+   ├─ 頂部：歷史數據統計（每 20 秒自動同步）
+   ├─ 中間：智能預測計算器（可切換 V1 / V2）
    ├─ 底部：猜賽果挑戰（讀取真實數據）+ Top 10 排行榜
-   └─ 模擬測試按鈕（開發者模式下可配合調參使用）
+   └─ 模擬測試按鈕
    ↓
-4. 輸入 6 個數據 → 按「計算結果」→ 得出建議 + EV
+4. 選擇模式（V1 經典 / V2 多莊家）→ 輸入 6 個數據
+   → 按「計算結果」→ 得出建議 + EV + 價值差 + 信心評級
    ↓
 5. 玩猜賽果累積 Tier 等級、觸發連勝特效
    ↓
@@ -414,6 +492,20 @@ newDoo = m.doo * (1 + randRange(-0.01, 0.01));
    ↓
 7. （可選）解鎖開發者模式調整公式參數 → 按「🧪 模擬測試」驗證
 ```
+
+---
+
+## 📊 模式對照表
+
+| 功能 | V1 經典 | V2 多莊家 |
+|------|--------|----------|
+| 核心邏輯 | 15 層硬編碼判定 | EV + 價值差 + Kelly |
+| 適用場景 | 快速決策、對應 Sheets 公式 | 專業分析、尋找莊家定價錯誤 |
+| 信心評級 | 📐 層號 | ⭐～⭐⭐⭐⭐⭐ |
+| 建議注碼 | ❌ | ✅ ¼ Kelly + 5% 上限 |
+| 莊家抽水 | ❌ | ✅ 顯示 Vig% |
+| 市場 vs 模型對比 | ❌ | ✅ 三欄並排 |
+| 模擬統計 | 各層觸發場次 | 各信心等級分佈 |
 
 ---
 
@@ -455,7 +547,6 @@ newDoo = m.doo * (1 + randRange(-0.01, 0.01));
 
 **thevker**
 - GitHub: [@thevker](https://github.com/thevker)
-- Email: your.email@example.com
 
 ---
 
