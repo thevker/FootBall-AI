@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>智慧規則優化器 v10</title>
+<title>智慧規則優化器 v11</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -16,7 +16,6 @@ button{padding:10px 22px;font-size:15px;margin:6px 4px 6px 0;cursor:pointer;back
 button:hover{background:#0056b3}
 button:disabled{background:#999;cursor:not-allowed}
 button.stop{background:#dc3545}
-button.hex{background:#6f42c1}
 button.txt{background:#28a745}
 #log{background:#1e1e1e;color:#d4d4d4;border-radius:5px;padding:12px;margin-top:12px;height:140px;overflow-y:auto;font-family:monospace;font-size:12px;white-space:pre-wrap;line-height:1.5}
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
@@ -37,7 +36,6 @@ td:first-child,td:nth-child(2){text-align:left}
 .diag{max-height:400px;overflow:auto;border:1px solid #ccc;border-radius:4px;margin-top:10px}
 .profit-pos{color:#0a7a0a;font-weight:bold}
 .profit-neg{color:#c00;font-weight:bold}
-.tag-del{background:#dc3545;color:#fff;padding:2px 6px;border-radius:3px;font-size:10px}
 .tag-ok{background:#28a745;color:#fff;padding:2px 6px;border-radius:3px;font-size:10px}
 .tag-off{background:#999;color:#fff;padding:2px 6px;border-radius:3px;font-size:10px}
 .tag-pred{background:#007bff;color:#fff;padding:2px 6px;border-radius:3px;font-size:10px}
@@ -48,7 +46,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <body>
 
 <div class="top">
-  <h2 id="title">🧬 智慧規則優化器 v10</h2>
+  <h2 id="title">🧬 智慧規則優化器 v11</h2>
   <div>
     <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁中</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
@@ -79,7 +77,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
   <div class="box">
     <div class="label">🟢 公式（新）</div>
-    <button class="txt" onclick="copyIt('txtOut','Formula')">📋 複製公式</button>
+    <button class="txt" onclick="copyIt('txtOut')">📋 複製公式</button>
     <textarea id="txtOut" class="out" readonly wrap="off"></textarea>
   </div>
 
@@ -97,10 +95,9 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <script>
 'use strict';
 
-/* ========== 翻譯 ========== */
 var TXT = {
   zh: {
-    title: '🧬 智慧規則優化器 v10',
+    title: '🧬 智慧規則優化器 v11',
     desc: '結構自動演化：加/刪/改規則、切換結果標籤、調整門檻。',
     strength: '強度：',
     run: '🚀 開始演化',
@@ -117,7 +114,7 @@ var TXT = {
     thHit: '命中', thCorrect: '對', thWrong: '錯', thProfit: '盈利'
   },
   en: {
-    title: '🧬 Smart Rule Optimizer v10',
+    title: '🧬 Smart Rule Optimizer v11',
     desc: 'Auto evolution: add/del/modify rules, switch labels, tune thresholds.',
     strength: 'Strength: ',
     run: '🚀 Evolve',
@@ -155,10 +152,7 @@ function setLang(lang){
   if(logEl && !logEl.dataset.hasContent) logEl.textContent = t('waiting');
 }
 
-/* ========== 初始規則（從你公式結構化） ========== */
-// 每條規則: {on, then, cond: [[col, op, val], ...]}
-// col: A B C D E F |A-C| |D-F| D-F F-D A-C C-A
-// op: > >= < <= == !=
+/* ========== 初始規則 ========== */
 var INIT_RULES = [
   {on:1, then:'D', cond:[['B','>=',32],['|A-C|','<=',6]]},
   {on:1, then:'H', cond:[['A','>=',60],['C','<=',11],['D','>=',140],['D','<=',190],['F','>=',400],['F','<=',480]]},
@@ -202,9 +196,8 @@ var RESULTS = ['H','D','A','skip'];
 var data = [];
 var running = false;
 var lastRules = null;
-var lastStats = null;
 
-/* ========== 解析 ========== */
+/* ========== 解析 + 預計算 ========== */
 function parseData(text){
   var rows = [];
   var lines = text.split('\n');
@@ -220,7 +213,7 @@ function parseData(text){
   return rows;
 }
 
-/* ========== 取得欄位值 ========== */
+/* ========== 取值 ========== */
 function getVal(row, col){
   switch(col){
     case 'A': return row.A;
@@ -236,7 +229,6 @@ function getVal(row, col){
     case 'A-C': return row.A - row.C;
     case 'C-A': return row.C - row.A;
     case 'E-D': return row.E - row.D;
-    case 'D-E': return row.D - row.E;
   }
   return 0;
 }
@@ -253,7 +245,6 @@ function cmp(a, op, b){
   return false;
 }
 
-/* ========== 評估單條規則 ========== */
 function matchRule(row, rule){
   for(var i = 0; i < rule.cond.length; i++){
     var c = rule.cond[i];
@@ -262,7 +253,6 @@ function matchRule(row, rule){
   return true;
 }
 
-/* ========== 預測 ========== */
 function predict(row, rules){
   for(var i = 0; i < rules.length; i++){
     var r = rules[i];
@@ -272,7 +262,6 @@ function predict(row, rules){
   return 'skip';
 }
 
-/* ========== 盈利 ========== */
 function calcProfit(rows, rules){
   var total = 0;
   for(var i = 0; i < rows.length; i++){
@@ -288,21 +277,22 @@ function calcProfit(rows, rules){
   return total;
 }
 
-/* ========== 複製 ========== */
 function cloneRules(rules){
-  return rules.map(function(r){
-    return {
-      on: r.on,
-      then: r.then,
-      cond: r.cond.map(function(c){ return [c[0], c[1], c[2]]; })
-    };
-  });
+  var out = [];
+  for(var i = 0; i < rules.length; i++){
+    var r = rules[i];
+    var c = [];
+    for(var j = 0; j < r.cond.length; j++){
+      c.push([r.cond[j][0], r.cond[j][1], r.cond[j][2]]);
+    }
+    out.push({on: r.on, then: r.then, cond: c});
+  }
+  return out;
 }
 
-/* ========== 隨機整數 ========== */
 function ri(min, max){ return min + Math.floor(Math.random() * (max - min + 1)); }
 
-/* ========== 變異：調整門檻 ========== */
+/* ========== 各種變異 ========== */
 function mutateNumeric(rules, intensity){
   var r = cloneRules(rules);
   var nMut = ri(1, 3);
@@ -313,21 +303,18 @@ function mutateNumeric(rules, intensity){
     var ci = ri(0, rule.cond.length - 1);
     var c = rule.cond[ci];
     var v = c[2];
-    // 步長取決於絕對值大小
     var step = 1;
     if(Math.abs(v) >= 100) step = 5;
     if(Math.abs(v) >= 300) step = 10;
     if(Math.abs(v) >= 700) step = 20;
-    step = step * intensity;
+    step = step * (intensity || 1);
     var delta = ri(-step, step);
     c[2] = v + delta;
-    // 不允許負值（除了 0 附近的比較）
     if(c[2] < 0 && v >= 0) c[2] = 0;
   }
   return {rules: r, structural: 0};
 }
 
-/* ========== 變異：切換結果標籤 ========== */
 function mutateResult(rules){
   var r = cloneRules(rules);
   if(r.length === 0) return {rules: r, structural: 1};
@@ -338,7 +325,6 @@ function mutateResult(rules){
   return {rules: r, structural: 1};
 }
 
-/* ========== 變異：切換啟用 ========== */
 function mutateOn(rules){
   var r = cloneRules(rules);
   if(r.length === 0) return {rules: r, structural: 1};
@@ -347,18 +333,15 @@ function mutateOn(rules){
   return {rules: r, structural: 1};
 }
 
-/* ========== 變異：刪除規則 ========== */
 function mutateDelete(rules){
   var r = cloneRules(rules);
   if(r.length <= 5) return {rules: r, structural: 1};
-  // 刪除靠後的規則（避免刪掉核心規則）
   var minIdx = Math.min(3, r.length - 1);
   var idx = ri(minIdx, r.length - 1);
   r.splice(idx, 1);
   return {rules: r, structural: 1};
 }
 
-/* ========== 變異：交換規則順序 ========== */
 function mutateSwap(rules){
   var r = cloneRules(rules);
   if(r.length < 2) return {rules: r, structural: 1};
@@ -367,29 +350,21 @@ function mutateSwap(rules){
   return {rules: r, structural: 1};
 }
 
-/* ========== 隨機變異 ========== */
 function mutate(rules, intensity){
   var p = Math.random();
-  if(p < 0.60){
-    // 調整門檻（最常用）
-    return mutateNumeric(rules, intensity);
-  } else if(p < 0.72){
-    return mutateResult(rules);
-  } else if(p < 0.82){
-    return mutateOn(rules);
-  } else if(p < 0.90){
-    return mutateSwap(rules);
-  } else if(p < 0.96){
-    return mutateDelete(rules);
-  } else {
-    // 一次做多種變異
-    var step1 = mutateNumeric(rules, intensity);
-    var step2 = mutateResult(step1.rules);
-    return {rules: step2.rules, structural: 1};
+  if(p < 0.60) return mutateNumeric(rules, intensity);
+  else if(p < 0.72) return mutateResult(rules);
+  else if(p < 0.82) return mutateOn(rules);
+  else if(p < 0.90) return mutateSwap(rules);
+  else if(p < 0.96) return mutateDelete(rules);
+  else {
+    var s1 = mutateNumeric(rules, intensity);
+    var s2 = mutateResult(s1.rules);
+    return {rules: s2.rules, structural: 1};
   }
 }
 
-/* ========== 爬山（調門檻 + 結構） ========== */
+/* ========== 爬山 ========== */
 function hillClimb(rows, startRules, maxIter){
   var cur = cloneRules(startRules);
   var curProfit = calcProfit(rows, cur);
@@ -402,8 +377,8 @@ function hillClimb(rows, startRules, maxIter){
   while(running && iter < maxIter){
     iter++;
     var inten = 1;
-    if(noImprove > 200) inten = 2;
-    if(noImprove > 500) inten = 3;
+    if(noImprove > 100) inten = 2;
+    if(noImprove > 300) inten = 3;
 
     var m = mutate(cur, inten);
     var cand = m.rules;
@@ -420,7 +395,6 @@ function hillClimb(rows, startRules, maxIter){
       }
     } else {
       noImprove++;
-      // 退火：小機率接受較差解
       var T = 50 / (1 + iter / 200);
       if(Math.random() < Math.exp((candProfit - curProfit) / T)){
         cur = cand;
@@ -428,8 +402,7 @@ function hillClimb(rows, startRules, maxIter){
       }
     }
 
-    // 每 5000 次回一次起點，避免卡死
-    if(iter % 5000 === 0 && noImprove > 1000){
+    if(iter % 500 === 0 && noImprove > 200){
       cur = cloneRules(best);
       curProfit = bestProfit;
       noImprove = 0;
@@ -439,7 +412,7 @@ function hillClimb(rows, startRules, maxIter){
   return {rules: best, profit: bestProfit, structural: structuralCount, iter: iter};
 }
 
-/* ========== 診斷統計 ========== */
+/* ========== 診斷 ========== */
 function diagnose(rows, rules){
   var stats = [];
   for(var i = 0; i < rules.length; i++){
@@ -471,7 +444,6 @@ function diagnose(rows, rules){
   return stats;
 }
 
-/* ========== 渲染規則表 ========== */
 function renderRuleTable(stats){
   var html = '<table><thead><tr>' +
     '<th>' + t('thRule') + '</th>' +
@@ -508,52 +480,61 @@ function renderRuleTable(stats){
   document.getElementById('ruleTable').innerHTML = html;
 }
 
-/* ========== 生成公式 ========== */
+/* ========== ⭐ 生成公式（修正版） ========== */
+function sheetOp(op){
+  // Google Sheets 用 <> 表示不等於
+  if(op === '!=') return '<>';
+  if(op === '==') return '=';
+  return op;
+}
+
+function buildCond(row_ignored, c){
+  // 回傳單一條件的 Sheets 表達式
+  var col = c[0], op = c[1], val = c[2];
+  var sop = sheetOp(op);
+
+  switch(col){
+    case 'A': return '(A2:A' + sop + val + ')';
+    case 'B': return '(B2:B' + sop + val + ')';
+    case 'C': return '(C2:C' + sop + val + ')';
+    case 'D': return '(D2:D' + sop + val + ')';
+    case 'E': return '(E2:E' + sop + val + ')';
+    case 'F': return '(F2:F' + sop + val + ')';
+    case '|A-C|': return '(ABS(A2:A-C2:C)' + sop + val + ')';
+    case '|D-F|': return '(ABS(D2:D-F2:F)' + sop + val + ')';
+    case 'D-F': return '((D2:D-F2:F)' + sop + val + ')';
+    case 'F-D': return '((F2:F-D2:D)' + sop + val + ')';
+    case 'A-C': return '((A2:A-C2:C)' + sop + val + ')';
+    case 'C-A': return '((C2:C-A2:A)' + sop + val + ')';
+    case 'E-D': return '((E2:E-D2:D)' + sop + val + ')';
+    default: return 'FALSE';
+  }
+}
+
+function buildCondExpr(rule){
+  if(rule.cond.length === 0) return 'TRUE';
+  var parts = [];
+  for(var i = 0; i < rule.cond.length; i++){
+    parts.push(buildCond(0, rule.cond[i]));
+  }
+  return parts.join('*');
+}
+
 function genFormula(rules){
-  var active = rules.filter(function(r){ return r.on; });
+  var active = [];
+  for(var i = 0; i < rules.length; i++){
+    if(rules[i].on) active.push(rules[i]);
+  }
+
   if(active.length === 0){
     return '=ARRAYFORMULA(IF(A2:A="","","skip"))';
   }
 
-  function condExpr(r){
-    if(r.cond.length === 0) return 'TRUE';
-    var parts = [];
-    for(var i = 0; i < r.cond.length; i++){
-      var c = r.cond[i];
-      var col = c[0], op = c[1], val = c[2];
-      var arrCol;
-      switch(col){
-        case 'A': arrCol = 'A2:A'; break;
-        case 'B': arrCol = 'B2:B'; break;
-        case 'C': arrCol = 'C2:C'; break;
-        case 'D': arrCol = 'D2:D'; break;
-        case 'E': arrCol = 'E2:E'; break;
-        case 'F': arrCol = 'F2:F'; break;
-        case '|A-C|': parts.push('(ABS(A2:A-C2:C)' + op + val + ')'); continue;
-        case '|D-F|': parts.push('(ABS(D2:D-F2:F)' + op + val + ')'); continue;
-        case 'D-F': parts.push('(D2:D-F2:F' + op + val + ')'); continue;
-        case 'F-D': parts.push('(F2:F-D2:D' + op + val + ')'); continue;
-        case 'A-C': parts.push('(A2:A-C2:C' + op + val + ')'); continue;
-        case 'C-A': parts.push('(C2:C-A2:A' + op + val + ')'); continue;
-        case 'E-D': parts.push('(E2:E-D2:D' + op + val + ')'); continue;
-        case 'D-E': parts.push('(D2:D-E2:E' + op + val + ')'); continue;
-        default: parts.push('FALSE'); continue;
-      }
-      if(op === '==' || op === '!='){
-        parts.push('(' + arrCol + (op === '==' ? '=' : '<>') + val + ')');
-      } else {
-        parts.push('(' + arrCol + op + val + ')');
-      }
-    }
-    return parts.join('*');
-  }
-
   var body = '';
   for(var i = 0; i < active.length; i++){
-    body += 'IF(' + condExpr(active[i]) + ',"' + active[i].then + '",';
+    body += 'IF(' + buildCondExpr(active[i]) + ',"' + active[i].then + '",';
   }
   body += '"skip"';
-  // 補齊 IF 的 )
   for(var j = 0; j < active.length; j++) body += ')';
 
   return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",' + body + '))';
@@ -587,8 +568,8 @@ function start(){
     gen++;
     if(gen > N){ finish(); return; }
 
-    // 每代：從目前最佳出發，做較短爬山
-    var r = hillClimb(data, globalBest, 2000);
+    var iterPerGen = 500;
+    var r = hillClimb(data, globalBest, iterPerGen);
     totalStructural += r.structural;
 
     if(r.profit > globalProfit){
@@ -597,22 +578,21 @@ function start(){
       log.textContent += tf('gen', {g: gen, v: globalProfit, m: totalStructural}) + '\n';
       log.scrollTop = log.scrollHeight;
     } else {
-      // 沒進步 → 從初始規則隨機變異重新開始
       var restart = cloneRules(INIT_RULES);
-      for(var k = 0; k < 5; k++){
+      var nMut = 5 + ri(0, 10);
+      for(var k = 0; k < nMut; k++){
         var m = mutate(restart, 1);
         restart = m.rules;
       }
-      var rr = hillClimb(data, restart, 2000);
+      var rr = hillClimb(data, restart, iterPerGen);
       if(rr.profit > globalProfit){
         globalProfit = rr.profit;
         globalBest = rr.rules;
         log.textContent += tf('gen', {g: gen, v: globalProfit, m: totalStructural}) + '\n';
+        log.scrollTop = log.scrollHeight;
       }
     }
 
-    var el = ((Date.now() - t0) / 1000).toFixed(0);
-    document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight;
     setTimeout(nextGen, 0);
   }
 
@@ -628,7 +608,6 @@ function start(){
 
     var stats = diagnose(data, globalBest);
     lastRules = globalBest;
-    lastStats = stats;
     renderRuleTable(stats);
     document.getElementById('diag').style.display = 'block';
 
@@ -645,13 +624,13 @@ function stop(){
   document.getElementById('btnStop').disabled = true;
 }
 
-function copyIt(id, label){
+function copyIt(id){
   var el = document.getElementById(id);
   if(!el) return;
   var txt = el.value;
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(function(){
-      showMsg('✅ Copied ' + txt.length + ' chars', true);
+      showMsg('✅ 已複製 ' + txt.length + ' 字元', true);
     }).catch(function(){ fallbackCopy(txt); });
   } else {
     fallbackCopy(txt);
@@ -669,8 +648,8 @@ function fallbackCopy(text){
   var ok = false;
   try{ ok = document.execCommand('copy'); }catch(e){}
   document.body.removeChild(ta);
-  if(ok) showMsg('✅ Copied ' + text.length + ' chars', true);
-  else showMsg('❌ Copy failed, select manually', false);
+  if(ok) showMsg('✅ 已複製 ' + text.length + ' 字元', true);
+  else showMsg('❌ 複製失敗，請手動選取', false);
 }
 
 function showMsg(text, ok){
