@@ -2,33 +2,63 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>智慧規則優化器 v13</title>
+<title>智慧規則優化器 v15 — 即時詳細日誌</title>
 <style>
 *{box-sizing:border-box}
-body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
+body{font-family:system-ui;padding:16px;max-width:1500px;margin:auto;background:#f0f2f5}
 h2{margin:0 0 8px 0}
 .top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:8px}
 .lang-btn{padding:6px 14px;font-size:13px;border:1px solid #ccc;background:#fff;color:#333;border-radius:4px;cursor:pointer;margin-left:4px}
 .lang-btn.active{background:#007bff;color:#fff;border-color:#007bff}
 textarea{width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #ccc;border-radius:4px}
-#input{height:100px}
+#input{height:80px}
 button{padding:10px 22px;font-size:15px;margin:6px 4px 6px 0;cursor:pointer;background:#007bff;color:#fff;border:none;border-radius:5px;font-weight:bold}
 button:hover{background:#0056b3}
 button:disabled{background:#999;cursor:not-allowed}
 button.stop{background:#dc3545}
 button.txt{background:#28a745}
-#log{background:#0a0a0a;color:#c8c8c8;border-radius:5px;padding:12px;margin-top:12px;height:280px;overflow-y:auto;font-family:monospace;font-size:11px;white-space:pre-wrap;line-height:1.6}
-.log-info{color:#4ea3ff}
-.log-success{color:#4ade80;font-weight:bold}
-.log-warn{color:#ffc107}
-.log-dim{color:#666}
-.log-head{color:#f0f0f0;font-weight:bold;font-size:12px}
+
+/* ⭐ 終端機風格日誌 */
+#log{
+  background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:14px;margin-top:12px;
+  height:520px;overflow-y:auto;font-family:'Consolas','Monaco','Menlo',monospace;
+  font-size:12px;white-space:pre;line-height:1.55;
+  box-shadow:inset 0 0 20px rgba(0,0,0,0.5);
+  border:1px solid #222;
+}
+#log::-webkit-scrollbar{width:10px}
+#log::-webkit-scrollbar-track{background:#1a1a1a}
+#log::-webkit-scrollbar-thumb{background:#444;border-radius:5px}
+#log::-webkit-scrollbar-thumb:hover{background:#666}
+
+.l-time{color:#666}
+.l-info{color:#4ea3ff}
+.l-success{color:#4ade80;font-weight:bold}
+.l-strong{color:#fbbf24;font-weight:bold}
+.l-warn{color:#ffc107}
+.l-err{color:#f87171}
+.l-dim{color:#666}
+.l-head{color:#fff;font-weight:bold;font-size:13px}
+.l-rule{color:#c084fc}
+.l-try{color:#94a3b8}
+.l-ok{color:#4ade80}
+.l-bad{color:#f87171}
+.l-scan{color:#38bdf8}
+.l-best{color:#facc15;font-weight:bold;background:rgba(250,204,21,0.08)}
+.l-struct{color:#fb923c}
+.l-gen{color:#e0e7ff}
+.l-sep{color:#333}
+.l-arrow{color:#888}
+.l-val{color:#fbbf24}
+.l-cond{color:#67e8f9}
+.l-then{color:#f9a8d4}
+
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
 .best b{color:#155724}
 .box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
 .label{font-weight:bold;font-size:13px;margin-bottom:6px;color:#333}
-.out{width:100%;height:120px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto;resize:vertical}
-.param{font-family:monospace;font-size:11px;word-break:break-all;color:#555;margin-top:6px;max-height:80px;overflow:auto;padding:6px;background:#f8f9fa;border-radius:4px}
+.out{width:100%;height:140px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto;resize:vertical}
+.param{font-family:monospace;font-size:11px;word-break:break-all;color:#555;margin-top:6px;max-height:100px;overflow:auto;padding:6px;background:#f8f9fa;border-radius:4px}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
 select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px}
 #msg{margin-top:8px;font-weight:bold;font-size:13px;display:none;padding:8px;border-radius:4px}
@@ -44,7 +74,6 @@ td:first-child,td:nth-child(2){text-align:left}
 .tag-ok{background:#28a745;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .tag-off{background:#999;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .tag-pred{background:#007bff;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
-.tag-add{background:#6f42c1;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .section{background:#fff;padding:12px;border-radius:6px;border:1px solid #ddd;margin-top:12px}
 h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .progress{height:6px;background:#ddd;border-radius:3px;overflow:hidden;margin-top:8px}
@@ -52,19 +81,22 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .stats{display:flex;gap:15px;flex-wrap:wrap;margin-top:8px;font-size:12px}
 .stat{background:#fff;padding:6px 12px;border-radius:4px;border:1px solid #ddd}
 .stat b{color:#007bff}
+.controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.chk{padding:4px 10px;font-size:12px;background:#fff;border:1px solid #ccc;border-radius:4px;cursor:pointer;user-select:none}
+.chk input{vertical-align:middle;margin-right:4px}
 </style>
 </head>
 <body>
 
 <div class="top">
-  <h2 id="title">🧬 智慧規則優化器 v13</h2>
+  <h2 id="title">🧬 智慧規則優化器 v15 — 即時詳細日誌</h2>
   <div>
     <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁中</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
   </div>
 </div>
 
-<p id="desc">增強版：加條件、刪條件、增規則、分裂規則，全面搜尋最優。</p>
+<p id="desc">即時顯示每一步在做什麼：每條規則的每次嘗試、每次改進、每次結構變異。</p>
 
 <textarea id="input" placeholder="23 27 49 355 385 169 0:3 A
 62 27 9 158 395 405 3:0 H"></textarea>
@@ -82,6 +114,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
 </div>
 
+<div class="controls">
+  <label class="chk"><input type="checkbox" id="verbose" checked> 詳細模式（顯示每次嘗試）</label>
+  <label class="chk"><input type="checkbox" id="showBad"> 顯示失敗嘗試</label>
+  <label class="chk"><input type="checkbox" id="autoScroll" checked> 自動滾動</label>
+  <button onclick="clearLog()" style="padding:4px 10px;font-size:12px;background:#6c757d">清空日誌</button>
+</div>
+
 <div class="progress"><div id="progbar"></div></div>
 <div id="log">等待開始...</div>
 
@@ -89,7 +128,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <div class="stat" id="stat-gen">起點: 0</div>
   <div class="stat" id="stat-best">最佳: -</div>
   <div class="stat" id="stat-time">時間: 0s</div>
-  <div class="stat" id="stat-speed">速度: 0/s</div>
+  <div class="stat" id="stat-speed">評估/秒: 0</div>
+  <div class="stat" id="stat-evals">總掃描: 0</div>
 </div>
 
 <div class="best" id="best">
@@ -115,10 +155,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <script>
 'use strict';
 
+/* ==========================================================
+   翻譯
+   ========================================================== */
 var TXT = {
   zh: {
-    title: '🧬 智慧規則優化器 v13',
-    desc: '增強版：加條件、刪條件、增規則、分裂規則，全面搜尋最優。',
+    title: '🧬 智慧規則優化器 v15 — 即時詳細日誌',
+    desc: '即時顯示每一步在做什麼：每條規則的每次嘗試、每次改進、每次結構變異。',
     strength: '搜尋強度：',
     run: '🚀 開始搜尋',
     stop: '⏹ 停止',
@@ -129,8 +172,8 @@ var TXT = {
     noData: '沒有有效數據'
   },
   en: {
-    title: '🧬 Smart Rule Optimizer v13',
-    desc: 'Enhanced: add/remove conditions, add rules, split rules, full search.',
+    title: '🧬 Smart Rule Optimizer v15 — Live Verbose Log',
+    desc: 'Live view of every action: each rule trial, each improvement, each mutation.',
     strength: 'Strength: ',
     run: '🚀 Search',
     stop: '⏹ Stop',
@@ -157,7 +200,9 @@ function setLang(lang){
   if(logEl && !logEl.dataset.hasContent) logEl.textContent = t('waiting');
 }
 
-/* ========== 初始規則 ========== */
+/* ==========================================================
+   初始規則
+   ========================================================== */
 var INIT_RULES = [
   {on:1, then:'D', cond:[['B','>=',32],['|A-C|','<=',6]]},
   {on:1, then:'H', cond:[['A','>=',60],['C','<=',11],['D','>=',140],['D','<=',190],['F','>=',400],['F','<=',480]]},
@@ -199,26 +244,108 @@ var RESULTS = ['H','D','A','skip'];
 var COLS = ['A','B','C','D','E','F','|A-C|','|D-F|','D-F','F-D','A-C','C-A','E-D'];
 var OPS = ['>','>=','<','<='];
 
+/* ==========================================================
+   全域
+   ========================================================== */
 var data = [];
 var running = false;
 var startTime = 0;
+var evalCount = 0;
+var logBuffer = [];
+var logTimer = null;
+var LOG_MAX = 5000;
 
-/* ========== 解析 ========== */
+/* ==========================================================
+   ⭐ 日誌系統（非阻塞緩衝）
+   ========================================================== */
+function nowTime(){
+  if(!startTime) return '[00:00.000]';
+  var ms = Date.now() - startTime;
+  var s = Math.floor(ms / 1000);
+  var m = Math.floor(s / 60);
+  var sec = s % 60;
+  var frac = ms % 1000;
+  return '[' + String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0') + '.' + String(frac).padStart(3, '0') + ']';
+}
+
+function pushLog(text, cls){
+  logBuffer.push({ text: text, cls: cls || '' });
+  if(!logTimer) logTimer = setTimeout(flushLog, 60);
+}
+
+function flushLog(){
+  logTimer = null;
+  if(logBuffer.length === 0) return;
+
+  var logEl = document.getElementById('log');
+  logEl.dataset.hasContent = '1';
+
+  // 第一次寫入時清空
+  if(!logEl.dataset.started){
+    logEl.innerHTML = '';
+    logEl.dataset.started = '1';
+  }
+
+  var frag = document.createDocumentFragment();
+  for(var i = 0; i < logBuffer.length; i++){
+    var entry = logBuffer[i];
+    var div = document.createElement('div');
+    if(entry.cls) div.className = 'l-' + entry.cls;
+    div.textContent = entry.text;
+    frag.appendChild(div);
+  }
+  logBuffer = [];
+  logEl.appendChild(frag);
+
+  // 限制行數
+  while(logEl.children.length > LOG_MAX){
+    logEl.removeChild(logEl.firstChild);
+  }
+
+  if(document.getElementById('autoScroll').checked){
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+}
+
+function clearLog(){
+  var logEl = document.getElementById('log');
+  logEl.innerHTML = '';
+  logEl.dataset.hasContent = '1';
+  logEl.dataset.started = '1';
+  logBuffer = [];
+}
+
+/* ==========================================================
+   解析 + 去重
+   ========================================================== */
 function parseData(text){
   var rows = [];
+  var seen = {};
+  var dups = 0;
+  var totalValid = 0;
   var lines = text.split('\n');
   for(var i = 0; i < lines.length; i++){
-    var p = lines[i].trim().split(/\s+/);
+    var line = lines[i].trim();
+    if(!line) continue;
+    var p = line.split(/\s+/);
     if(p.length < 8) continue;
     var v = p.slice(0,6).map(Number);
+    var score = p[6];
     var r = p[7];
     if(v.some(isNaN)) continue;
     if(['H','D','A'].indexOf(r) === -1) continue;
-    rows.push({A:v[0],B:v[1],C:v[2],D:v[3],E:v[4],F:v[5],result:r});
+    totalValid++;
+    var sig = v[0] + '|' + v[1] + '|' + v[2] + '|' + v[3] + '|' + v[4] + '|' + v[5] + '|' + score + '|' + r;
+    if(seen[sig]){ dups++; continue; }
+    seen[sig] = 1;
+    rows.push({A:v[0],B:v[1],C:v[2],D:v[3],E:v[4],F:v[5],score:score,result:r,sig:sig});
   }
-  return rows;
+  return {rows: rows, total: totalValid, dups: dups};
 }
 
+/* ==========================================================
+   取值 & 比較
+   ========================================================== */
 function getVal(row, col){
   switch(col){
     case 'A': return row.A; case 'B': return row.B; case 'C': return row.C;
@@ -262,6 +389,7 @@ function predict(row, rules){
 }
 
 function calcProfit(rows, rules){
+  evalCount++;
   var total = 0;
   for(var i = 0; i < rows.length; i++){
     var r = rows[i];
@@ -289,47 +417,49 @@ function cloneRules(rules){
   return out;
 }
 
+function cloneConds(cond){
+  var out = [];
+  for(var i = 0; i < cond.length; i++){
+    out.push([cond[i][0], cond[i][1], cond[i][2]]);
+  }
+  return out;
+}
+
 function ri(min, max){ return min + Math.floor(Math.random() * (max - min + 1)); }
 
-/* ========== Log 函式 ========== */
-function logLine(text, cls){
-  var logEl = document.getElementById('log');
-  logEl.dataset.hasContent = '1';
-  if(cls){
-    var span = document.createElement('div');
-    span.className = 'log-' + cls;
-    span.textContent = text;
-    logEl.appendChild(span);
-  } else {
-    var div = document.createElement('div');
-    div.textContent = text;
-    logEl.appendChild(div);
-  }
-  logEl.scrollTop = logEl.scrollHeight;
+/* ==========================================================
+   條件格式化（給日誌用）
+   ========================================================== */
+function fmtCond(c){ return c[0] + c[1] + c[2]; }
+function fmtRule(rule){
+  return rule.cond.map(fmtCond).join(' & ') + ' → ' + rule.then;
 }
-function logClear(){
-  var logEl = document.getElementById('log');
-  logEl.innerHTML = '';
-  logEl.dataset.hasContent = '1';
+function fmtShortRule(rule){
+  var s = rule.cond.map(fmtCond).join('&');
+  if(s.length > 60) s = s.slice(0, 57) + '...';
+  return s + '→' + rule.then;
 }
 
-function updateStats(gen, best, total){
+/* ==========================================================
+   統計更新
+   ========================================================== */
+function updateStats(gen, best){
   document.getElementById('stat-gen').innerHTML = '起點: <b>' + gen + '</b>';
   document.getElementById('stat-best').innerHTML = '最佳: <b>' + best + '</b>';
   var el = ((Date.now() - startTime) / 1000).toFixed(0);
   document.getElementById('stat-time').innerHTML = '時間: <b>' + el + 's</b>';
-  var speed = el > 0 ? (total / el).toFixed(0) : '0';
+  var speed = el > 0 ? (evalCount / el).toFixed(0) : '0';
   document.getElementById('stat-speed').innerHTML = '評估/秒: <b>' + speed + '</b>';
+  document.getElementById('stat-evals').innerHTML = '總掃描: <b>' + evalCount + '</b>';
 }
 
-/* ========== 規則變體生成（用於搜尋） ========== */
-
-/* 1. 給規則隨機加一個條件 */
+/* ==========================================================
+   變體
+   ========================================================== */
 function addRandomCondition(rule){
   var newRule = {on: rule.on, then: rule.then, cond: cloneConds(rule.cond)};
   var col = COLS[ri(0, COLS.length - 1)];
   var op = OPS[ri(0, OPS.length - 1)];
-  // 隨機數值：根據欄位合理範圍
   var val = 0;
   if(col === 'A' || col === 'B' || col === 'C') val = ri(20, 80);
   else if(col === 'D' || col === 'E' || col === 'F') val = ri(100, 800);
@@ -340,7 +470,6 @@ function addRandomCondition(rule){
   return newRule;
 }
 
-/* 2. 從規則移除一個條件 */
 function removeRandomCondition(rule){
   if(rule.cond.length <= 1) return null;
   var newRule = {on: rule.on, then: rule.then, cond: cloneConds(rule.cond)};
@@ -349,21 +478,18 @@ function removeRandomCondition(rule){
   return newRule;
 }
 
-function cloneConds(cond){
-  var out = [];
-  for(var i = 0; i < cond.length; i++){
-    out.push([cond[i][0], cond[i][1], cond[i][2]]);
-  }
-  return out;
-}
-
-/* ========== 座標下降：對單條規則做系統化掃描 ========== */
-function optimizeOneRule(rows, rules, ruleIdx){
+/* ==========================================================
+   ⭐ 座標下降（詳細日誌）
+   ========================================================== */
+function optimizeOneRule(rows, rules, ruleIdx, curProfit){
+  var verbose = document.getElementById('verbose').checked;
+  var showBad = document.getElementById('showBad').checked;
   var base = cloneRules(rules);
-  var baseProfit = calcProfit(rows, base);
   var best = base;
-  var bestProfit = baseProfit;
-  var improvements = [];
+  var bestProfit = curProfit;
+  var changed = false;
+
+  var prefix = '  ' + nowTime() + ' [' + 'R' + (ruleIdx+1) + '] ';
 
   // 1. 嘗試所有 then
   for(var ti = 0; ti < RESULTS.length; ti++){
@@ -373,8 +499,10 @@ function optimizeOneRule(rows, rules, ruleIdx){
     test[ruleIdx].then = then;
     var p = calcProfit(rows, test);
     if(p > bestProfit){
-      improvements.push('  → R' + (ruleIdx+1) + ' 結果 ' + best[ruleIdx].then + '→' + then + ' 盈利 ' + p);
-      best = test; bestProfit = p;
+      pushLog(prefix + 'then ' + best[ruleIdx].then + '→' + then + ' 盈利 ' + bestProfit + '→' + p + ' (Δ+' + (p-bestProfit) + ') ✓', 'ok');
+      best = test; bestProfit = p; changed = true;
+    } else if(showBad){
+      pushLog(prefix + 'then ' + best[ruleIdx].then + '→' + then + ' 盈利 ' + bestProfit + '→' + p + ' ✗', 'bad');
     }
   }
 
@@ -384,21 +512,26 @@ function optimizeOneRule(rows, rules, ruleIdx){
     test2[ruleIdx].on = best[ruleIdx].on ? 0 : 1;
     var p2 = calcProfit(rows, test2);
     if(p2 > bestProfit){
-      improvements.push('  → R' + (ruleIdx+1) + ' 切換 ' + (best[ruleIdx].on ? 'ON→OFF' : 'OFF→ON') + ' 盈利 ' + p2);
-      best = test2; bestProfit = p2;
+      pushLog(prefix + 'toggle ' + (best[ruleIdx].on ? 'ON→OFF' : 'OFF→ON') + ' 盈利 ' + bestProfit + '→' + p2 + ' (Δ+' + (p2-bestProfit) + ') ✓', 'ok');
+      best = test2; bestProfit = p2; changed = true;
+    } else if(showBad){
+      pushLog(prefix + 'toggle ' + (best[ruleIdx].on ? 'ON→OFF' : 'OFF→ON') + ' 盈利 ' + p2 + ' ✗', 'bad');
     }
   }
 
-  // 3. 嘗試移除某條件
+  // 3. 移除條件
   if(best[ruleIdx].cond.length > 1){
     for(var rci = 0; rci < best[ruleIdx].cond.length; rci++){
       var test4 = cloneRules(best);
+      var removedCond = test4[ruleIdx].cond[rci];
       test4[ruleIdx].cond.splice(rci, 1);
       var p4 = calcProfit(rows, test4);
       if(p4 > bestProfit){
-        improvements.push('  → R' + (ruleIdx+1) + ' 移除條件 ' + best[ruleIdx].cond[rci].join('') + ' 盈利 ' + p4);
-        best = test4; bestProfit = p4;
+        pushLog(prefix + 'remove ' + fmtCond(removedCond) + ' 盈利 ' + bestProfit + '→' + p4 + ' (Δ+' + (p4-bestProfit) + ') ✓', 'ok');
+        best = test4; bestProfit = p4; changed = true;
         break;
+      } else if(showBad){
+        pushLog(prefix + 'remove ' + fmtCond(removedCond) + ' 盈利 ' + p4 + ' ✗', 'bad');
       }
     }
   }
@@ -414,6 +547,10 @@ function optimizeOneRule(rows, rules, ruleIdx){
     if(Math.abs(curVal) >= 300){ step = 5; window = 100; }
     if(Math.abs(curVal) >= 700){ step = 10; window = 150; }
 
+    if(verbose){
+      pushLog(prefix + 'scan ' + c[0] + c[1] + ' around ' + curVal + ' [' + (curVal-window) + '~' + (curVal+window) + ' step ' + step + ']', 'scan');
+    }
+
     var bestV = curVal;
     var bestVP = bestProfit;
     for(var v = curVal - window; v <= curVal + window; v += step){
@@ -424,114 +561,157 @@ function optimizeOneRule(rows, rules, ruleIdx){
       if(p3 > bestVP){ bestV = v; bestVP = p3; }
     }
     if(bestV !== curVal){
-      improvements.push('  → R' + (ruleIdx+1) + ' 閾值 ' + c[0] + c[1] + ' ' + curVal + '→' + bestV + ' 盈利 ' + bestVP);
+      pushLog(prefix + '  ↳ ' + c[0] + c[1] + ' ' + curVal + '→' + bestV + ' 盈利 ' + bestProfit + '→' + bestVP + ' (Δ+' + (bestVP-bestProfit) + ') ✓', 'ok');
       best[ruleIdx].cond[ci][2] = bestV;
       bestProfit = bestVP;
+      changed = true;
+    } else if(verbose){
+      pushLog(prefix + '  ↳ 無改進（維持 ' + curVal + '）', 'dim');
     }
   }
 
-  return {rules: best, profit: bestProfit, improvements: improvements};
+  return {rules: best, profit: bestProfit, changed: changed};
 }
 
-function coordinateDescent(rows, startRules, logDetail){
+function coordinateDescent(rows, startRules, label){
   var cur = cloneRules(startRules);
   var curProfit = calcProfit(rows, cur);
   var improved = true;
   var totalIter = 0;
-  var totalImprovements = 0;
+  var pass = 0;
+
+  pushLog('  ' + nowTime() + ' ' + label + ' 起始盈利: ' + curProfit, 'gen');
 
   while(improved && running){
+    pass++;
     improved = false;
+    pushLog('  ' + nowTime() + ' ── ' + label + ' 掃描第 ' + pass + ' 輪 ──', 'dim');
+
     for(var i = 0; i < cur.length; i++){
-      if(!running) return {rules: cur, profit: curProfit, iter: totalIter};
-      var res = optimizeOneRule(rows, cur, i);
+      if(!running){
+        pushLog('  ' + nowTime() + ' ⏹ 中斷', 'warn');
+        return {rules: cur, profit: curProfit, iter: totalIter};
+      }
+      var res = optimizeOneRule(rows, cur, i, curProfit);
       totalIter++;
       if(res.profit > curProfit){
-        if(logDetail && res.improvements.length > 0){
-          for(var k = 0; k < res.improvements.length; k++){
-            logLine(res.improvements[k], 'dim');
-            totalImprovements++;
-          }
-        }
         cur = res.rules;
         curProfit = res.profit;
         improved = true;
       }
     }
+    pushLog('  ' + nowTime() + ' 第 ' + pass + ' 輪完成，盈利: ' + curProfit, improved ? 'ok' : 'dim');
   }
-  return {rules: cur, profit: curProfit, iter: totalIter, improvements: totalImprovements};
+  pushLog('  ' + nowTime() + ' ✓ ' + label + ' 收斂於 ' + curProfit + '（共 ' + totalIter + ' 次規則掃描）', 'success');
+  return {rules: cur, profit: curProfit, iter: totalIter};
 }
 
-/* ========== 進階結構搜尋 ========== */
-function structureSearch(rows, startRules){
+/* ==========================================================
+   結構搜尋（詳細日誌）
+   ========================================================== */
+function structureSearch(rows, startRules, maxAttempts){
+  pushLog('');
+  pushLog('  ' + nowTime() + ' ━━━ 結構搜尋開始（最多 ' + maxAttempts + ' 次嘗試）━━━', 'struct');
+
   var cur = cloneRules(startRules);
   var curProfit = calcProfit(rows, cur);
   var bestProfit = curProfit;
   var bestRules = cloneRules(cur);
   var attempts = 0;
   var successes = 0;
+  var lastReport = 0;
 
-  // 嘗試 100 次結構變異（加條件、刪條件、增規則、刪規則）
-  while(running && attempts < 200){
+  while(running && attempts < maxAttempts){
     attempts++;
     var test = cloneRules(cur);
     var p = Math.random();
+    var action = '';
+    var detail = '';
 
-    if(p < 0.30){
-      // 加條件
+    if(p < 0.25){
       var idx = ri(0, test.length - 1);
+      var before = cloneConds(test[idx].cond);
       test[idx] = addRandomCondition(test[idx]);
-    } else if(p < 0.50){
-      // 移除條件
+      var added = test[idx].cond[test[idx].cond.length - 1];
+      action = 'ADD_COND';
+      detail = 'R' + (idx+1) + ' +' + fmtCond(added) + ' (現在 ' + test[idx].cond.length + ' 條件)';
+    } else if(p < 0.45){
       var idx2 = ri(0, test.length - 1);
+      var removed = test[idx2].cond.length > 0 ? test[idx2].cond[test[idx2].cond.length - 1] : null;
       var newR = removeRandomCondition(test[idx2]);
-      if(newR) test[idx2] = newR;
-      else continue;
-    } else if(p < 0.65){
-      // 刪除規則
+      if(newR){
+        test[idx2] = newR;
+        action = 'DEL_COND';
+        detail = 'R' + (idx2+1) + ' -' + fmtCond(removed);
+      } else continue;
+    } else if(p < 0.60){
       if(test.length > 5){
         var minIdx = Math.min(3, test.length - 1);
-        test.splice(ri(minIdx, test.length - 1), 1);
+        var delIdx = ri(minIdx, test.length - 1);
+        var delRule = test[delIdx];
+        test.splice(delIdx, 1);
+        action = 'DEL_RULE';
+        detail = '刪除 R' + (delIdx+1) + ' [' + fmtShortRule(delRule) + ']';
       } else continue;
-    } else if(p < 0.80){
-      // 複製規則（分裂）
+    } else if(p < 0.78){
       var srcIdx = ri(0, test.length - 1);
       var copy = {on: test[srcIdx].on, then: test[srcIdx].then, cond: cloneConds(test[srcIdx].cond)};
-      // 加一個隨機條件到複製
       copy = addRandomCondition(copy);
-      // 插到原規則後面
       test.splice(srcIdx + 1, 0, copy);
-      if(test.length > 80) continue; // 防止爆掉
-    } else if(p < 0.92){
-      // 交換順序
+      action = 'SPLIT';
+      detail = 'R' + (srcIdx+1) + ' 分裂成 2 條 (+' + fmtCond(copy.cond[copy.cond.length-1]) + ')';
+      if(test.length > 80) continue;
+    } else if(p < 0.90){
       if(test.length >= 2){
         var i2 = ri(0, test.length - 2);
         var tmp = test[i2]; test[i2] = test[i2+1]; test[i2+1] = tmp;
-      }
+        action = 'SWAP';
+        detail = '交換 R' + (i2+1) + ' ↔ R' + (i2+2);
+      } else continue;
     } else {
-      // 改隨機規則的結果
       var idx3 = ri(0, test.length - 1);
-      var opts = RESULTS.filter(function(x){ return x !== test[idx3].then; });
-      test[idx3].then = opts[ri(0, opts.length - 1)];
+      var oldThen = test[idx3].then;
+      var opts = RESULTS.filter(function(x){ return x !== oldThen; });
+      var newThen = opts[ri(0, opts.length - 1)];
+      test[idx3].then = newThen;
+      action = 'CHANGE_THEN';
+      detail = 'R' + (idx3+1) + ' ' + oldThen + ' → ' + newThen;
     }
 
     var newProfit = calcProfit(rows, test);
+    var delta = newProfit - curProfit;
+
     if(newProfit > curProfit){
       cur = test;
       curProfit = newProfit;
       successes++;
+      pushLog('  ' + nowTime() + ' [' + attempts + '] ' + action + ' ' + detail + ' → ' + newProfit + ' (Δ+' + delta + ') ✓', 'ok');
       if(newProfit > bestProfit){
         bestProfit = newProfit;
         bestRules = cloneRules(test);
-        logLine('  ★ 結構改進（第 ' + attempts + ' 次嘗試）：盈利 ' + bestProfit + '  規則數 ' + test.length, 'success');
+        pushLog('  ' + nowTime() + ' ★★★ 結構新最優：' + bestProfit + '（規則數 ' + test.length + '）', 'best');
       }
+    } else {
+      if(document.getElementById('showBad').checked){
+        pushLog('  ' + nowTime() + ' [' + attempts + '] ' + action + ' ' + detail + ' → ' + newProfit + ' (Δ' + delta + ') ✗', 'bad');
+      }
+    }
+
+    // 每 20 次報告進度
+    if(attempts - lastReport >= 20){
+      lastReport = attempts;
+      pushLog('  ' + nowTime() + ' 進度：' + attempts + '/' + maxAttempts + '，成功 ' + successes + '，當前 ' + curProfit, 'info');
     }
   }
 
+  pushLog('  ' + nowTime() + ' 結構搜尋結束：' + attempts + ' 次嘗試，' + successes + ' 次改進，最佳 ' + bestProfit, 'struct');
+  pushLog('');
   return {rules: bestRules, profit: bestProfit, attempts: attempts, successes: successes};
 }
 
-/* ========== 隨機起點 ========== */
+/* ==========================================================
+   隨機起點
+   ========================================================== */
 function randomRestart(nMut){
   var r = cloneRules(INIT_RULES);
   for(var k = 0; k < nMut; k++){
@@ -564,11 +744,9 @@ function randomRestart(nMut){
         r.splice(ri(minIdx, r.length - 1), 1);
       }
     } else if(p < 0.94){
-      // 加條件
       var idx4 = ri(0, r.length - 1);
       r[idx4] = addRandomCondition(r[idx4]);
     } else {
-      // 分裂規則
       var srcIdx = ri(0, r.length - 1);
       var copy = {on: r[srcIdx].on, then: r[srcIdx].then, cond: cloneConds(r[srcIdx].cond)};
       copy = addRandomCondition(copy);
@@ -578,7 +756,9 @@ function randomRestart(nMut){
   return r;
 }
 
-/* ========== 診斷 ========== */
+/* ==========================================================
+   診斷
+   ========================================================== */
 function diagnose(rows, rules){
   var stats = [];
   for(var i = 0; i < rules.length; i++){
@@ -647,7 +827,9 @@ function renderRuleTable(stats){
   document.getElementById('ruleTable').innerHTML = html;
 }
 
-/* ========== 生成公式 ========== */
+/* ==========================================================
+   生成公式
+   ========================================================== */
 function sheetOp(op){
   if(op === '!=') return '<>';
   if(op === '==') return '=';
@@ -701,13 +883,17 @@ function genFormula(rules){
   return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",' + body + '))';
 }
 
-/* ========== 主流程 ========== */
+/* ==========================================================
+   主流程
+   ========================================================== */
 function start(){
-  data = parseData(document.getElementById('input').value);
+  var parsed = parseData(document.getElementById('input').value);
+  data = parsed.rows;
   if(data.length === 0){ alert(t('noData')); return; }
 
   running = true;
   startTime = Date.now();
+  evalCount = 0;
   document.getElementById('btnRun').disabled = true;
   document.getElementById('btnStop').disabled = false;
   document.getElementById('diag').style.display = 'none';
@@ -715,37 +901,44 @@ function start(){
   document.getElementById('liveStats').style.display = 'flex';
   document.getElementById('progbar').style.width = '0%';
 
-  logClear();
-  logLine('═══════════════════════════════════', 'head');
-  logLine('🧬 智慧規則優化器 v13 啟動', 'head');
-  logLine('═══════════════════════════════════', 'head');
+  clearLog();
 
   var N = parseInt(document.getElementById('strength').value);
   var globalBest = null;
   var globalProfit = -Infinity;
-  var totalEvals = 0;
-
-  logLine('資料筆數：' + data.length);
-  logLine('搜尋起點數：' + (N + 1));
-  logLine('初始規則數：' + INIT_RULES.length);
-  logLine('');
-
   var phase = 0;
+
+  pushLog('═══════════════════════════════════════════════════════════', 'head');
+  pushLog('🧬 智慧規則優化器 v15 啟動', 'head');
+  pushLog('═══════════════════════════════════════════════════════════', 'head');
+  pushLog(nowTime() + ' 解析輸入資料...', 'info');
+  pushLog(nowTime() + ' ├─ 原始有效行數：' + parsed.total, 'info');
+  pushLog(nowTime() + ' ├─ 重複行數：' + parsed.dups + '（A~H 完全相同，已忽略）', 'warn');
+  pushLog(nowTime() + ' └─ 去重後使用：' + data.length + ' 筆', 'success');
+  pushLog(nowTime() + ' 搜尋起點數：' + (N + 1) + '（含初始）', 'info');
+  pushLog(nowTime() + ' 初始規則數：' + INIT_RULES.length, 'info');
+  pushLog('');
 
   function nextPhase(){
     if(!running){ finish(); return; }
 
     if(phase === 0){
-      logLine('── 階段 1：初始規則座標下降 ──', 'info');
+      pushLog('═══════════════════════════════════════════════════════════', 'head');
+      pushLog(nowTime() + ' 階段 1：初始規則座標下降', 'head');
+      pushLog('═══════════════════════════════════════════════════════════', 'head');
+
       var baseP = calcProfit(data, INIT_RULES);
-      logLine('  初始盈利：' + baseP, 'dim');
-      var r0 = coordinateDescent(data, INIT_RULES, true);
+      pushLog(nowTime() + ' 初始盈利：' + baseP, 'info');
+      pushLog(nowTime() + ' 開始掃描 ' + INIT_RULES.length + ' 條規則...', 'info');
+
+      var r0 = coordinateDescent(data, INIT_RULES, '初始');
       globalBest = r0.rules;
       globalProfit = r0.profit;
-      logLine('  ✓ 收斂：' + r0.iter + ' 次掃描，' + r0.improvements + ' 次改進', 'success');
-      logLine('  盈利：' + baseP + ' → ' + r0.profit, 'success');
-      logLine('');
-      updateStats(0, globalProfit, totalEvals);
+      pushLog('');
+      pushLog(nowTime() + ' ✓ 階段 1 完成：' + baseP + ' → ' + r0.profit + ' (Δ+' + (r0.profit - baseP) + ')', 'success');
+      pushLog('');
+
+      updateStats(0, globalProfit);
       phase = 1;
       document.getElementById('progbar').style.width = (1 / (N + 1) * 100).toFixed(1) + '%';
       setTimeout(nextPhase, 0);
@@ -755,40 +948,47 @@ function start(){
     var k = phase;
     if(k > N){ finish(); return; }
 
-    // 每 10 個起點做一次結構搜尋
+    // 每 10 起點做結構搜尋
     if(k % 10 === 0 && k > 0){
-      logLine('── 階段 ' + (phase + 1) + '：結構搜尋（加/刪條件、加/刪規則） ──', 'info');
-      var sres = structureSearch(data, globalBest);
+      pushLog('═══════════════════════════════════════════════════════════', 'head');
+      pushLog(nowTime() + ' 結構搜尋（起點 #' + k + ' 觸發）', 'head');
+      pushLog('═══════════════════════════════════════════════════════════', 'head');
+      var beforeProfit = globalProfit;
+      var sres = structureSearch(data, globalBest, 200);
       if(sres.profit > globalProfit){
         globalProfit = sres.profit;
         globalBest = sres.rules;
-        logLine('  ✓ 結構搜尋成功：' + sres.attempts + ' 次嘗試，' + sres.successes + ' 次改進', 'success');
-        logLine('  新盈利：' + globalProfit, 'success');
-        updateStats(phase - 1, globalProfit, totalEvals);
+        pushLog('  ✓ 結構搜尋成功：' + beforeProfit + ' → ' + globalProfit + ' (Δ+' + (globalProfit-beforeProfit) + ')', 'success');
+        updateStats(phase - 1, globalProfit);
       } else {
-        logLine('  ✗ 結構搜尋無改進（嘗試 ' + sres.attempts + ' 次）', 'warn');
+        pushLog('  ✗ 結構搜尋無改進（嘗試 ' + sres.attempts + ' 次）', 'warn');
       }
-      logLine('');
+      pushLog('');
     }
 
     var nMut = 3 + ri(0, 15);
-    var startRules = randomRestart(nMut);
-    logLine('▶ 起點 #' + k + '：變異 ' + nMut + ' 次後開始座標下降...', 'info');
+    pushLog('═══════════════════════════════════════════════════════════', 'head');
+    pushLog(nowTime() + ' 起點 #' + k + ' / ' + N + '：先做 ' + nMut + ' 次隨機變異', 'head');
+    pushLog('═══════════════════════════════════════════════════════════', 'head');
 
-    var r = coordinateDescent(data, startRules, false);
-    totalEvals += r.iter;
+    var startRules = randomRestart(nMut);
+    pushLog(nowTime() + ' 變異完成，開始座標下降...', 'info');
+
+    var r = coordinateDescent(data, startRules, '#' + k);
 
     if(r.profit > globalProfit){
       var diff = r.profit - globalProfit;
       globalProfit = r.profit;
       globalBest = r.rules;
-      logLine('  ★★ 新全局最優：' + globalProfit + ' (Δ+' + diff + ')', 'success');
-      logLine('  規則數：' + r.rules.length + '，掃描：' + r.iter + ' 次', 'dim');
+      pushLog('');
+      pushLog('  ★★★ 新全局最優：' + globalProfit + ' (Δ+' + diff + ')', 'best');
+      pushLog('  規則數：' + r.rules.length + '，掃描：' + r.iter + ' 次', 'dim');
     } else {
-      logLine('  ✗ 收斂於 ' + r.profit + '（低於最優 ' + globalProfit + '）', 'dim');
+      pushLog('  ✗ 收斂於 ' + r.profit + '（低於最優 ' + globalProfit + '）', 'dim');
     }
+    pushLog('');
 
-    updateStats(k, globalProfit, totalEvals);
+    updateStats(k, globalProfit);
     document.getElementById('progbar').style.width = ((k + 1) / (N + 1) * 100).toFixed(1) + '%';
 
     phase++;
@@ -797,18 +997,21 @@ function start(){
 
   function finish(){
     var elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    logLine('');
-    logLine('═══════════════════════════════════', 'head');
-    logLine('🏆 完成！最高盈利：' + globalProfit, 'success');
-    logLine('   總耗時：' + elapsed + ' 秒');
-    logLine('   總掃描：' + totalEvals + ' 次');
-    logLine('   最終規則數：' + globalBest.length);
-    logLine('═══════════════════════════════════', 'head');
+    pushLog('═══════════════════════════════════════════════════════════', 'head');
+    pushLog('🏆 完成！最高盈利：' + globalProfit, 'best');
+    pushLog('═══════════════════════════════════════════════════════════', 'head');
+    pushLog('   去重前：' + parsed.total + ' 筆', 'info');
+    pushLog('   重複：' + parsed.dups + ' 筆（已忽略）', 'info');
+    pushLog('   實際分析：' + data.length + ' 筆', 'info');
+    pushLog('   總耗時：' + elapsed + ' 秒', 'info');
+    pushLog('   總掃描：' + evalCount + ' 次', 'info');
+    pushLog('   最終規則數：' + globalBest.length, 'info');
+    pushLog('═══════════════════════════════════════════════════════════', 'head');
 
     var formula = genFormula(globalBest);
 
     document.getElementById('best').style.display = 'block';
-    document.getElementById('summary').innerHTML = '🏆 最高盈利: <b>' + globalProfit + '</b>　(' + data.length + ' 場)';
+    document.getElementById('summary').innerHTML = '🏆 最高盈利: <b>' + globalProfit + '</b>　(' + data.length + ' 場，已去重 ' + parsed.dups + ' 筆)';
     document.getElementById('params').textContent = JSON.stringify(globalBest);
     document.getElementById('txtOut').value = formula;
 
@@ -820,7 +1023,7 @@ function start(){
     document.getElementById('btnRun').disabled = false;
     document.getElementById('btnStop').disabled = true;
     document.getElementById('progbar').style.width = '100%';
-    updateStats(phase - 1, globalProfit, totalEvals);
+    updateStats(phase - 1, globalProfit);
   }
 
   nextPhase();
@@ -829,7 +1032,7 @@ function start(){
 function stop(){
   running = false;
   document.getElementById('btnStop').disabled = true;
-  logLine('⏹ 使用者手動停止', 'warn');
+  pushLog('⏹ 使用者手動停止', 'warn');
 }
 
 function copyIt(id){
