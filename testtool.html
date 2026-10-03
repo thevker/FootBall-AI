@@ -1,12 +1,16 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>公式盈利优化器 v6 — 含规则诊断</title>
+<title>公式盈利優化器 v7</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
+.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
 h2{margin-top:0}
+.lang-switch{display:flex;gap:6px}
+.lang-btn{padding:6px 14px;font-size:13px;border:1px solid #ccc;background:#fff;color:#333;border-radius:4px;cursor:pointer}
+.lang-btn.active{background:#007bff;color:#fff;border-color:#007bff}
 textarea{width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #ccc;border-radius:4px}
 #input{height:120px}
 button{padding:10px 22px;font-size:15px;margin:6px 4px 6px 0;cursor:pointer;background:#007bff;color:#fff;border:none;border-radius:5px;font-weight:bold}
@@ -42,69 +46,80 @@ td:first-child,td:nth-child(2),td:nth-child(3){text-align:left}
 .tag-low{background:#ffc107;color:#333;padding:2px 6px;border-radius:3px;font-size:10px;font-weight:bold}
 h3{margin-top:20px;margin-bottom:6px;font-size:15px;color:#333}
 .section{background:#fff;padding:12px;border-radius:6px;border:1px solid #ddd;margin-top:12px}
+.check-ok{color:#0a7a0a;font-weight:bold;padding:8px;background:#d4edda;border-radius:4px;margin-top:8px}
+.check-err{color:#721c24;font-weight:bold;padding:8px;background:#f8d7da;border-radius:4px;margin-top:8px}
+.check-err ul{margin:6px 0 0 20px}
+.check-err li{font-family:monospace;font-size:12px;margin:2px 0}
 </style>
 </head>
 <body>
 
-<h2>⚡ 公式盈利优化器 v6 — 含规则诊断</h2>
-<p>跑完搜索后，自动分析每条规则的命中率、盈亏，并标出建议删除的规则。</p>
-
-<textarea id="input" placeholder="23	27	49	355	385	169	0:3	A
-62	27	9	158	395	405	3:0	H"></textarea>
-
-<div class="row">
-  <label>强度：
-    <select id="strength">
-      <option value="10">快速</option>
-      <option value="50" selected>标准</option>
-      <option value="200">深度</option>
-      <option value="1000">疯狂</option>
-    </select>
-  </label>
-  <button id="btnRun" onclick="start()">🚀 开始搜索 + 诊断</button>
-  <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
+<div class="top">
+  <h2 id="title">⚡ 公式盈利優化器 v7</h2>
+  <div class="lang-switch">
+    <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁體中文</button>
+    <button class="lang-btn" id="btn-en" onclick="setLang('en')">English</button>
+  </div>
 </div>
 
-<div id="log">等待开始...</div>
+<p id="desc"></p>
+
+<textarea id="input"></textarea>
+
+<div class="row">
+  <label id="lbl-strength"></label>
+  <select id="strength">
+    <option value="10" data-i18n="s-fast"></option>
+    <option value="50" selected data-i18n="s-std"></option>
+    <option value="200" data-i18n="s-deep"></option>
+    <option value="1000" data-i18n="s-crazy"></option>
+  </select>
+  <button id="btnRun" onclick="start()"></button>
+  <button id="btnStop" class="stop" onclick="stop()" disabled></button>
+</div>
+
+<div id="log"></div>
 
 <div class="best" id="best">
   <div id="summary"></div>
   <div class="param" id="params"></div>
 
   <div class="box">
-    <div class="label">🟣 HEX（新）</div>
-    <button class="hex" onclick="copyIt('hexOut','HEX')">📋 複製 HEX</button>
+    <div class="label">🟣 HEX</div>
+    <button class="hex" onclick="copyIt('hexOut','HEX')" id="btn-copy-hex"></button>
     <textarea id="hexOut" class="out" readonly wrap="off"></textarea>
   </div>
 
   <div class="box">
-    <div class="label">🟢 公式（新）</div>
-    <button class="txt" onclick="copyIt('txtOut','公式')">📋 複製公式</button>
+    <div class="label">🟢 <span id="lbl-formula"></span></div>
+    <button class="txt" onclick="copyIt('txtOut','Formula')" id="btn-copy-txt"></button>
     <textarea id="txtOut" class="out" readonly wrap="off"></textarea>
   </div>
+
+  <div id="checkResult"></div>
 
   <div id="msg"></div>
 </div>
 
 <div id="diag" style="display:none">
   <div class="section">
-    <h3>📊 规则诊断表</h3>
-    <p style="font-size:12px;color:#666">命中 = 有多少场被这条规则抓到。盈利 = 命中场的净盈亏。若为负 → 建议删除。</p>
+    <h3 id="h-rule"></h3>
+    <p style="font-size:12px;color:#666" id="h-rule-desc"></p>
     <div class="diag" id="ruleTable"></div>
   </div>
 
   <div class="section">
-    <h3>⏭ Skip 分析（未预测的场次）</h3>
+    <h3 id="h-skip"></h3>
     <div id="skipStats"></div>
   </div>
 
   <div class="section">
-    <h3>❌ 最亏的 20 场错判</h3>
+    <h3 id="h-worst"></h3>
     <div class="diag" id="worstTable"></div>
   </div>
 
   <div class="section">
-    <h3>💡 建议</h3>
+    <h3 id="h-suggest"></h3>
     <div id="suggestions"></div>
   </div>
 </div>
@@ -113,9 +128,179 @@ h3{margin-top:20px;margin-bottom:6px;font-size:15px;color:#333}
 'use strict';
 
 /* ==========================================================
+   i18n
+   ========================================================== */
+const I18N = {
+  zh: {
+    title: '⚡ 公式盈利優化器 v7',
+    desc: '貼數據（每行：A B C D E F 比分 結果）。搜尋最優門檻並自動診斷規則。',
+    'lbl-strength': '強度：',
+    's-fast': '快速',
+    's-std': '標準',
+    's-deep': '深度',
+    's-crazy': '瘋狂',
+    'btn-run': '🚀 開始搜尋 + 診斷',
+    'btn-stop': '⏹ 停止',
+    'btn-copy-hex': '📋 複製 HEX',
+    'btn-copy-txt': '📋 複製公式',
+    'lbl-formula': '公式（新）',
+    log-wait: '等待開始...',
+    log-loaded: '載入 {n} 條數據',
+    log-baseline: '基準盈利: {v}',
+    log-stage1: '階段1: {v}',
+    log-restart: '★ 重啟#{i} 新最優: {v}',
+    log-polish: '打磨第{k}輪: {v}',
+    log-done: '完成！最高盈利: {v}',
+    summary: '🏆 最高盈利：{v}（{n} 場）',
+    params: '參數：',
+    check-ok: '✅ 公式檢查通過：所有欄位引用格式正確',
+    check-err: '❌ 公式檢查失敗，發現以下問題：',
+    check-range: '第 {n} 處：範圍引用錯誤「{bad}」→ 應為「{good}」',
+    check-empty: '⚠ 公式為空',
+    h-rule: '📊 規則診斷表',
+    h-rule-desc: '命中 = 有多少場被這條規則抓到。盈利 = 命中場的淨盈虧。若為負 → 建議刪除。',
+    h-skip: '⏭ Skip 分析（未預測的場次）',
+    h-worst: '❌ 最虧的 20 場錯判',
+    h-suggest: '💡 建議',
+    th-rule: '規則',
+    th-hit: '命中',
+    th-correct: '正確',
+    th-wrong: '錯誤',
+    th-rate: '正確率',
+    th-profit: '淨盈利',
+    th-verdict: '判定',
+    th-result: '結果',
+    th-count: '場數',
+    th-pct: '佔比',
+    tag-del: '建議刪除',
+    tag-low: '輕微虧損',
+    tag-ok: '保留',
+    r-H: 'H（主勝）',
+    r-D: 'D（和局）',
+    r-A: 'A（客勝）',
+    r-total: '合計',
+    sug-del: '🔴 建議刪除/收緊以下規則：',
+    sug-skip: '🟡 Skip 最多的是「{r}」（{n} 場），可考慮加新規則覆蓋。',
+    sug-top: '🟢 最賺錢的規則：',
+    sug-hit: '　• {r}：命中 {n} 場，淨賺 {p}',
+    sug-hit-neg: '　• {r}：命中 {n} 場，淨虧 {p}',
+    copied: '✅ 已複製 {label}（{n} 字元）',
+    copy-fail: '❌ 自動複製失敗，請手動選取 → Ctrl+C',
+    no-data: '沒有有效數據',
+    th-A: 'A', th-B: 'B', th-C: 'C', th-D: 'D', th-E: 'E', th-F: 'F',
+    th-idx: '#', th-pred: '預測', th-actual: '實際', th-loss: '虧損'
+  },
+  en: {
+    title: '⚡ Formula Profit Optimizer v7',
+    desc: 'Paste data (each line: A B C D E F score result). Find best thresholds & auto-diagnose rules.',
+    'lbl-strength': 'Strength: ',
+    's-fast': 'Fast',
+    's-std': 'Standard',
+    's-deep': 'Deep',
+    's-crazy': 'Insane',
+    'btn-run': '🚀 Search + Diagnose',
+    'btn-stop': '⏹ Stop',
+    'btn-copy-hex': '📋 Copy HEX',
+    'btn-copy-txt': '📋 Copy Formula',
+    'lbl-formula': 'Formula (new)',
+    log-wait: 'Waiting...',
+    log-loaded: 'Loaded {n} rows',
+    log-baseline: 'Baseline profit: {v}',
+    log-stage1: 'Stage 1: {v}',
+    log-restart: '★ Restart #{i} new best: {v}',
+    log-polish: 'Polish round {k}: {v}',
+    log-done: 'Done! Best profit: {v}',
+    summary: '🏆 Best profit: {v} ({n} games)',
+    params: 'Params: ',
+    check-ok: '✅ Formula check passed: all cell references correct',
+    check-err: '❌ Formula check failed, issues found:',
+    check-range: 'Issue #{n}: wrong range "{bad}" → should be "{good}"',
+    check-empty: '⚠ Formula is empty',
+    h-rule: '📊 Rule Diagnosis',
+    h-rule-desc: 'Hit = how many games this rule catches. Profit = net P&L of hits. If negative → recommend delete.',
+    h-skip: '⏭ Skip Analysis (unpredicted games)',
+    h-worst: '❌ Top 20 Worst Misses',
+    h-suggest: '💡 Suggestions',
+    th-rule: 'Rule',
+    th-hit: 'Hit',
+    th-correct: 'Correct',
+    th-wrong: 'Wrong',
+    th-rate: 'Acc %',
+    th-profit: 'Net Profit',
+    th-verdict: 'Verdict',
+    th-result: 'Result',
+    th-count: 'Count',
+    th-pct: 'Pct',
+    tag-del: 'DELETE',
+    tag-low: 'MINOR LOSS',
+    tag-ok: 'KEEP',
+    r-H: 'H (Home)',
+    r-D: 'D (Draw)',
+    r-A: 'A (Away)',
+    r-total: 'Total',
+    sug-del: '🔴 Recommend deleting/tightening these rules:',
+    sug-skip: '🟡 Most skips are "{r}" ({n} games), consider adding new rule.',
+    sug-top: '🟢 Most profitable rules:',
+    sug-hit: '　• {r}: hit {n}, net +{p}',
+    sug-hit-neg: '　• {r}: hit {n}, net {p}',
+    copied: '✅ Copied {label} ({n} chars)',
+    copy-fail: '❌ Auto-copy failed, select manually → Ctrl+C',
+    no-data: 'No valid data',
+    th-A: 'A', th-B: 'B', th-C: 'C', th-D: 'D', th-E: 'E', th-F: 'F',
+    th-idx: '#', th-pred: 'Pred', th-actual: 'Actual', th-loss: 'Loss'
+  }
+};
+
+let LANG = 'zh';
+
+function T(key){
+  return (I18N[LANG] && I18N[LANG][key]) || key;
+}
+
+function TF(key, vars){
+  let s = T(key);
+  if(vars){
+    for(const k in vars){
+      s = s.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
+    }
+  }
+  return s;
+}
+
+function setLang(lang){
+  LANG = lang;
+  document.documentElement.lang = (lang === 'zh' ? 'zh-TW' : 'en');
+  document.getElementById('btn-zh').classList.toggle('active', lang === 'zh');
+  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+  document.getElementById('title').textContent = T('title');
+  document.getElementById('desc').textContent = T('desc');
+  document.getElementById('lbl-strength').textContent = T('lbl-strength');
+  document.getElementById('btnRun').textContent = T('btn-run');
+  document.getElementById('btnStop').textContent = T('btn-stop');
+  document.getElementById('btn-copy-hex').textContent = T('btn-copy-hex');
+  document.getElementById('btn-copy-txt').textContent = T('btn-copy-txt');
+  document.getElementById('lbl-formula').textContent = T('lbl-formula');
+  document.getElementById('h-rule').textContent = T('h-rule');
+  document.getElementById('h-rule-desc').textContent = T('h-rule-desc');
+  document.getElementById('h-skip').textContent = T('h-skip');
+  document.getElementById('h-worst').textContent = T('h-worst');
+  document.getElementById('h-suggest').textContent = T('h-suggest');
+  // 選單選項
+  const opts = document.querySelectorAll('#strength option');
+  opts[0].textContent = T('s-fast');
+  opts[1].textContent = T('s-std');
+  opts[2].textContent = T('s-deep');
+  opts[3].textContent = T('s-crazy');
+  // 若已有結果，重繪診斷
+  if(data.length > 0 && lastDiag){
+    renderDiag(lastDiag);
+  }
+}
+
+/* ==========================================================
    原始 HEX
    ========================================================== */
-const HEX_SRC = '3D 41 52 52 41 59 46 4F 52 4D 55 4C 41 28 49 46 28 28 41 32 3A 41 3D 22 22 29 2B 28 42 32 3A 42 3D 22 22 29 2B 28 43 32 3A 43 3D 22 22 29 2B 28 44 32 3A 44 3D 22 22 29 2B 28 45 32 3A 45 3D 22 22 29 2B 28 46 32 3A 46 3D 22 22 29 2C 22 22 2C 49 46 28 28 42 32 3A 42 3E 3D 33 32 29 2A 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3C 3D 36 29 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 36 30 29 2A 28 43 32 3A 43 3C 3D 31 31 29 2A 28 44 32 3A 44 3E 3D 31 34 30 29 2A 28 44 32 3A 44 3C 3D 31 39 30 29 2A 28 46 32 3A 46 3E 3D 34 30 30 29 2A 28 46 32 3A 46 3C 3D 34 38 30 29 2C 22 48 22 2C 49 46 28 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3C 3D 33 29 2A 28 45 32 3A 45 3C 33 38 30 29 2A 28 41 42 53 28 44 32 3A 44 2D 46 32 3A 46 29 3C 34 30 29 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 34 35 29 2A 28 43 32 3A 43 3C 3D 32 30 29 2A 28 41 42 53 28 44 32 3A 44 2D 46 32 3A 46 29 3C 37 30 29 2A 28 44 32 3A 44 3C 34 30 30 29 2C 22 44 22 2C 49 46 28 41 42 53 28 44 32 3A 44 2D 46 32 3A 46 29 3C 31 38 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 34 32 29 2A 28 44 32 3A 44 3E 3D 31 35 35 29 2A 28 44 32 3A 44 3C 32 30 35 29 2A 28 44 32 3A 44 3C 3E 46 32 3A 46 29 2A 28 46 32 3A 46 3E 44 32 3A 44 29 2A 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3E 3D 35 30 29 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 34 32 29 2A 28 44 32 3A 44 3E 3D 31 35 35 29 2A 28 44 32 3A 44 3C 32 30 35 29 2A 28 44 32 3A 44 3C 3E 46 32 3A 46 29 2C 22 48 22 2C 49 46 28 28 41 32 3A 41 3E 3D 33 34 29 2A 28 44 32 3A 44 3E 32 30 35 29 2A 28 44 32 3A 44 3C 3D 32 33 35 29 2A 28 44 32 3A 44 3C 3E 46 32 3A 46 29 2C 22 44 22 2C 49 46 28 28 44 32 3A 44 3E 3D 34 30 30 29 2A 28 41 32 3A 41 3E 3D 34 32 29 2C 22 44 22 2C 49 46 28 28 44 32 3A 44 3E 3D 33 34 30 29 2A 28 41 32 3A 41 3E 3D 33 38 29 2A 28 46 32 3A 46 3C 32 35 30 29 2A 28 44 32 3A 44 3E 46 32 3A 46 29 2C 49 46 28 46 32 3A 46 3C 32 30 30 2C 49 46 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3C 3D 35 2C 22 44 22 2C 22 41 22 29 2C 22 44 22 29 2C 49 46 28 28 45 32 3A 45 3C 3D 33 31 35 29 2A 28 42 32 3A 42 3E 3D 32 37 29 2A 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3C 3D 32 35 29 2A 28 44 32 3A 44 3E 3D 32 35 30 29 2A 28 44 32 3A 44 3C 3D 33 35 30 29 2A 28 44 32 3A 44 3C 45 32 3A 45 29 2C 22 44 22 2C 49 46 28 28 43 32 3A 43 3E 41 32 3A 41 29 2A 28 46 32 3A 46 3E 3D 34 39 30 29 2A 28 46 32 3A 46 3C 3D 35 36 30 29 2A 28 44 32 3A 44 3C 32 30 30 29 2C 22 44 22 2C 49 46 28 28 43 32 3A 43 3E 41 32 3A 41 29 2A 28 46 32 3A 46 3E 44 32 3A 44 29 2A 28 46 32 3A 46 3C 35 35 30 29 2A 28 45 32 3A 45 3E 33 32 30 29 2C 22 48 22 2C 49 46 28 28 43 32 3A 43 3E 41 32 3A 41 29 2A 28 46 32 3A 46 3E 3D 31 38 34 29 2A 28 46 32 3A 46 3C 3D 32 31 36 29 2A 28 43 32 3A 43 3E 3D 34 30 29 2C 22 41 22 2C 49 46 28 28 43 32 3A 43 3E 41 32 3A 41 29 2A 28 46 32 3A 46 3E 44 32 3A 44 29 2A 28 46 32 3A 46 3C 33 30 30 29 2A 28 43 32 3A 43 3C 34 35 29 2A 28 44 32 3A 44 3C 32 35 30 29 2C 22 44 22 2C 49 46 28 44 32 3A 44 3E 46 32 3A 46 2C 49 46 28 28 46 32 3A 46 3C 3D 31 35 30 29 2A 28 43 32 3A 43 3E 3D 36 35 29 2C 22 41 22 2C 49 46 28 44 32 3A 44 3E 31 35 30 30 2C 49 46 28 43 32 3A 43 3E 3D 35 30 2C 22 41 22 2C 49 46 2830 41 32 3A 41 3E 43 32 3A 43 2C 22 44 22 2C 22 73 6B 69 70 22 29 29 2C 49 46 28 28 41 32 3A 41 3E 3D 33 33 29 2A 28 44 32 3A 44 3E 3D 33 35 30 29 2C 22 44 22 2C 22 48 22 29 29 29 2C 49 46 28 46 32 3A 46 3E 44 32 3A 44 2C 49 46 28 28 41 32 3A 41 3E 3D 35 30 29 2A 28 46 32 3A 46 2D 44 32 3A 44 3E 3D 34 30 30 29 2C 22 48 22 2C 49 46 28 46 32 3A 46 3E 3D 37 30 30 2C 49 46 28 41 32 3A 41 3E 3D 38 30 2C 22 44 22 2C 49 46 28 43 32 3A 43 3E 41 32 3A 41 2C 22 44 22 2C 49 46 28 41 32 3A 41 3C 34 35 2C 22 44 22 2C 22 73 6B 69 70 22 29 29 29 2C 49 46 28 28 45 32 3A 45 3E 3D 34 37 30 29 2A 28 46 32 3A 46 3E 3D 35  30 29 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 34 37 29 2A 28 44 32 3A 44 3C 3D 31 34 30 29 2C 22 48 22 2C 22 41 22 29 29 29 29 2C 49 46 28 41 32 3A 41 3E 43 32 3A 43 2C 22 48 22 2C 49 46 28 43 32 3A 43 3E 41 32 3A 41 2C 22 41 22 2C 22 73 6B 69 70 22 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29';
+const HEX_SRC = '3D 41 52 52 41 59 46 4F 52 4D 55 4C 41 28 49 46 28 28 41 32 3A 41 3D 22 22 29 2B 28 42 32 3A 42 3D 22 22 29 2B 28 43 32 3A 43 3D 22 22 29 2B 28 44 32 3A 44 3D 22 22 29 2B 28 45 32 3A 45 3D 22 22 29 2B 28 46 32 3A 46 3D 22 22 29 2C 22 22 2C 49 46 28 28 42 32 3A 42 3E 3D 33 32 29 2A 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3C 3D 36 29 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 36 30 29 2A 28 43 32 3A 43 3C 3D 31 31 29 2A 28 44 32 3A 44 3E 3D 31 34 30 29 2A 28 44 32 3A 44 3C 3D 31 39 30 29 2A 28 46 32 3A 46 3E 3D 34 30 30 29 2A 28 46 32 3A 46 3C 3D 34 38 30 29 2C 22 48 22 2C 49 46 28 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3C 3D 33 29 2A 28 45 32 3A 45 3C 33 38 30 29 2A 28 41 42 53 28 44 32 3A 44 2D 46 32 3A 46 29 3C 34 30 29 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 34 35 29 2A 28 43 32 3A 43 3C 3D 32 30 29 2A 28 41 42 53 28 44 32 3A 44 2D 46 32 3A 46 29 3C 37 30 29 2A 28 44 32 3A 44 3C 34 30 30 29 2C 22 44 22 2C 49 46 28 41 42 53 28 44 32 3A 44 2D 46 32 3A 46 29 3C 31 38 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 34 32 29 2A 28 44 32 3A 44 3E 3D 31 35 35 29 2A 28 44 32 3A 44 3C 32 30 35 29 2A 28 44 32 3A 44 3C 3E 46 32 3A 46 29 2A 28 46 32 3A 46 3E 44 32 3A 44 29 2A 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3E 3D 35 30 29 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 34 32 29 2A 28 44 32 3A 44 3E 3D 31 35 35 29 2A 28 44 32 3A 44 3C 32 30 35 29 2A 28 44 32 3A 44 3C 3E 46 32 3A 46 29 2C 22 48 22 2C 49 46 28 28 41 32 3A 41 3E 3D 33 34 29 2A 28 44 32 3A 44 3E 32 30 35 29 2A 28 44 32 3A 44 3C 3D 32 33 35 29 2A 28 44 32 3A 44 3C 3E 46 32 3A 46 29 2C 22 44 22 2C 49 46 28 28 44 32 3A 44 3E 3D 34 30 30 29 2A 28 41 32 3A 41 3E 3D 34 32 29 2C 22 44 22 2C 49 46 28 28 44 32 3A 44 3E 3D 33 34 30 29 2A 28 41 32 3A 41 3E 3D 33 38 29 2A 28 46 32 3A 46 3C 32 35 30 29 2A 28 44 32 3A 44 3E 46 32 3A 46 29 2C 49 46 28 46 32 3A 46 3C 32 30 30 2C 49 46 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3C 3D 35 2C 22 44 22 2C 22 41 22 29 2C 22 44 22 29 2C 49 46 28 28 45 32 3A 45 3C 3D 33 31 35 29 2A 28 42 32 3A 42 3E 3D 32 37 29 2A 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3C 3D 32 35 29 2A 28 44 32 3A 44 3E 3D 32 35 30 29 2A 28 44 32 3A 44 3C 3D 33 35 30 29 2A 28 44 32 3A 44 3C 45 32 3A 45 29 2C 22 44 22 2C 49 46 28 28 43 32 3A 43 3E 41 32 3A 41 29 2A 28 46 32 3A 46 3E 3D 34 39 30 29 2A 28 46 32 3A 46 3C 3D 35 36 30 29 2A 28 44 32 3A 44 3C 32 30 30 29 2C 22 44 22 2C 49 46 28 28 43 32 3A 43 3E 41 32 3A 41 29 2A 28 46 32 3A 46 3E 44 32 3A 44 29 2A 28 46 32 3A 46 3C 35 35 30 29 2A 28 45 32 3A 45 3E 33 32 30 29 2C 22 48 22 2C 49 46 28 28 43 32 3A 43 3E 41 32 3A 41 29 2A 28 46 32 3A 46 3E 3D 31 38 34 29 2A 28 46 32 3A 46 3C 3D 32 31 36 29 2A 28 43 32 3A 43 3E 3D 34 30 29 2C 22 41 22 2C 49 46 28 28 43 32 3A 43 3E 41 32 3A 41 29 2A 28 46 32 3A 46 3E 44 32 3A 44 29 2A 28 46 32 3A 46 3C 33 30 30 29 2A 28 43 32 3A 43 3C 34 35 29 2A 28 44 32 3A 44 3C 32 35 30 29 2C 22 44 22 2C 49 46 28 44 32 3A 44 3E 46 32 3A 46 2C 49 46 28 28 46 32 3A 46 3C 3D 31 35 30 29 2A 28 43 32 3A 43 3E 3D 36 35 29 2C 22 41 22 2C 49 46 28 44 32 3A 44 3E 31 35 30 30 2C 49 46 28 43 32 3A 43 3E 3D 35 30 2C 22 41 22 2C 49 46 28 41 32 3A 41 3E 43 32 3A 43 2C 22 44 22 2C 22 73 6B 69 70 22 29 29 2C 49 46 28 28 41 32 3A 41 3E 3D 33 33 29 2A 28 44 32 3A 44 3E 3D 33 35 30 29 2C 22 44 22 2C 22 48 22 29 29 29 2C 49 46 28 46 32 3A 46 3E 44 32 3A 44 2C 49 46 28 28 41 32 3A 41 3E 3D 35 30 29 2A 28 46 32 3A 46 2D 44 32 3A 44 3E 3D 34 30 30 29 2C 22 48 22 2C 49 46 28 46 32 3A 46 3E 3D 37 30 30 2C 49 46 28 41 32 3A 41 3E 3D 38 30 2C 22 44 22 2C 49 46 28 43 32 3A 43 3E 41 32 3A 41 2C 22 44 22 2C 49 46 28 41 32 3A 41 3C 34 35 2C 22 44 22 2C 22 73 6B 69 70 22 29 29 29 2C 49 46 28 28 45 32 3A 45 3E 3D 34 37 30 29 2A 28 46 32 3A 46 3E 3D 35 30 30 29 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 34 37 29 2A 28 44 32 3A 44 3C 3D 31 34 30 29 2C 22 48 22 2C 22 41 22 29 29 29 29 2C 49 46 28 41 32 3A 41 3E 43 32 3A 43 2C 22 48 22 2C 49 46 28 43 32 3A 43 3E 41 32 3A 41 2C 22 41 22 2C 22 73 6B 69 70 22 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29';
 
 function hexToStr(h){
   const s = h.replace(/\s+/g, '');
@@ -202,6 +387,7 @@ function defaultP(){ const P={}; for(const k in P_DEF) P[k]=P_DEF[k].d; return P
 
 let data = [];
 let running = false;
+let lastDiag = null;
 
 function parseData(text){
   const rows = [];
@@ -217,7 +403,6 @@ function parseData(text){
   return rows;
 }
 
-/* ============ 预测函数：返回结果 + 命中的规则编号 ============ */
 function predictWithRule(r, P){
   const {A,B,C,D,E,F} = r;
   if(B >= P.b1 && Math.abs(A-C) <= P.ac1) return {result:'D', rule:'R1'};
@@ -336,9 +521,49 @@ function genHex(P){
   return strToHex(genText(P));
 }
 
-/* ============ 诊断 ============ */
+/* ==========================================================
+   ⭐ 公式檢查：A2:A 對，A2:D 錯
+   ========================================================== */
+function checkFormula(formula){
+  const errors = [];
+  if(!formula || !formula.trim()){
+    return {ok:false, errors:[T('check-empty')]};
+  }
+  // 找所有 X2:Y 型引用
+  const re = /([A-F])2:([A-F])/g;
+  let m;
+  let count = 0;
+  while((m = re.exec(formula)) !== null){
+    count++;
+    if(m[1] !== m[2]){
+      errors.push(TF('check-range', {
+        n: count,
+        bad: m[1] + '2:' + m[2],
+        good: m[1] + '2:' + m[1]
+      }));
+    }
+  }
+  return {ok: errors.length === 0, errors};
+}
+
+function renderCheck(formula){
+  const r = checkFormula(formula);
+  const el = document.getElementById('checkResult');
+  if(r.ok){
+    el.innerHTML = '<div class="check-ok">' + T('check-ok') + '</div>';
+  } else {
+    let html = '<div class="check-err">' + T('check-err') + '<ul>';
+    for(const e of r.errors) html += '<li>' + e + '</li>';
+    html += '</ul></div>';
+    el.innerHTML = html;
+  }
+  return r.ok;
+}
+
+/* ==========================================================
+   診斷
+   ========================================================== */
 function diagnose(rows, P){
-  // 逐场：规则 → 命中数、正确、错误、盈利
   const stats = {};
   const skips = {H:0, D:0, A:0, total:0};
   const worst = [];
@@ -369,12 +594,8 @@ function diagnose(rows, P){
     } else {
       stats[rule].wrong++;
       gameProfit = -100;
-      // 记录错判，用于「最亏 top 20」
       worst.push({
-        idx: i,
-        rule,
-        pred: p,
-        actual: r.result,
+        idx: i, rule, pred: p, actual: r.result,
         A: r.A, B: r.B, C: r.C, D: r.D, E: r.E, F: r.F,
         profit: gameProfit
       });
@@ -386,23 +607,28 @@ function diagnose(rows, P){
 }
 
 function renderDiag(diagResult){
-  // ===== 规则表 =====
-  const rules = Object.values(diagResult.stats).sort((a,b) => {
-    // 先按盈亏（负的在最上面，提示删除）
-    return a.profit - b.profit;
-  });
+  lastDiag = diagResult;
+
+  // ===== 規則表 =====
+  const rules = Object.values(diagResult.stats).sort((a,b) => a.profit - b.profit);
 
   let html = '<table><thead><tr>' +
-    '<th>规则</th><th>命中</th><th>正确</th><th>错误</th><th>正确率</th><th>净盈利</th><th>判定</th>' +
+    '<th>' + T('th-rule') + '</th>' +
+    '<th>' + T('th-hit') + '</th>' +
+    '<th>' + T('th-correct') + '</th>' +
+    '<th>' + T('th-wrong') + '</th>' +
+    '<th>' + T('th-rate') + '</th>' +
+    '<th>' + T('th-profit') + '</th>' +
+    '<th>' + T('th-verdict') + '</th>' +
     '</tr></thead><tbody>';
 
   for(const r of rules){
     const rate = r.hit > 0 ? (r.correct / r.hit * 100).toFixed(1) + '%' : '-';
     const pcls = r.profit > 0 ? 'profit-pos' : (r.profit < 0 ? 'profit-neg' : 'profit-zero');
     let tag = '';
-    if(r.profit < -500 && r.hit >= 5) tag = '<span class="tag-del">建議刪除</span>';
-    else if(r.profit < 0) tag = '<span class="tag-low">輕微虧損</span>';
-    else if(r.profit > 0 && r.hit >= 5) tag = '<span class="tag-ok">保留</span>';
+    if(r.profit < -500 && r.hit >= 5) tag = '<span class="tag-del">' + T('tag-del') + '</span>';
+    else if(r.profit < 0) tag = '<span class="tag-low">' + T('tag-low') + '</span>';
+    else if(r.profit > 0 && r.hit >= 5) tag = '<span class="tag-ok">' + T('tag-ok') + '</span>';
 
     html += '<tr>' +
       '<td><b>' + r.rule + '</b></td>' +
@@ -419,12 +645,16 @@ function renderDiag(diagResult){
 
   // ===== Skip =====
   const sk = diagResult.skips;
-  let skHtml = '<table><thead><tr><th>結果</th><th>場數</th><th>佔比</th></tr></thead><tbody>';
   const total = sk.total || 1;
-  skHtml += '<tr><td>H（主勝）</td><td>' + (sk.H||0) + '</td><td>' + ((sk.H||0)/total*100).toFixed(1) + '%</td></tr>';
-  skHtml += '<tr><td>D（和局）</td><td>' + (sk.D||0) + '</td><td>' + ((sk.D||0)/total*100).toFixed(1) + '%</td></tr>';
-  skHtml += '<tr><td>A（客勝）</td><td>' + (sk.A||0) + '</td><td>' + ((sk.A||0)/total*100).toFixed(1) + '%</td></tr>';
-  skHtml += '<tr><td><b>合計</b></td><td><b>' + sk.total + '</b></td><td>-</td></tr>';
+  let skHtml = '<table><thead><tr>' +
+    '<th>' + T('th-result') + '</th>' +
+    '<th>' + T('th-count') + '</th>' +
+    '<th>' + T('th-pct') + '</th>' +
+    '</tr></thead><tbody>';
+  skHtml += '<tr><td>' + T('r-H') + '</td><td>' + (sk.H||0) + '</td><td>' + ((sk.H||0)/total*100).toFixed(1) + '%</td></tr>';
+  skHtml += '<tr><td>' + T('r-D') + '</td><td>' + (sk.D||0) + '</td><td>' + ((sk.D||0)/total*100).toFixed(1) + '%</td></tr>';
+  skHtml += '<tr><td>' + T('r-A') + '</td><td>' + (sk.A||0) + '</td><td>' + ((sk.A||0)/total*100).toFixed(1) + '%</td></tr>';
+  skHtml += '<tr><td><b>' + T('r-total') + '</b></td><td><b>' + sk.total + '</b></td><td>-</td></tr>';
   skHtml += '</tbody></table>';
   document.getElementById('skipStats').innerHTML = skHtml;
 
@@ -432,9 +662,12 @@ function renderDiag(diagResult){
   diagResult.worst.sort((a,b) => a.profit - b.profit);
   const top20 = diagResult.worst.slice(0, 20);
   let wHtml = '<table><thead><tr>' +
-    '<th>#</th><th>規則</th><th>預測</th><th>實際</th>' +
+    '<th>' + T('th-idx') + '</th>' +
+    '<th>' + T('th-rule') + '</th>' +
+    '<th>' + T('th-pred') + '</th>' +
+    '<th>' + T('th-actual') + '</th>' +
     '<th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th>' +
-    '<th>虧損</th>' +
+    '<th>' + T('th-loss') + '</th>' +
     '</tr></thead><tbody>';
   for(const w of top20){
     wHtml += '<tr>' +
@@ -458,29 +691,31 @@ function renderDiag(diagResult){
   const sug = [];
   const badRules = rules.filter(r => r.profit < 0 && r.hit >= 3);
   if(badRules.length){
-    sug.push('<b>🔴 建議刪除/收緊以下規則：</b>');
+    sug.push('<b>' + T('sug-del') + '</b>');
     for(const r of badRules){
-      sug.push('　• <b>' + r.rule + '</b>：命中 ' + r.hit + ' 場，淨虧 ' + r.profit);
+      sug.push(TF('sug-hit-neg', {r: r.rule, n: r.hit, p: r.profit}));
     }
   }
   if(sk.total > 0){
     const maxResult = ['H','D','A'].reduce((a,b) => (sk[a]||0) > (sk[b]||0) ? a : b);
-    sug.push('<b>🟡 Skip 最多的是「' + maxResult + '」（' + (sk[maxResult]||0) + ' 場）</b>，可考慮加新規則覆蓋。');
+    sug.push(TF('sug-skip', {r: T('r-'+maxResult), n: (sk[maxResult]||0)}));
   }
   const highProfit = rules.filter(r => r.profit > 0).sort((a,b) => b.profit - a.profit).slice(0, 3);
   if(highProfit.length){
-    sug.push('<b>🟢 最賺錢的規則：</b>');
+    sug.push('<b>' + T('sug-top') + '</b>');
     for(const r of highProfit){
-      sug.push('　• <b>' + r.rule + '</b>：命中 ' + r.hit + ' 場，淨賺 ' + r.profit);
+      sug.push(TF('sug-hit', {r: r.rule, n: r.hit, p: r.profit}));
     }
   }
   document.getElementById('suggestions').innerHTML = sug.join('<br>');
 }
 
-/* ============ 主流程 ============ */
+/* ==========================================================
+   主流程
+   ========================================================== */
 async function start(){
   data = parseData(document.getElementById('input').value);
-  if(data.length === 0){ alert('没有有效数据'); return; }
+  if(data.length === 0){ alert(T('no-data')); return; }
 
   running = true;
   document.getElementById('btnRun').disabled = true;
@@ -488,16 +723,17 @@ async function start(){
   const log = document.getElementById('log');
   const bestEl = document.getElementById('best');
   document.getElementById('diag').style.display = 'none';
+  document.getElementById('checkResult').innerHTML = '';
 
-  log.textContent = '载入 ' + data.length + ' 条数据\n';
+  log.textContent = TF('log-loaded', {n: data.length}) + '\n';
 
   let best = defaultP();
   let bestProfit = profit(data, best);
-  log.textContent += '基准盈利: ' + bestProfit + '\n';
+  log.textContent += TF('log-baseline', {v: bestProfit}) + '\n';
 
   let r = descend(data, best);
   if(r.profit > bestProfit){ bestProfit = r.profit; best = r.P; }
-  log.textContent += '阶段1: ' + bestProfit + '\n';
+  log.textContent += TF('log-stage1', {v: bestProfit}) + '\n';
 
   const N = parseInt(document.getElementById('strength').value);
   for(let i = 0; i < N && running; i++){
@@ -505,7 +741,7 @@ async function start(){
     if(r.profit > bestProfit){
       bestProfit = r.profit;
       best = r.P;
-      log.textContent += '★ 重启#' + (i+1) + ' 新最优: ' + bestProfit + '\n';
+      log.textContent += TF('log-restart', {i: (i+1), v: bestProfit}) + '\n';
       log.scrollTop = log.scrollHeight;
     }
     if(i % 5 === 0) await new Promise(x => setTimeout(x, 0));
@@ -517,23 +753,25 @@ async function start(){
       if(r.profit <= bestProfit) break;
       bestProfit = r.profit;
       best = r.P;
-      log.textContent += '打磨第' + (k+1) + '轮: ' + bestProfit + '\n';
+      log.textContent += TF('log-polish', {k: (k+1), v: bestProfit}) + '\n';
     }
   }
 
-  log.textContent += '\n完成！最高盈利: ' + bestProfit + '\n';
+  log.textContent += '\n' + TF('log-done', {v: bestProfit}) + '\n';
 
   const newText = genText(best);
   const newHex = genHex(best);
 
   bestEl.style.display = 'block';
   document.getElementById('summary').innerHTML =
-    '<b>🏆 最高盈利：' + bestProfit + '</b>（' + data.length + ' 场）';
-  document.getElementById('params').textContent = '参数：' + JSON.stringify(best);
+    TF('summary', {v: '<b>' + bestProfit + '</b>', n: data.length});
+  document.getElementById('params').textContent = T('params') + JSON.stringify(best);
   document.getElementById('txtOut').value = newText;
   document.getElementById('hexOut').value = newHex;
 
-  // 跑诊断
+  // ⭐ 公式檢查
+  renderCheck(newText);
+
   const diag = diagnose(data, best);
   renderDiag(diag);
   document.getElementById('diag').style.display = 'block';
@@ -562,7 +800,7 @@ function copyIt(id, label){
   const txt = el.value;
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(() => {
-      showMsg('✅ 已複製 ' + label + '（' + txt.length + ' 字元）', true);
+      showMsg(TF('copied', {label, n: txt.length}), true);
     }).catch(() => fallbackCopy(txt, label));
   } else {
     fallbackCopy(txt, label);
@@ -580,9 +818,19 @@ function fallbackCopy(text, label){
   let ok = false;
   try{ ok = document.execCommand('copy'); }catch(e){}
   document.body.removeChild(ta);
-  if(ok) showMsg('✅ 已複製 ' + label + '（' + text.length + ' 字元）', true);
-  else showMsg('❌ 自動複製失敗，請手動選取 → Ctrl+C', false);
+  if(ok) showMsg(TF('copied', {label, n: text.length}), true);
+  else showMsg(T('copy-fail'), false);
 }
+
+/* ==========================================================
+   初始化
+   ========================================================== */
+window.addEventListener('DOMContentLoaded', function(){
+  setLang('zh');
+  document.getElementById('log').textContent = T('log-wait');
+  document.getElementById('input').placeholder =
+    '23\t27\t49\t355\t385\t169\t0:3\tA\n62\t27\t9\t158\t395\t405\t3:0\tH';
+});
 </script>
 </body>
 </html>
