@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>公式盈利優化器</title>
+<title>智慧規則優化器 v10</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -18,12 +18,12 @@ button:disabled{background:#999;cursor:not-allowed}
 button.stop{background:#dc3545}
 button.hex{background:#6f42c1}
 button.txt{background:#28a745}
-#log{background:#1e1e1e;color:#d4d4d4;border-radius:5px;padding:12px;margin-top:12px;height:120px;overflow-y:auto;font-family:monospace;font-size:12px;white-space:pre-wrap;line-height:1.5}
+#log{background:#1e1e1e;color:#d4d4d4;border-radius:5px;padding:12px;margin-top:12px;height:140px;overflow-y:auto;font-family:monospace;font-size:12px;white-space:pre-wrap;line-height:1.5}
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
 .best b{color:#155724}
 .box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
 .label{font-weight:bold;font-size:13px;margin-bottom:6px;color:#333}
-.out{width:100%;height:110px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto;resize:vertical}
+.out{width:100%;height:120px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto;resize:vertical}
 .param{font-family:monospace;font-size:12px;word-break:break-all;color:#555;margin-top:6px}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
 select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px}
@@ -33,45 +33,41 @@ select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px}
 table{border-collapse:collapse;width:100%;font-size:12px;margin-top:8px;background:#fff}
 th,td{border:1px solid #ccc;padding:6px 8px;text-align:right}
 th{background:#e9ecef;text-align:center;position:sticky;top:0;z-index:2}
-td:first-child,td:nth-child(2),td:nth-child(3){text-align:left}
-.diag{max-height:500px;overflow:auto;border:1px solid #ccc;border-radius:4px;margin-top:10px}
+td:first-child,td:nth-child(2){text-align:left}
+.diag{max-height:400px;overflow:auto;border:1px solid #ccc;border-radius:4px;margin-top:10px}
 .profit-pos{color:#0a7a0a;font-weight:bold}
 .profit-neg{color:#c00;font-weight:bold}
-.tag-del{background:#dc3545;color:#fff;padding:2px 6px;border-radius:3px;font-size:10px;font-weight:bold}
-.tag-ok{background:#28a745;color:#fff;padding:2px 6px;border-radius:3px;font-size:10px;font-weight:bold}
-.tag-low{background:#ffc107;color:#333;padding:2px 6px;border-radius:3px;font-size:10px;font-weight:bold}
-h3{margin-top:20px;margin-bottom:6px;font-size:15px;color:#333}
+.tag-del{background:#dc3545;color:#fff;padding:2px 6px;border-radius:3px;font-size:10px}
+.tag-ok{background:#28a745;color:#fff;padding:2px 6px;border-radius:3px;font-size:10px}
+.tag-off{background:#999;color:#fff;padding:2px 6px;border-radius:3px;font-size:10px}
+.tag-pred{background:#007bff;color:#fff;padding:2px 6px;border-radius:3px;font-size:10px}
 .section{background:#fff;padding:12px;border-radius:6px;border:1px solid #ddd;margin-top:12px}
-.check-ok{color:#0a7a0a;font-weight:bold;padding:8px;background:#d4edda;border-radius:4px;margin-top:8px}
-.check-err{color:#721c24;font-weight:bold;padding:8px;background:#f8d7da;border-radius:4px;margin-top:8px}
-.check-err ul{margin:6px 0 0 20px}
-.check-err li{font-family:monospace;font-size:12px;margin:2px 0}
+h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </style>
 </head>
 <body>
 
 <div class="top">
-  <h2 id="title">⚡ 公式盈利優化器</h2>
+  <h2 id="title">🧬 智慧規則優化器 v10</h2>
   <div>
-    <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁體中文</button>
-    <button class="lang-btn" id="btn-en" onclick="setLang('en')">English</button>
+    <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁中</button>
+    <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
   </div>
 </div>
 
-<p id="desc">貼數據（每行：A B C D E F 比分 結果）。搜尋最優門檻並自動診斷規則。</p>
+<p id="desc">結構自動演化：加/刪/改規則、切換結果標籤、調整門檻。</p>
 
-<textarea id="input" placeholder="23	27	49	355	385	169	0:3	A
-62	27	9	158	395	405	3:0	H"></textarea>
+<textarea id="input" placeholder="23 27 49 355 385 169 0:3 A
+62 27 9 158 395 405 3:0 H"></textarea>
 
 <div class="row">
   <label id="lbl-strength">強度：</label>
   <select id="strength">
-    <option value="10" id="opt-1">快速</option>
-    <option value="50" id="opt-2" selected>標準</option>
-    <option value="200" id="opt-3">深度</option>
-    <option value="1000" id="opt-4">瘋狂</option>
+    <option value="10">快速</option>
+    <option value="50" selected>標準</option>
+    <option value="150">深度</option>
   </select>
-  <button id="btnRun" onclick="start()">🚀 開始搜尋 + 診斷</button>
+  <button id="btnRun" onclick="start()">🚀 開始演化</button>
   <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
 </div>
 
@@ -82,353 +78,206 @@ h3{margin-top:20px;margin-bottom:6px;font-size:15px;color:#333}
   <div class="param" id="params"></div>
 
   <div class="box">
-    <div class="label">🟣 HEX</div>
-    <button class="hex" id="btn-copy-hex" onclick="copyIt('hexOut','HEX')">📋 複製 HEX</button>
-    <textarea id="hexOut" class="out" readonly wrap="off"></textarea>
-  </div>
-
-  <div class="box">
-    <div class="label">🟢 <span id="lbl-formula">公式（新）</span></div>
-    <button class="txt" id="btn-copy-txt" onclick="copyIt('txtOut','Formula')">📋 複製公式</button>
+    <div class="label">🟢 公式（新）</div>
+    <button class="txt" onclick="copyIt('txtOut','Formula')">📋 複製公式</button>
     <textarea id="txtOut" class="out" readonly wrap="off"></textarea>
   </div>
 
-  <div id="checkResult"></div>
   <div id="msg"></div>
 </div>
 
 <div id="diag" style="display:none">
   <div class="section">
-    <h3 id="h-rule">📊 規則診斷表</h3>
-    <p style="font-size:12px;color:#666" id="h-rule-desc">命中 = 有多少場被這條規則抓到。盈利 = 命中場的淨盈虧。若為負 → 建議刪除。</p>
+    <h3 id="h-rule">📋 演化後規則表</h3>
+    <p style="font-size:12px;color:#666">已自動決定啟用哪些規則、每條指向 H/D/A/skip。</p>
     <div class="diag" id="ruleTable"></div>
-  </div>
-  <div class="section">
-    <h3 id="h-skip">⏭ Skip 分析（未預測的場次）</h3>
-    <div id="skipStats"></div>
-  </div>
-  <div class="section">
-    <h3 id="h-worst">❌ 最虧的 20 場錯判</h3>
-    <div class="diag" id="worstTable"></div>
-  </div>
-  <div class="section">
-    <h3 id="h-suggest">💡 建議</h3>
-    <div id="suggestions"></div>
   </div>
 </div>
 
 <script>
 'use strict';
 
-/* ==========================================================
-   翻譯字典（用最簡單的 key-value 形式）
-   ========================================================== */
-var TXT_ZH = {
-  title: '⚡ 公式盈利優化器',
-  desc: '貼數據（每行：A B C D E F 比分 結果）。搜尋最優門檻並自動診斷規則。',
-  strength: '強度：',
-  opt1: '快速',
-  opt2: '標準',
-  opt3: '深度',
-  opt4: '瘋狂',
-  run: '🚀 開始搜尋 + 診斷',
-  stop: '⏹ 停止',
-  copyHex: '📋 複製 HEX',
-  copyTxt: '📋 複製公式',
-  formulaLabel: '公式（新）',
-  hRule: '📊 規則診斷表',
-  hRuleDesc: '命中 = 有多少場被這條規則抓到。盈利 = 命中場的淨盈虧。若為負 → 建議刪除。',
-  hSkip: '⏭ Skip 分析（未預測的場次）',
-  hWorst: '❌ 最虧的 20 場錯判',
-  hSuggest: '💡 建議',
-  thRule: '規則', thHit: '命中', thCorrect: '正確', thWrong: '錯誤',
-  thRate: '正確率', thProfit: '淨盈利', thVerdict: '判定',
-  thResult: '結果', thCount: '場數', thPct: '佔比',
-  tagDel: '建議刪除', tagLow: '輕微虧損', tagOk: '保留',
-  rH: 'H（主勝）', rD: 'D（和局）', rA: 'A（客勝）', rTotal: '合計',
-  sugDel: '🔴 建議刪除/收緊以下規則：',
-  sugSkip: '🟡 Skip 最多的是「{r}」（{n} 場），可考慮加新規則覆蓋。',
-  sugTop: '🟢 最賺錢的規則：',
-  sugHit: '　• {r}：命中 {n} 場，淨賺 {p}',
-  sugHitNeg: '　• {r}：命中 {n} 場，淨虧 {p}',
-  copied: '✅ 已複製 {label}（{n} 字元）',
-  copyFail: '❌ 自動複製失敗，請手動選取 → Ctrl+C',
-  noData: '沒有有效數據',
-  thIdx: '#', thPred: '預測', thActual: '實際', thLoss: '虧損',
-  logWait: '等待開始...',
-  logLoaded: '載入 {n} 條數據',
-  logBaseline: '基準盈利: {v}',
-  logStage1: '階段1: {v}',
-  logRestart: '★ 重啟#{i} 新最優: {v}',
-  logPolish: '打磨第{k}輪: {v}',
-  logDone: '完成！最高盈利: {v}',
-  summary: '🏆 最高盈利：{v}（{n} 場）',
-  paramsLabel: '參數：',
-  checkOk: '✅ 公式檢查通過：所有欄位引用格式正確',
-  checkErr: '❌ 公式檢查失敗，發現以下問題：',
-  checkRange: '第 {n} 處：範圍引用錯誤「{bad}」→ 應為「{good}」',
-  checkEmpty: '⚠ 公式為空'
-};
-
-var TXT_EN = {
-  title: '⚡ Formula Profit Optimizer',
-  desc: 'Paste data (line: A B C D E F score result). Find best thresholds & auto-diagnose.',
-  strength: 'Strength: ',
-  opt1: 'Fast',
-  opt2: 'Standard',
-  opt3: 'Deep',
-  opt4: 'Insane',
-  run: '🚀 Search + Diagnose',
-  stop: '⏹ Stop',
-  copyHex: '📋 Copy HEX',
-  copyTxt: '📋 Copy Formula',
-  formulaLabel: 'Formula (new)',
-  hRule: '📊 Rule Diagnosis',
-  hRuleDesc: 'Hit = games caught by rule. Profit = net P&L. Negative → recommend delete.',
-  hSkip: '⏭ Skip Analysis',
-  hWorst: '❌ Top 20 Worst Misses',
-  hSuggest: '💡 Suggestions',
-  thRule: 'Rule', thHit: 'Hit', thCorrect: 'Correct', thWrong: 'Wrong',
-  thRate: 'Acc %', thProfit: 'Net Profit', thVerdict: 'Verdict',
-  thResult: 'Result', thCount: 'Count', thPct: 'Pct',
-  tagDel: 'DELETE', tagLow: 'MINOR LOSS', tagOk: 'KEEP',
-  rH: 'H (Home)', rD: 'D (Draw)', rA: 'A (Away)', rTotal: 'Total',
-  sugDel: '🔴 Recommend deleting/tightening:',
-  sugSkip: '🟡 Most skips are "{r}" ({n} games), add new rule.',
-  sugTop: '🟢 Most profitable rules:',
-  sugHit: '　• {r}: hit {n}, net +{p}',
-  sugHitNeg: '　• {r}: hit {n}, net {p}',
-  copied: '✅ Copied {label} ({n} chars)',
-  copyFail: '❌ Auto-copy failed, select manually → Ctrl+C',
-  noData: 'No valid data',
-  thIdx: '#', thPred: 'Pred', thActual: 'Actual', thLoss: 'Loss',
-  logWait: 'Waiting...',
-  logLoaded: 'Loaded {n} rows',
-  logBaseline: 'Baseline: {v}',
-  logStage1: 'Stage 1: {v}',
-  logRestart: '★ Restart #{i} new best: {v}',
-  logPolish: 'Polish round {k}: {v}',
-  logDone: 'Done! Best: {v}',
-  summary: '🏆 Best profit: {v} ({n} games)',
-  paramsLabel: 'Params: ',
-  checkOk: '✅ Formula check passed',
-  checkErr: '❌ Formula check failed:',
-  checkRange: 'Issue #{n}: "{bad}" → should be "{good}"',
-  checkEmpty: '⚠ Formula empty'
-};
-
-var LANG = 'zh';
-var DICT = TXT_ZH;
-
-function t(key){
-  return DICT[key] || key;
-}
-function tf(key, vars){
-  var s = DICT[key] || key;
-  if(vars){
-    for(var k in vars){
-      s = s.split('{' + k + '}').join(vars[k]);
-    }
+/* ========== 翻譯 ========== */
+var TXT = {
+  zh: {
+    title: '🧬 智慧規則優化器 v10',
+    desc: '結構自動演化：加/刪/改規則、切換結果標籤、調整門檻。',
+    strength: '強度：',
+    run: '🚀 開始演化',
+    stop: '⏹ 停止',
+    hRule: '📋 演化後規則表',
+    waiting: '等待開始...',
+    loaded: '載入 {n} 條',
+    baseline: '基準: {v}',
+    gen: '第 {g} 代 → {v}  (結構變異 {m} 次)',
+    done: '完成！最高: {v}',
+    summary: '🏆 最高盈利: {v}  ({n} 場)',
+    noData: '沒有有效數據',
+    thRule: '規則', thOn: '啟用', thCond: '條件', thThen: '指向',
+    thHit: '命中', thCorrect: '對', thWrong: '錯', thProfit: '盈利'
+  },
+  en: {
+    title: '🧬 Smart Rule Optimizer v10',
+    desc: 'Auto evolution: add/del/modify rules, switch labels, tune thresholds.',
+    strength: 'Strength: ',
+    run: '🚀 Evolve',
+    stop: '⏹ Stop',
+    hRule: '📋 Evolved Rules',
+    waiting: 'Waiting...',
+    loaded: 'Loaded {n} rows',
+    baseline: 'Baseline: {v}',
+    gen: 'Gen {g} → {v}  (struct mut {m})',
+    done: 'Done! Best: {v}',
+    summary: '🏆 Best: {v}  ({n} games)',
+    noData: 'No valid data',
+    thRule: 'Rule', thOn: 'On', thCond: 'Conds', thThen: 'Then',
+    thHit: 'Hit', thCorrect: 'OK', thWrong: 'Err', thProfit: 'Profit'
   }
+};
+var LANG = 'zh';
+function t(k){ return (TXT[LANG] && TXT[LANG][k]) || k; }
+function tf(k, vars){
+  var s = t(k);
+  if(vars) for(var kk in vars) s = s.split('{'+kk+'}').join(vars[kk]);
   return s;
 }
-
 function setLang(lang){
   LANG = lang;
-  DICT = (lang === 'en') ? TXT_EN : TXT_ZH;
-
-  document.getElementById('btn-zh').className = 'lang-btn' + (lang === 'zh' ? ' active' : '');
-  document.getElementById('btn-en').className = 'lang-btn' + (lang === 'en' ? ' active' : '');
-
+  document.getElementById('btn-zh').className = 'lang-btn' + (lang==='zh'?' active':'');
+  document.getElementById('btn-en').className = 'lang-btn' + (lang==='en'?' active':'');
   document.getElementById('title').textContent = t('title');
   document.getElementById('desc').textContent = t('desc');
   document.getElementById('lbl-strength').textContent = t('strength');
-  document.getElementById('opt-1').textContent = t('opt1');
-  document.getElementById('opt-2').textContent = t('opt2');
-  document.getElementById('opt-3').textContent = t('opt3');
-  document.getElementById('opt-4').textContent = t('opt4');
   document.getElementById('btnRun').textContent = t('run');
   document.getElementById('btnStop').textContent = t('stop');
-  document.getElementById('btn-copy-hex').textContent = t('copyHex');
-  document.getElementById('btn-copy-txt').textContent = t('copyTxt');
-  document.getElementById('lbl-formula').textContent = t('formulaLabel');
   document.getElementById('h-rule').textContent = t('hRule');
-  document.getElementById('h-rule-desc').textContent = t('hRuleDesc');
-  document.getElementById('h-skip').textContent = t('hSkip');
-  document.getElementById('h-worst').textContent = t('hWorst');
-  document.getElementById('h-suggest').textContent = t('hSuggest');
-
   var logEl = document.getElementById('log');
-  if(logEl && !logEl.dataset.hasContent){
-    logEl.textContent = t('logWait');
-  }
-
-  if(lastDiag){
-    renderDiag(lastDiag);
-  }
+  if(logEl && !logEl.dataset.hasContent) logEl.textContent = t('waiting');
 }
 
-/* ==========================================================
-   原始 HEX
-   ========================================================== */
-var HEX_SRC = '3D 41 52 52 41 59 46 4F 52 4D 55 4C 41 28 49 46 28 28 41 32 3A 41 3D 22 22 29 2B 28 42 32 3A 42 3D 22 22 29 2B 28 43 32 3A 43 3D 22 22 29 2B 28 44 32 3A 44 3D 22 22 29 2B 28 45 32 3A 45 3D 22 22 29 2B 28 46 32 3A 46 3D 22 22 29 2C 22 22 2C 49 46 28 28 42 32 3A 42 3E 3D 33 32 29 2A 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3C 3D 36 29 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 36 30 29 2A 28 43 32 3A 43 3C 3D 31 31 29 2A 28 44 32 3A 44 3E 3D 31 34 30 29 2A 28 44 32 3A 44 3C 3D 31 39 30 29 2A 28 46 32 3A 46 3E 3D 34 30 30 29 2A 28 46 32 3A 46 3C 3D 34 38 30 29 2C 22 48 22 2C 49 46 28 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3C 3D 33 29 2A 28 45 32 3A 45 3C 33 38 30 29 2A 28 41 42 53 28 44 32 3A 44 2D 46 32 3A 46 29 3C 34 30 29 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 34 35 29 2A 28 43 32 3A 43 3C 3D 32 30 29 2A 28 41 42 53 28 44 32 3A 44 2D 46 32 3A 46 29 3C 37 30 29 2A 28 44 32 3A 44 3C 34 30 30 29 2C 22 44 22 2C 49 46 28 41 42 53 28 44 32 3A 44 2D 46 32 3A 46 29 3C 31 38 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 34 32 29 2A 28 44 32 3A 44 3E 3D 31 35 35 29 2A 28 44 32 3A 44 3C 32 30 35 29 2A 28 44 32 3A 44 3C 3E 46 32 3A 46 29 2A 28 46 32 3A 46 3E 44 32 3A 44 29 2A 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3E 3D 35 30 29 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 34 32 29 2A 28 44 32 3A 44 3E 3D 31 35 35 29 2A 28 44 32 3A 44 3C 32 30 35 29 2A 28 44 32 3A 44 3C 3E 46 32 3A 46 29 2C 22 48 22 2C 49 46 28 28 41 32 3A 41 3E 3D 33 34 29 2A 28 44 32 3A 44 3E 32 30 35 29 2A 28 44 32 3A 44 3C 3D 32 33 35 29 2A 28 44 32 3A 44 3C 3E 46 32 3A 46 29 2C 22 44 22 2C 49 46 28 28 44 32 3A 44 3E 3D 34 30 30 29 2A 28 41 32 3A 41 3E 3D 34 32 29 2C 22 44 22 2C 49 46 28 28 44 32 3A 44 3E 3D 33 34 30 29 2A 28 41 32 3A 41 3E 3D 33 38 29 2A 28 46 32 3A 46 3C 32 35 30 29 2A 28 44 32 3A 44 3E 46 32 3A 46 29 2C 49 46 28 46 32 3A 46 3C 32 30 30 2C 49 46 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3C 3D 35 2C 22 44 22 2C 22 41 22 29 2C 22 44 22 29 2C 49 46 28 28 45 32 3A 45 3C 3D 33 31 35 29 2A 28 42 32 3A 42 3E 3D 32 37 29 2A 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3C 3D 32 35 29 2A 28 44 32 3A 44 3E 3D 32 35 30 29 2A 28 44 32 3A 44 3C 3D 33 35 30 29 2A 28 44 32 3A 44 3C 45 32 3A 45 29 2C 22 44 22 2C 49 46 28 28 43 32 3A 43 3E 41 32 3A 41 29 2A 28 46 32 3A 46 3E 3D 34 39 30 29 2A 28 46 32 3A 46 3C 3D 35 36 30 29 2A 28 44 32 3A 44 3C 32 30 30 29 2C 22 44 22 2C 49 46 28 28 43 32 3A 43 3E 41 32 3A 41 29 2A 28 46 32 3A 46 3E 44 32 3A 44 29 2A 28 46 32 3A 46 3C 35 35 30 29 2A 28 45 32 3A 45 3E 33 32 30 29 2C 22 48 22 2C 49 46 28 28 43 32 3A 43 3E 41 32 3A 41 29 2A 28 46 32 3A 46 3E 3D 31 38 34 29 2A 28 46 32 3A 46 3C 3D 32 31 36 29 2A 28 43 32 3A 43 3E 3D 34 30 29 2C 22 41 22 2C 49 46 28 28 43 32 3A 43 3E 41 32 3A 41 29 2A 28 46 32 3A 46 3E 44 32 3A 44 29 2A 28 46 32 3A 46 3C 33 30 30 29 2A 28 43 32 3A 43 3C 34 35 29 2A 28 44 32 3A 44 3C 32 35 30 29 2C 22 44 22 2C 49 46 28 44 32 3A 44 3E 46 32 3A 46 2C 49 46 28 28 46 32 3A 46 3C 3D 31 35 30 29 2A 28 43 32 3A 43 3E 3D 36 35 29 2C 22 41 22 2C 49 46 28 44 32 3A 44 3E 31 35 30 30 2C 49 46 28 43 32 3A 43 3E 3D 35 30 2C 22 41 22 2C 49 46 28 41 32 3A 41 3E 43 32 3A 43 2C 22 44 22 2C 22 73 6B 69 70 22 29 29 2C 49 46 28 28 41 32 3A 41 3E 3D 33 33 29 2A 28 44 32 3A 44 3E 3D 33 35 30 29 2C 22 44 22 2C 22 48 22 29 29 29 2C 49 46 28 46 32 3A 46 3E 44 32 3A 44 2C 49 46 28 28 41 32 3A 41 3E 3D 35 30 29 2A 28 46 32 3A 46 2D 44 32 3A 44 3E 3D 34 30 30 29 2C 22 48 22 2C 49 46 28 46 32 3A 46 3E 3D 37 30 30 2C 49 46 28 41 32 3A 41 3E 3D 38 30 2C 22 44 22 2C 49 46 28 43 32 3A 43 3E 41 32 3A 41 2C 22 44 22 2C 49 46 28 41 32 3A 41 3C 34 35 2C 22 44 22 2C 22 73 6B 69 70 22 29 29 29 2C 49 46 28 28 45 32 3A 45 3E 3D 34 37 30 29 2A 28 46 32 3A 46 3E 3D 35 30 30 29 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 34 37 29 2A 28 44 32 3A 44 3C 3D 31 34 30 29 2C 22 48 22 2C 22 41 22 29 29 29 29 2C 49 46 28 41 32 3A 41 3E 43 32 3A 43 2C 22 48 22 2C 49 46 28 43 32 3A 43 3E 41 32 3A 41 2C 22 41 22 2C 22 73 6B 69 70 22 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29';
-
-function hexToStr(h){
-  var s = h.replace(/\s+/g, '');
-  var r = '';
-  for(var i = 0; i < s.length; i += 2){
-    r += String.fromCharCode(parseInt(s.substr(i, 2), 16));
-  }
-  return r;
-}
-function strToHex(t){
-  var arr = [];
-  for(var i = 0; i < t.length; i++){
-    arr.push(t.charCodeAt(i).toString(16).toUpperCase().padStart(2, '0'));
-  }
-  return arr.join(' ');
-}
-
-var RAW = hexToStr(HEX_SRC);
-
-var SUBST = [
-  ['B2:B>=32',          'B2:B>={b1}'],
-  ['ABS(A2:A-C2:C)<=6', 'ABS(A2:A-C2:C)<={ac1}'],
-  ['A2:A>=60',          'A2:A>={a2}'],
-  ['F2:F>=400',         'F2:F>={f2a}'],
-  ['F2:F<=480',         'F2:F<={f2b}'],
-  ['ABS(A2:A-C2:C)<=3', 'ABS(A2:A-C2:C)<={ac3}'],
-  ['E2:E<380',          'E2:E<{e3}'],
-  ['ABS(D2:D-F2:F)<40', 'ABS(D2:D-F2:F)<{df3}'],
-  ['A2:A>=45',          'A2:A>={a4}'],
-  ['ABS(D2:D-F2:F)<70', 'ABS(D2:D-F2:F)<{df4}'],
-  ['ABS(D2:D-F2:F)<18', 'ABS(D2:D-F2:F)<{df5}'],
-  ['ABS(A2:A-C2:C)>=50','ABS(A2:A-C2:C)>={ac6}'],
-  ['A2:A>=34',          'A2:A>={a8}'],
-  ['D2:D<=235',         'D2:D<={d8b}'],
-  ['A2:A>=38',          'A2:A>={a92}'],
-  ['F2:F<250',          'F2:F<{f92}'],
-  ['E2:E<=315',         'E2:E<={e10}'],
-  ['B2:B>=27',          'B2:B>={b10}'],
-  ['F2:F>=490',         'F2:F>={f11a}'],
-  ['F2:F<=560',         'F2:F<={f11b}'],
-  ['F2:F>=184',         'F2:F>={f13a}'],
-  ['F2:F<=216',         'F2:F<={f13b}'],
-  ['F2:F-D2:D>=400',    'F2:F-D2:D>={gap}'],
-  ['F2:F>=700',         'F2:F>={f700}'],
-  ['E2:E>=470',         'E2:E>={e470}'],
-  ['A2:A>=47',          'A2:A>={a47}']
+/* ========== 初始規則（從你公式結構化） ========== */
+// 每條規則: {on, then, cond: [[col, op, val], ...]}
+// col: A B C D E F |A-C| |D-F| D-F F-D A-C C-A
+// op: > >= < <= == !=
+var INIT_RULES = [
+  {on:1, then:'D', cond:[['B','>=',32],['|A-C|','<=',6]]},
+  {on:1, then:'H', cond:[['A','>=',60],['C','<=',11],['D','>=',140],['D','<=',190],['F','>=',400],['F','<=',480]]},
+  {on:1, then:'D', cond:[['|A-C|','<=',3],['E','<',380],['|D-F|','<',40]]},
+  {on:1, then:'D', cond:[['A','>=',45],['C','<=',20],['|D-F|','<',70],['D','<',400]]},
+  {on:1, then:'D', cond:[['|D-F|','<',18]]},
+  {on:1, then:'D', cond:[['A','>=',42],['D','>=',155],['D','<',205],['D-F','!=',0],['F-D','>',0],['|A-C|','>=',50]]},
+  {on:1, then:'H', cond:[['A','>=',42],['D','>=',155],['D','<',205],['D-F','!=',0]]},
+  {on:1, then:'D', cond:[['A','>=',34],['D','>',205],['D','<=',235],['D-F','!=',0]]},
+  {on:1, then:'D', cond:[['D','>=',400],['A','>=',42]]},
+  {on:1, then:'D', cond:[['D','>=',340],['A','>=',38],['F','<',250],['D-F','>',0],['F','<',200],['|A-C|','<=',5]]},
+  {on:1, then:'A', cond:[['D','>=',340],['A','>=',38],['F','<',250],['D-F','>',0],['F','<',200]]},
+  {on:1, then:'D', cond:[['D','>=',340],['A','>=',38],['F','<',250],['D-F','>',0]]},
+  {on:1, then:'D', cond:[['E','<=',315],['B','>=',27],['|A-C|','<=',25],['D','>=',250],['D','<=',350],['E-D','>',0]]},
+  {on:1, then:'D', cond:[['C-A','>',0],['F','>=',490],['F','<=',560],['D','<',200]]},
+  {on:1, then:'H', cond:[['C-A','>',0],['F-D','>',0],['F','<',550],['E','>',320]]},
+  {on:1, then:'A', cond:[['C-A','>',0],['F','>=',184],['F','<=',216],['C','>=',40]]},
+  {on:1, then:'D', cond:[['C-A','>',0],['F-D','>',0],['F','<',300],['C','<',45],['D','<',250]]},
+  {on:1, then:'A', cond:[['D-F','>',0],['F','<=',150],['C','>=',65]]},
+  {on:1, then:'A', cond:[['D-F','>',0],['D','>',1500],['C','>=',50]]},
+  {on:1, then:'D', cond:[['D-F','>',0],['D','>',1500],['A-C','>',0]]},
+  {on:1, then:'skip', cond:[['D-F','>',0],['D','>',1500]]},
+  {on:1, then:'D', cond:[['D-F','>',0],['A','>=',33],['D','>=',350]]},
+  {on:1, then:'H', cond:[['D-F','>',0]]},
+  {on:1, then:'H', cond:[['F-D','>',0],['A','>=',50],['F-D','>=',400]]},
+  {on:1, then:'D', cond:[['F-D','>',0],['F','>=',700],['A','>=',80]]},
+  {on:1, then:'D', cond:[['F-D','>',0],['F','>=',700],['C-A','>',0]]},
+  {on:1, then:'D', cond:[['F-D','>',0],['F','>=',700],['A','<',45]]},
+  {on:1, then:'skip', cond:[['F-D','>',0],['F','>=',700]]},
+  {on:1, then:'D', cond:[['F-D','>',0],['E','>=',470],['F','>=',500]]},
+  {on:1, then:'H', cond:[['F-D','>',0],['A','>=',47],['D','<=',140]]},
+  {on:1, then:'A', cond:[['F-D','>',0]]},
+  {on:1, then:'H', cond:[['A-C','>',0]]},
+  {on:1, then:'A', cond:[['C-A','>',0]]},
+  {on:1, then:'skip', cond:[]}
 ];
 
-var TEMPLATE = RAW;
-for(var si = 0; si < SUBST.length; si++){
-  TEMPLATE = TEMPLATE.split(SUBST[si][0]).join(SUBST[si][1]);
-}
+var RESULTS = ['H','D','A','skip'];
 
-var P_DEF = {
-  b1:  {d:32, min:28, max:36, s:1},
-  ac1: {d:6,  min:3,  max:10, s:1},
-  a2:  {d:60, min:55, max:68, s:1},
-  f2a: {d:400,min:380,max:430,s:5},
-  f2b: {d:480,min:440,max:520,s:5},
-  ac3: {d:3,  min:2,  max:6,  s:1},
-  e3:  {d:380,min:340,max:420,s:5},
-  df3: {d:40, min:30, max:60, s:2},
-  a4:  {d:45, min:40, max:52, s:1},
-  df4: {d:70, min:50, max:90, s:2},
-  df5: {d:18, min:12, max:25, s:1},
-  ac6: {d:50, min:40, max:65, s:1},
-  a8:  {d:34, min:30, max:42, s:1},
-  d8b: {d:235,min:220,max:250,s:2},
-  a92: {d:38, min:34, max:44, s:1},
-  f92: {d:250,min:220,max:290,s:5},
-  e10: {d:315,min:280,max:360,s:5},
-  b10: {d:27, min:22, max:34, s:1},
-  f11a:{d:490,min:450,max:530,s:5},
-  f11b:{d:560,min:520,max:620,s:5},
-  f13a:{d:184,min:170,max:200,s:2},
-  f13b:{d:216,min:200,max:240,s:2},
-  gap: {d:400,min:250,max:600,s:10},
-  f700:{d:700,min:600,max:850,s:10},
-  e470:{d:470,min:400,max:550,s:10},
-  a47: {d:47, min:40, max:60, s:1}
-};
-var KEYS = Object.keys(P_DEF);
-function defaultP(){ var P = {}; for(var k in P_DEF) P[k] = P_DEF[k].d; return P; }
-
+/* ========== 全域 ========== */
 var data = [];
 var running = false;
-var lastDiag = null;
+var lastRules = null;
+var lastStats = null;
 
+/* ========== 解析 ========== */
 function parseData(text){
   var rows = [];
   var lines = text.split('\n');
-  for(var li = 0; li < lines.length; li++){
-    var p = lines[li].trim().split(/\s+/);
+  for(var i = 0; i < lines.length; i++){
+    var p = lines[i].trim().split(/\s+/);
     if(p.length < 8) continue;
     var v = p.slice(0,6).map(Number);
-    var result = p[7];
+    var r = p[7];
     if(v.some(isNaN)) continue;
-    if(['H','D','A'].indexOf(result) === -1) continue;
-    rows.push({A:v[0],B:v[1],C:v[2],D:v[3],E:v[4],F:v[5],result:result});
+    if(['H','D','A'].indexOf(r) === -1) continue;
+    rows.push({A:v[0],B:v[1],C:v[2],D:v[3],E:v[4],F:v[5],result:r});
   }
   return rows;
 }
 
-function predictWithRule(r, P){
-  var A=r.A,B=r.B,C=r.C,D=r.D,E=r.E,F=r.F;
-  if(B >= P.b1 && Math.abs(A-C) <= P.ac1) return {result:'D', rule:'R1'};
-  if(A >= P.a2 && C <= 11 && D >= 140 && D <= 190 && F >= P.f2a && F <= P.f2b) return {result:'H', rule:'R2'};
-  if(Math.abs(A-C) <= P.ac3 && E < P.e3 && Math.abs(D-F) < P.df3) return {result:'D', rule:'R3'};
-  if(A >= P.a4 && C <= 20 && Math.abs(D-F) < P.df4 && D < 400) return {result:'D', rule:'R4'};
-  if(Math.abs(D-F) < P.df5) return {result:'D', rule:'R5'};
-  if(A >= 42 && D >= 155 && D < 205 && D !== F && F > D && Math.abs(A-C) >= P.ac6) return {result:'D', rule:'R6'};
-  if(A >= 42 && D >= 155 && D < 205 && D !== F) return {result:'H', rule:'R7'};
-  if(A >= P.a8 && D > 205 && D <= P.d8b && D !== F) return {result:'D', rule:'R8'};
-  if(D >= 400 && A >= 42) return {result:'D', rule:'R9'};
-  if(D >= 340 && A >= P.a92 && F < P.f92 && D > F){
-    if(F < 200) return Math.abs(A-C) <= 5 ? {result:'D', rule:'R10'} : {result:'A', rule:'R10'};
-    return {result:'D', rule:'R10'};
+/* ========== 取得欄位值 ========== */
+function getVal(row, col){
+  switch(col){
+    case 'A': return row.A;
+    case 'B': return row.B;
+    case 'C': return row.C;
+    case 'D': return row.D;
+    case 'E': return row.E;
+    case 'F': return row.F;
+    case '|A-C|': return Math.abs(row.A - row.C);
+    case '|D-F|': return Math.abs(row.D - row.F);
+    case 'D-F': return row.D - row.F;
+    case 'F-D': return row.F - row.D;
+    case 'A-C': return row.A - row.C;
+    case 'C-A': return row.C - row.A;
+    case 'E-D': return row.E - row.D;
+    case 'D-E': return row.D - row.E;
   }
-  if(E <= P.e10 && B >= P.b10 && Math.abs(A-C) <= 25 && D >= 250 && D <= 350 && D < E) return {result:'D', rule:'R11'};
-  if(C > A && F >= P.f11a && F <= P.f11b && D < 200) return {result:'D', rule:'R12'};
-  if(C > A && F > D && F < 550 && E > 320) return {result:'H', rule:'R13'};
-  if(C > A && F >= P.f13a && F <= P.f13b && C >= 40) return {result:'A', rule:'R14'};
-  if(C > A && F > D && F < 300 && C < 45 && D < 250) return {result:'D', rule:'R15'};
-  if(D > F){
-    if(F <= 150 && C >= 65) return {result:'A', rule:'R16a'};
-    if(D > 1500){
-      if(C >= 50) return {result:'A', rule:'R16b'};
-      if(A > C) return {result:'D', rule:'R16b'};
-      return {result:'skip', rule:'R16b'};
-    }
-    if(A >= 33 && D >= 350) return {result:'D', rule:'R16c'};
-    return {result:'H', rule:'R16d'};
-  }
-  if(F > D){
-    if(A >= 50 && (F-D) >= P.gap) return {result:'H', rule:'R17a'};
-    if(F >= P.f700){
-      if(A >= 80) return {result:'D', rule:'R17b'};
-      if(C > A) return {result:'D', rule:'R17b'};
-      if(A < 45) return {result:'D', rule:'R17b'};
-      return {result:'skip', rule:'R17b'};
-    }
-    if(E >= P.e470 && F >= 500) return {result:'D', rule:'R17c'};
-    if(A >= P.a47 && D <= 140) return {result:'H', rule:'R17d'};
-    return {result:'A', rule:'R17e'};
-  }
-  if(A > C) return {result:'H', rule:'R18'};
-  if(C > A) return {result:'A', rule:'R19'};
-  return {result:'skip', rule:'R20'};
+  return 0;
 }
 
-function predict(r, P){ return predictWithRule(r, P).result; }
+function cmp(a, op, b){
+  switch(op){
+    case '>': return a > b;
+    case '>=': return a >= b;
+    case '<': return a < b;
+    case '<=': return a <= b;
+    case '==': return a === b;
+    case '!=': return a !== b;
+  }
+  return false;
+}
 
-function profit(rows, P){
+/* ========== 評估單條規則 ========== */
+function matchRule(row, rule){
+  for(var i = 0; i < rule.cond.length; i++){
+    var c = rule.cond[i];
+    if(!cmp(getVal(row, c[0]), c[1], c[2])) return false;
+  }
+  return true;
+}
+
+/* ========== 預測 ========== */
+function predict(row, rules){
+  for(var i = 0; i < rules.length; i++){
+    var r = rules[i];
+    if(!r.on) continue;
+    if(matchRule(row, r)) return r.then;
+  }
+  return 'skip';
+}
+
+/* ========== 盈利 ========== */
+function calcProfit(rows, rules){
   var total = 0;
   for(var i = 0; i < rows.length; i++){
     var r = rows[i];
-    var p = predict(r, P);
+    var p = predict(r, rules);
     if(p === 'skip') continue;
     if(p === r.result){
       if(p === 'H') total += r.D - 100;
@@ -439,246 +288,278 @@ function profit(rows, P){
   return total;
 }
 
-function descend(rows, P0){
-  var P = {};
-  for(var kk in P0) P[kk] = P0[kk];
-  var best = profit(rows, P);
-  var improved = true;
-  while(improved && running){
-    improved = false;
-    for(var ki = 0; ki < KEYS.length; ki++){
-      if(!running) return {P:P, profit:best};
-      var k = KEYS[ki];
-      var def = P_DEF[k];
-      var orig = P[k];
-      var bestVal = orig, bestScore = best;
-      for(var v = def.min; v <= def.max; v += def.s){
-        if(v === orig) continue;
-        P[k] = v;
-        var s = profit(rows, P);
-        if(s > bestScore){ bestScore = s; bestVal = v; }
-      }
-      if(def.s > 1){
-        var lo = Math.max(def.min, bestVal - def.s + 1);
-        var hi = Math.min(def.max, bestVal + def.s - 1);
-        for(var v2 = lo; v2 <= hi; v2++){
-          if(v2 === orig || v2 === bestVal) continue;
-          P[k] = v2;
-          var s2 = profit(rows, P);
-          if(s2 > bestScore){ bestScore = s2; bestVal = v2; }
-        }
-      }
-      P[k] = bestVal;
-      if(bestScore > best){ best = bestScore; improved = true; }
-    }
-  }
-  return {P:P, profit:best};
-}
-
-function randomStart(n){
-  var P = defaultP();
-  var sh = KEYS.slice().sort(function(){ return Math.random() - 0.5; });
-  for(var i = 0; i < n && i < sh.length; i++){
-    var k = sh[i], def = P_DEF[k];
-    var steps = Math.round((def.max - def.min) / def.s);
-    P[k] = def.min + Math.floor(Math.random() * (steps + 1)) * def.s;
-  }
-  return P;
-}
-
-function genText(P){
-  return TEMPLATE.replace(/\{(\w+)\}/g, function(m, k){
-    return P[k] !== undefined ? P[k] : m;
+/* ========== 複製 ========== */
+function cloneRules(rules){
+  return rules.map(function(r){
+    return {
+      on: r.on,
+      then: r.then,
+      cond: r.cond.map(function(c){ return [c[0], c[1], c[2]]; })
+    };
   });
 }
-function genHex(P){ return strToHex(genText(P)); }
 
-function checkFormula(formula){
-  var errors = [];
-  if(!formula || !formula.trim()){
-    return {ok:false, errors:[t('checkEmpty')]};
+/* ========== 隨機整數 ========== */
+function ri(min, max){ return min + Math.floor(Math.random() * (max - min + 1)); }
+
+/* ========== 變異：調整門檻 ========== */
+function mutateNumeric(rules, intensity){
+  var r = cloneRules(rules);
+  var nMut = ri(1, 3);
+  for(var k = 0; k < nMut; k++){
+    var idx = ri(0, r.length - 1);
+    var rule = r[idx];
+    if(rule.cond.length === 0) continue;
+    var ci = ri(0, rule.cond.length - 1);
+    var c = rule.cond[ci];
+    var v = c[2];
+    // 步長取決於絕對值大小
+    var step = 1;
+    if(Math.abs(v) >= 100) step = 5;
+    if(Math.abs(v) >= 300) step = 10;
+    if(Math.abs(v) >= 700) step = 20;
+    step = step * intensity;
+    var delta = ri(-step, step);
+    c[2] = v + delta;
+    // 不允許負值（除了 0 附近的比較）
+    if(c[2] < 0 && v >= 0) c[2] = 0;
   }
-  var re = /([A-F])2:([A-F])/g;
-  var m;
-  var count = 0;
-  while((m = re.exec(formula)) !== null){
-    count++;
-    if(m[1] !== m[2]){
-      errors.push(tf('checkRange', {
-        n: count,
-        bad: m[1] + '2:' + m[2],
-        good: m[1] + '2:' + m[1]
-      }));
-    }
-  }
-  return {ok: errors.length === 0, errors: errors};
+  return {rules: r, structural: 0};
 }
 
-function renderCheck(formula){
-  var r = checkFormula(formula);
-  var el = document.getElementById('checkResult');
-  if(r.ok){
-    el.innerHTML = '<div class="check-ok">' + t('checkOk') + '</div>';
+/* ========== 變異：切換結果標籤 ========== */
+function mutateResult(rules){
+  var r = cloneRules(rules);
+  if(r.length === 0) return {rules: r, structural: 1};
+  var idx = ri(0, r.length - 1);
+  var old = r[idx].then;
+  var options = RESULTS.filter(function(x){ return x !== old; });
+  r[idx].then = options[ri(0, options.length - 1)];
+  return {rules: r, structural: 1};
+}
+
+/* ========== 變異：切換啟用 ========== */
+function mutateOn(rules){
+  var r = cloneRules(rules);
+  if(r.length === 0) return {rules: r, structural: 1};
+  var idx = ri(0, r.length - 1);
+  r[idx].on = r[idx].on ? 0 : 1;
+  return {rules: r, structural: 1};
+}
+
+/* ========== 變異：刪除規則 ========== */
+function mutateDelete(rules){
+  var r = cloneRules(rules);
+  if(r.length <= 5) return {rules: r, structural: 1};
+  // 刪除靠後的規則（避免刪掉核心規則）
+  var minIdx = Math.min(3, r.length - 1);
+  var idx = ri(minIdx, r.length - 1);
+  r.splice(idx, 1);
+  return {rules: r, structural: 1};
+}
+
+/* ========== 變異：交換規則順序 ========== */
+function mutateSwap(rules){
+  var r = cloneRules(rules);
+  if(r.length < 2) return {rules: r, structural: 1};
+  var i = ri(0, r.length - 2);
+  var tmp = r[i]; r[i] = r[i+1]; r[i+1] = tmp;
+  return {rules: r, structural: 1};
+}
+
+/* ========== 隨機變異 ========== */
+function mutate(rules, intensity){
+  var p = Math.random();
+  if(p < 0.60){
+    // 調整門檻（最常用）
+    return mutateNumeric(rules, intensity);
+  } else if(p < 0.72){
+    return mutateResult(rules);
+  } else if(p < 0.82){
+    return mutateOn(rules);
+  } else if(p < 0.90){
+    return mutateSwap(rules);
+  } else if(p < 0.96){
+    return mutateDelete(rules);
   } else {
-    var html = '<div class="check-err">' + t('checkErr') + '<ul>';
-    for(var i = 0; i < r.errors.length; i++) html += '<li>' + r.errors[i] + '</li>';
-    html += '</ul></div>';
-    el.innerHTML = html;
+    // 一次做多種變異
+    var step1 = mutateNumeric(rules, intensity);
+    var step2 = mutateResult(step1.rules);
+    return {rules: step2.rules, structural: 1};
   }
-  return r.ok;
 }
 
-function diagnose(rows, P){
-  var stats = {};
-  var skips = {H:0, D:0, A:0, total:0};
-  var worst = [];
+/* ========== 爬山（調門檻 + 結構） ========== */
+function hillClimb(rows, startRules, maxIter){
+  var cur = cloneRules(startRules);
+  var curProfit = calcProfit(rows, cur);
+  var best = cloneRules(cur);
+  var bestProfit = curProfit;
+  var structuralCount = 0;
+  var iter = 0;
+  var noImprove = 0;
 
-  for(var i = 0; i < rows.length; i++){
-    var r = rows[i];
-    var res = predictWithRule(r, P);
-    var rule = res.rule;
-    var p = res.result;
+  while(running && iter < maxIter){
+    iter++;
+    var inten = 1;
+    if(noImprove > 200) inten = 2;
+    if(noImprove > 500) inten = 3;
 
-    if(p === 'skip'){
-      skips[r.result] = (skips[r.result] || 0) + 1;
-      skips.total++;
-      continue;
-    }
+    var m = mutate(cur, inten);
+    var cand = m.rules;
+    var candProfit = calcProfit(rows, cand);
 
-    if(!stats[rule]){
-      stats[rule] = {rule:rule, hit:0, correct:0, wrong:0, profit:0};
-    }
-    stats[rule].hit++;
-
-    var gameProfit = 0;
-    if(p === r.result){
-      stats[rule].correct++;
-      if(p === 'H') gameProfit = r.D - 100;
-      else if(p === 'D') gameProfit = r.E - 100;
-      else if(p === 'A') gameProfit = r.F - 100;
+    if(candProfit >= curProfit){
+      cur = cand;
+      curProfit = candProfit;
+      noImprove = 0;
+      if(m.structural) structuralCount++;
+      if(candProfit > bestProfit){
+        best = cloneRules(cand);
+        bestProfit = candProfit;
+      }
     } else {
-      stats[rule].wrong++;
-      gameProfit = -100;
-      worst.push({
-        idx: i, rule: rule, pred: p, actual: r.result,
-        A: r.A, B: r.B, C: r.C, D: r.D, E: r.E, F: r.F,
-        profit: gameProfit
-      });
+      noImprove++;
+      // 退火：小機率接受較差解
+      var T = 50 / (1 + iter / 200);
+      if(Math.random() < Math.exp((candProfit - curProfit) / T)){
+        cur = cand;
+        curProfit = candProfit;
+      }
     }
-    stats[rule].profit += gameProfit;
+
+    // 每 5000 次回一次起點，避免卡死
+    if(iter % 5000 === 0 && noImprove > 1000){
+      cur = cloneRules(best);
+      curProfit = bestProfit;
+      noImprove = 0;
+    }
   }
 
-  return {stats: stats, skips: skips, worst: worst};
+  return {rules: best, profit: bestProfit, structural: structuralCount, iter: iter};
 }
 
-function renderDiag(diagResult){
-  lastDiag = diagResult;
+/* ========== 診斷統計 ========== */
+function diagnose(rows, rules){
+  var stats = [];
+  for(var i = 0; i < rules.length; i++){
+    stats.push({idx: i, rule: rules[i], hit: 0, correct: 0, wrong: 0, profit: 0});
+  }
+  for(var i = 0; i < rows.length; i++){
+    var row = rows[i];
+    var p = 'skip';
+    var hitRule = -1;
+    for(var j = 0; j < rules.length; j++){
+      if(!rules[j].on) continue;
+      if(matchRule(row, rules[j])){ p = rules[j].then; hitRule = j; break; }
+    }
+    if(p === 'skip' || hitRule === -1) continue;
+    var s = stats[hitRule];
+    s.hit++;
+    var gp;
+    if(p === row.result){
+      s.correct++;
+      if(p === 'H') gp = row.D - 100;
+      else if(p === 'D') gp = row.E - 100;
+      else gp = row.F - 100;
+    } else {
+      s.wrong++;
+      gp = -100;
+    }
+    s.profit += gp;
+  }
+  return stats;
+}
 
-  var rules = [];
-  for(var k in diagResult.stats) rules.push(diagResult.stats[k]);
-  rules.sort(function(a,b){ return a.profit - b.profit; });
-
+/* ========== 渲染規則表 ========== */
+function renderRuleTable(stats){
   var html = '<table><thead><tr>' +
     '<th>' + t('thRule') + '</th>' +
+    '<th>' + t('thOn') + '</th>' +
+    '<th>' + t('thCond') + '</th>' +
+    '<th>' + t('thThen') + '</th>' +
     '<th>' + t('thHit') + '</th>' +
     '<th>' + t('thCorrect') + '</th>' +
     '<th>' + t('thWrong') + '</th>' +
-    '<th>' + t('thRate') + '</th>' +
     '<th>' + t('thProfit') + '</th>' +
-    '<th>' + t('thVerdict') + '</th>' +
     '</tr></thead><tbody>';
 
-  for(var i = 0; i < rules.length; i++){
-    var r = rules[i];
-    var rate = r.hit > 0 ? (r.correct / r.hit * 100).toFixed(1) + '%' : '-';
-    var pcls = r.profit > 0 ? 'profit-pos' : (r.profit < 0 ? 'profit-neg' : '');
-    var tag = '';
-    if(r.profit < -500 && r.hit >= 5) tag = '<span class="tag-del">' + t('tagDel') + '</span>';
-    else if(r.profit < 0) tag = '<span class="tag-low">' + t('tagLow') + '</span>';
-    else if(r.profit > 0 && r.hit >= 5) tag = '<span class="tag-ok">' + t('tagOk') + '</span>';
+  for(var i = 0; i < stats.length; i++){
+    var s = stats[i];
+    var r = s.rule;
+    var condStr = r.cond.map(function(c){ return c[0] + c[1] + c[2]; }).join(' & ');
+    if(!condStr) condStr = '—';
+    var pcls = s.profit > 0 ? 'profit-pos' : (s.profit < 0 ? 'profit-neg' : '');
+    var onTag = r.on ? '<span class="tag-ok">ON</span>' : '<span class="tag-off">OFF</span>';
+    var thenTag = '<span class="tag-pred">' + r.then + '</span>';
 
     html += '<tr>' +
-      '<td><b>' + r.rule + '</b></td>' +
-      '<td>' + r.hit + '</td>' +
-      '<td>' + r.correct + '</td>' +
-      '<td>' + r.wrong + '</td>' +
-      '<td>' + rate + '</td>' +
-      '<td class="' + pcls + '">' + r.profit + '</td>' +
-      '<td>' + tag + '</td>' +
+      '<td>R' + (i+1) + '</td>' +
+      '<td>' + onTag + '</td>' +
+      '<td style="text-align:left;font-size:11px">' + condStr + '</td>' +
+      '<td>' + thenTag + '</td>' +
+      '<td>' + s.hit + '</td>' +
+      '<td>' + s.correct + '</td>' +
+      '<td>' + s.wrong + '</td>' +
+      '<td class="' + pcls + '">' + s.profit + '</td>' +
       '</tr>';
   }
   html += '</tbody></table>';
   document.getElementById('ruleTable').innerHTML = html;
-
-  var sk = diagResult.skips;
-  var total = sk.total || 1;
-  var skHtml = '<table><thead><tr>' +
-    '<th>' + t('thResult') + '</th>' +
-    '<th>' + t('thCount') + '</th>' +
-    '<th>' + t('thPct') + '</th>' +
-    '</tr></thead><tbody>';
-  skHtml += '<tr><td>' + t('rH') + '</td><td>' + (sk.H||0) + '</td><td>' + ((sk.H||0)/total*100).toFixed(1) + '%</td></tr>';
-  skHtml += '<tr><td>' + t('rD') + '</td><td>' + (sk.D||0) + '</td><td>' + ((sk.D||0)/total*100).toFixed(1) + '%</td></tr>';
-  skHtml += '<tr><td>' + t('rA') + '</td><td>' + (sk.A||0) + '</td><td>' + ((sk.A||0)/total*100).toFixed(1) + '%</td></tr>';
-  skHtml += '<tr><td><b>' + t('rTotal') + '</b></td><td><b>' + sk.total + '</b></td><td>-</td></tr>';
-  skHtml += '</tbody></table>';
-  document.getElementById('skipStats').innerHTML = skHtml;
-
-  diagResult.worst.sort(function(a,b){ return a.profit - b.profit; });
-  var top20 = diagResult.worst.slice(0, 20);
-  var wHtml = '<table><thead><tr>' +
-    '<th>' + t('thIdx') + '</th>' +
-    '<th>' + t('thRule') + '</th>' +
-    '<th>' + t('thPred') + '</th>' +
-    '<th>' + t('thActual') + '</th>' +
-    '<th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th>' +
-    '<th>' + t('thLoss') + '</th>' +
-    '</tr></thead><tbody>';
-  for(var wi = 0; wi < top20.length; wi++){
-    var w = top20[wi];
-    wHtml += '<tr>' +
-      '<td>' + (w.idx+1) + '</td>' +
-      '<td>' + w.rule + '</td>' +
-      '<td>' + w.pred + '</td>' +
-      '<td>' + w.actual + '</td>' +
-      '<td>' + w.A + '</td>' +
-      '<td>' + w.B + '</td>' +
-      '<td>' + w.C + '</td>' +
-      '<td>' + w.D + '</td>' +
-      '<td>' + w.E + '</td>' +
-      '<td>' + w.F + '</td>' +
-      '<td class="profit-neg">' + w.profit + '</td>' +
-      '</tr>';
-  }
-  wHtml += '</tbody></table>';
-  document.getElementById('worstTable').innerHTML = wHtml;
-
-  var sug = [];
-  var badRules = rules.filter(function(r){ return r.profit < 0 && r.hit >= 3; });
-  if(badRules.length){
-    sug.push('<b>' + t('sugDel') + '</b>');
-    for(var bi = 0; bi < badRules.length; bi++){
-      var br = badRules[bi];
-      sug.push(tf('sugHitNeg', {r: br.rule, n: br.hit, p: br.profit}));
-    }
-  }
-  if(sk.total > 0){
-    var maxResult = ['H','D','A'].reduce(function(a,b){ return (sk[a]||0) > (sk[b]||0) ? a : b; });
-    var rKey = (maxResult === 'H') ? 'rH' : (maxResult === 'D' ? 'rD' : 'rA');
-    sug.push(tf('sugSkip', {r: t(rKey), n: (sk[maxResult]||0)}));
-  }
-  var highProfit = rules.filter(function(r){ return r.profit > 0; })
-    .sort(function(a,b){ return b.profit - a.profit; }).slice(0, 3);
-  if(highProfit.length){
-    sug.push('<b>' + t('sugTop') + '</b>');
-    for(var hi = 0; hi < highProfit.length; hi++){
-      var hr = highProfit[hi];
-      sug.push(tf('sugHit', {r: hr.rule, n: hr.hit, p: hr.profit}));
-    }
-  }
-  document.getElementById('suggestions').innerHTML = sug.join('<br>');
 }
 
+/* ========== 生成公式 ========== */
+function genFormula(rules){
+  var active = rules.filter(function(r){ return r.on; });
+  if(active.length === 0){
+    return '=ARRAYFORMULA(IF(A2:A="","","skip"))';
+  }
+
+  function condExpr(r){
+    if(r.cond.length === 0) return 'TRUE';
+    var parts = [];
+    for(var i = 0; i < r.cond.length; i++){
+      var c = r.cond[i];
+      var col = c[0], op = c[1], val = c[2];
+      var arrCol;
+      switch(col){
+        case 'A': arrCol = 'A2:A'; break;
+        case 'B': arrCol = 'B2:B'; break;
+        case 'C': arrCol = 'C2:C'; break;
+        case 'D': arrCol = 'D2:D'; break;
+        case 'E': arrCol = 'E2:E'; break;
+        case 'F': arrCol = 'F2:F'; break;
+        case '|A-C|': parts.push('(ABS(A2:A-C2:C)' + op + val + ')'); continue;
+        case '|D-F|': parts.push('(ABS(D2:D-F2:F)' + op + val + ')'); continue;
+        case 'D-F': parts.push('(D2:D-F2:F' + op + val + ')'); continue;
+        case 'F-D': parts.push('(F2:F-D2:D' + op + val + ')'); continue;
+        case 'A-C': parts.push('(A2:A-C2:C' + op + val + ')'); continue;
+        case 'C-A': parts.push('(C2:C-A2:A' + op + val + ')'); continue;
+        case 'E-D': parts.push('(E2:E-D2:D' + op + val + ')'); continue;
+        case 'D-E': parts.push('(D2:D-E2:E' + op + val + ')'); continue;
+        default: parts.push('FALSE'); continue;
+      }
+      if(op === '==' || op === '!='){
+        parts.push('(' + arrCol + (op === '==' ? '=' : '<>') + val + ')');
+      } else {
+        parts.push('(' + arrCol + op + val + ')');
+      }
+    }
+    return parts.join('*');
+  }
+
+  var body = '';
+  for(var i = 0; i < active.length; i++){
+    body += 'IF(' + condExpr(active[i]) + ',"' + active[i].then + '",';
+  }
+  body += '"skip"';
+  // 補齊 IF 的 )
+  for(var j = 0; j < active.length; j++) body += ')';
+
+  return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",' + body + '))';
+}
+
+/* ========== 主流程 ========== */
 function start(){
   data = parseData(document.getElementById('input').value);
   if(data.length === 0){ alert(t('noData')); return; }
@@ -687,70 +568,68 @@ function start(){
   document.getElementById('btnRun').disabled = true;
   document.getElementById('btnStop').disabled = false;
   var log = document.getElementById('log');
-  var bestEl = document.getElementById('best');
-  document.getElementById('diag').style.display = 'none';
-  document.getElementById('checkResult').innerHTML = '';
   log.dataset.hasContent = '1';
+  document.getElementById('diag').style.display = 'none';
 
-  log.textContent = tf('logLoaded', {n: data.length}) + '\n';
-
-  var best = defaultP();
-  var bestProfit = profit(data, best);
-  log.textContent += tf('logBaseline', {v: bestProfit}) + '\n';
-
-  var r = descend(data, best);
-  if(r.profit > bestProfit){ bestProfit = r.profit; best = r.P; }
-  log.textContent += tf('logStage1', {v: bestProfit}) + '\n';
+  log.textContent = tf('loaded', {n: data.length}) + '\n';
 
   var N = parseInt(document.getElementById('strength').value);
-  var i = 0;
+  var globalBest = cloneRules(INIT_RULES);
+  var globalProfit = calcProfit(data, globalBest);
+  var totalStructural = 0;
+  log.textContent += tf('baseline', {v: globalProfit}) + '\n';
 
-  function step(){
-    if(!running || i >= N){
-      finish();
-      return;
-    }
-    var chunk = Math.min(5, N - i);
-    for(var c = 0; c < chunk; c++){
-      r = descend(data, randomStart(4 + Math.floor(Math.random() * 6)));
-      if(r.profit > bestProfit){
-        bestProfit = r.profit;
-        best = r.P;
-        log.textContent += tf('logRestart', {i: (i+1), v: bestProfit}) + '\n';
-        log.scrollTop = log.scrollHeight;
+  var gen = 0;
+  var t0 = Date.now();
+
+  function nextGen(){
+    if(!running){ finish(); return; }
+    gen++;
+    if(gen > N){ finish(); return; }
+
+    // 每代：從目前最佳出發，做較短爬山
+    var r = hillClimb(data, globalBest, 2000);
+    totalStructural += r.structural;
+
+    if(r.profit > globalProfit){
+      globalProfit = r.profit;
+      globalBest = r.rules;
+      log.textContent += tf('gen', {g: gen, v: globalProfit, m: totalStructural}) + '\n';
+      log.scrollTop = log.scrollHeight;
+    } else {
+      // 沒進步 → 從初始規則隨機變異重新開始
+      var restart = cloneRules(INIT_RULES);
+      for(var k = 0; k < 5; k++){
+        var m = mutate(restart, 1);
+        restart = m.rules;
       }
-      i++;
+      var rr = hillClimb(data, restart, 2000);
+      if(rr.profit > globalProfit){
+        globalProfit = rr.profit;
+        globalBest = rr.rules;
+        log.textContent += tf('gen', {g: gen, v: globalProfit, m: totalStructural}) + '\n';
+      }
     }
-    setTimeout(step, 0);
+
+    var el = ((Date.now() - t0) / 1000).toFixed(0);
+    document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight;
+    setTimeout(nextGen, 0);
   }
 
   function finish(){
-    if(running){
-      for(var k = 0; k < 5 && running; k++){
-        r = descend(data, best);
-        if(r.profit <= bestProfit) break;
-        bestProfit = r.profit;
-        best = r.P;
-        log.textContent += tf('logPolish', {k: (k+1), v: bestProfit}) + '\n';
-      }
-    }
+    log.textContent += '\n' + tf('done', {v: globalProfit}) + '\n';
 
-    log.textContent += '\n' + tf('logDone', {v: bestProfit}) + '\n';
+    var formula = genFormula(globalBest);
 
-    var newText = genText(best);
-    var newHex = genHex(best);
+    document.getElementById('best').style.display = 'block';
+    document.getElementById('summary').innerHTML = tf('summary', {v: '<b>' + globalProfit + '</b>', n: data.length});
+    document.getElementById('params').textContent = JSON.stringify(globalBest);
+    document.getElementById('txtOut').value = formula;
 
-    bestEl.style.display = 'block';
-    document.getElementById('summary').innerHTML =
-      tf('summary', {v: '<b>' + bestProfit + '</b>', n: data.length});
-    document.getElementById('params').textContent = t('paramsLabel') + JSON.stringify(best);
-    document.getElementById('txtOut').value = newText;
-    document.getElementById('hexOut').value = newHex;
-
-    renderCheck(newText);
-
-    var diag = diagnose(data, best);
-    renderDiag(diag);
+    var stats = diagnose(data, globalBest);
+    lastRules = globalBest;
+    lastStats = stats;
+    renderRuleTable(stats);
     document.getElementById('diag').style.display = 'block';
 
     running = false;
@@ -758,20 +637,12 @@ function start(){
     document.getElementById('btnStop').disabled = true;
   }
 
-  step();
+  nextGen();
 }
 
 function stop(){
   running = false;
   document.getElementById('btnStop').disabled = true;
-}
-
-function showMsg(text, ok){
-  var m = document.getElementById('msg');
-  m.textContent = text;
-  m.className = ok ? 'ok' : 'err';
-  m.style.display = 'block';
-  setTimeout(function(){ m.style.display = 'none'; }, 3000);
 }
 
 function copyIt(id, label){
@@ -780,14 +651,14 @@ function copyIt(id, label){
   var txt = el.value;
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(function(){
-      showMsg(tf('copied', {label: label, n: txt.length}), true);
-    }).catch(function(){ fallbackCopy(txt, label); });
+      showMsg('✅ Copied ' + txt.length + ' chars', true);
+    }).catch(function(){ fallbackCopy(txt); });
   } else {
-    fallbackCopy(txt, label);
+    fallbackCopy(txt);
   }
 }
 
-function fallbackCopy(text, label){
+function fallbackCopy(text){
   var ta = document.createElement('textarea');
   ta.value = text;
   ta.style.position = 'fixed';
@@ -798,16 +669,21 @@ function fallbackCopy(text, label){
   var ok = false;
   try{ ok = document.execCommand('copy'); }catch(e){}
   document.body.removeChild(ta);
-  if(ok) showMsg(tf('copied', {label: label, n: text.length}), true);
-  else showMsg(t('copyFail'), false);
+  if(ok) showMsg('✅ Copied ' + text.length + ' chars', true);
+  else showMsg('❌ Copy failed, select manually', false);
 }
 
-/* ==========================================================
-   初始化：不用 DOMContentLoaded，直接執行
-   ========================================================== */
-(function init(){
-  var logEl = document.getElementById('log');
-  if(logEl) logEl.textContent = '等待開始...';
+function showMsg(text, ok){
+  var m = document.getElementById('msg');
+  m.textContent = text;
+  m.className = ok ? 'ok' : 'err';
+  m.style.display = 'block';
+  setTimeout(function(){ m.style.display = 'none'; }, 3000);
+}
+
+/* 初始化 */
+(function(){
+  document.getElementById('log').textContent = '等待開始...';
 })();
 </script>
 </body>
