@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>智慧規則優化器 v11</title>
+<title>智慧規則優化器 v12</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -17,7 +17,7 @@ button:hover{background:#0056b3}
 button:disabled{background:#999;cursor:not-allowed}
 button.stop{background:#dc3545}
 button.txt{background:#28a745}
-#log{background:#1e1e1e;color:#d4d4d4;border-radius:5px;padding:12px;margin-top:12px;height:140px;overflow-y:auto;font-family:monospace;font-size:12px;white-space:pre-wrap;line-height:1.5}
+#log{background:#1e1e1e;color:#d4d4d4;border-radius:5px;padding:12px;margin-top:12px;height:160px;overflow-y:auto;font-family:monospace;font-size:12px;white-space:pre-wrap;line-height:1.5}
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
 .best b{color:#155724}
 .box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
@@ -41,34 +41,39 @@ td:first-child,td:nth-child(2){text-align:left}
 .tag-pred{background:#007bff;color:#fff;padding:2px 6px;border-radius:3px;font-size:10px}
 .section{background:#fff;padding:12px;border-radius:6px;border:1px solid #ddd;margin-top:12px}
 h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
+.progress{height:6px;background:#ddd;border-radius:3px;overflow:hidden;margin-top:8px}
+.progress > div{height:100%;background:#007bff;width:0%;transition:width 0.1s}
 </style>
 </head>
 <body>
 
 <div class="top">
-  <h2 id="title">🧬 智慧規則優化器 v11</h2>
+  <h2 id="title">🧬 智慧規則優化器 v12（確定性搜尋）</h2>
   <div>
     <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁中</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
   </div>
 </div>
 
-<p id="desc">結構自動演化：加/刪/改規則、切換結果標籤、調整門檻。</p>
+<p id="desc">系統化掃描每條規則的所有變體，保證收斂到局部最優。跑越久，越可能找到全局最優。</p>
 
 <textarea id="input" placeholder="23 27 49 355 385 169 0:3 A
 62 27 9 158 395 405 3:0 H"></textarea>
 
 <div class="row">
-  <label id="lbl-strength">強度：</label>
+  <label id="lbl-strength">搜尋強度：</label>
   <select id="strength">
-    <option value="10">快速</option>
-    <option value="50" selected>標準</option>
-    <option value="150">深度</option>
+    <option value="5">快速（5 起點）</option>
+    <option value="20" selected>標準（20 起點）</option>
+    <option value="100">深度（100 起點）</option>
+    <option value="500">極限（500 起點，很久）</option>
+    <option value="2000">瘋狂（2000 起點，非常久）</option>
   </select>
-  <button id="btnRun" onclick="start()">🚀 開始演化</button>
+  <button id="btnRun" onclick="start()">🚀 開始搜尋</button>
   <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
 </div>
 
+<div class="progress"><div id="progbar"></div></div>
 <div id="log">等待開始...</div>
 
 <div class="best" id="best">
@@ -87,7 +92,6 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <div id="diag" style="display:none">
   <div class="section">
     <h3 id="h-rule">📋 演化後規則表</h3>
-    <p style="font-size:12px;color:#666">已自動決定啟用哪些規則、每條指向 H/D/A/skip。</p>
     <div class="diag" id="ruleTable"></div>
   </div>
 </div>
@@ -97,33 +101,37 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 var TXT = {
   zh: {
-    title: '🧬 智慧規則優化器 v11',
-    desc: '結構自動演化：加/刪/改規則、切換結果標籤、調整門檻。',
-    strength: '強度：',
-    run: '🚀 開始演化',
+    title: '🧬 智慧規則優化器 v12（確定性搜尋）',
+    desc: '系統化掃描每條規則的所有變體，保證收斂到局部最優。跑越久，越可能找到全局最優。',
+    strength: '搜尋強度：',
+    run: '🚀 開始搜尋',
     stop: '⏹ 停止',
     hRule: '📋 演化後規則表',
     waiting: '等待開始...',
     loaded: '載入 {n} 條',
     baseline: '基準: {v}',
-    gen: '第 {g} 代 → {v}  (結構變異 {m} 次)',
-    done: '完成！最高: {v}',
+    startPoint: '▶ 起點 #{i}：從 {p} 開始搜尋...',
+    converge: '  收斂到 {p}（{iter} 次迭代）',
+    newBest: '  ★ 新全局最優: {v}',
+    done: '完成！最高盈利: {v}',
     summary: '🏆 最高盈利: {v}  ({n} 場)',
     noData: '沒有有效數據',
     thRule: '規則', thOn: '啟用', thCond: '條件', thThen: '指向',
     thHit: '命中', thCorrect: '對', thWrong: '錯', thProfit: '盈利'
   },
   en: {
-    title: '🧬 Smart Rule Optimizer v11',
-    desc: 'Auto evolution: add/del/modify rules, switch labels, tune thresholds.',
+    title: '🧬 Smart Rule Optimizer v12 (Deterministic)',
+    desc: 'Systematic rule scanning. Guaranteed local convergence. Longer run = better chance at global optimum.',
     strength: 'Strength: ',
-    run: '🚀 Evolve',
+    run: '🚀 Search',
     stop: '⏹ Stop',
     hRule: '📋 Evolved Rules',
     waiting: 'Waiting...',
     loaded: 'Loaded {n} rows',
     baseline: 'Baseline: {v}',
-    gen: 'Gen {g} → {v}  (struct mut {m})',
+    startPoint: '▶ Start #{i}: from {p}...',
+    converge: '  converged to {p} ({iter} iters)',
+    newBest: '  ★ New global best: {v}',
     done: 'Done! Best: {v}',
     summary: '🏆 Best: {v}  ({n} games)',
     noData: 'No valid data',
@@ -192,12 +200,10 @@ var INIT_RULES = [
 
 var RESULTS = ['H','D','A','skip'];
 
-/* ========== 全域 ========== */
 var data = [];
 var running = false;
-var lastRules = null;
 
-/* ========== 解析 + 預計算 ========== */
+/* ========== 解析 ========== */
 function parseData(text){
   var rows = [];
   var lines = text.split('\n');
@@ -213,15 +219,10 @@ function parseData(text){
   return rows;
 }
 
-/* ========== 取值 ========== */
 function getVal(row, col){
   switch(col){
-    case 'A': return row.A;
-    case 'B': return row.B;
-    case 'C': return row.C;
-    case 'D': return row.D;
-    case 'E': return row.E;
-    case 'F': return row.F;
+    case 'A': return row.A; case 'B': return row.B; case 'C': return row.C;
+    case 'D': return row.D; case 'E': return row.E; case 'F': return row.F;
     case '|A-C|': return Math.abs(row.A - row.C);
     case '|D-F|': return Math.abs(row.D - row.F);
     case 'D-F': return row.D - row.F;
@@ -234,14 +235,12 @@ function getVal(row, col){
 }
 
 function cmp(a, op, b){
-  switch(op){
-    case '>': return a > b;
-    case '>=': return a >= b;
-    case '<': return a < b;
-    case '<=': return a <= b;
-    case '==': return a === b;
-    case '!=': return a !== b;
-  }
+  if(op === '>') return a > b;
+  if(op === '>=') return a >= b;
+  if(op === '<') return a < b;
+  if(op === '<=') return a <= b;
+  if(op === '==') return a === b;
+  if(op === '!=') return a !== b;
   return false;
 }
 
@@ -292,124 +291,133 @@ function cloneRules(rules){
 
 function ri(min, max){ return min + Math.floor(Math.random() * (max - min + 1)); }
 
-/* ========== 各種變異 ========== */
-function mutateNumeric(rules, intensity){
-  var r = cloneRules(rules);
-  var nMut = ri(1, 3);
-  for(var k = 0; k < nMut; k++){
-    var idx = ri(0, r.length - 1);
-    var rule = r[idx];
-    if(rule.cond.length === 0) continue;
-    var ci = ri(0, rule.cond.length - 1);
-    var c = rule.cond[ci];
-    var v = c[2];
+/* ========== ⭐ 座標下降：對單條規則做系統化掃描 ========== */
+/*
+   對第 ruleIdx 條規則：
+   1. 嘗試所有 then ∈ {H,D,A,skip}
+   2. 嘗試 on/off
+   3. 對每個條件的閾值掃描 ±視窗
+   回傳最佳版本
+*/
+function optimizeOneRule(rows, rules, ruleIdx){
+  var base = cloneRules(rules);
+  var baseProfit = calcProfit(rows, base);
+  var best = base;
+  var bestProfit = baseProfit;
+
+  // 1. 嘗試所有 then
+  for(var ti = 0; ti < RESULTS.length; ti++){
+    var then = RESULTS[ti];
+    if(base[ruleIdx].then === then) continue;
+    var test = cloneRules(base);
+    test[ruleIdx].then = then;
+    var p = calcProfit(rows, test);
+    if(p > bestProfit){ best = test; bestProfit = p; }
+  }
+
+  // 2. 嘗試 on/off
+  {
+    var test2 = cloneRules(best);
+    test2[ruleIdx].on = best[ruleIdx].on ? 0 : 1;
+    var p2 = calcProfit(rows, test2);
+    if(p2 > bestProfit){ best = test2; bestProfit = p2; }
+  }
+
+  // 3. 掃描每個條件的閾值
+  var condCount = best[ruleIdx].cond.length;
+  for(var ci = 0; ci < condCount; ci++){
+    var c = best[ruleIdx].cond[ci];
+    var curVal = c[2];
+    // 步長依數值大小
     var step = 1;
-    if(Math.abs(v) >= 100) step = 5;
-    if(Math.abs(v) >= 300) step = 10;
-    if(Math.abs(v) >= 700) step = 20;
-    step = step * (intensity || 1);
-    var delta = ri(-step, step);
-    c[2] = v + delta;
-    if(c[2] < 0 && v >= 0) c[2] = 0;
+    var window = 15;
+    if(Math.abs(curVal) >= 50){ step = 1; window = 30; }
+    if(Math.abs(curVal) >= 100){ step = 2; window = 50; }
+    if(Math.abs(curVal) >= 300){ step = 5; window = 100; }
+    if(Math.abs(curVal) >= 700){ step = 10; window = 150; }
+
+    var bestV = curVal;
+    var bestVP = bestProfit;
+    for(var v = curVal - window; v <= curVal + window; v += step){
+      if(v < 0 && curVal >= 0) continue;
+      var test3 = cloneRules(best);
+      test3[ruleIdx].cond[ci][2] = v;
+      var p3 = calcProfit(rows, test3);
+      if(p3 > bestVP){ bestV = v; bestVP = p3; }
+    }
+    if(bestV !== curVal){
+      best[ruleIdx].cond[ci][2] = bestV;
+      bestProfit = bestVP;
+    }
   }
-  return {rules: r, structural: 0};
+
+  return {rules: best, profit: bestProfit};
 }
 
-function mutateResult(rules){
-  var r = cloneRules(rules);
-  if(r.length === 0) return {rules: r, structural: 1};
-  var idx = ri(0, r.length - 1);
-  var old = r[idx].then;
-  var options = RESULTS.filter(function(x){ return x !== old; });
-  r[idx].then = options[ri(0, options.length - 1)];
-  return {rules: r, structural: 1};
-}
-
-function mutateOn(rules){
-  var r = cloneRules(rules);
-  if(r.length === 0) return {rules: r, structural: 1};
-  var idx = ri(0, r.length - 1);
-  r[idx].on = r[idx].on ? 0 : 1;
-  return {rules: r, structural: 1};
-}
-
-function mutateDelete(rules){
-  var r = cloneRules(rules);
-  if(r.length <= 5) return {rules: r, structural: 1};
-  var minIdx = Math.min(3, r.length - 1);
-  var idx = ri(minIdx, r.length - 1);
-  r.splice(idx, 1);
-  return {rules: r, structural: 1};
-}
-
-function mutateSwap(rules){
-  var r = cloneRules(rules);
-  if(r.length < 2) return {rules: r, structural: 1};
-  var i = ri(0, r.length - 2);
-  var tmp = r[i]; r[i] = r[i+1]; r[i+1] = tmp;
-  return {rules: r, structural: 1};
-}
-
-function mutate(rules, intensity){
-  var p = Math.random();
-  if(p < 0.60) return mutateNumeric(rules, intensity);
-  else if(p < 0.72) return mutateResult(rules);
-  else if(p < 0.82) return mutateOn(rules);
-  else if(p < 0.90) return mutateSwap(rules);
-  else if(p < 0.96) return mutateDelete(rules);
-  else {
-    var s1 = mutateNumeric(rules, intensity);
-    var s2 = mutateResult(s1.rules);
-    return {rules: s2.rules, structural: 1};
-  }
-}
-
-/* ========== 爬山 ========== */
-function hillClimb(rows, startRules, maxIter){
+/* ========== 完整座標下降 ========== */
+function coordinateDescent(rows, startRules){
   var cur = cloneRules(startRules);
   var curProfit = calcProfit(rows, cur);
-  var best = cloneRules(cur);
-  var bestProfit = curProfit;
-  var structuralCount = 0;
-  var iter = 0;
-  var noImprove = 0;
+  var improved = true;
+  var totalIter = 0;
 
-  while(running && iter < maxIter){
-    iter++;
-    var inten = 1;
-    if(noImprove > 100) inten = 2;
-    if(noImprove > 300) inten = 3;
-
-    var m = mutate(cur, inten);
-    var cand = m.rules;
-    var candProfit = calcProfit(rows, cand);
-
-    if(candProfit >= curProfit){
-      cur = cand;
-      curProfit = candProfit;
-      noImprove = 0;
-      if(m.structural) structuralCount++;
-      if(candProfit > bestProfit){
-        best = cloneRules(cand);
-        bestProfit = candProfit;
+  while(improved && running){
+    improved = false;
+    for(var i = 0; i < cur.length; i++){
+      if(!running) return {rules: cur, profit: curProfit, iter: totalIter};
+      var res = optimizeOneRule(rows, cur, i);
+      totalIter++;
+      if(res.profit > curProfit){
+        cur = res.rules;
+        curProfit = res.profit;
+        improved = true;
       }
-    } else {
-      noImprove++;
-      var T = 50 / (1 + iter / 200);
-      if(Math.random() < Math.exp((candProfit - curProfit) / T)){
-        cur = cand;
-        curProfit = candProfit;
-      }
-    }
-
-    if(iter % 500 === 0 && noImprove > 200){
-      cur = cloneRules(best);
-      curProfit = bestProfit;
-      noImprove = 0;
     }
   }
+  return {rules: cur, profit: curProfit, iter: totalIter};
+}
 
-  return {rules: best, profit: bestProfit, structural: structuralCount, iter: iter};
+/* ========== 隨機起點（從初始規則隨機變異） ========== */
+function randomRestart(nMut){
+  var r = cloneRules(INIT_RULES);
+  for(var k = 0; k < nMut; k++){
+    var p = Math.random();
+    if(p < 0.5){
+      // 調閾值
+      var idx = ri(0, r.length - 1);
+      if(r[idx].cond.length === 0) continue;
+      var ci = ri(0, r[idx].cond.length - 1);
+      var v = r[idx].cond[ci][2];
+      var step = 1;
+      if(Math.abs(v) >= 50) step = 2;
+      if(Math.abs(v) >= 100) step = 5;
+      if(Math.abs(v) >= 300) step = 10;
+      if(Math.abs(v) >= 700) step = 20;
+      var delta = ri(-10, 10) * step;
+      r[idx].cond[ci][2] = Math.max(0, v + delta);
+    } else if(p < 0.7){
+      // 改結果
+      var idx2 = ri(0, r.length - 1);
+      var opts = RESULTS.filter(function(x){ return x !== r[idx2].then; });
+      r[idx2].then = opts[ri(0, opts.length - 1)];
+    } else if(p < 0.85){
+      // 切 on/off
+      var idx3 = ri(0, r.length - 1);
+      r[idx3].on = r[idx3].on ? 0 : 1;
+    } else if(p < 0.95){
+      // 交換順序
+      var i2 = ri(0, r.length - 2);
+      var tmp = r[i2]; r[i2] = r[i2+1]; r[i2+1] = tmp;
+    } else {
+      // 刪除
+      if(r.length > 5){
+        var minIdx = Math.min(3, r.length - 1);
+        var idx4 = ri(minIdx, r.length - 1);
+        r.splice(idx4, 1);
+      }
+    }
+  }
+  return r;
 }
 
 /* ========== 診斷 ========== */
@@ -480,19 +488,16 @@ function renderRuleTable(stats){
   document.getElementById('ruleTable').innerHTML = html;
 }
 
-/* ========== ⭐ 生成公式（修正版） ========== */
+/* ========== 生成公式 ========== */
 function sheetOp(op){
-  // Google Sheets 用 <> 表示不等於
   if(op === '!=') return '<>';
   if(op === '==') return '=';
   return op;
 }
 
-function buildCond(row_ignored, c){
-  // 回傳單一條件的 Sheets 表達式
+function buildCond(c){
   var col = c[0], op = c[1], val = c[2];
   var sop = sheetOp(op);
-
   switch(col){
     case 'A': return '(A2:A' + sop + val + ')';
     case 'B': return '(B2:B' + sop + val + ')';
@@ -515,7 +520,7 @@ function buildCondExpr(rule){
   if(rule.cond.length === 0) return 'TRUE';
   var parts = [];
   for(var i = 0; i < rule.cond.length; i++){
-    parts.push(buildCond(0, rule.cond[i]));
+    parts.push(buildCond(rule.cond[i]));
   }
   return parts.join('*');
 }
@@ -525,18 +530,15 @@ function genFormula(rules){
   for(var i = 0; i < rules.length; i++){
     if(rules[i].on) active.push(rules[i]);
   }
-
   if(active.length === 0){
     return '=ARRAYFORMULA(IF(A2:A="","","skip"))';
   }
-
   var body = '';
   for(var i = 0; i < active.length; i++){
     body += 'IF(' + buildCondExpr(active[i]) + ',"' + active[i].then + '",';
   }
   body += '"skip"';
   for(var j = 0; j < active.length; j++) body += ')';
-
   return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",' + body + '))';
 }
 
@@ -549,55 +551,66 @@ function start(){
   document.getElementById('btnRun').disabled = true;
   document.getElementById('btnStop').disabled = false;
   var log = document.getElementById('log');
+  var progbar = document.getElementById('progbar');
   log.dataset.hasContent = '1';
   document.getElementById('diag').style.display = 'none';
+  document.getElementById('best').style.display = 'none';
+  progbar.style.width = '0%';
 
   log.textContent = tf('loaded', {n: data.length}) + '\n';
 
   var N = parseInt(document.getElementById('strength').value);
-  var globalBest = cloneRules(INIT_RULES);
-  var globalProfit = calcProfit(data, globalBest);
-  var totalStructural = 0;
-  log.textContent += tf('baseline', {v: globalProfit}) + '\n';
-
-  var gen = 0;
+  var globalBest = null;
+  var globalProfit = -Infinity;
   var t0 = Date.now();
 
-  function nextGen(){
-    if(!running){ finish(); return; }
-    gen++;
-    if(gen > N){ finish(); return; }
+  // 起點 0：初始規則直接座標下降
+  var phase = 0;
 
-    var iterPerGen = 500;
-    var r = hillClimb(data, globalBest, iterPerGen);
-    totalStructural += r.structural;
+  function nextPhase(){
+    if(!running){ finish(); return; }
+
+    if(phase === 0){
+      log.textContent += '\n── 階段 1：從初始規則做座標下降 ──\n';
+      var r0 = coordinateDescent(data, INIT_RULES);
+      globalBest = r0.rules;
+      globalProfit = r0.profit;
+      log.textContent += tf('converge', {p: r0.profit, iter: r0.iter}) + '\n';
+      log.textContent += tf('newBest', {v: globalProfit}) + '\n';
+      log.scrollTop = log.scrollHeight;
+      phase = 1;
+      progbar.style.width = (1 / (N + 1) * 100).toFixed(1) + '%';
+      setTimeout(nextPhase, 0);
+      return;
+    }
+
+    // 階段 2：N 次隨機起點
+    var k = phase;  // 1..N
+    if(k > N){ finish(); return; }
+
+    var nMut = 3 + ri(0, 15);
+    var startRules = randomRestart(nMut);
+    var r = coordinateDescent(data, startRules);
 
     if(r.profit > globalProfit){
       globalProfit = r.profit;
       globalBest = r.rules;
-      log.textContent += tf('gen', {g: gen, v: globalProfit, m: totalStructural}) + '\n';
+      log.textContent += tf('startPoint', {i: k, p: '?'}) + '\n';
+      log.textContent += tf('newBest', {v: globalProfit}) + '\n';
       log.scrollTop = log.scrollHeight;
-    } else {
-      var restart = cloneRules(INIT_RULES);
-      var nMut = 5 + ri(0, 10);
-      for(var k = 0; k < nMut; k++){
-        var m = mutate(restart, 1);
-        restart = m.rules;
-      }
-      var rr = hillClimb(data, restart, iterPerGen);
-      if(rr.profit > globalProfit){
-        globalProfit = rr.profit;
-        globalBest = rr.rules;
-        log.textContent += tf('gen', {g: gen, v: globalProfit, m: totalStructural}) + '\n';
-        log.scrollTop = log.scrollHeight;
-      }
+    } else if(k % 5 === 0 || k === N){
+      log.textContent += tf('startPoint', {i: k, p: globalProfit}) + '\n';
+      log.scrollTop = log.scrollHeight;
     }
 
-    setTimeout(nextGen, 0);
+    progbar.style.width = ((k + 1) / (N + 1) * 100).toFixed(1) + '%';
+    phase++;
+    setTimeout(nextPhase, 0);
   }
 
   function finish(){
-    log.textContent += '\n' + tf('done', {v: globalProfit}) + '\n';
+    var elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+    log.textContent += '\n' + tf('done', {v: globalProfit}) + '  (' + elapsed + 's)\n';
 
     var formula = genFormula(globalBest);
 
@@ -607,16 +620,16 @@ function start(){
     document.getElementById('txtOut').value = formula;
 
     var stats = diagnose(data, globalBest);
-    lastRules = globalBest;
     renderRuleTable(stats);
     document.getElementById('diag').style.display = 'block';
 
     running = false;
     document.getElementById('btnRun').disabled = false;
     document.getElementById('btnStop').disabled = true;
+    progbar.style.width = '100%';
   }
 
-  nextGen();
+  nextPhase();
 }
 
 function stop(){
@@ -660,7 +673,6 @@ function showMsg(text, ok){
   setTimeout(function(){ m.style.display = 'none'; }, 3000);
 }
 
-/* 初始化 */
 (function(){
   document.getElementById('log').textContent = '等待開始...';
 })();
