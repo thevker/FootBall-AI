@@ -2,115 +2,226 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>網頁數據捕獲工具</title>
+<title>🪄 懒人包 — 一鍵抓取數據</title>
 <style>
 *{box-sizing:border-box}
-body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
+body{font-family:system-ui;padding:16px;max-width:1200px;margin:auto;background:#f0f2f5}
 h2{margin:0 0 8px 0}
+.hero{background:linear-gradient(135deg,#007bff,#6f42c1);color:#fff;padding:18px;border-radius:10px;margin-bottom:16px;text-align:center}
+.hero h2{color:#fff;margin:0 0 6px 0}
+.hero p{margin:0;font-size:14px;opacity:0.9}
 .hint{background:#fff3cd;padding:10px 14px;border-radius:6px;border:1px solid #ffc107;font-size:13px;line-height:1.7;margin-bottom:12px}
 .hint code{background:#fff;padding:2px 6px;border-radius:3px;color:#c7254e;font-size:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+input[type=text]{padding:10px 14px;font-size:15px;border:1px solid #ccc;border-radius:5px;flex:1;min-width:200px}
+button{padding:12px 24px;font-size:15px;cursor:pointer;background:#007bff;color:#fff;border:none;border-radius:5px;font-weight:bold;transition:all 0.15s}
+button:hover{background:#0056b3;transform:translateY(-1px)}
+button:disabled{background:#999;cursor:not-allowed;transform:none}
+button.big{padding:16px 32px;font-size:17px;background:#28a745}
+button.big:hover{background:#1e7e34}
+button.orange{background:#fd7e14}
+button.orange:hover{background:#e8590c}
+button.purple{background:#6f42c1}
+button.purple:hover{background:#5a32a3}
+button.grey{background:#6c757d;padding:8px 16px;font-size:13px}
+button.grey:hover{background:#565e64}
 textarea{width:100%;font-family:monospace;font-size:12px;padding:10px;border:1px solid #ccc;border-radius:4px;resize:vertical}
-#rawInput{height:180px}
-.out{width:100%;height:160px;font-family:monospace;font-size:12px;padding:10px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto;resize:vertical}
-button{padding:10px 22px;font-size:15px;margin:6px 4px 6px 0;cursor:pointer;background:#007bff;color:#fff;border:none;border-radius:5px;font-weight:bold}
-button:hover{background:#0056b3}
-button:disabled{background:#999;cursor:not-allowed}
-button.copy{background:#28a745}
-button.copy:hover{background:#1e7e34}
-button.detect{background:#6f42c1}
-button.detect:hover{background:#5a32a3}
-.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
-select{padding:6px 10px;border-radius:4px;border:1px solid #ccc;font-size:14px;min-width:200px}
-#msg{margin-top:8px;font-weight:bold;font-size:13px;display:none;padding:8px;border-radius:4px}
+#htmlInput{height:140px}
+.out{width:100%;height:200px;font-family:monospace;font-size:12px;padding:10px;border:1px solid #ddd;border-radius:4px;background:#0c0c0c;color:#4ade80;white-space:pre;overflow:auto;resize:vertical}
+.box{background:#fff;padding:14px;border-radius:8px;border:1px solid #ddd;margin-top:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.label{font-weight:bold;font-size:14px;margin-bottom:8px;color:#333;display:flex;justify-content:space-between;align-items:center}
+#msg{margin-top:10px;font-weight:bold;font-size:13px;display:none;padding:10px;border-radius:5px}
 .ok{background:#d4edda;color:#155724}
 .err{background:#f8d7da;color:#721c24}
 .warn{background:#fff3cd;color:#856404}
-table{border-collapse:collapse;font-size:12px;margin-top:8px;background:#fff;width:100%}
-th,td{border:1px solid #ccc;padding:4px 8px;text-align:left;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-th{background:#e9ecef;font-weight:bold}
-.box{background:#fff;padding:12px;border-radius:6px;border:1px solid #ddd;margin-top:12px}
-.label{font-weight:bold;font-size:14px;margin-bottom:6px;color:#333}
-.stat{background:#e7f3ff;padding:6px 12px;border-radius:4px;font-size:12px;display:inline-block;margin-right:8px}
-.section{display:none}
-.section.active{display:block}
-.checkbox-row{display:flex;gap:15px;flex-wrap:wrap;margin:6px 0;font-size:13px}
-.checkbox-row label{cursor:pointer;user-select:none}
+.info{background:#d1ecf1;color:#0c5460}
+.step{display:flex;gap:12px;margin:10px 0;padding:12px;background:#f8f9fa;border-radius:6px;border-left:4px solid #007bff}
+.step-num{font-size:22px;font-weight:bold;color:#007bff;flex-shrink:0;width:32px}
+.step-body{flex:1}
+.step-title{font-weight:bold;font-size:14px;margin-bottom:4px;color:#333}
+.step-desc{font-size:13px;color:#666;line-height:1.6}
+.tabs{display:flex;gap:4px;margin-bottom:8px;border-bottom:2px solid #e9ecef}
+.tab{padding:8px 16px;cursor:pointer;border:none;background:transparent;font-size:14px;font-weight:bold;color:#666;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.15s;border-radius:0}
+.tab:hover{color:#007bff}
+.tab.active{color:#007bff;border-bottom-color:#007bff}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.preview{max-height:300px;overflow:auto;border:1px solid #ddd;border-radius:4px;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:11px;background:#fff}
+th,td{border:1px solid #ddd;padding:4px 6px;text-align:left;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+th{background:#e9ecef;font-weight:bold;position:sticky;top:0}
 </style>
 </head>
 <body>
 
-<h2>📡 網頁數據捕獲工具</h2>
+<div class="hero">
+  <h2>🪄 懒人包 — 一鍵抓取數據</h2>
+  <p>貼上網址或 HTML → 自動偵測 → 一鍵複製 → 貼進優化器</p>
+</div>
 
 <div class="hint">
-<b>📖 使用步驟：</b><br>
-1. 在瀏覽器打開目標網頁（有數據的頁面）<br>
-2. 按 <code>F12</code> 開開發者工具 → 找到最上層的 <code>&lt;html&gt;</code> 標籤 → 右鍵 → <b>Copy → Copy outerHTML</b><br>
-3. 或按 <code>Ctrl+U</code> 看原始碼 → <code>Ctrl+A</code> 全選 → <code>Ctrl+C</code> 複製<br>
-4. 貼到下方輸入框 → 按「🔍 偵測表格」<br>
-5. 選擇要轉換的表格 → 按「⚡ 生成數據」<br>
-6. 複製結果 → 貼到優化器
+<b>📖 兩種用法：</b><br>
+<b>方法 1</b>（有網址）：貼上網址 → 按「🌐 抓取網頁」→ 自動分析<br>
+<b>方法 2</b>（iPhone 或其他）：在 Safari 打開網頁 → 網址列打 <code>view-source:</code> 開頭 → 複製全部 → 貼下方
+</div>
+
+<div class="row">
+  <input type="text" id="urlInput" placeholder="https://example.com/data">
+  <button class="orange" onclick="fetchUrl()" id="btnFetch">🌐 抓取網頁</button>
 </div>
 
 <div class="box">
-  <div class="label">📋 貼上網頁 HTML：</div>
-  <textarea id="rawInput" placeholder="在這裡貼上網頁的 HTML 原始碼..."></textarea>
-  <div class="row">
-    <button class="detect" onclick="detectTables()">🔍 偵測表格</button>
-    <button onclick="clearAll()">🗑 清空</button>
+  <div class="label">
+    <span>📋 或直接貼 HTML：</span>
+    <button class="grey" onclick="clearAll()">清空全部</button>
   </div>
-</div>
-
-<div id="tableSelectBox" class="box" style="display:none">
-  <div class="label">📊 偵測到的表格：</div>
-  <div id="tableInfo" style="font-size:12px;color:#666;margin-bottom:6px"></div>
-  <div class="row">
-    <label>選擇表格：</label>
-    <select id="tableSelect" onchange="previewTable()"></select>
-    <button onclick="generateData()">⚡ 生成數據</button>
+  <textarea id="htmlInput" placeholder="在這裡貼上網頁 HTML 原始碼..."></textarea>
+  <div class="row" style="margin-top:8px">
+    <button class="purple" onclick="analyze()">⚡ 自動分析並生成</button>
+    <span id="analyzeStat" style="font-size:12px;color:#666"></span>
   </div>
-  <div id="previewBox" style="display:none;margin-top:12px">
-    <div class="label">👁 預覽（前 10 行）：</div>
-    <div id="preview"></div>
-  </div>
-</div>
-
-<div id="formatBox" class="box" style="display:none">
-  <div class="label">⚙ 輸出格式設定：</div>
-  <div class="checkbox-row">
-    <label><input type="checkbox" id="optTrim" checked> 去除前後空白</label>
-    <label><input type="checkbox" id="optDropEmpty" checked> 跳過空行</label>
-    <label><input type="checkbox" id="optTab"> 用 Tab 分隔（否則空白）</label>
-    <label><input type="checkbox" id="optSkipHeader" checked> 跳過第一行（表頭）</label>
-    <label><input type="checkbox" id="optReverse"> 反轉順序</label>
-  </div>
-
-  <div class="label" style="margin-top:10px">🔧 欄位映射（可選）：</div>
-  <div id="colMapping" style="font-size:12px;margin-top:6px"></div>
-
-  <div class="row" style="margin-top:10px">
-    <button onclick="generateData()">🔄 重新生成</button>
-  </div>
-
-  <div class="label" style="margin-top:12px">✅ 生成結果：</div>
-  <button class="copy" onclick="copyResult()">📋 一鍵複製</button>
-  <button onclick="downloadResult()">💾 下載 .txt</button>
-  <span class="stat" id="resultStat"></span>
-  <textarea id="result" class="out" readonly wrap="off"></textarea>
 </div>
 
 <div id="msg"></div>
 
+<div id="previewBox" class="box" style="display:none">
+  <div class="label">
+    <span>👁 偵測結果預覽</span>
+    <span id="previewStat" style="font-size:12px;color:#666"></span>
+  </div>
+  <div class="preview" id="preview"></div>
+  <div class="row" style="margin-top:10px">
+    <button onclick="generateData()">🔄 重新生成</button>
+    <label style="font-size:13px;display:flex;align-items:center;gap:6px">
+      <input type="checkbox" id="optSkipHeader" checked> 跳過表頭
+    </label>
+    <label style="font-size:13px;display:flex;align-items:center;gap:6px">
+      <input type="checkbox" id="optSkipEmpty" checked> 跳過空行
+    </label>
+    <label style="font-size:13px;display:flex;align-items:center;gap:6px">
+      <input type="checkbox" id="optTab" checked> Tab 分隔
+    </label>
+  </div>
+</div>
+
+<div id="resultBox" class="box" style="display:none">
+  <div class="label">
+    <span>✅ 生成結果</span>
+    <span id="resultStat" style="font-size:12px;color:#666"></span>
+  </div>
+  <button class="big" onclick="copyResult()" style="margin-bottom:10px">📋 一鍵複製</button>
+  <button class="grey" onclick="downloadResult()">💾 下載 .txt</button>
+  <textarea id="result" class="out" readonly wrap="off"></textarea>
+</div>
+
+<div id="howto" class="box">
+  <div class="label">💡 詳細說明</div>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <div class="step-title">複製網頁 HTML</div>
+      <div class="step-desc">
+        <b>電腦：</b>按 <code>F12</code> → Elements 面板找最上面 <code>&lt;html&gt;</code> → 右鍵 → Copy → Copy outerHTML<br>
+        <b>iPhone Safari：</b>網址列打 <code>view-source:網址</code> → 全選複製<br>
+        <b>iPhone Chrome：</b>用第三方 App「Codeye」或「View Source」
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <div class="step-title">貼到上方文字框</div>
+      <div class="step-desc">
+        直接 <code>Ctrl+V</code> 貼上，或按上方「🌐 抓取網頁」自動抓
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <div class="step-title">按「⚡ 自動分析並生成」</div>
+      <div class="step-desc">
+        工具會自動找出所有表格，並轉成優化器需要的格式（每行：A B C D E F 比分 結果）
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <div class="step-title">複製結果 → 貼進優化器</div>
+      <div class="step-desc">
+        按「📋 一鍵複製」→ 到 v15 優化器貼上 → 開始搜尋
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">⚠</div>
+    <div class="step-body">
+      <div class="step-title">如果抓不到</div>
+      <div class="step-desc">
+        網頁若用 JavaScript 動態載入，靜態 HTML 抓不到數據。此時請：<br>
+        1. 用 F12 抓完整 DOM（因為 DOM 已包含 JS 生成的內容）<br>
+        2. 或用電腦版 Chrome 的「Copy outerHTML」
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
 
-var allTables = [];      // 所有偵測到的表格（DOM 節點）
-var currentTable = null; // 目前選中的表格
+var currentRows = [];
 
 /* ==========================================================
-   偵測表格
+   抓取網址（用 CORS 代理）
    ========================================================== */
-function detectTables(){
-  var raw = document.getElementById('rawInput').value.trim();
+function fetchUrl(){
+  var url = document.getElementById('urlInput').value.trim();
+  if(!url){
+    showMsg('請先輸入網址', 'warn');
+    return;
+  }
+  if(!/^https?:\/\//i.test(url)){
+    url = 'https://' + url;
+  }
+
+  var btn = document.getElementById('btnFetch');
+  btn.disabled = true;
+  btn.textContent = '⏳ 抓取中...';
+  showMsg('正在透過 CORS 代理抓取網頁...', 'info');
+
+  // 用 allorigins.win 免費 CORS 代理
+  var proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+
+  fetch(proxy, {method: 'GET'})
+    .then(function(res){
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    })
+    .then(function(html){
+      document.getElementById('htmlInput').value = html;
+      showMsg('✅ 抓取成功（' + html.length + ' 字元），開始分析...', 'ok');
+      btn.disabled = false;
+      btn.textContent = '🌐 抓取網頁';
+      analyze();
+    })
+    .catch(function(err){
+      showMsg('❌ 抓取失敗：' + err.message + '\n可能原因：\n1. 網址錯誤\n2. 網站阻止 CORS 代理\n3. 網路問題\n\n請改用「貼 HTML」方法', 'err');
+      btn.disabled = false;
+      btn.textContent = '🌐 抓取網頁';
+    });
+}
+
+/* ==========================================================
+   分析 HTML
+   ========================================================== */
+function analyze(){
+  var raw = document.getElementById('htmlInput').value.trim();
   if(!raw){
     showMsg('請先貼上 HTML', 'warn');
     return;
@@ -125,115 +236,85 @@ function detectTables(){
     return;
   }
 
+  // 找出所有表格
   var tables = doc.querySelectorAll('table');
-  allTables = [];
+  var best = null;
+  var bestScore = 0;
+  var bestIdx = -1;
 
   for(var i = 0; i < tables.length; i++){
     var t = tables[i];
     var rows = t.querySelectorAll('tr');
-    var cols = 0;
-    for(var r = 0; r < Math.min(rows.length, 5); r++){
+    if(rows.length < 3) continue;
+
+    // 取樣檢查是否有比分數據
+    var score = 0;
+    var sampleRows = Math.min(rows.length, 20);
+    for(var r = 0; r < sampleRows; r++){
       var cells = rows[r].querySelectorAll('td,th');
-      if(cells.length > cols) cols = cells.length;
+      for(var c = 0; c < cells.length; c++){
+        var txt = (cells[c].textContent || '').trim();
+        // 比分格式 "0:3" 或 "3-1"
+        if(/^\d+:\d+$/.test(txt) || /^\d+-\d+$/.test(txt)) score += 10;
+        // 結果 H/D/A
+        if(/^[HDA]$/.test(txt)) score += 5;
+        // 純數字
+        if(/^\d+$/.test(txt)) score += 1;
+      }
     }
-    if(rows.length >= 2 && cols >= 2){
-      allTables.push({node: t, rows: rows.length, cols: cols});
+
+    if(score > bestScore){
+      bestScore = score;
+      best = t;
+      bestIdx = i;
     }
   }
 
-  // 也偵測可能的「div 表格」（常見於現代網站）
-  if(allTables.length === 0){
-    var divRows = doc.querySelectorAll('div[role="row"], li[role="row"]');
-    if(divRows.length >= 3){
-      // 用 div 模擬成表格
-      var fakeTable = doc.createElement('table');
-      for(var k = 0; k < divRows.length; k++){
-        var cells = divRows[k].querySelectorAll('div[role="cell"], span, td, th');
-        if(cells.length < 2) continue;
-        var tr = doc.createElement('tr');
-        for(var m = 0; m < cells.length; m++){
-          var td = doc.createElement('td');
-          td.textContent = (cells[m].textContent || '').trim();
-          tr.appendChild(td);
-        }
-        fakeTable.appendChild(tr);
-      }
-      if(fakeTable.querySelectorAll('tr').length >= 2){
-        allTables.push({node: fakeTable, rows: fakeTable.querySelectorAll('tr').length, cols: 0, isFake: true});
-      }
-    }
-  }
-
-  if(allTables.length === 0){
-    showMsg('❌ 沒有偵測到表格。可能原因：\n1. 網頁用 JS 動態生成（需用 F12 抓完整 DOM）\n2. 資料不在 <table> 標籤裡\n3. 貼上的 HTML 不完整', 'err');
-    document.getElementById('tableSelectBox').style.display = 'none';
+  if(!best || bestScore < 20){
+    showMsg('❌ 找不到包含比分數據的表格。\n\n可能原因：\n1. 網頁用 JS 動態生成（請用 F12 抓完整 DOM）\n2. 數據不在 <table> 裡\n3. 資料格式不是「數字 A~F + 比分 + 結果」', 'err');
     return;
   }
 
-  // 填充下拉選單
-  var sel = document.getElementById('tableSelect');
-  sel.innerHTML = '';
-  for(var n = 0; n < allTables.length; n++){
-    var info = allTables[n];
-    var opt = document.createElement('option');
-    opt.value = n;
-    var firstCell = '';
-    try{
-      var firstRow = info.node.querySelector('tr');
-      if(firstRow){
-        var firstTd = firstRow.querySelector('td,th');
-        if(firstTd) firstCell = (firstTd.textContent || '').trim().slice(0, 30);
-      }
-    }catch(e){}
-    opt.textContent = '表格 #' + (n+1) + '  (' + info.rows + ' 行 × ' + info.cols + ' 欄) ' + (firstCell ? ' — ' + firstCell : '');
-    sel.appendChild(opt);
+  showMsg('✅ 找到數據表格（第 ' + (bestIdx+1) + ' 個，評分 ' + bestScore + '）', 'ok');
+
+  // 解析成二維陣列
+  var allRows = best.querySelectorAll('tr');
+  currentRows = [];
+  for(var r2 = 0; r2 < allRows.length; r2++){
+    var cells2 = allRows[r2].querySelectorAll('td,th');
+    var rowData = [];
+    for(var c2 = 0; c2 < cells2.length; c2++){
+      rowData.push((cells2[c2].textContent || '').trim().replace(/\s+/g, ' '));
+    }
+    if(rowData.length > 0) currentRows.push(rowData);
   }
 
-  document.getElementById('tableInfo').textContent = '共偵測到 ' + allTables.length + ' 個表格';
-  document.getElementById('tableSelectBox').style.display = 'block';
-  document.getElementById('formatBox').style.display = 'block';
-  document.getElementById('previewBox').style.display = 'none';
-
-  sel.selectedIndex = 0;
-  previewTable();
-  showMsg('✅ 偵測到 ' + allTables.length + ' 個表格', 'ok');
+  // 顯示預覽
+  renderPreview();
+  document.getElementById('previewBox').style.display = 'block';
+  generateData();
 }
 
 /* ==========================================================
-   預覽表格
+   預覽
    ========================================================== */
-function previewTable(){
-  var sel = document.getElementById('tableSelect');
-  var idx = parseInt(sel.value);
-  if(isNaN(idx) || !allTables[idx]) return;
+function renderPreview(){
+  if(currentRows.length === 0) return;
 
-  currentTable = allTables[idx].node;
-
-  var rows = currentTable.querySelectorAll('tr');
-  var html = '<table><thead><tr><th>#</th>';
   var maxCols = 0;
-  var data = [];
-
-  for(var i = 0; i < rows.length; i++){
-    var cells = rows[i].querySelectorAll('td,th');
-    var rowData = [];
-    for(var j = 0; j < cells.length; j++){
-      rowData.push((cells[j].textContent || '').trim());
-    }
-    if(rowData.length > maxCols) maxCols = rowData.length;
-    data.push(rowData);
+  for(var i = 0; i < currentRows.length; i++){
+    if(currentRows[i].length > maxCols) maxCols = currentRows[i].length;
   }
 
-  for(var c = 1; c <= maxCols; c++){
-    html += '<th>欄' + c + '</th>';
-  }
+  var html = '<table><thead><tr><th>#</th>';
+  for(var c = 1; c <= maxCols; c++) html += '<th>欄' + c + '</th>';
   html += '</tr></thead><tbody>';
 
-  var previewRows = Math.min(data.length, 10);
-  for(var r = 0; r < previewRows; r++){
+  var showRows = Math.min(currentRows.length, 15);
+  for(var r = 0; r < showRows; r++){
     html += '<tr><td>' + (r+1) + '</td>';
     for(var cc = 0; cc < maxCols; cc++){
-      var v = data[r][cc] || '';
+      var v = currentRows[r][cc] || '';
       if(v.length > 30) v = v.slice(0, 27) + '...';
       html += '<td>' + escapeHtml(v) + '</td>';
     }
@@ -241,15 +322,9 @@ function previewTable(){
   }
   html += '</tbody></table>';
 
-  if(data.length > 10){
-    html += '<div style="font-size:12px;color:#666;margin-top:6px">... 還有 ' + (data.length - 10) + ' 行未顯示</div>';
-  }
-
   document.getElementById('preview').innerHTML = html;
-  document.getElementById('previewBox').style.display = 'block';
-
-  renderColMapping(maxCols);
-  generateData();
+  document.getElementById('previewStat').textContent =
+    currentRows.length + ' 行 × ' + maxCols + ' 欄';
 }
 
 function escapeHtml(s){
@@ -259,93 +334,50 @@ function escapeHtml(s){
 }
 
 /* ==========================================================
-   欄位映射 UI
-   ========================================================== */
-var colMap = {};  // {欄1: 'keep'|'skip'}
-
-function renderColMapping(maxCols){
-  var html = '<div style="display:flex;flex-wrap:wrap;gap:8px">';
-  for(var i = 1; i <= maxCols; i++){
-    if(colMap['c'+i] === undefined) colMap['c'+i] = 'keep';
-    html += '<label style="font-size:12px;padding:4px 8px;background:#f0f2f5;border-radius:4px">';
-    html += '<input type="checkbox" id="map_c' + i + '" ' + (colMap['c'+i] === 'keep' ? 'checked' : '') +
-            ' onchange="toggleCol(' + i + ')"> 欄' + i;
-    html += '</label>';
-  }
-  html += '</div>';
-  document.getElementById('colMapping').innerHTML = html;
-}
-
-function toggleCol(i){
-  var cb = document.getElementById('map_c' + i);
-  colMap['c' + i] = cb.checked ? 'keep' : 'skip';
-  generateData();
-}
-
-/* ==========================================================
    生成數據
    ========================================================== */
 function generateData(){
-  if(!currentTable) return;
+  if(currentRows.length === 0) return;
 
-  var optTrim = document.getElementById('optTrim').checked;
-  var optDropEmpty = document.getElementById('optDropEmpty').checked;
-  var optTab = document.getElementById('optTab').checked;
-  var optSkipHeader = document.getElementById('optSkipHeader').checked;
-  var optReverse = document.getElementById('optReverse').checked;
+  var skipHeader = document.getElementById('optSkipHeader').checked;
+  var skipEmpty = document.getElementById('optSkipEmpty').checked;
+  var useTab = document.getElementById('optTab').checked;
 
-  var sep = optTab ? '\t' : ' ';
-
-  var rows = currentTable.querySelectorAll('tr');
+  var sep = useTab ? '\t' : ' ';
   var lines = [];
 
-  for(var i = 0; i < rows.length; i++){
-    if(optSkipHeader && i === 0) continue;
+  for(var i = 0; i < currentRows.length; i++){
+    if(skipHeader && i === 0) continue;
 
-    var cells = rows[i].querySelectorAll('td,th');
-    if(cells.length === 0) continue;
+    var row = currentRows[i];
+    if(!row || row.length === 0) continue;
 
-    var parts = [];
-    for(var j = 0; j < cells.length; j++){
-      if(colMap['c' + (j+1)] === 'skip') continue;
-      var v = cells[j].textContent || '';
-      if(optTrim) v = v.replace(/\s+/g, ' ').trim();
-      // 內部如果包含分隔符號，移除
-      if(sep === ' ') v = v.replace(/\s+/g, '_');
-      parts.push(v);
-    }
-
-    if(optDropEmpty){
+    // 檢查空行
+    if(skipEmpty){
       var allEmpty = true;
-      for(var p = 0; p < parts.length; p++){
-        if(parts[p] !== ''){ allEmpty = false; break; }
+      for(var c = 0; c < row.length; c++){
+        if(row[c] !== ''){ allEmpty = false; break; }
       }
       if(allEmpty) continue;
     }
 
+    var parts = [];
+    for(var c2 = 0; c2 < row.length; c2++){
+      var v = row[c2] || '';
+      if(!useTab) v = v.replace(/\s+/g, '_');
+      parts.push(v);
+    }
     lines.push(parts.join(sep));
   }
 
-  if(optReverse) lines.reverse();
-
   var text = lines.join('\n');
   document.getElementById('result').value = text;
-  document.getElementById('resultStat').textContent = lines.length + ' 行 × ' +
-    (lines.length > 0 ? lines[0].split(sep).length : 0) + ' 欄';
-}
 
-/* ==========================================================
-   清空
-   ========================================================== */
-function clearAll(){
-  document.getElementById('rawInput').value = '';
-  document.getElementById('tableSelectBox').style.display = 'none';
-  document.getElementById('formatBox').style.display = 'none';
-  document.getElementById('result').value = '';
-  allTables = [];
-  currentTable = null;
-  colMap = {};
-  hideMsg();
+  var cols = lines.length > 0 ? lines[0].split(sep).length : 0;
+  document.getElementById('resultStat').textContent =
+    lines.length + ' 行 × ' + cols + ' 欄';
+
+  document.getElementById('resultBox').style.display = 'block';
 }
 
 /* ==========================================================
@@ -360,7 +392,7 @@ function copyResult(){
   }
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(function(){
-      showMsg('✅ 已複製 ' + txt.length + ' 字元', 'ok');
+      showMsg('✅ 已複製 ' + txt.length + ' 字元！貼到優化器即可', 'ok');
     }).catch(function(){ fallbackCopy(txt); });
   } else {
     fallbackCopy(txt);
@@ -374,7 +406,7 @@ function fallbackCopy(text){
   el.setSelectionRange(0, 999999);
   var ok = false;
   try{ ok = document.execCommand('copy'); }catch(e){}
-  if(ok) showMsg('✅ 已複製 ' + text.length + ' 字元', 'ok');
+  if(ok) showMsg('✅ 已複製 ' + text.length + ' 字元！', 'ok');
   else showMsg('❌ 請手動選取 → Ctrl+C', 'err');
 }
 
@@ -388,12 +420,26 @@ function downloadResult(){
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
-  a.download = 'captured_data_' + Date.now() + '.txt';
+  a.download = 'data_' + Date.now() + '.txt';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   showMsg('✅ 已下載', 'ok');
+}
+
+/* ==========================================================
+   清空
+   ========================================================== */
+function clearAll(){
+  document.getElementById('urlInput').value = '';
+  document.getElementById('htmlInput').value = '';
+  document.getElementById('previewBox').style.display = 'none';
+  document.getElementById('resultBox').style.display = 'none';
+  document.getElementById('result').value = '';
+  document.getElementById('preview').innerHTML = '';
+  currentRows = [];
+  hideMsg();
 }
 
 /* ==========================================================
@@ -405,16 +451,18 @@ function showMsg(text, cls){
   m.className = cls || 'ok';
   m.style.display = 'block';
   if(cls !== 'err'){
-    setTimeout(function(){ m.style.display = 'none'; }, 3500);
+    setTimeout(function(){ m.style.display = 'none'; }, 5000);
   }
+  // 自動捲到訊息
+  m.scrollIntoView({behavior: 'smooth', block: 'nearest'});
 }
 function hideMsg(){
   document.getElementById('msg').style.display = 'none';
 }
 
-/* 初始化：監聽設定變更 */
+/* 監聽設定變更 */
 window.addEventListener('DOMContentLoaded', function(){
-  var ids = ['optTrim', 'optDropEmpty', 'optTab', 'optSkipHeader', 'optReverse'];
+  var ids = ['optSkipHeader', 'optSkipEmpty', 'optTab'];
   for(var i = 0; i < ids.length; i++){
     document.getElementById(ids[i]).addEventListener('change', generateData);
   }
