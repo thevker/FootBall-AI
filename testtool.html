@@ -2,101 +2,183 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>公式盈利优化器 v3 — ARRAYFORMULA + 求和校验</title>
+<title>公式盈利优化器 v5 — HEX版</title>
 <style>
-body{font-family:system-ui,sans-serif;padding:16px;max-width:1200px;margin:auto;background:#f0f2f5}
-textarea{width:100%;height:140px;font-family:monospace;font-size:12px;padding:8px;box-sizing:border-box;border:1px solid #ccc;border-radius:4px}
-button{padding:10px 22px;font-size:15px;margin:6px 4px;cursor:pointer;background:#007bff;color:#fff;border:none;border-radius:5px}
+*{box-sizing:border-box}
+body{font-family:system-ui;padding:16px;max-width:1200px;margin:auto;background:#f0f2f5}
+h2{margin-top:0}
+textarea{width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #ccc;border-radius:4px}
+#input{height:120px}
+button{padding:10px 22px;font-size:15px;margin:6px 4px 6px 0;cursor:pointer;background:#007bff;color:#fff;border:none;border-radius:5px;font-weight:bold}
 button:hover{background:#0056b3}
 button:disabled{background:#999;cursor:not-allowed}
 button.stop{background:#dc3545}
-button.stop:hover{background:#a71d2a}
-button.copy{background:#28a745}
-button.copy:hover{background:#1e7e34}
-#log{background:#1e1e1e;color:#d4d4d4;border-radius:5px;padding:12px;margin-top:12px;height:360px;overflow-y:auto;font-family:monospace;font-size:12px;white-space:pre-wrap;line-height:1.5}
-.best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;font-size:14px;border:1px solid #c3e6cb}
+button.hex{background:#6f42c1}
+button.hex:hover{background:#5a32a3}
+button.txt{background:#28a745}
+button.txt:hover{background:#1e7e34}
+#log{background:#1e1e1e;color:#d4d4d4;border-radius:5px;padding:12px;margin-top:12px;height:140px;overflow-y:auto;font-family:monospace;font-size:12px;white-space:pre-wrap;line-height:1.5}
+.best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
 .best b{color:#155724}
-code{background:#fff;padding:2px 6px;border-radius:3px;color:#c7254e;font-size:12px;word-break:break-all}
-.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:8px 0}
-label{font-size:14px}
+.box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
+.label{font-weight:bold;font-size:13px;margin-bottom:6px;color:#333}
+.out{width:100%;height:140px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto;resize:vertical}
+.param{font-family:monospace;font-size:12px;word-break:break-all;color:#555;margin-top:6px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
 select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px}
-.progress{height:8px;background:#ddd;border-radius:4px;overflow:hidden;margin-top:8px}
-.progress > div{height:100%;background:#007bff;width:0%;transition:width 0.2s}
-#formulaOut{background:#fff;padding:10px;border-radius:4px;margin-top:6px;font-family:monospace;font-size:11px;word-break:break-all;max-height:220px;overflow:auto;border:1px solid #ccc}
-.tip{font-size:12px;color:#555;margin-top:4px}
-.cmp{border-collapse:collapse;margin-top:10px;font-size:13px;background:#fff}
-.cmp th,.cmp td{border:1px solid #999;padding:5px 10px}
-.cmp th{background:#e9ecef}
-.ok{color:#0a7a0a;font-weight:bold}
-.bad{color:#c00;font-weight:bold}
+#msg{margin-top:8px;font-weight:bold;font-size:13px;display:none;padding:8px;border-radius:4px}
+.ok{background:#d4edda;color:#155724}
+.err{background:#f8d7da;color:#721c24}
 </style>
 </head>
 <body>
 
-<h2>⚡ 公式盈利优化器 v3 — ARRAYFORMULA + 求和校验</h2>
-<p>贴数据（每行：A B C D E F 比分 结果）。搜索后自动生成 ARRAYFORMULA 公式，并用 JS 逐行执行一遍，验证「盈利和」是否与工具一致。</p>
+<h2>⚡ 公式盈利优化器 v5 — HEX版</h2>
+<p>贴数据（每行：A B C D E F 比分 结果）。搜索最优门槛，输出新 HEX 和新公式。</p>
 
 <textarea id="input" placeholder="23	27	49	355	385	169	0:3	A
-62	27	9	158	395	405	3:0	H
-..."></textarea>
+62	27	9	158	395	405	3:0	H"></textarea>
 
 <div class="row">
-  <label>搜索强度：
+  <label>强度：
     <select id="strength">
-      <option value="10">快速（10 次重启）</option>
-      <option value="50" selected>标准（50 次重启）</option>
-      <option value="200">深度（200 次重启）</option>
-      <option value="1000">疯狂（1000 次重启）</option>
+      <option value="10">快速</option>
+      <option value="50" selected>标准</option>
+      <option value="200">深度</option>
+      <option value="1000">疯狂</option>
     </select>
   </label>
   <button id="btnRun" onclick="start()">🚀 开始搜索</button>
   <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
-  <button onclick="document.getElementById('input').value=''">清空</button>
 </div>
 
-<div class="progress"><div id="progbar"></div></div>
 <div id="log">等待开始...</div>
-<div id="best" class="best" style="display:none"></div>
+
+<div class="best" id="best">
+  <div id="summary"></div>
+  <div class="param" id="params"></div>
+
+  <div class="box">
+    <div class="label">🟣 HEX（新）</div>
+    <button class="hex" onclick="copyIt('hexOut','HEX')">📋 複製 HEX</button>
+    <textarea id="hexOut" class="out" readonly wrap="off"></textarea>
+  </div>
+
+  <div class="box">
+    <div class="label">🟢 公式（新）</div>
+    <button class="txt" onclick="copyIt('txtOut','公式')">📋 複製公式</button>
+    <textarea id="txtOut" class="out" readonly wrap="off"></textarea>
+  </div>
+
+  <div id="msg"></div>
+</div>
 
 <script>
 'use strict';
 
-/* ============================================================
-   参数定义（与 P_DEF 一致）
-   ============================================================ */
-const P_DEF = {
-  b1:{d:32,min:28,max:36,s:1}, ac1:{d:6,min:3,max:10,s:1},
-  a2:{d:60,min:55,max:66,s:1}, f2a:{d:400,min:380,max:430,s:5}, f2b:{d:480,min:440,max:520,s:5},
-  ac3:{d:3,min:2,max:6,s:1}, e3:{d:380,min:340,max:420,s:5}, df3:{d:40,min:30,max:60,s:2},
-  a4:{d:45,min:40,max:52,s:1}, df4:{d:70,min:50,max:90,s:2},
-  df5:{d:18,min:12,max:25,s:1},
-  ac6:{d:50,min:40,max:65,s:1},
-  a7:{d:42,min:38,max:50,s:1},
-  a8:{d:34,min:30,max:42,s:1}, d8b:{d:235,min:220,max:250,s:2},
-  a92:{d:38,min:34,max:44,s:1}, f92:{d:250,min:220,max:290,s:5},
-  e10:{d:315,min:280,max:360,s:5}, b10:{d:27,min:22,max:34,s:1},
-  f11a:{d:490,min:450,max:530,s:5}, f11b:{d:560,min:520,max:620,s:5},
-  f13a:{d:184,min:170,max:200,s:2}, f13b:{d:216,min:200,max:240,s:2},
-  gap:{d:400,min:250,max:600,s:10}, e470:{d:470,min:400,max:550,s:10},
-  a47:{d:47,min:40,max:60,s:1}, f700:{d:700,min:600,max:850,s:10}
-};
-const KEYS = Object.keys(P_DEF);
+/* ==========================================================
+   原始公式 HEX（你提供的正確版本）
+   ========================================================== */
+const HEX_SRC = '3D 41 52 52 41 59 46 4F 52 4D 55 4C 41 28 49 46 28 28 41 32 3A 41 3D 22 22 29 2B 28 42 32 3A 42 3D 22 22 29 2B 28 43 32 3A 43 3D 22 22 29 2B 28 44 32 3A 44 3D 22 22 29 2B 28 45 32 3A 45 3D 22 22 29 2B 28 46 32 3A 46 3D 22 22 29 2C 22 22 2C 49 46 28 28 42 32 3A 42 3E 3D 33 32 29 2A 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3C 3D 36 29 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 36 30 29 2A 28 43 32 3A 43 3C 3D 31 31 29 2A 28 44 32 3A 44 3E 3D 31 34 30 29 2A 28 44 32 3A 44 3C 3D 31 39 30 29 2A 28 46 32 3A 46 3E 3D 34 30 30 29 2A 28 46 32 3A 46 3C 3D 34 38 30 29 2C 22 48 22 2C 49 46 28 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3C 3D 33 29 2A 28 45 32 3A 45 3C 33 38 30 29 2A 28 41 42 53 28 44 32 3A 44 2D 46 32 3A 46 29 3C 34 30 29 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 34 35 29 2A 28 43 32 3A 43 3C 3D 32 30 29 2A 28 41 42 53 28 44 32 3A 44 2D 46 32 3A 46 29 3C 37 30 29 2A 28 44 32 3A 44 3C 34 30 30 29 2C 22 44 22 2C 49 46 28 41 42 53 28 44 32 3A 44 2D 46 32 3A 46 29 3C 31 38 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 34 32 29 2A 28 44 32 3A 44 3E 3D 31 35 35 29 2A 28 44 32 3A 44 3C 32 30 35 29 2A 28 44 32 3A 44 3C 3E 46 32 3A 46 29 2A 28 46 32 3A 46 3E 44 32 3A 44 29 2A 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3E 3D 35 30 29 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 34 32 29 2A 28 44 32 3A 44 3E 3D 31 35 35 29 2A 28 44 32 3A 44 3C 32 30 35 29 2A 28 44 32 3A 44 3C 3E 46 32 3A 46 29 2C 22 48 22 2C 49 46 28 28 41 32 3A 41 3E 3D 33 34 29 2A 28 44 32 3A 44 3E 32 30 35 29 2A 28 44 32 3A 44 3C 3D 32 33 35 29 2A 28 44 32 3A 44 3C 3E 46 32 3A 46 29 2C 22 44 22 2C 49 46 28 28 44 32 3A 44 3E 3D 34 30 30 29 2A 28 41 32 3A 41 3E 3D 34 32 29 2C 22 44 22 2C 49 46 28 28 44 32 3A 44 3E 3D 33 34 30 29 2A 28 41 32 3A 41 3E 3D 33 38 29 2A 28 46 32 3A 46 3C 32 35 30 29 2A 28 44 32 3A 44 3E 46 32 3A 46 29 2C 49 46 28 46 32 3A 46 3C 32 30 30 2C 49 46 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3C 3D 35 2C 22 44 22 2C 22 41 22 29 2C 22 44 22 29 2C 49 46 28 28 45 32 3A 45 3C 3D 33 31 35 29 2A 28 42 32 3A 42 3E 3D 32 37 29 2A 28 41 42 53 28 41 32 3A 41 2D 43 32 3A 43 29 3C 3D 32 35 29 2A 28 44 32 3A 44 3E 3D 32 35 30 29 2A 28 44 32 3A 44 3C 3D 33 35 30 29 2A 28 44 32 3A 44 3C 45 32 3A 45 29 2C 22 44 22 2C 49 46 28 28 43 32 3A 43 3E 41 32 3A 41 29 2A 28 46 32 3A 46 3E 3D 34 39 30 29 2A 28 46 32 3A 46 3C 3D 35 36 30 29 2A 28 44 32 3A 44 3C 32 30 30 29 2C 22 44 22 2C 49 46 28 28 43 32 3A 43 3E 41 32 3A 41 29 2A 28 46 32 3A 46 3E 44 32 3A 44 29 2A 28 46 32 3A 46 3C 35 35 30 29 2A 28 45 32 3A 45 3E 33 32 30 29 2C 22 48 22 2C 49 46 28 28 43 32 3A 43 3E 41 32 3A 41 29 2A 28 46 32 3A 46 3E 3D 31 38 34 29 2A 28 46 32 3A 46 3C 3D 32 31 36 29 2A 28 43 32 3A 43 3E 3D 34 30 29 2C 22 41 22 2C 49 46 28 28 43 32 3A 43 3E 41 32 3A 41 29 2A 28 46 32 3A 46 3E 44 32 3A 44 29 2A 28 46 32 3A 46 3C 33 30 30 29 2A 28 43 32 3A 43 3C 34 35 29 2A 28 44 32 3A 44 3C 32 35 30 29 2C 22 44 22 2C 49 46 28 44 32 3A 44 3E 46 32 3A 46 2C 49 46 28 28 46 32 3A 46 3C 3D 31 35 30 29 2A 28 43 32 3A 43 3E 3D 36 35 29 2C 22 41 22 2C 49 46 28 44 32 3A 44 3E 31 35 30 30 2C 49 46 28 43 32 3A 43 3E 3D 35 30 2C 22 41 22 2C 49 46 28 41 32 3A 41 3E 43 32 3A 43 2C 22 44 22 2C 22 73 6B 69 70 22 29 29 2C 49 46 28 28 41 32 3A 41 3E 3D 33 33 29 2A 28 44 32 3A 44 3E 3D 33 35 30 29 2C 22 44 22 2C 22 48 22 29 29 29 2C 49 46 28 46 32 3A 46 3E 44 32 3A 44 2C 49 46 28 28 41 32 3A 41 3E 3D 35 30 29 2A 28 46 32 3A 46 2D 44 32 3A 44 3E 3D 34 30 30 29 2C 22 48 22 2C 49 46 28 46 32 3A 46 3E 3D 37 30 30 2C 49 46 28 41 32 3A 41 3E 3D 38 30 2C 22 44 22 2C 49 46 28 43 32 3A 43 3E 41 32 3A 41 2C 22 44 22 2C 49 46 28 41 32 3A 41 3C 34 35 2C 22 44 22 2C 22 73 6B 69 70 22 29 29 29 2C 49 46 28 28 45 32 3A 45 3E 3D 34 37 30 29 2A 28 46 32 3A 46 3E 3D 35 30 30 29 2C 22 44 22 2C 49 46 28 28 41 32 3A 41 3E 3D 34 37 29 2A 28 44 32 3A 44 3C 3D 31 34 30 29 2C 22 48 22 2C 22 41 22 29 29 29 29 2C 49 46 28 41 32 3A 41 3E 43 32 3A 43 2C 22 48 22 2C 49 46 28 43 32 3A 43 3E 41 32 3A 41 2C 22 41 22 2C 22 73 6B 69 70 22 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29 29';
 
-function defaultP(){
-  const P = {};
-  for(const k in P_DEF) P[k] = P_DEF[k].d;
-  return P;
+/* ==========================================================
+   HEX <-> STRING
+   ========================================================== */
+function hexToStr(h){
+  const s = h.replace(/\s+/g, '');
+  let r = '';
+  for(let i = 0; i < s.length; i += 2){
+    r += String.fromCharCode(parseInt(s.substr(i, 2), 16));
+  }
+  return r;
+}
+function strToHex(t){
+  const arr = [];
+  for(let i = 0; i < t.length; i++){
+    arr.push(t.charCodeAt(i).toString(16).toUpperCase().padStart(2, '0'));
+  }
+  return arr.join(' ');
 }
 
-/* ============================================================
-   全局状态
-   ============================================================ */
+const RAW = hexToStr(HEX_SRC);
+
+/* ==========================================================
+   门槛替换表（长 → 占位符）
+   ========================================================== */
+const SUBST = [
+  ['B2:B>=32',          'B2:B>={b1}'],
+  ['ABS(A2:A-C2:C)<=6', 'ABS(A2:A-C2:C)<={ac1}'],
+  ['A2:A>=60',          'A2:A>={a2}'],
+  ['F2:F>=400',         'F2:F>={f2a}'],
+  ['F2:F<=480',         'F2:F<={f2b}'],
+  ['ABS(A2:A-C2:C)<=3', 'ABS(A2:A-C2:C)<={ac3}'],
+  ['E2:E<380',          'E2:E<{e3}'],
+  ['ABS(D2:D-F2:F)<40', 'ABS(D2:D-F2:F)<{df3}'],
+  ['A2:A>=45',          'A2:A>={a4}'],
+  ['ABS(D2:D-F2:F)<70', 'ABS(D2:D-F2:F)<{df4}'],
+  ['ABS(D2:D-F2:F)<18', 'ABS(D2:D-F2:F)<{df5}'],
+  ['ABS(A2:A-C2:C)>=50','ABS(A2:A-C2:C)>={ac6}'],
+  ['A2:A>=34',          'A2:A>={a8}'],
+  ['D2:D<=235',         'D2:D<={d8b}'],
+  ['A2:A>=38',          'A2:A>={a92}'],
+  ['F2:F<250',          'F2:F<{f92}'],
+  ['E2:E<=315',         'E2:E<={e10}'],
+  ['B2:B>=27',          'B2:B>={b10}'],
+  ['F2:F>=490',         'F2:F>={f11a}'],
+  ['F2:F<=560',         'F2:F<={f11b}'],
+  ['F2:F>=184',         'F2:F>={f13a}'],
+  ['F2:F<=216',         'F2:F<={f13b}'],
+  ['F2:F-D2:D>=400',    'F2:F-D2:D>={gap}'],
+  ['F2:F>=700',         'F2:F>={f700}'],
+  ['E2:E>=470',         'E2:E>={e470}'],
+  ['A2:A>=47',          'A2:A>={a47}']
+];
+
+let TEMPLATE = RAW;
+for(let i = 0; i < SUBST.length; i++){
+  TEMPLATE = TEMPLATE.split(SUBST[i][0]).join(SUBST[i][1]);
+}
+
+/* ==========================================================
+   参数定义
+   ========================================================== */
+const P_DEF = {
+  b1:  {d:32, min:28, max:36, s:1},
+  ac1: {d:6,  min:3,  max:10, s:1},
+  a2:  {d:60, min:55, max:68, s:1},
+  f2a: {d:400,min:380,max:430,s:5},
+  f2b: {d:480,min:440,max:520,s:5},
+  ac3: {d:3,  min:2,  max:6,  s:1},
+  e3:  {d:380,min:340,max:420,s:5},
+  df3: {d:40, min:30, max:60, s:2},
+  a4:  {d:45, min:40, max:52, s:1},
+  df4: {d:70, min:50, max:90, s:2},
+  df5: {d:18, min:12, max:25, s:1},
+  ac6: {d:50, min:40, max:65, s:1},
+  a8:  {d:34, min:30, max:42, s:1},
+  d8b: {d:235,min:220,max:250,s:2},
+  a92: {d:38, min:34, max:44, s:1},
+  f92: {d:250,min:220,max:290,s:5},
+  e10: {d:315,min:280,max:360,s:5},
+  b10: {d:27, min:22, max:34, s:1},
+  f11a:{d:490,min:450,max:530,s:5},
+  f11b:{d:560,min:520,max:620,s:5},
+  f13a:{d:184,min:170,max:200,s:2},
+  f13b:{d:216,min:200,max:240,s:2},
+  gap: {d:400,min:250,max:600,s:10},
+  f700:{d:700,min:600,max:850,s:10},
+  e470:{d:470,min:400,max:550,s:10},
+  a47: {d:47, min:40, max:60, s:1}
+};
+const KEYS = Object.keys(P_DEF);
+function defaultP(){ const P={}; for(const k in P_DEF) P[k]=P_DEF[k].d; return P; }
+
 let data = [];
 let running = false;
 
-/* ============================================================
+/* ==========================================================
    数据解析
-   ============================================================ */
+   ========================================================== */
 function parseData(text){
   const rows = [];
   for(const line of text.split('\n')){
@@ -111,19 +193,18 @@ function parseData(text){
   return rows;
 }
 
-/* ============================================================
-   预测函数（与生成公式一一对应）
-   ============================================================ */
+/* ==========================================================
+   预测函数
+   ========================================================== */
 function predict(r, P){
   const {A,B,C,D,E,F} = r;
-
   if(B >= P.b1 && Math.abs(A-C) <= P.ac1) return 'D';
   if(A >= P.a2 && C <= 11 && D >= 140 && D <= 190 && F >= P.f2a && F <= P.f2b) return 'H';
   if(Math.abs(A-C) <= P.ac3 && E < P.e3 && Math.abs(D-F) < P.df3) return 'D';
   if(A >= P.a4 && C <= 20 && Math.abs(D-F) < P.df4 && D < 400) return 'D';
   if(Math.abs(D-F) < P.df5) return 'D';
   if(A >= 42 && D >= 155 && D < 205 && D !== F && F > D && Math.abs(A-C) >= P.ac6) return 'D';
-  if(A >= P.a7 && D >= 155 && D < 205 && D !== F) return 'H';
+  if(A >= 42 && D >= 155 && D < 205 && D !== F) return 'H';
   if(A >= P.a8 && D > 205 && D <= P.d8b && D !== F) return 'D';
   if(D >= 400 && A >= 42) return 'D';
   if(D >= 340 && A >= P.a92 && F < P.f92 && D > F){
@@ -135,7 +216,6 @@ function predict(r, P){
   if(C > A && F > D && F < 550 && E > 320) return 'H';
   if(C > A && F >= P.f13a && F <= P.f13b && C >= 40) return 'A';
   if(C > A && F > D && F < 300 && C < 45 && D < 250) return 'D';
-
   if(D > F){
     if(F <= 150 && C >= 65) return 'A';
     if(D > 1500){
@@ -163,9 +243,9 @@ function predict(r, P){
   return 'skip';
 }
 
-/* ============================================================
-   盈利计算（两种入口）
-   ============================================================ */
+/* ==========================================================
+   盈利
+   ========================================================== */
 function profit(rows, P){
   let total = 0;
   for(let i = 0; i < rows.length; i++){
@@ -181,30 +261,13 @@ function profit(rows, P){
   return total;
 }
 
-function profitFromPreds(rows, preds){
-  let total = 0, cnt = 0;
-  for(let i = 0; i < rows.length; i++){
-    const p = preds[i];
-    if(!p || p === 'skip') continue;
-    const r = rows[i];
-    cnt++;
-    if(p === r.result){
-      if(p === 'H') total += r.D - 100;
-      else if(p === 'D') total += r.E - 100;
-      else if(p === 'A') total += r.F - 100;
-    } else total -= 100;
-  }
-  return {total, cnt};
-}
-
-/* ============================================================
+/* ==========================================================
    坐标下降
-   ============================================================ */
-function coordinateDescent(rows, P0){
+   ========================================================== */
+function descend(rows, P0){
   const P = {...P0};
   let best = profit(rows, P);
   let improved = true;
-
   while(improved && running){
     improved = false;
     for(const k of KEYS){
@@ -212,15 +275,12 @@ function coordinateDescent(rows, P0){
       const def = P_DEF[k];
       const orig = P[k];
       let bestVal = orig, bestScore = best;
-
-      // 粗扫
       for(let v = def.min; v <= def.max; v += def.s){
         if(v === orig) continue;
         P[k] = v;
         const s = profit(rows, P);
         if(s > bestScore){ bestScore = s; bestVal = v; }
       }
-      // 细扫
       if(def.s > 1){
         const lo = Math.max(def.min, bestVal - def.s + 1);
         const hi = Math.min(def.max, bestVal + def.s - 1);
@@ -238,121 +298,30 @@ function coordinateDescent(rows, P0){
   return {P, profit: best};
 }
 
-/* ============================================================
-   随机起点
-   ============================================================ */
-function randomStart(numRand){
+function randomStart(n){
   const P = defaultP();
-  const shuffled = [...KEYS].sort(() => Math.random() - 0.5);
-  for(let i = 0; i < numRand && i < shuffled.length; i++){
-    const key = shuffled[i];
-    const def = P_DEF[key];
+  const sh = [...KEYS].sort(() => Math.random() - 0.5);
+  for(let i = 0; i < n && i < sh.length; i++){
+    const k = sh[i], def = P_DEF[k];
     const steps = Math.round((def.max - def.min) / def.s);
-    P[key] = def.min + Math.floor(Math.random() * (steps + 1)) * def.s;
+    P[k] = def.min + Math.floor(Math.random() * (steps + 1)) * def.s;
   }
   return P;
 }
 
-/* ============================================================
-   生成 ARRAYFORMULA（用户要求的格式）
-   ============================================================ */
-function generateArrayFormula(P){
-  const head = '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",';
-
-  const B = [
-    {c:[`(B2:B>=${P.b1})`,`(ABS(A2:A-C2:C)<=${P.ac1})`], v:'"D"'},
-    {c:[`(A2:A>=${P.a2})`,`(C2:C<=11)`,`(D2:D>=140)`,`(D2:D<=190)`,`(F2:F>=${P.f2a})`,`(F2:F<=${P.f2b})`], v:'"H"'},
-    {c:[`(ABS(A2:A-C2:C)<=${P.ac3})`,`(E2:E<${P.e3})`,`(ABS(D2:D-F2:F)<${P.df3})`], v:'"D"'},
-    {c:[`(A2:A>=${P.a4})`,`(C2:C<=20)`,`(ABS(D2:D-F2:F)<${P.df4})`,`(D2:D<400)`], v:'"D"'},
-    {c:[`(ABS(D2:D-F2:F)<${P.df5})`], v:'"D"'},
-    {c:[`(A2:A>=42)`,`(D2:D>=155)`,`(D2:D<205)`,`(D2:D<>F2:F)`,`(F2:F>D2:D)`,`(ABS(A2:A-C2:C)>=${P.ac6})`], v:'"D"'},
-    {c:[`(A2:A>=${P.a7})`,`(D2:D>=155)`,`(D2:D<205)`,`(D2:D<>F2:F)`], v:'"H"'},
-    {c:[`(A2:A>=${P.a8})`,`(D2:D>205)`,`(D2:D<=${P.d8b})`,`(D2:D<>F2:F)`], v:'"D"'},
-    {c:[`(D2:D>=400)`,`(A2:A>=42)`], v:'"D"'},
-    {c:[`(D2:D>=340)`,`(A2:A>=${P.a92})`,`(F2:F<${P.f92})`,`(D2:D>F2:F)`],
-     v:'IF(F2:F<200,IF(ABS(A2:A-C2:C)<=5,"D","A"),"D")'},
-    {c:[`(E2:E<=${P.e10})`,`(B2:B>=${P.b10})`,`(ABS(A2:A-C2:C)<=25)`,`(D2:D>=250)`,`(D2:D<=350)`,`(D2:D<E2:E)`], v:'"D"'},
-    {c:[`(C2:C>A2:A)`,`(F2:F>=${P.f11a})`,`(F2:F<=${P.f11b})`,`(D2:D<200)`], v:'"D"'},
-    {c:[`(C2:C>A2:A)`,`(F2:F>D2:D)`,`(F2:F<550)`,`(E2:E>320)`], v:'"H"'},
-    {c:[`(C2:C>A2:A)`,`(F2:F>=${P.f13a})`,`(F2:F<=${P.f13b})`,`(C2:C>=40)`], v:'"A"'},
-    {c:[`(C2:C>A2:A)`,`(F2:F>D2:D)`,`(F2:F<300)`,`(C2:C<45)`,`(D2:D<250)`], v:'"D"'}
-  ];
-
-  const tail = `IF(D2:D>F2:F,IF((F2:F<=150)*(C2:C>=65),"A",IF(D2:D>1500,IF(C2:C>=50,"A",IF(A2:A>C2:A,"D","skip")),IF((A2:A>=33)*(D2:D>=350),"D","H"))),IF(F2:F>D2:D,IF((A2:A>=50)*(F2:F-D2:D>=${P.gap}),"H",IF(F2:F>=${P.f700},IF(A2:A>=80,"D",IF(C2:C>A2:A,"D",IF(A2:A<45,"D","skip"))),IF((E2:E>=${P.e470})*(F2:F>=500),"D",IF((A2:A>=${P.a47})*(D2:D<=140),"H","A")))),IF(A2:A>C2:A,"H",IF(C2:C>A2:A,"A","skip"))))`;
-
-  let s = head;
-  for(const b of B){
-    s += `IF(${b.c.join('*')},${b.v},`;
-  }
-  s += tail;
-  // 关闭 15 个分支 IF + 外层 IF + ARRAYFORMULA = 17 个
-  s += ')'.repeat(B.length + 2);
-  return s;
+/* ==========================================================
+   生成新公式 和 新 HEX
+   ========================================================== */
+function genText(P){
+  return TEMPLATE.replace(/\{(\w+)\}/g, (m, k) => P[k] !== undefined ? P[k] : m);
+}
+function genHex(P){
+  return strToHex(genText(P));
 }
 
-/* ============================================================
-   生成单行公式（Excel 拖拽版）
-   ============================================================ */
-function buildRowFormula(P){
-  const arr = generateArrayFormula(P);
-  // 去掉 = ARRAYFORMULA( ... )
-  let s = arr.slice(1).replace(/^ARRAYFORMULA\(/, '');
-  s = s.slice(0, -1);
-  // A2:A → A2
-  s = s.replace(/2:A/g, '2');
-  return '=' + s;
-}
-
-/* ============================================================
-   ARRAYFORMULA → JS 表达式
-   ============================================================ */
-function arrFormulaToRowJS(arrFormula){
-  let s = arrFormula.trim();
-  if(s.startsWith('=')) s = s.slice(1);
-  s = s.replace(/^ARRAYFORMULA\(/, '');
-  s = s.slice(0, -1);            // 去掉最外层 )
-  s = s.replace(/2:A/g, '2');    // A2:A → A2
-  // 保护比较符
-  s = s.replace(/<>/g, '\u0001');
-  s = s.replace(/>=/g, '\u0002');
-  s = s.replace(/<=/g, '\u0003');
-  s = s.replace(/=/g, '===');
-  s = s.replace(/\u0001/g, '!==');
-  s = s.replace(/\u0002/g, '>=');
-  s = s.replace(/\u0003/g, '<=');
-  s = s.replace(/\bABS\s*\(/gi, 'Math.abs(');
-  return s;
-}
-
-/* ============================================================
-   逐行执行公式 → 预测数组
-   ============================================================ */
-function evaluateArrayFormula(arrFormula, rows){
-  const js = arrFormulaToRowJS(arrFormula);
-  let inner;
-  try{
-    inner = new Function(
-      'const IF = (c,a,b) => c ? a : b;\n' +
-      'return function(A,B,C,D,E,F){ return (' + js + '); };'
-    )();
-  }catch(e){
-    return {error: '公式解析失败: ' + e.message + '\n' + js.slice(0, 200) + '...'};
-  }
-  const preds = [];
-  for(let i = 0; i < rows.length; i++){
-    const r = rows[i];
-    try{
-      preds.push(inner(r.A, r.B, r.C, r.D, r.E, r.F));
-    }catch(e){
-      return {error: `第 ${i+1} 行求值失败: ${e.message}`};
-    }
-  }
-  return {preds};
-}
-
-/* ============================================================
+/* ==========================================================
    主流程
-   ============================================================ */
+   ========================================================== */
 async function start(){
   data = parseData(document.getElementById('input').value);
   if(data.length === 0){ alert('没有有效数据'); return; }
@@ -362,128 +331,50 @@ async function start(){
   document.getElementById('btnStop').disabled = false;
   const log = document.getElementById('log');
   const bestEl = document.getElementById('best');
-  const progbar = document.getElementById('progbar');
-  log.textContent = `载入 ${data.length} 条数据\n`;
 
-  const strength = parseInt(document.getElementById('strength').value);
-  const t0 = Date.now();
+  log.textContent = '载入 ' + data.length + ' 条数据\n';
 
-  let globalBest = defaultP();
-  let globalBestProfit = profit(data, globalBest);
-  log.textContent += `基准盈利: ${globalBestProfit}\n\n`;
+  let best = defaultP();
+  let bestProfit = profit(data, best);
+  log.textContent += '基准盈利: ' + bestProfit + '\n';
 
-  log.textContent += `[阶段 1] 默认参数 → 坐标下降...\n`;
-  {
-    const r = coordinateDescent(data, globalBest);
-    if(r.profit > globalBestProfit){ globalBestProfit = r.profit; globalBest = r.P; }
-    log.textContent += `  完成 → ${globalBestProfit}\n\n`;
-  }
-  await new Promise(r => setTimeout(r, 0));
+  let r = descend(data, best);
+  if(r.profit > bestProfit){ bestProfit = r.profit; best = r.P; }
+  log.textContent += '阶段1: ' + bestProfit + '\n';
 
-  log.textContent += `[阶段 2] ${strength} 次随机重启...\n`;
-  const uiEvery = Math.max(1, Math.floor(strength / 25));
-  for(let i = 0; i < strength && running; i++){
-    const k = 4 + Math.floor(Math.random() * 6);
-    const startP = randomStart(k);
-    const r = coordinateDescent(data, startP);
-    if(r.profit > globalBestProfit){
-      globalBestProfit = r.profit;
-      globalBest = r.P;
-      log.textContent += `  ★ 重启 #${i+1} 新最优: ${globalBestProfit}\n`;
+  const N = parseInt(document.getElementById('strength').value);
+  for(let i = 0; i < N && running; i++){
+    r = descend(data, randomStart(4 + Math.floor(Math.random() * 6)));
+    if(r.profit > bestProfit){
+      bestProfit = r.profit;
+      best = r.P;
+      log.textContent += '★ 重启#' + (i+1) + ' 新最优: ' + bestProfit + '\n';
       log.scrollTop = log.scrollHeight;
     }
-    if(i % uiEvery === 0 || i === strength - 1){
-      progbar.style.width = ((i+1) / strength * 100).toFixed(1) + '%';
-      bestEl.style.display = 'block';
-      const el = ((Date.now() - t0) / 1000).toFixed(0);
-      bestEl.innerHTML = `<b>当前最优盈利：${globalBestProfit}</b>（重启 ${i+1}/${strength}，用时 ${el}s）`;
-      await new Promise(r => setTimeout(r, 0));
-    }
+    if(i % 5 === 0) await new Promise(x => setTimeout(x, 0));
   }
 
   if(running){
-    log.textContent += `\n[阶段 3] 从最优参数反复打磨...\n`;
-    for(let round = 0; round < 10 && running; round++){
-      const r = coordinateDescent(data, globalBest);
-      if(r.profit <= globalBestProfit) break;
-      globalBestProfit = r.profit;
-      globalBest = r.P;
-      log.textContent += `  打磨第 ${round+1} 轮 → ${globalBestProfit}\n`;
-      log.scrollTop = log.scrollHeight;
-      await new Promise(r => setTimeout(r, 0));
+    for(let k = 0; k < 5 && running; k++){
+      r = descend(data, best);
+      if(r.profit <= bestProfit) break;
+      bestProfit = r.profit;
+      best = r.P;
+      log.textContent += '打磨第' + (k+1) + '轮: ' + bestProfit + '\n';
     }
   }
 
-  const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+  log.textContent += '\n完成！最高盈利: ' + bestProfit + '\n';
 
-  /* -------- 生成公式 -------- */
-  const arrFormula = generateArrayFormula(globalBest);
-  const rowFormula = buildRowFormula(globalBest);
-
-  /* -------- 工具预测 -------- */
-  const toolPreds = data.map(r => predict(r, globalBest));
-  const toolResult = profitFromPreds(data, toolPreds);
-
-  /* -------- 公式求值 -------- */
-  const evalRes = evaluateArrayFormula(arrFormula, data);
-
-  let compareHTML = '';
-  let allSame = false;
-  if(evalRes.error){
-    compareHTML = `<div class="bad" style="margin-top:10px">❌ 公式求值失败：${evalRes.error}</div>`;
-  } else {
-    const formulaResult = profitFromPreds(data, evalRes.preds);
-    let diffCount = 0;
-    for(let i = 0; i < toolPreds.length; i++){
-      if(toolPreds[i] !== evalRes.preds[i]) diffCount++;
-    }
-    allSame = diffCount === 0 && toolResult.total === formulaResult.total && toolResult.cnt === formulaResult.cnt;
-    compareHTML = `
-      <table class="cmp">
-        <tr><th>项目</th><th>工具预测</th><th>公式求值</th><th>一致</th></tr>
-        <tr>
-          <td>有效场数</td>
-          <td>${toolResult.cnt}</td>
-          <td>${formulaResult.cnt}</td>
-          <td class="${toolResult.cnt === formulaResult.cnt ? 'ok' : 'bad'}">${toolResult.cnt === formulaResult.cnt ? '✅' : '❌'}</td>
-        </tr>
-        <tr>
-          <td>盈利和</td>
-          <td><b>${toolResult.total}</b></td>
-          <td><b>${formulaResult.total}</b></td>
-          <td class="${toolResult.total === formulaResult.total ? 'ok' : 'bad'}">${toolResult.total === formulaResult.total ? '✅' : '❌'}</td>
-        </tr>
-        <tr>
-          <td>逐行预测差异</td>
-          <td colspan="3">${diffCount} 行</td>
-        </tr>
-        <tr>
-          <td>总判定</td>
-          <td colspan="3" class="${allSame ? 'ok' : 'bad'}">${allSame ? '✅ 公式与工具完全一致' : '⚠ 有差异'}</td>
-        </tr>
-      </table>`;
-  }
+  const newText = genText(best);
+  const newHex = genHex(best);
 
   bestEl.style.display = 'block';
-  bestEl.innerHTML = `<b>🏆 搜索完成（用时 ${elapsed}s）</b><br>
-    最高盈利：<b>${globalBestProfit}</b>　数据：${data.length} 场<br><br>
-    <b>最优参数：</b><br><code>${JSON.stringify(globalBest)}</code><br><br>
-    <b>ARRAYFORMULA（贴 I2，Google Sheets 用）：</b>
-    <button class="copy" onclick="copyFormula('formulaOut', 'ARRAYFORMULA')">📋 复制 ARRAYFORMULA</button>
-    <div id="formulaOut">${arrFormula}</div>
-    <div class="tip">Excel 用户请用下面单行版（贴 I2 后往下拖）</div>
-    <button class="copy" onclick="copyFormula('rowFormulaOut', '单行公式')">📋 复制单行公式</button>
-    <div id="rowFormulaOut">${rowFormula}</div>
-    <br><b>盈利和一致性校验：</b>
-    ${compareHTML}`;
-
-  log.textContent += `\n===== 完成 =====\n最高盈利: ${globalBestProfit}\n耗时: ${elapsed}s\n`;
-  if(!evalRes.error){
-    const fr = profitFromPreds(data, evalRes.preds);
-    log.textContent += `工具盈利: ${toolResult.total}　公式盈利: ${fr.total}　${toolResult.total === fr.total ? '✅ 一致' : '❌ 不一致'}\n`;
-  }
-  log.textContent += `参数: ${JSON.stringify(globalBest)}\n`;
-  log.scrollTop = log.scrollHeight;
+  document.getElementById('summary').innerHTML =
+    '<b>🏆 最高盈利：' + bestProfit + '</b>（' + data.length + ' 场）';
+  document.getElementById('params').textContent = '参数：' + JSON.stringify(best);
+  document.getElementById('txtOut').value = newText;
+  document.getElementById('hexOut').value = newHex;
 
   running = false;
   document.getElementById('btnRun').disabled = false;
@@ -495,30 +386,44 @@ function stop(){
   document.getElementById('btnStop').disabled = true;
 }
 
-/* ============================================================
-   一键复制
-   ============================================================ */
-async function copyFormula(id, label){
+/* ==========================================================
+   复制
+   ========================================================== */
+function showMsg(text, ok){
+  const m = document.getElementById('msg');
+  m.textContent = text;
+  m.className = ok ? 'ok' : 'err';
+  m.style.display = 'block';
+  setTimeout(() => { m.style.display = 'none'; }, 3000);
+}
+
+function copyIt(id, label){
   const el = document.getElementById(id);
   if(!el) return;
-  const txt = el.textContent;
-  try{
-    await navigator.clipboard.writeText(txt);
-    alert(`✅ 已复制 ${label}（${txt.length} 字符）`);
-  }catch(e){
-    const r = document.createRange();
-    r.selectNode(el);
-    const s = window.getSelection();
-    s.removeAllRanges();
-    s.addRange(r);
-    try{
-      document.execCommand('copy');
-      alert(`✅ 已复制 ${label}（兼容模式）`);
-    }catch(e2){
-      alert('❌ 复制失败，请手动选中后 Ctrl+C');
-    }
-    s.removeAllRanges();
+  const txt = el.value;
+
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(() => {
+      showMsg('✅ 已複製 ' + label + '（' + txt.length + ' 字元）', true);
+    }).catch(() => fallbackCopy(txt, label));
+  } else {
+    fallbackCopy(txt, label);
   }
+}
+
+function fallbackCopy(text, label){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  let ok = false;
+  try{ ok = document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta);
+  if(ok) showMsg('✅ 已複製 ' + label + '（' + text.length + ' 字元）', true);
+  else showMsg('❌ 自動複製失敗，請手動選取 → Ctrl+C', false);
 }
 </script>
 </body>
