@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>公式盈利优化器 v3 — 深度搜索</title>
+<title>公式盈利优化器 v3 — ARRAYFORMULA + 求和校验</title>
 <style>
 body{font-family:system-ui,sans-serif;padding:16px;max-width:1200px;margin:auto;background:#f0f2f5}
 textarea{width:100%;height:140px;font-family:monospace;font-size:12px;padding:8px;box-sizing:border-box;border:1px solid #ccc;border-radius:4px}
@@ -11,7 +11,9 @@ button:hover{background:#0056b3}
 button:disabled{background:#999;cursor:not-allowed}
 button.stop{background:#dc3545}
 button.stop:hover{background:#a71d2a}
-#log{background:#1e1e1e;color:#d4d4d4;border-radius:5px;padding:12px;margin-top:12px;height:380px;overflow-y:auto;font-family:monospace;font-size:12px;white-space:pre-wrap;line-height:1.5}
+button.copy{background:#28a745}
+button.copy:hover{background:#1e7e34}
+#log{background:#1e1e1e;color:#d4d4d4;border-radius:5px;padding:12px;margin-top:12px;height:360px;overflow-y:auto;font-family:monospace;font-size:12px;white-space:pre-wrap;line-height:1.5}
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;font-size:14px;border:1px solid #c3e6cb}
 .best b{color:#155724}
 code{background:#fff;padding:2px 6px;border-radius:3px;color:#c7254e;font-size:12px;word-break:break-all}
@@ -20,12 +22,19 @@ label{font-size:14px}
 select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px}
 .progress{height:8px;background:#ddd;border-radius:4px;overflow:hidden;margin-top:8px}
 .progress > div{height:100%;background:#007bff;width:0%;transition:width 0.2s}
+#formulaOut{background:#fff;padding:10px;border-radius:4px;margin-top:6px;font-family:monospace;font-size:11px;word-break:break-all;max-height:220px;overflow:auto;border:1px solid #ccc}
+.tip{font-size:12px;color:#555;margin-top:4px}
+.cmp{border-collapse:collapse;margin-top:10px;font-size:13px;background:#fff}
+.cmp th,.cmp td{border:1px solid #999;padding:5px 10px}
+.cmp th{background:#e9ecef}
+.ok{color:#0a7a0a;font-weight:bold}
+.bad{color:#c00;font-weight:bold}
 </style>
 </head>
 <body>
 
-<h2>⚡ 公式盈利优化器 v3 — 深度搜索（多起点 + 坐标下降）</h2>
-<p>贴数据（每行：A B C D E F 比分 结果）。搜索强度越大越慢，但通常找到更高盈利。</p>
+<h2>⚡ 公式盈利优化器 v3 — ARRAYFORMULA + 求和校验</h2>
+<p>贴数据（每行：A B C D E F 比分 结果）。搜索后自动生成 ARRAYFORMULA 公式，并用 JS 逐行执行一遍，验证「盈利和」是否与工具一致。</p>
 
 <textarea id="input" placeholder="23	27	49	355	385	169	0:3	A
 62	27	9	158	395	405	3:0	H
@@ -36,8 +45,8 @@ select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px}
     <select id="strength">
       <option value="10">快速（10 次重启）</option>
       <option value="50" selected>标准（50 次重启）</option>
-      <option value="200">深度（200 次重启，几分钟）</option>
-      <option value="1000">疯狂（1000 次重启，很久）</option>
+      <option value="200">深度（200 次重启）</option>
+      <option value="1000">疯狂（1000 次重启）</option>
     </select>
   </label>
   <button id="btnRun" onclick="start()">🚀 开始搜索</button>
@@ -50,10 +59,11 @@ select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px}
 <div id="best" class="best" style="display:none"></div>
 
 <script>
-let data = [];
-let running = false;
+'use strict';
 
-// ====== 参数定义（保持不变）======
+/* ============================================================
+   参数定义（与 P_DEF 一致）
+   ============================================================ */
 const P_DEF = {
   b1:{d:32,min:28,max:36,s:1}, ac1:{d:6,min:3,max:10,s:1},
   a2:{d:60,min:55,max:66,s:1}, f2a:{d:400,min:380,max:430,s:5}, f2b:{d:480,min:440,max:520,s:5},
@@ -72,16 +82,28 @@ const P_DEF = {
 };
 const KEYS = Object.keys(P_DEF);
 
-function defaultP(){const P={};for(const k in P_DEF)P[k]=P_DEF[k].d;return P;}
+function defaultP(){
+  const P = {};
+  for(const k in P_DEF) P[k] = P_DEF[k].d;
+  return P;
+}
 
-// ====== 解析数据 ======
+/* ============================================================
+   全局状态
+   ============================================================ */
+let data = [];
+let running = false;
+
+/* ============================================================
+   数据解析
+   ============================================================ */
 function parseData(text){
-  const rows=[];
+  const rows = [];
   for(const line of text.split('\n')){
-    const p=line.trim().split(/\s+/);
-    if(p.length<8) continue;
-    const v=p.slice(0,6).map(Number);
-    const result=p[7];
+    const p = line.trim().split(/\s+/);
+    if(p.length < 8) continue;
+    const v = p.slice(0,6).map(Number);
+    const result = p[7];
     if(v.some(isNaN)) continue;
     if(!['H','D','A'].includes(result)) continue;
     rows.push({A:v[0],B:v[1],C:v[2],D:v[3],E:v[4],F:v[5],result});
@@ -89,66 +111,100 @@ function parseData(text){
   return rows;
 }
 
-// ====== 预测（不变）======
-function predict(r,P){
-  const {A,B,C,D,E,F}=r;
-  if(B>=P.b1 && Math.abs(A-C)<=P.ac1) return 'D';
-  if(A>=P.a2 && C<=11 && D>=140 && D<=190 && F>=P.f2a && F<=P.f2b) return 'H';
-  if(Math.abs(A-C)<=P.ac3 && E<P.e3 && Math.abs(D-F)<P.df3) return 'D';
-  if(A>=P.a4 && C<=20 && Math.abs(D-F)<P.df4 && D<400) return 'D';
-  if(Math.abs(D-F)<P.df5) return 'D';
-  if(A>=42 && D>=155 && D<205 && D!==F && F>D && Math.abs(A-C)>=P.ac6) return 'D';
-  if(A>=P.a7 && D>=155 && D<205 && D!==F) return 'H';
-  if(A>=P.a8 && D>205 && D<=P.d8b && D!==F) return 'D';
-  if(D>=400 && A>=42) return 'D';
-  if(D>=340 && A>=P.a92 && F<P.f92 && D>F){
-    if(F<200) return Math.abs(A-C)<=5 ? 'D' : 'A';
+/* ============================================================
+   预测函数（与生成公式一一对应）
+   ============================================================ */
+function predict(r, P){
+  const {A,B,C,D,E,F} = r;
+
+  if(B >= P.b1 && Math.abs(A-C) <= P.ac1) return 'D';
+  if(A >= P.a2 && C <= 11 && D >= 140 && D <= 190 && F >= P.f2a && F <= P.f2b) return 'H';
+  if(Math.abs(A-C) <= P.ac3 && E < P.e3 && Math.abs(D-F) < P.df3) return 'D';
+  if(A >= P.a4 && C <= 20 && Math.abs(D-F) < P.df4 && D < 400) return 'D';
+  if(Math.abs(D-F) < P.df5) return 'D';
+  if(A >= 42 && D >= 155 && D < 205 && D !== F && F > D && Math.abs(A-C) >= P.ac6) return 'D';
+  if(A >= P.a7 && D >= 155 && D < 205 && D !== F) return 'H';
+  if(A >= P.a8 && D > 205 && D <= P.d8b && D !== F) return 'D';
+  if(D >= 400 && A >= 42) return 'D';
+  if(D >= 340 && A >= P.a92 && F < P.f92 && D > F){
+    if(F < 200) return Math.abs(A-C) <= 5 ? 'D' : 'A';
     return 'D';
   }
-  if(E<=P.e10 && B>=P.b10 && Math.abs(A-C)<=25 && D>=250 && D<=350 && D<E) return 'D';
-  if(C>A && F>=P.f11a && F<=P.f11b && D<200) return 'D';
-  if(C>A && F>D && F<550 && E>320) return 'H';
-  if(C>A && F>=P.f13a && F<=P.f13b && C>=40) return 'A';
-  if(C>A && F>D && F<300 && C<45 && D<250) return 'D';
-  if(D>F){
-    if(F<=150 && C>=65) return 'A';
-    if(D>1500){ if(C>=50) return 'A'; if(A>C) return 'D'; return 'skip'; }
-    if(A>=33 && D>=350) return 'D';
+  if(E <= P.e10 && B >= P.b10 && Math.abs(A-C) <= 25 && D >= 250 && D <= 350 && D < E) return 'D';
+  if(C > A && F >= P.f11a && F <= P.f11b && D < 200) return 'D';
+  if(C > A && F > D && F < 550 && E > 320) return 'H';
+  if(C > A && F >= P.f13a && F <= P.f13b && C >= 40) return 'A';
+  if(C > A && F > D && F < 300 && C < 45 && D < 250) return 'D';
+
+  if(D > F){
+    if(F <= 150 && C >= 65) return 'A';
+    if(D > 1500){
+      if(C >= 50) return 'A';
+      if(A > C) return 'D';
+      return 'skip';
+    }
+    if(A >= 33 && D >= 350) return 'D';
     return 'H';
   }
-  if(F>D){
-    if(A>=50 && (F-D)>=P.gap) return 'H';
-    if(F>=P.f700){ if(A>=80) return 'D'; if(C>A) return 'D'; if(A<45) return 'D'; return 'skip'; }
-    if(E>=P.e470 && F>=500) return 'D';
-    if(A>=P.a47 && D<=140) return 'H';
+  if(F > D){
+    if(A >= 50 && (F-D) >= P.gap) return 'H';
+    if(F >= P.f700){
+      if(A >= 80) return 'D';
+      if(C > A) return 'D';
+      if(A < 45) return 'D';
+      return 'skip';
+    }
+    if(E >= P.e470 && F >= 500) return 'D';
+    if(A >= P.a47 && D <= 140) return 'H';
     return 'A';
   }
-  if(A>C) return 'H';
-  if(C>A) return 'A';
+  if(A > C) return 'H';
+  if(C > A) return 'A';
   return 'skip';
 }
 
-// ====== 盈利 ======
-function profit(rows,P){
-  let total=0;
-  for(let i=0;i<rows.length;i++){
-    const r=rows[i];
-    const p=predict(r,P);
-    if(p==='skip') continue;
-    if(p===r.result){
-      if(p==='H') total+=r.D-100;
-      else if(p==='D') total+=r.E-100;
-      else if(p==='A') total+=r.F-100;
-    } else total-=100;
+/* ============================================================
+   盈利计算（两种入口）
+   ============================================================ */
+function profit(rows, P){
+  let total = 0;
+  for(let i = 0; i < rows.length; i++){
+    const r = rows[i];
+    const p = predict(r, P);
+    if(p === 'skip') continue;
+    if(p === r.result){
+      if(p === 'H') total += r.D - 100;
+      else if(p === 'D') total += r.E - 100;
+      else if(p === 'A') total += r.F - 100;
+    } else total -= 100;
   }
   return total;
 }
 
-// ====== 座標下降：逐參數掃完整個範圍 ======
+function profitFromPreds(rows, preds){
+  let total = 0, cnt = 0;
+  for(let i = 0; i < rows.length; i++){
+    const p = preds[i];
+    if(!p || p === 'skip') continue;
+    const r = rows[i];
+    cnt++;
+    if(p === r.result){
+      if(p === 'H') total += r.D - 100;
+      else if(p === 'D') total += r.E - 100;
+      else if(p === 'A') total += r.F - 100;
+    } else total -= 100;
+  }
+  return {total, cnt};
+}
+
+/* ============================================================
+   坐标下降
+   ============================================================ */
 function coordinateDescent(rows, P0){
   const P = {...P0};
   let best = profit(rows, P);
   let improved = true;
+
   while(improved && running){
     improved = false;
     for(const k of KEYS){
@@ -156,14 +212,15 @@ function coordinateDescent(rows, P0){
       const def = P_DEF[k];
       const orig = P[k];
       let bestVal = orig, bestScore = best;
-      // 粗掃
+
+      // 粗扫
       for(let v = def.min; v <= def.max; v += def.s){
         if(v === orig) continue;
         P[k] = v;
         const s = profit(rows, P);
         if(s > bestScore){ bestScore = s; bestVal = v; }
       }
-      // 細掃：對粗掃找到的鄰域用步長 1 再掃一次
+      // 细扫
       if(def.s > 1){
         const lo = Math.max(def.min, bestVal - def.s + 1);
         const hi = Math.min(def.max, bestVal + def.s - 1);
@@ -181,20 +238,121 @@ function coordinateDescent(rows, P0){
   return {P, profit: best};
 }
 
-// ====== 隨機起點 ======
+/* ============================================================
+   随机起点
+   ============================================================ */
 function randomStart(numRand){
   const P = defaultP();
-  const shuffled = [...KEYS].sort(()=>Math.random()-0.5);
-  for(let i=0;i<numRand && i<shuffled.length;i++){
+  const shuffled = [...KEYS].sort(() => Math.random() - 0.5);
+  for(let i = 0; i < numRand && i < shuffled.length; i++){
     const key = shuffled[i];
     const def = P_DEF[key];
-    const steps = Math.round((def.max-def.min)/def.s);
-    P[key] = def.min + Math.floor(Math.random()*(steps+1))*def.s;
+    const steps = Math.round((def.max - def.min) / def.s);
+    P[key] = def.min + Math.floor(Math.random() * (steps + 1)) * def.s;
   }
   return P;
 }
 
-// ====== 主流程 ======
+/* ============================================================
+   生成 ARRAYFORMULA（用户要求的格式）
+   ============================================================ */
+function generateArrayFormula(P){
+  const head = '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",';
+
+  const B = [
+    {c:[`(B2:B>=${P.b1})`,`(ABS(A2:A-C2:C)<=${P.ac1})`], v:'"D"'},
+    {c:[`(A2:A>=${P.a2})`,`(C2:C<=11)`,`(D2:D>=140)`,`(D2:D<=190)`,`(F2:F>=${P.f2a})`,`(F2:F<=${P.f2b})`], v:'"H"'},
+    {c:[`(ABS(A2:A-C2:C)<=${P.ac3})`,`(E2:E<${P.e3})`,`(ABS(D2:D-F2:F)<${P.df3})`], v:'"D"'},
+    {c:[`(A2:A>=${P.a4})`,`(C2:C<=20)`,`(ABS(D2:D-F2:F)<${P.df4})`,`(D2:D<400)`], v:'"D"'},
+    {c:[`(ABS(D2:D-F2:F)<${P.df5})`], v:'"D"'},
+    {c:[`(A2:A>=42)`,`(D2:D>=155)`,`(D2:D<205)`,`(D2:D<>F2:F)`,`(F2:F>D2:D)`,`(ABS(A2:A-C2:C)>=${P.ac6})`], v:'"D"'},
+    {c:[`(A2:A>=${P.a7})`,`(D2:D>=155)`,`(D2:D<205)`,`(D2:D<>F2:F)`], v:'"H"'},
+    {c:[`(A2:A>=${P.a8})`,`(D2:D>205)`,`(D2:D<=${P.d8b})`,`(D2:D<>F2:F)`], v:'"D"'},
+    {c:[`(D2:D>=400)`,`(A2:A>=42)`], v:'"D"'},
+    {c:[`(D2:D>=340)`,`(A2:A>=${P.a92})`,`(F2:F<${P.f92})`,`(D2:D>F2:F)`],
+     v:'IF(F2:F<200,IF(ABS(A2:A-C2:C)<=5,"D","A"),"D")'},
+    {c:[`(E2:E<=${P.e10})`,`(B2:B>=${P.b10})`,`(ABS(A2:A-C2:C)<=25)`,`(D2:D>=250)`,`(D2:D<=350)`,`(D2:D<E2:E)`], v:'"D"'},
+    {c:[`(C2:C>A2:A)`,`(F2:F>=${P.f11a})`,`(F2:F<=${P.f11b})`,`(D2:D<200)`], v:'"D"'},
+    {c:[`(C2:C>A2:A)`,`(F2:F>D2:D)`,`(F2:F<550)`,`(E2:E>320)`], v:'"H"'},
+    {c:[`(C2:C>A2:A)`,`(F2:F>=${P.f13a})`,`(F2:F<=${P.f13b})`,`(C2:C>=40)`], v:'"A"'},
+    {c:[`(C2:C>A2:A)`,`(F2:F>D2:D)`,`(F2:F<300)`,`(C2:C<45)`,`(D2:D<250)`], v:'"D"'}
+  ];
+
+  const tail = `IF(D2:D>F2:F,IF((F2:F<=150)*(C2:C>=65),"A",IF(D2:D>1500,IF(C2:C>=50,"A",IF(A2:A>C2:A,"D","skip")),IF((A2:A>=33)*(D2:D>=350),"D","H"))),IF(F2:F>D2:D,IF((A2:A>=50)*(F2:F-D2:D>=${P.gap}),"H",IF(F2:F>=${P.f700},IF(A2:A>=80,"D",IF(C2:C>A2:A,"D",IF(A2:A<45,"D","skip"))),IF((E2:E>=${P.e470})*(F2:F>=500),"D",IF((A2:A>=${P.a47})*(D2:D<=140),"H","A")))),IF(A2:A>C2:A,"H",IF(C2:C>A2:A,"A","skip"))))`;
+
+  let s = head;
+  for(const b of B){
+    s += `IF(${b.c.join('*')},${b.v},`;
+  }
+  s += tail;
+  // 关闭 15 个分支 IF + 外层 IF + ARRAYFORMULA = 17 个
+  s += ')'.repeat(B.length + 2);
+  return s;
+}
+
+/* ============================================================
+   生成单行公式（Excel 拖拽版）
+   ============================================================ */
+function buildRowFormula(P){
+  const arr = generateArrayFormula(P);
+  // 去掉 = ARRAYFORMULA( ... )
+  let s = arr.slice(1).replace(/^ARRAYFORMULA\(/, '');
+  s = s.slice(0, -1);
+  // A2:A → A2
+  s = s.replace(/2:A/g, '2');
+  return '=' + s;
+}
+
+/* ============================================================
+   ARRAYFORMULA → JS 表达式
+   ============================================================ */
+function arrFormulaToRowJS(arrFormula){
+  let s = arrFormula.trim();
+  if(s.startsWith('=')) s = s.slice(1);
+  s = s.replace(/^ARRAYFORMULA\(/, '');
+  s = s.slice(0, -1);            // 去掉最外层 )
+  s = s.replace(/2:A/g, '2');    // A2:A → A2
+  // 保护比较符
+  s = s.replace(/<>/g, '\u0001');
+  s = s.replace(/>=/g, '\u0002');
+  s = s.replace(/<=/g, '\u0003');
+  s = s.replace(/=/g, '===');
+  s = s.replace(/\u0001/g, '!==');
+  s = s.replace(/\u0002/g, '>=');
+  s = s.replace(/\u0003/g, '<=');
+  s = s.replace(/\bABS\s*\(/gi, 'Math.abs(');
+  return s;
+}
+
+/* ============================================================
+   逐行执行公式 → 预测数组
+   ============================================================ */
+function evaluateArrayFormula(arrFormula, rows){
+  const js = arrFormulaToRowJS(arrFormula);
+  let inner;
+  try{
+    inner = new Function(
+      'const IF = (c,a,b) => c ? a : b;\n' +
+      'return function(A,B,C,D,E,F){ return (' + js + '); };'
+    )();
+  }catch(e){
+    return {error: '公式解析失败: ' + e.message + '\n' + js.slice(0, 200) + '...'};
+  }
+  const preds = [];
+  for(let i = 0; i < rows.length; i++){
+    const r = rows[i];
+    try{
+      preds.push(inner(r.A, r.B, r.C, r.D, r.E, r.F));
+    }catch(e){
+      return {error: `第 ${i+1} 行求值失败: ${e.message}`};
+    }
+  }
+  return {preds};
+}
+
+/* ============================================================
+   主流程
+   ============================================================ */
 async function start(){
   data = parseData(document.getElementById('input').value);
   if(data.length === 0){ alert('没有有效数据'); return; }
@@ -210,28 +368,22 @@ async function start(){
   const strength = parseInt(document.getElementById('strength').value);
   const t0 = Date.now();
 
-  // ---- 阶段 0：默认参数 ----
   let globalBest = defaultP();
   let globalBestProfit = profit(data, globalBest);
   log.textContent += `基准盈利: ${globalBestProfit}\n\n`;
 
-  // ---- 阶段 1：默认参数坐标下降 ----
   log.textContent += `[阶段 1] 默认参数 → 坐标下降...\n`;
   {
     const r = coordinateDescent(data, globalBest);
-    if(r.profit > globalBestProfit){
-      globalBestProfit = r.profit;
-      globalBest = r.P;
-    }
+    if(r.profit > globalBestProfit){ globalBestProfit = r.profit; globalBest = r.P; }
     log.textContent += `  完成 → ${globalBestProfit}\n\n`;
   }
-  await new Promise(r=>setTimeout(r,0));
+  await new Promise(r => setTimeout(r, 0));
 
-  // ---- 阶段 2：多次随机重启 + 坐标下降 ----
   log.textContent += `[阶段 2] ${strength} 次随机重启...\n`;
-  const uiEvery = Math.max(1, Math.floor(strength/25));
-  for(let i=0; i<strength && running; i++){
-    const k = 4 + Math.floor(Math.random()*6); // 随机抽 4~9 个参数
+  const uiEvery = Math.max(1, Math.floor(strength / 25));
+  for(let i = 0; i < strength && running; i++){
+    const k = 4 + Math.floor(Math.random() * 6);
     const startP = randomStart(k);
     const r = coordinateDescent(data, startP);
     if(r.profit > globalBestProfit){
@@ -240,37 +392,97 @@ async function start(){
       log.textContent += `  ★ 重启 #${i+1} 新最优: ${globalBestProfit}\n`;
       log.scrollTop = log.scrollHeight;
     }
-    if(i % uiEvery === 0 || i === strength-1){
-      progbar.style.width = ((i+1)/strength*100).toFixed(1) + '%';
+    if(i % uiEvery === 0 || i === strength - 1){
+      progbar.style.width = ((i+1) / strength * 100).toFixed(1) + '%';
       bestEl.style.display = 'block';
-      const el = ((Date.now()-t0)/1000).toFixed(0);
+      const el = ((Date.now() - t0) / 1000).toFixed(0);
       bestEl.innerHTML = `<b>当前最优盈利：${globalBestProfit}</b>（重启 ${i+1}/${strength}，用时 ${el}s）`;
-      await new Promise(r=>setTimeout(r,0));
+      await new Promise(r => setTimeout(r, 0));
     }
   }
 
-  // ---- 阶段 3：从最优参数反复打磨 ----
   if(running){
-    log.textContent += `\n[阶段 3] 从最优参数多次打磨...\n`;
-    for(let round=0; round<10 && running; round++){
+    log.textContent += `\n[阶段 3] 从最优参数反复打磨...\n`;
+    for(let round = 0; round < 10 && running; round++){
       const r = coordinateDescent(data, globalBest);
       if(r.profit <= globalBestProfit) break;
       globalBestProfit = r.profit;
       globalBest = r.P;
       log.textContent += `  打磨第 ${round+1} 轮 → ${globalBestProfit}\n`;
       log.scrollTop = log.scrollHeight;
-      await new Promise(r=>setTimeout(r,0));
+      await new Promise(r => setTimeout(r, 0));
     }
   }
 
-  const elapsed = ((Date.now()-t0)/1000).toFixed(1);
+  const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+
+  /* -------- 生成公式 -------- */
+  const arrFormula = generateArrayFormula(globalBest);
+  const rowFormula = buildRowFormula(globalBest);
+
+  /* -------- 工具预测 -------- */
+  const toolPreds = data.map(r => predict(r, globalBest));
+  const toolResult = profitFromPreds(data, toolPreds);
+
+  /* -------- 公式求值 -------- */
+  const evalRes = evaluateArrayFormula(arrFormula, data);
+
+  let compareHTML = '';
+  let allSame = false;
+  if(evalRes.error){
+    compareHTML = `<div class="bad" style="margin-top:10px">❌ 公式求值失败：${evalRes.error}</div>`;
+  } else {
+    const formulaResult = profitFromPreds(data, evalRes.preds);
+    let diffCount = 0;
+    for(let i = 0; i < toolPreds.length; i++){
+      if(toolPreds[i] !== evalRes.preds[i]) diffCount++;
+    }
+    allSame = diffCount === 0 && toolResult.total === formulaResult.total && toolResult.cnt === formulaResult.cnt;
+    compareHTML = `
+      <table class="cmp">
+        <tr><th>项目</th><th>工具预测</th><th>公式求值</th><th>一致</th></tr>
+        <tr>
+          <td>有效场数</td>
+          <td>${toolResult.cnt}</td>
+          <td>${formulaResult.cnt}</td>
+          <td class="${toolResult.cnt === formulaResult.cnt ? 'ok' : 'bad'}">${toolResult.cnt === formulaResult.cnt ? '✅' : '❌'}</td>
+        </tr>
+        <tr>
+          <td>盈利和</td>
+          <td><b>${toolResult.total}</b></td>
+          <td><b>${formulaResult.total}</b></td>
+          <td class="${toolResult.total === formulaResult.total ? 'ok' : 'bad'}">${toolResult.total === formulaResult.total ? '✅' : '❌'}</td>
+        </tr>
+        <tr>
+          <td>逐行预测差异</td>
+          <td colspan="3">${diffCount} 行</td>
+        </tr>
+        <tr>
+          <td>总判定</td>
+          <td colspan="3" class="${allSame ? 'ok' : 'bad'}">${allSame ? '✅ 公式与工具完全一致' : '⚠ 有差异'}</td>
+        </tr>
+      </table>`;
+  }
+
   bestEl.style.display = 'block';
   bestEl.innerHTML = `<b>🏆 搜索完成（用时 ${elapsed}s）</b><br>
-    最高盈利：<b>${globalBestProfit}</b><br>
-    数据场数：${data.length}<br><br>
-    <b>最优参数：</b><br><code>${JSON.stringify(globalBest)}</code>`;
+    最高盈利：<b>${globalBestProfit}</b>　数据：${data.length} 场<br><br>
+    <b>最优参数：</b><br><code>${JSON.stringify(globalBest)}</code><br><br>
+    <b>ARRAYFORMULA（贴 I2，Google Sheets 用）：</b>
+    <button class="copy" onclick="copyFormula('formulaOut', 'ARRAYFORMULA')">📋 复制 ARRAYFORMULA</button>
+    <div id="formulaOut">${arrFormula}</div>
+    <div class="tip">Excel 用户请用下面单行版（贴 I2 后往下拖）</div>
+    <button class="copy" onclick="copyFormula('rowFormulaOut', '单行公式')">📋 复制单行公式</button>
+    <div id="rowFormulaOut">${rowFormula}</div>
+    <br><b>盈利和一致性校验：</b>
+    ${compareHTML}`;
 
-  log.textContent += `\n===== 完成 =====\n最高盈利: ${globalBestProfit}\n耗时: ${elapsed}s\n参数: ${JSON.stringify(globalBest)}\n\n最优公式:\n${buildFormula(globalBest)}\n`;
+  log.textContent += `\n===== 完成 =====\n最高盈利: ${globalBestProfit}\n耗时: ${elapsed}s\n`;
+  if(!evalRes.error){
+    const fr = profitFromPreds(data, evalRes.preds);
+    log.textContent += `工具盈利: ${toolResult.total}　公式盈利: ${fr.total}　${toolResult.total === fr.total ? '✅ 一致' : '❌ 不一致'}\n`;
+  }
+  log.textContent += `参数: ${JSON.stringify(globalBest)}\n`;
   log.scrollTop = log.scrollHeight;
 
   running = false;
@@ -283,9 +495,30 @@ function stop(){
   document.getElementById('btnStop').disabled = true;
 }
 
-// ====== 生成 Google Sheets 公式（不变）======
-function buildFormula(P){
-  return `=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",IF((B2:B>=${P.b1})*(ABS(A2:A-C2:C)<=${P.ac1}),"D",IF((A2:A>=${P.a2})*(C2:C<=11)*(D2:D>=140)*(D2:D<=190)*(F2:F>=${P.f2a})*(F2:F<=${P.f2b}),"H",IF((ABS(A2:A-C2:C)<=${P.ac3})*(E2:E<${P.e3})*(ABS(D2:D-F2:F)<${P.df3}),"D",IF((A2:A>=${P.a4})*(C2:C<=20)*(ABS(D2:D-F2:F)<${P.df4})*(D2:D<400),"D",IF(ABS(D2:D-F2:F)<${P.df5},"D",IF((A2:A>=42)*(D2:D>=155)*(D2:D<205)*(D2:D<>F2:F)*(F2:F>D2:D)*(ABS(A2:A-C2:C)>=${P.ac6}),"D",IF((A2:A>=${P.a7})*(D2:D>=155)*(D2:D<205)*(D2:D<>F2:F),"H",IF((A2:A>=${P.a8})*(D2:D>205)*(D2:D<=${P.d8b})*(D2:D<>F2:F),"D",IF((D2:D>=400)*(A2:A>=42),"D",IF((D2:D>=340)*(A2:A>=${P.a92})*(F2:F<${P.f92})*(D2:D>F2:F),IF(F2:F<200,IF(ABS(A2:A-C2:C)<=5,"D","A"),"D"),IF((E2:E<=${P.e10})*(B2:B>=${P.b10})*(ABS(A2:A-C2:C)<=25)*(D2:D>=250)*(D2:D<=350)*(D2:D<E2:E),"D",IF((C2:C>A2:A)*(F2:F>=${P.f11a})*(F2:F<=${P.f11b})*(D2:D<200),"D",IF((C2:C>A2:A)*(F2:F>D2:D)*(F2:F<550)*(E2:E>320),"H",IF((C2:C>A2:A)*(F2:F>=${P.f13a})*(F2:F<=${P.f13b})*(C2:C>=40),"A",IF((C2:C>A2:A)*(F2:F>D2:D)*(F2:F<300)*(C2:C<45)*(D2:D<250),"D",IF(D2:D>F2:F,IF((F2:F<=150)*(C2:C>=65),"A",IF(D2:D>1500,IF(C2:C>=50,"A",IF(A2:A>C2:A,"D","skip")),IF((A2:A>=33)*(D2:D>=350),"D","H"))),IF(F2:F>D2:D,IF((A2:A>=50)*(F2:F-D2:F>=${P.gap}),"H",IF(F2:F>=${P.f700},IF(A2:A>=80,"D",IF(C2:C>A2:A,"D",IF(A2:A<45,"D","skip"))),IF((E2:E>=${P.e470})*(F2:F>=500),"D",IF((A2:A>=${P.a47})*(D2:D<=140),"H","A")))),IF(A2:A>C2:C,"H",IF(C2:C>A2:A,"A","skip"))))))))))))))))))))`;
+/* ============================================================
+   一键复制
+   ============================================================ */
+async function copyFormula(id, label){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const txt = el.textContent;
+  try{
+    await navigator.clipboard.writeText(txt);
+    alert(`✅ 已复制 ${label}（${txt.length} 字符）`);
+  }catch(e){
+    const r = document.createRange();
+    r.selectNode(el);
+    const s = window.getSelection();
+    s.removeAllRanges();
+    s.addRange(r);
+    try{
+      document.execCommand('copy');
+      alert(`✅ 已复制 ${label}（兼容模式）`);
+    }catch(e2){
+      alert('❌ 复制失败，请手动选中后 Ctrl+C');
+    }
+    s.removeAllRanges();
+  }
 }
 </script>
 </body>
