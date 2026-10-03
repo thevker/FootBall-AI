@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>網頁數據捕獲工具</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
+h2{margin:0 0 8px 0}
+.hint{background:#fff3cd;padding:10px 14px;border-radius:6px;border:1px solid #ffc107;font-size:13px;line-height:1.7;margin-bottom:12px}
+.hint code{background:#fff;padding:2px 6px;border-radius:3px;color:#c7254e;font-size:12px}
+textarea{width:100%;font-family:monospace;font-size:12px;padding:10px;border:1px solid #ccc;border-radius:4px;resize:vertical}
+#rawInput{height:180px}
+.out{width:100%;height:160px;font-family:monospace;font-size:12px;padding:10px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto;resize:vertical}
+button{padding:10px 22px;font-size:15px;margin:6px 4px 6px 0;cursor:pointer;background:#007bff;color:#fff;border:none;border-radius:5px;font-weight:bold}
+button:hover{background:#0056b3}
+button:disabled{background:#999;cursor:not-allowed}
+button.copy{background:#28a745}
+button.copy:hover{background:#1e7e34}
+button.detect{background:#6f42c1}
+button.detect:hover{background:#5a32a3}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
+select{padding:6px 10px;border-radius:4px;border:1px solid #ccc;font-size:14px;min-width:200px}
+#msg{margin-top:8px;font-weight:bold;font-size:13px;display:none;padding:8px;border-radius:4px}
+.ok{background:#d4edda;color:#155724}
+.err{background:#f8d7da;color:#721c24}
+.warn{background:#fff3cd;color:#856404}
+table{border-collapse:collapse;font-size:12px;margin-top:8px;background:#fff;width:100%}
+th,td{border:1px solid #ccc;padding:4px 8px;text-align:left;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+th{background:#e9ecef;font-weight:bold}
+.box{background:#fff;padding:12px;border-radius:6px;border:1px solid #ddd;margin-top:12px}
+.label{font-weight:bold;font-size:14px;margin-bottom:6px;color:#333}
+.stat{background:#e7f3ff;padding:6px 12px;border-radius:4px;font-size:12px;display:inline-block;margin-right:8px}
+.section{display:none}
+.section.active{display:block}
+.checkbox-row{display:flex;gap:15px;flex-wrap:wrap;margin:6px 0;font-size:13px}
+.checkbox-row label{cursor:pointer;user-select:none}
+</style>
+</head>
+<body>
+
+<h2>📡 網頁數據捕獲工具</h2>
+
+<div class="hint">
+<b>📖 使用步驟：</b><br>
+1. 在瀏覽器打開目標網頁（有數據的頁面）<br>
+2. 按 <code>F12</code> 開開發者工具 → 找到最上層的 <code>&lt;html&gt;</code> 標籤 → 右鍵 → <b>Copy → Copy outerHTML</b><br>
+3. 或按 <code>Ctrl+U</code> 看原始碼 → <code>Ctrl+A</code> 全選 → <code>Ctrl+C</code> 複製<br>
+4. 貼到下方輸入框 → 按「🔍 偵測表格」<br>
+5. 選擇要轉換的表格 → 按「⚡ 生成數據」<br>
+6. 複製結果 → 貼到優化器
+</div>
+
+<div class="box">
+  <div class="label">📋 貼上網頁 HTML：</div>
+  <textarea id="rawInput" placeholder="在這裡貼上網頁的 HTML 原始碼..."></textarea>
+  <div class="row">
+    <button class="detect" onclick="detectTables()">🔍 偵測表格</button>
+    <button onclick="clearAll()">🗑 清空</button>
+  </div>
+</div>
+
+<div id="tableSelectBox" class="box" style="display:none">
+  <div class="label">📊 偵測到的表格：</div>
+  <div id="tableInfo" style="font-size:12px;color:#666;margin-bottom:6px"></div>
+  <div class="row">
+    <label>選擇表格：</label>
+    <select id="tableSelect" onchange="previewTable()"></select>
+    <button onclick="generateData()">⚡ 生成數據</button>
+  </div>
+  <div id="previewBox" style="display:none;margin-top:12px">
+    <div class="label">👁 預覽（前 10 行）：</div>
+    <div id="preview"></div>
+  </div>
+</div>
+
+<div id="formatBox" class="box" style="display:none">
+  <div class="label">⚙ 輸出格式設定：</div>
+  <div class="checkbox-row">
+    <label><input type="checkbox" id="optTrim" checked> 去除前後空白</label>
+    <label><input type="checkbox" id="optDropEmpty" checked> 跳過空行</label>
+    <label><input type="checkbox" id="optTab"> 用 Tab 分隔（否則空白）</label>
+    <label><input type="checkbox" id="optSkipHeader" checked> 跳過第一行（表頭）</label>
+    <label><input type="checkbox" id="optReverse"> 反轉順序</label>
+  </div>
+
+  <div class="label" style="margin-top:10px">🔧 欄位映射（可選）：</div>
+  <div id="colMapping" style="font-size:12px;margin-top:6px"></div>
+
+  <div class="row" style="margin-top:10px">
+    <button onclick="generateData()">🔄 重新生成</button>
+  </div>
+
+  <div class="label" style="margin-top:12px">✅ 生成結果：</div>
+  <button class="copy" onclick="copyResult()">📋 一鍵複製</button>
+  <button onclick="downloadResult()">💾 下載 .txt</button>
+  <span class="stat" id="resultStat"></span>
+  <textarea id="result" class="out" readonly wrap="off"></textarea>
+</div>
+
+<div id="msg"></div>
+
+<script>
+'use strict';
+
+var allTables = [];      // 所有偵測到的表格（DOM 節點）
+var currentTable = null; // 目前選中的表格
+
+/* ==========================================================
+   偵測表格
+   ========================================================== */
+function detectTables(){
+  var raw = document.getElementById('rawInput').value.trim();
+  if(!raw){
+    showMsg('請先貼上 HTML', 'warn');
+    return;
+  }
+
+  var doc;
+  try{
+    var parser = new DOMParser();
+    doc = parser.parseFromString(raw, 'text/html');
+  } catch(e){
+    showMsg('HTML 解析失敗：' + e.message, 'err');
+    return;
+  }
+
+  var tables = doc.querySelectorAll('table');
+  allTables = [];
+
+  for(var i = 0; i < tables.length; i++){
+    var t = tables[i];
+    var rows = t.querySelectorAll('tr');
+    var cols = 0;
+    for(var r = 0; r < Math.min(rows.length, 5); r++){
+      var cells = rows[r].querySelectorAll('td,th');
+      if(cells.length > cols) cols = cells.length;
+    }
+    if(rows.length >= 2 && cols >= 2){
+      allTables.push({node: t, rows: rows.length, cols: cols});
+    }
+  }
+
+  // 也偵測可能的「div 表格」（常見於現代網站）
+  if(allTables.length === 0){
+    var divRows = doc.querySelectorAll('div[role="row"], li[role="row"]');
+    if(divRows.length >= 3){
+      // 用 div 模擬成表格
+      var fakeTable = doc.createElement('table');
+      for(var k = 0; k < divRows.length; k++){
+        var cells = divRows[k].querySelectorAll('div[role="cell"], span, td, th');
+        if(cells.length < 2) continue;
+        var tr = doc.createElement('tr');
+        for(var m = 0; m < cells.length; m++){
+          var td = doc.createElement('td');
+          td.textContent = (cells[m].textContent || '').trim();
+          tr.appendChild(td);
+        }
+        fakeTable.appendChild(tr);
+      }
+      if(fakeTable.querySelectorAll('tr').length >= 2){
+        allTables.push({node: fakeTable, rows: fakeTable.querySelectorAll('tr').length, cols: 0, isFake: true});
+      }
+    }
+  }
+
+  if(allTables.length === 0){
+    showMsg('❌ 沒有偵測到表格。可能原因：\n1. 網頁用 JS 動態生成（需用 F12 抓完整 DOM）\n2. 資料不在 <table> 標籤裡\n3. 貼上的 HTML 不完整', 'err');
+    document.getElementById('tableSelectBox').style.display = 'none';
+    return;
+  }
+
+  // 填充下拉選單
+  var sel = document.getElementById('tableSelect');
+  sel.innerHTML = '';
+  for(var n = 0; n < allTables.length; n++){
+    var info = allTables[n];
+    var opt = document.createElement('option');
+    opt.value = n;
+    var firstCell = '';
+    try{
+      var firstRow = info.node.querySelector('tr');
+      if(firstRow){
+        var firstTd = firstRow.querySelector('td,th');
+        if(firstTd) firstCell = (firstTd.textContent || '').trim().slice(0, 30);
+      }
+    }catch(e){}
+    opt.textContent = '表格 #' + (n+1) + '  (' + info.rows + ' 行 × ' + info.cols + ' 欄) ' + (firstCell ? ' — ' + firstCell : '');
+    sel.appendChild(opt);
+  }
+
+  document.getElementById('tableInfo').textContent = '共偵測到 ' + allTables.length + ' 個表格';
+  document.getElementById('tableSelectBox').style.display = 'block';
+  document.getElementById('formatBox').style.display = 'block';
+  document.getElementById('previewBox').style.display = 'none';
+
+  sel.selectedIndex = 0;
+  previewTable();
+  showMsg('✅ 偵測到 ' + allTables.length + ' 個表格', 'ok');
+}
+
+/* ==========================================================
+   預覽表格
+   ========================================================== */
+function previewTable(){
+  var sel = document.getElementById('tableSelect');
+  var idx = parseInt(sel.value);
+  if(isNaN(idx) || !allTables[idx]) return;
+
+  currentTable = allTables[idx].node;
+
+  var rows = currentTable.querySelectorAll('tr');
+  var html = '<table><thead><tr><th>#</th>';
+  var maxCols = 0;
+  var data = [];
+
+  for(var i = 0; i < rows.length; i++){
+    var cells = rows[i].querySelectorAll('td,th');
+    var rowData = [];
+    for(var j = 0; j < cells.length; j++){
+      rowData.push((cells[j].textContent || '').trim());
+    }
+    if(rowData.length > maxCols) maxCols = rowData.length;
+    data.push(rowData);
+  }
+
+  for(var c = 1; c <= maxCols; c++){
+    html += '<th>欄' + c + '</th>';
+  }
+  html += '</tr></thead><tbody>';
+
+  var previewRows = Math.min(data.length, 10);
+  for(var r = 0; r < previewRows; r++){
+    html += '<tr><td>' + (r+1) + '</td>';
+    for(var cc = 0; cc < maxCols; cc++){
+      var v = data[r][cc] || '';
+      if(v.length > 30) v = v.slice(0, 27) + '...';
+      html += '<td>' + escapeHtml(v) + '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+
+  if(data.length > 10){
+    html += '<div style="font-size:12px;color:#666;margin-top:6px">... 還有 ' + (data.length - 10) + ' 行未顯示</div>';
+  }
+
+  document.getElementById('preview').innerHTML = html;
+  document.getElementById('previewBox').style.display = 'block';
+
+  renderColMapping(maxCols);
+  generateData();
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+/* ==========================================================
+   欄位映射 UI
+   ========================================================== */
+var colMap = {};  // {欄1: 'keep'|'skip'}
+
+function renderColMapping(maxCols){
+  var html = '<div style="display:flex;flex-wrap:wrap;gap:8px">';
+  for(var i = 1; i <= maxCols; i++){
+    if(colMap['c'+i] === undefined) colMap['c'+i] = 'keep';
+    html += '<label style="font-size:12px;padding:4px 8px;background:#f0f2f5;border-radius:4px">';
+    html += '<input type="checkbox" id="map_c' + i + '" ' + (colMap['c'+i] === 'keep' ? 'checked' : '') +
+            ' onchange="toggleCol(' + i + ')"> 欄' + i;
+    html += '</label>';
+  }
+  html += '</div>';
+  document.getElementById('colMapping').innerHTML = html;
+}
+
+function toggleCol(i){
+  var cb = document.getElementById('map_c' + i);
+  colMap['c' + i] = cb.checked ? 'keep' : 'skip';
+  generateData();
+}
+
+/* ==========================================================
+   生成數據
+   ========================================================== */
+function generateData(){
+  if(!currentTable) return;
+
+  var optTrim = document.getElementById('optTrim').checked;
+  var optDropEmpty = document.getElementById('optDropEmpty').checked;
+  var optTab = document.getElementById('optTab').checked;
+  var optSkipHeader = document.getElementById('optSkipHeader').checked;
+  var optReverse = document.getElementById('optReverse').checked;
+
+  var sep = optTab ? '\t' : ' ';
+
+  var rows = currentTable.querySelectorAll('tr');
+  var lines = [];
+
+  for(var i = 0; i < rows.length; i++){
+    if(optSkipHeader && i === 0) continue;
+
+    var cells = rows[i].querySelectorAll('td,th');
+    if(cells.length === 0) continue;
+
+    var parts = [];
+    for(var j = 0; j < cells.length; j++){
+      if(colMap['c' + (j+1)] === 'skip') continue;
+      var v = cells[j].textContent || '';
+      if(optTrim) v = v.replace(/\s+/g, ' ').trim();
+      // 內部如果包含分隔符號，移除
+      if(sep === ' ') v = v.replace(/\s+/g, '_');
+      parts.push(v);
+    }
+
+    if(optDropEmpty){
+      var allEmpty = true;
+      for(var p = 0; p < parts.length; p++){
+        if(parts[p] !== ''){ allEmpty = false; break; }
+      }
+      if(allEmpty) continue;
+    }
+
+    lines.push(parts.join(sep));
+  }
+
+  if(optReverse) lines.reverse();
+
+  var text = lines.join('\n');
+  document.getElementById('result').value = text;
+  document.getElementById('resultStat').textContent = lines.length + ' 行 × ' +
+    (lines.length > 0 ? lines[0].split(sep).length : 0) + ' 欄';
+}
+
+/* ==========================================================
+   清空
+   ========================================================== */
+function clearAll(){
+  document.getElementById('rawInput').value = '';
+  document.getElementById('tableSelectBox').style.display = 'none';
+  document.getElementById('formatBox').style.display = 'none';
+  document.getElementById('result').value = '';
+  allTables = [];
+  currentTable = null;
+  colMap = {};
+  hideMsg();
+}
+
+/* ==========================================================
+   複製 / 下載
+   ========================================================== */
+function copyResult(){
+  var el = document.getElementById('result');
+  var txt = el.value;
+  if(!txt){
+    showMsg('沒有內容可複製', 'warn');
+    return;
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){
+      showMsg('✅ 已複製 ' + txt.length + ' 字元', 'ok');
+    }).catch(function(){ fallbackCopy(txt); });
+  } else {
+    fallbackCopy(txt);
+  }
+}
+
+function fallbackCopy(text){
+  var el = document.getElementById('result');
+  el.focus();
+  el.select();
+  el.setSelectionRange(0, 999999);
+  var ok = false;
+  try{ ok = document.execCommand('copy'); }catch(e){}
+  if(ok) showMsg('✅ 已複製 ' + text.length + ' 字元', 'ok');
+  else showMsg('❌ 請手動選取 → Ctrl+C', 'err');
+}
+
+function downloadResult(){
+  var txt = document.getElementById('result').value;
+  if(!txt){
+    showMsg('沒有內容可下載', 'warn');
+    return;
+  }
+  var blob = new Blob([txt], {type: 'text/plain;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'captured_data_' + Date.now() + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showMsg('✅ 已下載', 'ok');
+}
+
+/* ==========================================================
+   訊息
+   ========================================================== */
+function showMsg(text, cls){
+  var m = document.getElementById('msg');
+  m.textContent = text;
+  m.className = cls || 'ok';
+  m.style.display = 'block';
+  if(cls !== 'err'){
+    setTimeout(function(){ m.style.display = 'none'; }, 3500);
+  }
+}
+function hideMsg(){
+  document.getElementById('msg').style.display = 'none';
+}
+
+/* 初始化：監聽設定變更 */
+window.addEventListener('DOMContentLoaded', function(){
+  var ids = ['optTrim', 'optDropEmpty', 'optTab', 'optSkipHeader', 'optReverse'];
+  for(var i = 0; i < ids.length; i++){
+    document.getElementById(ids[i]).addEventListener('change', generateData);
+  }
+});
+</script>
+</body>
+</html>
