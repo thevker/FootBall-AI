@@ -2,37 +2,50 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>公式优化器 v2</title>
+<title>公式盈利优化器 v3 — 深度搜索</title>
 <style>
-body{font-family:sans-serif;padding:16px;max-width:1200px;margin:auto;background:#f0f2f5}
+body{font-family:system-ui,sans-serif;padding:16px;max-width:1200px;margin:auto;background:#f0f2f5}
 textarea{width:100%;height:140px;font-family:monospace;font-size:12px;padding:8px;box-sizing:border-box;border:1px solid #ccc;border-radius:4px}
 button{padding:10px 22px;font-size:15px;margin:6px 4px;cursor:pointer;background:#007bff;color:#fff;border:none;border-radius:5px}
 button:hover{background:#0056b3}
 button:disabled{background:#999;cursor:not-allowed}
 button.stop{background:#dc3545}
 button.stop:hover{background:#a71d2a}
-#log{background:#1e1e1e;color:#d4d4d4;border-radius:5px;padding:12px;margin-top:12px;height:360px;overflow-y:auto;font-family:monospace;font-size:12px;white-space:pre-wrap;line-height:1.5}
+#log{background:#1e1e1e;color:#d4d4d4;border-radius:5px;padding:12px;margin-top:12px;height:380px;overflow-y:auto;font-family:monospace;font-size:12px;white-space:pre-wrap;line-height:1.5}
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;font-size:14px;border:1px solid #c3e6cb}
 .best b{color:#155724}
-.stat{display:inline-block;margin-right:20px;padding:4px 10px;background:#fff;border-radius:4px;font-size:13px;margin-top:6px}
-code{background:#fff;padding:2px 6px;border-radius:3px;color:#c7254e;font-size:12px}
+code{background:#fff;padding:2px 6px;border-radius:3px;color:#c7254e;font-size:12px;word-break:break-all}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:8px 0}
+label{font-size:14px}
+select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px}
+.progress{height:8px;background:#ddd;border-radius:4px;overflow:hidden;margin-top:8px}
+.progress > div{height:100%;background:#007bff;width:0%;transition:width 0.2s}
 </style>
 </head>
 <body>
 
-<h2>⚡ 公式盈利优化器 v2 — 自动搜索 20 个阈值</h2>
-<p>粘贴数据（每行：A B C D E F 比分 结果）。工具会持续搜索参数，实时显示最优。</p>
+<h2>⚡ 公式盈利优化器 v3 — 深度搜索（多起点 + 坐标下降）</h2>
+<p>贴数据（每行：A B C D E F 比分 结果）。搜索强度越大越慢，但通常找到更高盈利。</p>
 
 <textarea id="input" placeholder="23	27	49	355	385	169	0:3	A
 62	27	9	158	395	405	3:0	H
 ..."></textarea>
 
-<div>
+<div class="row">
+  <label>搜索强度：
+    <select id="strength">
+      <option value="10">快速（10 次重启）</option>
+      <option value="50" selected>标准（50 次重启）</option>
+      <option value="200">深度（200 次重启，几分钟）</option>
+      <option value="1000">疯狂（1000 次重启，很久）</option>
+    </select>
+  </label>
   <button id="btnRun" onclick="start()">🚀 开始搜索</button>
   <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
   <button onclick="document.getElementById('input').value=''">清空</button>
 </div>
 
+<div class="progress"><div id="progbar"></div></div>
 <div id="log">等待开始...</div>
 <div id="best" class="best" style="display:none"></div>
 
@@ -40,55 +53,26 @@ code{background:#fff;padding:2px 6px;border-radius:3px;color:#c7254e;font-size:1
 let data = [];
 let running = false;
 
-// ====== 参数定义：{默认值, 最小, 最大, 步长} ======
+// ====== 参数定义（保持不变）======
 const P_DEF = {
-  // L1
-  b1:  {d:32, min:28, max:36, s:1},
-  ac1: {d:6,  min:3,  max:10, s:1},
-  // L2
-  a2:  {d:60, min:55, max:66, s:1},
-  f2a: {d:400,min:380,max:430,s:5},
-  f2b: {d:480,min:440,max:520,s:5},
-  // L3
-  ac3: {d:3,  min:2,  max:6,  s:1},
-  e3:  {d:380,min:340,max:420,s:5},
-  df3: {d:40, min:30, max:60, s:2},
-  // L4
-  a4:  {d:45, min:40, max:52, s:1},
-  df4: {d:70, min:50, max:90, s:2},
-  // L5
-  df5: {d:18, min:12, max:25, s:1},
-  // L6
-  ac6: {d:50, min:40, max:65, s:1},
-  // L7
-  a7:  {d:42, min:38, max:50, s:1},
-  // L8
-  a8:  {d:34, min:30, max:42, s:1},
-  d8b: {d:235,min:220,max:250,s:2},
-  // L9-2
-  a92: {d:38, min:34, max:44, s:1},
-  f92: {d:250,min:220,max:290,s:5},
-  // L10
-  e10: {d:315,min:280,max:360,s:5},
-  b10: {d:27, min:22, max:34, s:1},
-  // L11
-  f11a:{d:490,min:450,max:530,s:5},
-  f11b:{d:560,min:520,max:620,s:5},
-  // L13
-  f13a:{d:184,min:170,max:200,s:2},
-  f13b:{d:216,min:200,max:240,s:2},
-  // 兜底 F>D 分支
-  gap: {d:400,min:250,max:600,s:10},
-  e470:{d:470,min:400,max:550,s:10},
-  a47: {d:47, min:40, max:60, s:1},
-  f700:{d:700,min:600,max:850,s:10},
+  b1:{d:32,min:28,max:36,s:1}, ac1:{d:6,min:3,max:10,s:1},
+  a2:{d:60,min:55,max:66,s:1}, f2a:{d:400,min:380,max:430,s:5}, f2b:{d:480,min:440,max:520,s:5},
+  ac3:{d:3,min:2,max:6,s:1}, e3:{d:380,min:340,max:420,s:5}, df3:{d:40,min:30,max:60,s:2},
+  a4:{d:45,min:40,max:52,s:1}, df4:{d:70,min:50,max:90,s:2},
+  df5:{d:18,min:12,max:25,s:1},
+  ac6:{d:50,min:40,max:65,s:1},
+  a7:{d:42,min:38,max:50,s:1},
+  a8:{d:34,min:30,max:42,s:1}, d8b:{d:235,min:220,max:250,s:2},
+  a92:{d:38,min:34,max:44,s:1}, f92:{d:250,min:220,max:290,s:5},
+  e10:{d:315,min:280,max:360,s:5}, b10:{d:27,min:22,max:34,s:1},
+  f11a:{d:490,min:450,max:530,s:5}, f11b:{d:560,min:520,max:620,s:5},
+  f13a:{d:184,min:170,max:200,s:2}, f13b:{d:216,min:200,max:240,s:2},
+  gap:{d:400,min:250,max:600,s:10}, e470:{d:470,min:400,max:550,s:10},
+  a47:{d:47,min:40,max:60,s:1}, f700:{d:700,min:600,max:850,s:10}
 };
+const KEYS = Object.keys(P_DEF);
 
-function defaultP(){
-  const P={};
-  for(const k in P_DEF) P[k]=P_DEF[k].d;
-  return P;
-}
+function defaultP(){const P={};for(const k in P_DEF)P[k]=P_DEF[k].d;return P;}
 
 // ====== 解析数据 ======
 function parseData(text){
@@ -105,7 +89,7 @@ function parseData(text){
   return rows;
 }
 
-// ====== 预测函数（可参数化） ======
+// ====== 预测（不变）======
 function predict(r,P){
   const {A,B,C,D,E,F}=r;
   if(B>=P.b1 && Math.abs(A-C)<=P.ac1) return 'D';
@@ -126,25 +110,15 @@ function predict(r,P){
   if(C>A && F>D && F<550 && E>320) return 'H';
   if(C>A && F>=P.f13a && F<=P.f13b && C>=40) return 'A';
   if(C>A && F>D && F<300 && C<45 && D<250) return 'D';
-  // 兜底
   if(D>F){
     if(F<=150 && C>=65) return 'A';
-    if(D>1500){
-      if(C>=50) return 'A';
-      if(A>C) return 'D';
-      return 'skip';
-    }
+    if(D>1500){ if(C>=50) return 'A'; if(A>C) return 'D'; return 'skip'; }
     if(A>=33 && D>=350) return 'D';
     return 'H';
   }
   if(F>D){
     if(A>=50 && (F-D)>=P.gap) return 'H';
-    if(F>=P.f700){
-      if(A>=80) return 'D';
-      if(C>A) return 'D';
-      if(A<45) return 'D';
-      return 'skip';
-    }
+    if(F>=P.f700){ if(A>=80) return 'D'; if(C>A) return 'D'; if(A<45) return 'D'; return 'skip'; }
     if(E>=P.e470 && F>=500) return 'D';
     if(A>=P.a47 && D<=140) return 'H';
     return 'A';
@@ -157,120 +131,159 @@ function predict(r,P){
 // ====== 盈利 ======
 function profit(rows,P){
   let total=0;
-  for(const r of rows){
+  for(let i=0;i<rows.length;i++){
+    const r=rows[i];
     const p=predict(r,P);
     if(p==='skip') continue;
-    const {D,E,F,result}=r;
-    if(p===result){
-      if(p==='H') total+=D-100;
-      else if(p==='D') total+=E-100;
-      else if(p==='A') total+=F-100;
+    if(p===r.result){
+      if(p==='H') total+=r.D-100;
+      else if(p==='D') total+=r.E-100;
+      else if(p==='A') total+=r.F-100;
     } else total-=100;
   }
   return total;
 }
 
-// ====== 扰动：随机选N个参数改动 ======
-function mutate(base, n, temp){
-  const P={...base};
-  const keys=Object.keys(P_DEF);
-  for(let i=0;i<n;i++){
-    const k=keys[Math.floor(Math.random()*keys.length)];
-    const def=P_DEF[k];
-    const range=Math.max(1,Math.round(def.s*temp));
-    const delta=Math.round((Math.random()*2-1)*range);
-    let v=P[k]+delta;
-    if(v<def.min) v=def.min;
-    if(v>def.max) v=def.max;
-    P[k]=v;
+// ====== 座標下降：逐參數掃完整個範圍 ======
+function coordinateDescent(rows, P0){
+  const P = {...P0};
+  let best = profit(rows, P);
+  let improved = true;
+  while(improved && running){
+    improved = false;
+    for(const k of KEYS){
+      if(!running) return {P, profit: best};
+      const def = P_DEF[k];
+      const orig = P[k];
+      let bestVal = orig, bestScore = best;
+      // 粗掃
+      for(let v = def.min; v <= def.max; v += def.s){
+        if(v === orig) continue;
+        P[k] = v;
+        const s = profit(rows, P);
+        if(s > bestScore){ bestScore = s; bestVal = v; }
+      }
+      // 細掃：對粗掃找到的鄰域用步長 1 再掃一次
+      if(def.s > 1){
+        const lo = Math.max(def.min, bestVal - def.s + 1);
+        const hi = Math.min(def.max, bestVal + def.s - 1);
+        for(let v = lo; v <= hi; v++){
+          if(v === orig || v === bestVal) continue;
+          P[k] = v;
+          const s = profit(rows, P);
+          if(s > bestScore){ bestScore = s; bestVal = v; }
+        }
+      }
+      P[k] = bestVal;
+      if(bestScore > best){ best = bestScore; improved = true; }
+    }
+  }
+  return {P, profit: best};
+}
+
+// ====== 隨機起點 ======
+function randomStart(numRand){
+  const P = defaultP();
+  const shuffled = [...KEYS].sort(()=>Math.random()-0.5);
+  for(let i=0;i<numRand && i<shuffled.length;i++){
+    const key = shuffled[i];
+    const def = P_DEF[key];
+    const steps = Math.round((def.max-def.min)/def.s);
+    P[key] = def.min + Math.floor(Math.random()*(steps+1))*def.s;
   }
   return P;
 }
 
-// ====== 模拟退火 + 爬山 ======
+// ====== 主流程 ======
 async function start(){
-  const text=document.getElementById('input').value;
-  data=parseData(text);
-  if(data.length===0){alert('没有有效数据');return;}
+  data = parseData(document.getElementById('input').value);
+  if(data.length === 0){ alert('没有有效数据'); return; }
 
-  running=true;
-  document.getElementById('btnRun').disabled=true;
-  document.getElementById('btnStop').disabled=false;
-  const log=document.getElementById('log');
-  const bestEl=document.getElementById('best');
-  log.textContent=`载入 ${data.length} 条数据\n`;
+  running = true;
+  document.getElementById('btnRun').disabled = true;
+  document.getElementById('btnStop').disabled = false;
+  const log = document.getElementById('log');
+  const bestEl = document.getElementById('best');
+  const progbar = document.getElementById('progbar');
+  log.textContent = `载入 ${data.length} 条数据\n`;
 
-  // 阶段1：随机重启找多个起点
-  let best=defaultP();
-  let bestProfit=profit(data,best);
-  log.textContent+=`基准参数盈利: ${bestProfit}\n\n开始搜索...\n`;
+  const strength = parseInt(document.getElementById('strength').value);
+  const t0 = Date.now();
 
-  // 阶段2：模拟退火
-  let T=5.0;
-  const T_min=0.1;
-  const alpha=0.9995;
-  let current=best;
-  let currentProfit=bestProfit;
-  let iter=0;
-  const maxIter=200000;
+  // ---- 阶段 0：默认参数 ----
+  let globalBest = defaultP();
+  let globalBestProfit = profit(data, globalBest);
+  log.textContent += `基准盈利: ${globalBestProfit}\n\n`;
 
-  const startTime=Date.now();
-  while(running && iter<maxIter && T>T_min){
-    iter++;
-
-    // 随机扰动 1-3 个参数
-    const n=1+Math.floor(Math.random()*3);
-    const candidate=mutate(current,n,T);
-    const p=profit(data,candidate);
-
-    if(p>currentProfit || Math.random()<Math.exp((p-currentProfit)/(T*100))){
-      current=candidate;
-      currentProfit=p;
+  // ---- 阶段 1：默认参数坐标下降 ----
+  log.textContent += `[阶段 1] 默认参数 → 坐标下降...\n`;
+  {
+    const r = coordinateDescent(data, globalBest);
+    if(r.profit > globalBestProfit){
+      globalBestProfit = r.profit;
+      globalBest = r.P;
     }
+    log.textContent += `  完成 → ${globalBestProfit}\n\n`;
+  }
+  await new Promise(r=>setTimeout(r,0));
 
-    if(p>bestProfit){
-      bestProfit=p;
-      best=candidate;
-      log.textContent+=`#${iter} 新最优 ${p}  T=${T.toFixed(2)}\n`;
-      log.scrollTop=log.scrollHeight;
+  // ---- 阶段 2：多次随机重启 + 坐标下降 ----
+  log.textContent += `[阶段 2] ${strength} 次随机重启...\n`;
+  const uiEvery = Math.max(1, Math.floor(strength/25));
+  for(let i=0; i<strength && running; i++){
+    const k = 4 + Math.floor(Math.random()*6); // 随机抽 4~9 个参数
+    const startP = randomStart(k);
+    const r = coordinateDescent(data, startP);
+    if(r.profit > globalBestProfit){
+      globalBestProfit = r.profit;
+      globalBest = r.P;
+      log.textContent += `  ★ 重启 #${i+1} 新最优: ${globalBestProfit}\n`;
+      log.scrollTop = log.scrollHeight;
     }
-
-    T*=alpha;
-
-    // 每5000次让出UI + 输出进度
-    if(iter%5000===0){
+    if(i % uiEvery === 0 || i === strength-1){
+      progbar.style.width = ((i+1)/strength*100).toFixed(1) + '%';
+      bestEl.style.display = 'block';
+      const el = ((Date.now()-t0)/1000).toFixed(0);
+      bestEl.innerHTML = `<b>当前最优盈利：${globalBestProfit}</b>（重启 ${i+1}/${strength}，用时 ${el}s）`;
       await new Promise(r=>setTimeout(r,0));
-      const el=(Date.now()-startTime)/1000;
-      log.textContent+=`--- 进度 ${iter}，最优 ${bestProfit}，T=${T.toFixed(2)}，用时 ${el.toFixed(0)}s ---\n`;
-      log.scrollTop=log.scrollHeight;
-      // 更新实时最优显示
-      bestEl.style.display='block';
-      bestEl.innerHTML=`<b>当前最优盈利：${bestProfit}</b> （第 ${iter} 次迭代，T=${T.toFixed(2)}）`;
     }
   }
 
-  // 完成
-  bestEl.style.display='block';
-  bestEl.innerHTML=`<b>🏆 搜索完成</b><br>
-    最高盈利：<b>${bestProfit}</b><br>
-    迭代次数：${iter}<br>
+  // ---- 阶段 3：从最优参数反复打磨 ----
+  if(running){
+    log.textContent += `\n[阶段 3] 从最优参数多次打磨...\n`;
+    for(let round=0; round<10 && running; round++){
+      const r = coordinateDescent(data, globalBest);
+      if(r.profit <= globalBestProfit) break;
+      globalBestProfit = r.profit;
+      globalBest = r.P;
+      log.textContent += `  打磨第 ${round+1} 轮 → ${globalBestProfit}\n`;
+      log.scrollTop = log.scrollHeight;
+      await new Promise(r=>setTimeout(r,0));
+    }
+  }
+
+  const elapsed = ((Date.now()-t0)/1000).toFixed(1);
+  bestEl.style.display = 'block';
+  bestEl.innerHTML = `<b>🏆 搜索完成（用时 ${elapsed}s）</b><br>
+    最高盈利：<b>${globalBestProfit}</b><br>
     数据场数：${data.length}<br><br>
-    <b>最优参数：</b><br><code>${JSON.stringify(best)}</code>`;
+    <b>最优参数：</b><br><code>${JSON.stringify(globalBest)}</code>`;
 
-  log.textContent+=`\n===== 完成 =====\n最高盈利: ${bestProfit}\n参数: ${JSON.stringify(best, null, 2)}\n\n最优公式:\n${buildFormula(best)}\n`;
-  log.scrollTop=log.scrollHeight;
+  log.textContent += `\n===== 完成 =====\n最高盈利: ${globalBestProfit}\n耗时: ${elapsed}s\n参数: ${JSON.stringify(globalBest)}\n\n最优公式:\n${buildFormula(globalBest)}\n`;
+  log.scrollTop = log.scrollHeight;
 
-  running=false;
-  document.getElementById('btnRun').disabled=false;
-  document.getElementById('btnStop').disabled=true;
+  running = false;
+  document.getElementById('btnRun').disabled = false;
+  document.getElementById('btnStop').disabled = true;
 }
 
 function stop(){
-  running=false;
-  document.getElementById('btnStop').disabled=true;
+  running = false;
+  document.getElementById('btnStop').disabled = true;
 }
 
-// ====== 生成公式 ======
+// ====== 生成 Google Sheets 公式（不变）======
 function buildFormula(P){
   return `=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",IF((B2:B>=${P.b1})*(ABS(A2:A-C2:C)<=${P.ac1}),"D",IF((A2:A>=${P.a2})*(C2:C<=11)*(D2:D>=140)*(D2:D<=190)*(F2:F>=${P.f2a})*(F2:F<=${P.f2b}),"H",IF((ABS(A2:A-C2:C)<=${P.ac3})*(E2:E<${P.e3})*(ABS(D2:D-F2:F)<${P.df3}),"D",IF((A2:A>=${P.a4})*(C2:C<=20)*(ABS(D2:D-F2:F)<${P.df4})*(D2:D<400),"D",IF(ABS(D2:D-F2:F)<${P.df5},"D",IF((A2:A>=42)*(D2:D>=155)*(D2:D<205)*(D2:D<>F2:F)*(F2:F>D2:D)*(ABS(A2:A-C2:C)>=${P.ac6}),"D",IF((A2:A>=${P.a7})*(D2:D>=155)*(D2:D<205)*(D2:D<>F2:F),"H",IF((A2:A>=${P.a8})*(D2:D>205)*(D2:D<=${P.d8b})*(D2:D<>F2:F),"D",IF((D2:D>=400)*(A2:A>=42),"D",IF((D2:D>=340)*(A2:A>=${P.a92})*(F2:F<${P.f92})*(D2:D>F2:F),IF(F2:F<200,IF(ABS(A2:A-C2:C)<=5,"D","A"),"D"),IF((E2:E<=${P.e10})*(B2:B>=${P.b10})*(ABS(A2:A-C2:C)<=25)*(D2:D>=250)*(D2:D<=350)*(D2:D<E2:E),"D",IF((C2:C>A2:A)*(F2:F>=${P.f11a})*(F2:F<=${P.f11b})*(D2:D<200),"D",IF((C2:C>A2:A)*(F2:F>D2:D)*(F2:F<550)*(E2:E>320),"H",IF((C2:C>A2:A)*(F2:F>=${P.f13a})*(F2:F<=${P.f13b})*(C2:C>=40),"A",IF((C2:C>A2:A)*(F2:F>D2:D)*(F2:F<300)*(C2:C<45)*(D2:D<250),"D",IF(D2:D>F2:F,IF((F2:F<=150)*(C2:C>=65),"A",IF(D2:D>1500,IF(C2:C>=50,"A",IF(A2:A>C2:A,"D","skip")),IF((A2:A>=33)*(D2:D>=350),"D","H"))),IF(F2:F>D2:D,IF((A2:A>=50)*(F2:F-D2:F>=${P.gap}),"H",IF(F2:F>=${P.f700},IF(A2:A>=80,"D",IF(C2:C>A2:A,"D",IF(A2:A<45,"D","skip"))),IF((E2:E>=${P.e470})*(F2:F>=500),"D",IF((A2:A>=${P.a47})*(D2:D<=140),"H","A")))),IF(A2:A>C2:C,"H",IF(C2:C>A2:A,"A","skip"))))))))))))))))))))`;
 }
