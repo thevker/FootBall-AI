@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>🚀 v38.0 — 高賠率價值挖掘器 (3.0)</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
+h2{margin:0 0 8px 0}
+textarea{width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #ccc;border-radius:4px}
+#input{height:100px}
+button{padding:10px 22px;font-size:15px;margin:6px 4px 6px 0;cursor:pointer;background:#007bff;color:#fff;border:none;border-radius:5px;font-weight:bold}
+button:hover{background:#0056b3}
+button:disabled{background:#999}
+button.txt{background:#28a745}
+#log{background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:14px;margin-top:12px;height:400px;overflow-y:auto;font-family:Consolas,monospace;font-size:12px;white-space:pre;line-height:1.5;border:1px solid #222}
+.l-head{color:#fff;font-weight:bold}
+.l-ok{color:#4ade80;font-weight:bold}.l-warn{color:#ffc107}.l-err{color:#f87171}
+.l-info{color:#4ea3ff}.l-best{color:#facc15;font-weight:bold;font-size:14px}
+.l-run{color:#22d3ee;font-weight:bold;font-size:14px;background:rgba(34,211,238,0.1)}
+.l-skip{color:#94a3b8}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
+select,input[type=number]{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px}
+.chk{padding:4px 10px;font-size:12px;background:#fff;border:1px solid #ccc;border-radius:4px;cursor:pointer}
+.best{background:#d4edda;padding:16px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
+.verdict{padding:16px;border-radius:8px;text-align:center;margin:10px 0;font-size:18px;font-weight:bold}
+.big{font-size:40px;font-weight:bold;text-align:center;margin:8px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-top:12px}
+@media(max-width:700px){.grid{grid-template-columns:1fr 1fr}}
+.cell{background:#fff;padding:12px;border-radius:6px;text-align:center;border:1px solid #ddd}
+.cell .n{font-size:22px;font-weight:bold;color:#0a7a0a}
+.cell .l{font-size:11px;color:#666;margin-top:4px}
+.cell.warn .n{color:#c00}
+.cell.na .n{color:#999;font-size:16px}
+table{border-collapse:collapse;width:100%;font-size:11px;margin-top:10px;background:#fff}
+th,td{border:1px solid #ccc;padding:5px;text-align:center}
+th{background:#e9ecef;font-weight:bold}
+td.left{text-align:left}
+.pos{color:#0a7a0a;font-weight:bold}.neg{color:#c00;font-weight:bold}
+.section{background:#fff;padding:12px;border-radius:6px;margin-top:12px;border:1px solid #ddd}
+h3{margin-top:0;margin-bottom:6px;font-size:15px}
+.notice{background:#dcfce7;border:1px solid #22c55e;padding:12px 16px;border-radius:6px;font-size:13px;color:#14532d;line-height:1.7;margin-bottom:12px}
+.notice b{color:#166534}
+.notice.warn{background:#fef3c7;border-color:#fbbf24;color:#78350f}
+.out{width:100%;height:220px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto}
+.best-row{background:#fef9c3}
+</style>
+</head>
+<body>
+
+<h2>🚀 v38.0 — 高賠率價值挖掘器</h2>
+<div class="notice">
+  <b>🎯 策略：</b>只挖高賠率規律（平均賠率 ≥ <b>3.0</b>）｜低賠率場次 <b>直接 skip</b>｜ROI 只算下注場次
+</div>
+
+<textarea id="input" placeholder="23	27	49	355	385	169	0:3	A
+62	27	9	158	395	405	3:0	H"></textarea>
+
+<div class="row">
+  <label>最低平均賠率：</label>
+  <select id="minOdds">
+    <option value="3.0" selected>3.0</option>
+    <option value="3.5">3.5</option>
+    <option value="4.0">4.0</option>
+    <option value="5.0">5.0</option>
+  </select>
+  <label>最少命中場次：</label>
+  <select id="minHits">
+    <option value="5">5</option>
+    <option value="10" selected>10</option>
+    <option value="15">15</option>
+    <option value="20">20</option>
+  </select>
+  <label>最多規則數：</label>
+  <select id="maxRules">
+    <option value="3">3</option>
+    <option value="5" selected>5</option>
+    <option value="10">10</option>
+  </select>
+  <button id="btnRun" onclick="start()">🚀 開始挖掘</button>
+  <button id="btnStop" onclick="stop()" disabled>⏹ 停止</button>
+</div>
+
+<div class="row">
+  <label>每條規則最大條件數：</label>
+  <select id="maxConds">
+    <option value="1">1</option>
+    <option value="2" selected>2</option>
+    <option value="3">3</option>
+  </select>
+  <label class="chk"><input type="checkbox" id="useVal" checked> 5-fold 交叉驗證</label>
+</div>
+
+<div id="log">等待開始...</div>
+
+<div class="best" id="best">
+  <div class="verdict" id="verdict">-</div>
+  <div class="big" id="big">-</div>
+  <div style="text-align:center;font-size:13px;color:#666" id="detail"></div>
+
+  <div class="grid">
+    <div class="cell" id="c1"><div class="n" id="n1">-</div><div class="l">平均 ROI（5-fold）</div></div>
+    <div class="cell" id="c2"><div class="n" id="n2">-</div><div class="l">下注率</div></div>
+    <div class="cell" id="c3"><div class="n" id="n3">-</div><div class="l">正 fold 數</div></div>
+    <div class="cell" id="c4"><div class="n" id="n4">-</div><div class="l">平均賠率</div></div>
+  </div>
+
+  <div class="section">
+    <h3>📋 每次 fold 結果</h3>
+    <div id="folds"></div>
+  </div>
+
+  <div class="section">
+    <h3>🎯 命中的規則（按 fold 0 訓練）</h3>
+    <div id="rules"></div>
+  </div>
+
+  <div class="section">
+    <h3>🟢 公式（貼到 Google Sheet I2）</h3>
+    <button class="txt" onclick="copyIt()">📋 複製公式</button>
+    <textarea id="out" class="out" readonly></textarea>
+    <div style="font-size:11px;color:#666;margin-top:4px" id="charInfo"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+var FEATURES = [
+  'A','B','C','D','E','F',
+  '|A-B|','|A-C|','|A-D|','|A-E|','|A-F|',
+  '|B-C|','|B-D|','|B-E|','|B-F|',
+  '|C-D|','|C-E|','|C-F|',
+  '|D-E|','|D-F|','|E-F|',
+  'A-B','A-C','B-C','D-F','E-D',
+  'A+B','B+C','D+E','E+F','D+F','A+C',
+  'A+B+C','D+E+F','A+D',
+  'A/C','D/F','D/(D+F)',
+  'MAX(A,B,C)','MIN(A,B,C)','MAX(D,E,F)','MIN(D,E,F)'
+];
+var FCOUNT = FEATURES.length;
+var OPS = ['>', '>=', '<', '<='];
+var RESULTS = ['H', 'D', 'A'];
+
+var running = false;
+
+function log(text, cls){
+  var el = document.getElementById('log');
+  if(el.dataset.started !== '1'){ el.textContent = ''; el.dataset.started = '1'; }
+  var div = document.createElement('div');
+  if(cls) div.className = 'l-' + cls;
+  div.textContent = text;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function parseData(text){
+  var rows = [], seen = new Set();
+  var lines = text.split('\n');
+  for(var i=0;i<lines.length;i++){
+    var p = lines[i].trim().split(/\s+/);
+    if(p.length < 8) continue;
+    var v = p.slice(0,6).map(Number);
+    var r = p[7];
+    if(v.some(isNaN)) continue;
+    if(r !== 'H' && r !== 'D' && r !== 'A') continue;
+    var sig = v.join('|') + '|' + p[6] + '|' + r;
+    if(seen.has(sig)) continue;
+    seen.add(sig);
+    rows.push({ A:v[0], B:v[1], C:v[2], D:v[3], E:v[4], F:v[5], result:r });
+  }
+  return rows;
+}
+
+function extractFeatures(rows){
+  var N = rows.length;
+  var mat = new Array(N);
+  for(var i=0;i<N;i++){
+    var r = rows[i];
+    var A=r.A, B=r.B, C=r.C, D=r.D, E=r.E, F=r.F;
+    var f = new Float64Array(FCOUNT);
+    f[0]=A; f[1]=B; f[2]=C; f[3]=D; f[4]=E; f[5]=F;
+    f[6]=Math.abs(A-B); f[7]=Math.abs(A-C); f[8]=Math.abs(A-D); f[9]=Math.abs(A-E); f[10]=Math.abs(A-F);
+    f[11]=Math.abs(B-C); f[12]=Math.abs(B-D); f[13]=Math.abs(B-E); f[14]=Math.abs(B-F);
+    f[15]=Math.abs(C-D); f[16]=Math.abs(C-E); f[17]=Math.abs(C-F);
+    f[18]=Math.abs(D-E); f[19]=Math.abs(D-F); f[20]=Math.abs(E-F);
+    f[21]=A-B; f[22]=A-C; f[23]=B-C; f[24]=D-F; f[25]=E-D;
+    f[26]=A+B; f[27]=B+C; f[28]=D+E; f[29]=E+F; f[30]=D+F; f[31]=A+C;
+    f[32]=A+B+C; f[33]=D+E+F; f[34]=A+D;
+    f[35] = C === 0 ? 0 : A/C;
+    f[36] = F === 0 ? 0 : D/F;
+    f[37] = (D+F) === 0 ? 0 : D/(D+F);
+    f[38]=Math.max(A,B,C); f[39]=Math.min(A,B,C);
+    f[40]=Math.max(D,E,F); f[41]=Math.min(D,E,F);
+    mat[i] = f;
+  }
+  return mat;
+}
+
+function payoutOf(row, TC){
+  if(TC === 0) return row.D;
+  if(TC === 1) return row.E;
+  return row.F;
+}
+
+function matchCond(f, cd){
+  var x = f[cd[0]];
+  switch(cd[1]){
+    case 0: return x > cd[2];
+    case 1: return x >= cd[2];
+    case 2: return x < cd[2];
+    case 3: return x <= cd[2];
+  }
+  return false;
+}
+
+function matchAll(f, conds){
+  for(var i=0;i<conds.length;i++) if(!matchCond(f, conds[i])) return false;
+  return true;
+}
+
+function evalRule(rows, feats, conds, TC){
+  var profit = 0, stake = 0, hits = 0, totalPayout = 0, correct = 0;
+  var pickStr = RESULTS[TC];
+  for(var i=0;i<rows.length;i++){
+    if(!matchAll(feats[i], conds)) continue;
+    hits++;
+    var payout = payoutOf(rows[i], TC);
+    totalPayout += payout;
+    stake += 100;
+    if(rows[i].result === pickStr){
+      profit += payout - 100;
+      correct++;
+    } else {
+      profit -= 100;
+    }
+  }
+  return {
+    profit: profit,
+    stake: stake,
+    hits: hits,
+    correct: correct,
+    avgPayout: hits > 0 ? totalPayout / hits : 0,
+    roi: stake > 0 ? profit / stake : 0
+  };
+}
+
+function findHighOddsRules(rows, feats, minOdds, minHits, maxConds){
+  var N = rows.length;
+  var candidates = [];
+
+  /* 1 條件種子 */
+  for(var fi=0;fi<FCOUNT;fi++){
+    var vals = [];
+    for(var i=0;i<N;i++) vals.push(feats[i][fi]);
+    vals.sort(function(a,b){ return a-b; });
+    var qs = [];
+    var nq = Math.min(12, vals.length);
+    for(var k=1;k<=nq;k++){
+      var q = vals[Math.floor(k * N / (nq + 1))];
+      if(qs.indexOf(q) === -1) qs.push(q);
+    }
+    for(var opIdx=0;opIdx<4;opIdx++){
+      for(var qi=0;qi<qs.length;qi++){
+        var v = qs[qi];
+        var conds = [[fi, opIdx, v]];
+        for(var TC=0;TC<3;TC++){
+          var res = evalRule(rows, feats, conds, TC);
+          if(res.hits < minHits) continue;
+          if(res.avgPayout < minOdds) continue;
+          if(res.profit <= 0) continue;
+          candidates.push({
+            conds: conds,
+            TC: TC,
+            roi: res.roi,
+            hits: res.hits,
+            profit: res.profit,
+            avgPayout: res.avgPayout
+          });
+        }
+      }
+    }
+  }
+
+  /* 2+ 條件擴展 */
+  candidates.sort(function(a,b){ return b.roi - a.roi; });
+  var topSeeds = candidates.slice(0, 50);
+  var extended = [];
+
+  for(var si=0;si<topSeeds.length;si++){
+    var base = topSeeds[si];
+    if(base.conds.length >= maxConds) continue;
+
+    for(var fi2=0;fi2<FCOUNT;fi2++){
+      var dup = false;
+      for(var d=0;d<base.conds.length;d++){
+        if(base.conds[d][0] === fi2){ dup = true; break; }
+      }
+      if(dup) continue;
+
+      var vals2 = [];
+      for(var i2=0;i2<N;i2++) vals2.push(feats[i2][fi2]);
+      vals2.sort(function(a,b){ return a-b; });
+      var qs2 = [];
+      var nq2 = Math.min(10, vals2.length);
+      for(var k2=1;k2<=nq2;k2++){
+        var q2 = vals2[Math.floor(k2 * N / (nq2 + 1))];
+        if(qs2.indexOf(q2) === -1) qs2.push(q2);
+      }
+      for(var op2=0;op2<4;op2++){
+        for(var qi2=0;qi2<qs2.length;qi2++){
+          var conds2 = base.conds.concat([[fi2, op2, qs2[qi2]]]);
+          var res2 = evalRule(rows, feats, conds2, base.TC);
+          if(res2.hits < minHits) continue;
+          if(res2.avgPayout < minOdds) continue;
+          if(res2.profit <= 0) continue;
+          if(res2.roi <= base.roi * 1.05) continue;
+          extended.push({
+            conds: conds2,
+            TC: base.TC,
+            roi: res2.roi,
+            hits: res2.hits,
+            profit: res2.profit,
+            avgPayout: res2.avgPayout
+          });
+        }
+      }
+    }
+  }
+
+  var all = candidates.concat(extended);
+  all.sort(function(a,b){ return b.roi - a.roi; });
+  return all;
+}
+
+function sequentialSelect(candidates, rows, feats, maxRules){
+  var N = rows.length;
+  var covered = new Uint8Array(N);
+  var chosen = [];
+
+  for(var iter=0;iter<maxRules;iter++){
+    var best = null, bestMarginROI = 0;
+
+    for(var ci=0;ci<candidates.length;ci++){
+      var c = candidates[ci];
+      var profit = 0, stake = 0, hits = 0;
+      var pickStr = RESULTS[c.TC];
+      for(var i=0;i<N;i++){
+        if(covered[i]) continue;
+        if(!matchAll(feats[i], c.conds)) continue;
+        hits++;
+        stake += 100;
+        var payout = payoutOf(rows[i], c.TC);
+        if(rows[i].result === pickStr) profit += payout - 100;
+        else profit -= 100;
+      }
+      if(hits < 3) continue;
+      var marginROI = stake > 0 ? profit / stake : 0;
+      if(marginROI > bestMarginROI && profit > 0){
+        bestMarginROI = marginROI;
+        best = {
+          conds: c.conds,
+          TC: c.TC,
+          hits: hits,
+          profit: profit,
+          marginROI: marginROI,
+          avgPayout: c.avgPayout
+        };
+      }
+    }
+
+    if(!best) break;
+    chosen.push(best);
+    for(var i2=0;i2<N;i2++){
+      if(!covered[i2] && matchAll(feats[i2], best.conds)) covered[i2] = 1;
+    }
+  }
+  return chosen;
+}
+
+function evaluateRuleSet(rules, rows, feats){
+  var profit = 0, stake = 0, hits = 0, totalPayout = 0;
+  for(var i=0;i<rows.length;i++){
+    var pred = -1;
+    for(var ri=0;ri<rules.length;ri++){
+      if(matchAll(feats[i], rules[ri].conds)){
+        pred = rules[ri].TC;
+        break;
+      }
+    }
+    if(pred === -1) continue;
+    hits++;
+    stake += 100;
+    var payout = payoutOf(rows[i], pred);
+    totalPayout += payout;
+    var pickStr = RESULTS[pred];
+    if(rows[i].result === pickStr) profit += payout - 100;
+    else profit -= 100;
+  }
+  return {
+    profit: profit,
+    stake: stake,
+    hits: hits,
+    betRate: hits / rows.length,
+    avgPayout: hits > 0 ? totalPayout / hits : 0,
+    roi: stake > 0 ? profit / stake : 0
+  };
+}
+
+function crossValidate(rows, minOdds, minHits, maxRules, maxConds){
+  var N = rows.length;
+  var foldSize = Math.floor(N / 5);
+  var shuffled = rows.slice();
+  for(var i=shuffled.length-1;i>0;i--){
+    var j = Math.floor(Math.random() * (i+1));
+    var t = shuffled[i]; shuffled[i] = shuffled[j]; shuffled[j] = t;
+  }
+  var folds = [];
+  for(var f=0;f<5;f++) folds.push(shuffled.slice(f*foldSize, (f+1)*foldSize));
+
+  var foldResults = [];
+  var rulesGlobal = null;
+
+  for(var foldIdx=0;foldIdx<5;foldIdx++){
+    var trainRows = [];
+    for(var fi=0;fi<5;fi++){
+      if(fi !== foldIdx) trainRows = trainRows.concat(folds[fi]);
+    }
+    var testRows = folds[foldIdx];
+    var trainFeat = extractFeatures(trainRows);
+    var testFeat = extractFeatures(testRows);
+
+    var candidates = findHighOddsRules(trainRows, trainFeat, minOdds, minHits, maxConds);
+    var picked = sequentialSelect(candidates, trainRows, trainFeat, maxRules);
+
+    if(foldIdx === 0) rulesGlobal = picked;
+
+    var evalRes = evaluateRuleSet(picked, testRows, testFeat);
+    foldResults.push({
+      roi: evalRes.roi,
+      betRate: evalRes.betRate,
+      hits: evalRes.hits,
+      profit: evalRes.profit,
+      avgPayout: evalRes.avgPayout,
+      rules: picked
+    });
+    log('  Fold ' + (foldIdx+1) + '：測試 ' + testRows.length + ' 場，下注 ' + evalRes.hits + 
+        ' 場（' + (evalRes.betRate*100).toFixed(1) + '%），ROI ' + (evalRes.roi*100).toFixed(2) + '%',
+        evalRes.roi > 0 ? 'ok' : 'err');
+  }
+
+  var avgROI = 0, totalBetRate = 0, totalPayout = 0, posCount = 0;
+  for(var i=0;i<foldResults.length;i++){
+    avgROI += foldResults[i].roi;
+    totalBetRate += foldResults[i].betRate;
+    totalPayout += foldResults[i].avgPayout;
+    if(foldResults[i].roi > 0) posCount++;
+  }
+  avgROI /= 5;
+  totalBetRate /= 5;
+  totalPayout /= 5;
+
+  var variance = 0;
+  for(var i=0;i<foldResults.length;i++) variance += Math.pow(foldResults[i].roi - avgROI, 2);
+  var std = Math.sqrt(variance / 5);
+
+  return {
+    foldResults: foldResults,
+    avgROI: avgROI,
+    std: std,
+    posCount: posCount,
+    avgBetRate: totalBetRate,
+    avgPayout: totalPayout,
+    rules: rulesGlobal
+  };
+}
+
+function featToSheet(feat){
+  var M = {
+    'A':'A2:A','B':'B2:B','C':'C2:C','D':'D2:D','E':'E2:E','F':'F2:F',
+    '|A-B|':'ABS(A2:A-B2:B)','|A-C|':'ABS(A2:A-C2:C)','|A-D|':'ABS(A2:A-D2:D)',
+    '|A-E|':'ABS(A2:A-E2:E)','|A-F|':'ABS(A2:A-F2:F)',
+    '|B-C|':'ABS(B2:B-C2:C)','|B-D|':'ABS(B2:B-D2:D)','|B-E|':'ABS(B2:B-E2:E)',
+    '|B-F|':'ABS(B2:B-F2:F)','|C-D|':'ABS(C2:C-D2:D)','|C-E|':'ABS(C2:C-E2:E)',
+    '|C-F|':'ABS(C2:C-F2:F)','|D-E|':'ABS(D2:D-E2:E)','|D-F|':'ABS(D2:D-F2:F)',
+    '|E-F|':'ABS(E2:E-F2:F)',
+    'A-B':'(A2:A-B2:B)','A-C':'(A2:A-C2:C)','B-C':'(B2:B-C2:C)',
+    'D-F':'(D2:D-F2:F)','E-D':'(E2:E-D2:D)',
+    'A+B':'(A2:A+B2:B)','B+C':'(B2:B+C2:C)','D+E':'(D2:D+E2:E)',
+    'E+F':'(E2:E+F2:F)','D+F':'(D2:D+F2:F)','A+C':'(A2:A+C2:C)',
+    'A+B+C':'(A2:A+B2:B+C2:C)','D+E+F':'(D2:D+E2:E+F2:F)','A+D':'(A2:A+D2:D)',
+    'A/C':'IF(C2:C=0,0,A2:A/C2:C)','D/F':'IF(F2:F=0,0,D2:D/F2:F)',
+    'D/(D+F)':'IF(D2:D+F2:F=0,0,D2:D/(D2:D+F2:F))',
+    'MAX(A,B,C)':'MAX(A2:A,B2:B,C2:C)','MIN(A,B,C)':'MIN(A2:A,B2:B,C2:C)',
+    'MAX(D,E,F)':'MAX(D2:D,E2:E,F2:F)','MIN(D,E,F)':'MIN(D2:D,E2:E,F2:F)'
+  };
+  return M[feat] || '0';
+}
+
+function genFormula(rules){
+  var inner = '"skip"';
+  for(var i=rules.length-1;i>=0;i--){
+    var r = rules[i];
+    var parts = [];
+    for(var c=0;c<r.conds.length;c++){
+      var cd = r.conds[c];
+      parts.push('(' + featToSheet(FEATURES[cd[0]]) + OPS[cd[1]] + (Math.round(cd[2]*100)/100) + ')');
+    }
+    inner = 'IF(' + parts.join('*') + ',"' + RESULTS[r.TC] + '",' + inner + ')';
+  }
+  return '=ARRAYFORMULA(IF((A2:A="")*(B2:B="")*(C2:C="")*(D2:D="")*(E2:E="")*(F2:F=""),"",' + inner + '))';
+}
+
+async function start(){
+  running = true;
+  document.getElementById('log').textContent = '';
+  document.getElementById('log').dataset.started = '1';
+  document.getElementById('best').style.display = 'none';
+  document.getElementById('btnRun').disabled = true;
+  document.getElementById('btnStop').disabled = false;
+
+  var rows = parseData(document.getElementById('input').value);
+  if(rows.length < 100){ alert('至少需要 100 筆'); running=false; document.getElementById('btnRun').disabled=false; return; }
+
+  var minOdds = parseFloat(document.getElementById('minOdds').value);
+  var minHits = parseInt(document.getElementById('minHits').value);
+  var maxRules = parseInt(document.getElementById('maxRules').value);
+  var maxConds = parseInt(document.getElementById('maxConds').value);
+
+  log('═════════════════════════════════', 'head');
+  log('🚀 v38.0 — 高賠率價值挖掘器', 'head');
+  log('═════════════════════════════════', 'head');
+  log('資料：' + rows.length + ' 筆', 'info');
+  log('最低平均賠率：' + minOdds, 'info');
+  log('最少命中：' + minHits + ' 場', 'info');
+  log('最多規則：' + maxRules + ' 條｜每條最多 ' + maxConds + ' 條件', 'info');
+  log('');
+
+  var allFeat = extractFeatures(rows);
+  var baseProfits = [0, 0, 0];
+  for(var TC=0;TC<3;TC++){
+    var p = evalRule(rows, allFeat, [], TC);
+    baseProfits[TC] = p.profit;
+  }
+  var bestBase = Math.max(baseProfits[0], baseProfits[1], baseProfits[2]) / (rows.length * 100);
+  log('全押基準：' + (bestBase*100).toFixed(2) + '%', 'warn');
+  log('');
+
+  log('📊 5-fold 交叉驗證...', 'head');
+  var result = crossValidate(rows, minOdds, minHits, maxRules, maxConds);
+
+  var avgROI = result.avgROI;
+  var std = result.std;
+  var posCount = result.posCount;
+  var verdict, cls;
+
+  if(posCount >= 4 && avgROI > 0.10 && std < 0.15){
+    verdict = '✅ 非常有潛力！建議小額實測'; cls = '#dcfce7';
+  } else if(posCount >= 4 && avgROI > 0.05){
+    verdict = '🟢 值得謹慎嘗試'; cls = '#dbeafe';
+  } else if(posCount >= 3 && avgROI > 0){
+    verdict = '🟡 邊緣，還需要更多資料'; cls = '#fef3c7';
+  } else {
+    verdict = '❌ 目前資料無高賠率優勢'; cls = '#fecaca';
+  }
+
+  document.getElementById('best').style.display = 'block';
+  var v = document.getElementById('verdict');
+  v.textContent = verdict;
+  v.style.background = cls;
+  v.style.color = '#333';
+
+  document.getElementById('big').textContent = (avgROI*100).toFixed(2) + '%';
+  document.getElementById('detail').innerHTML = 
+    '5-fold 平均 ROI（只算下注場次）｜' + result.rules.length + ' 條規則<br>' +
+    '下注率 ' + (result.avgBetRate*100).toFixed(1) + '%｜平均賠率 ' + result.avgPayout.toFixed(2);
+
+  document.getElementById('n1').textContent = (avgROI*100).toFixed(2) + '%';
+  document.getElementById('n2').textContent = (result.avgBetRate*100).toFixed(1) + '%';
+  document.getElementById('n3').textContent = posCount + '/5';
+  document.getElementById('n4').textContent = result.avgPayout.toFixed(2);
+
+  document.getElementById('c1').className = 'cell' + (avgROI < 0 ? ' warn' : '');
+  document.getElementById('c3').className = 'cell' + (posCount < 3 ? ' warn' : '');
+
+  var html = '<table><thead><tr><th>Fold</th><th>下注場次</th><th>下注率</th><th>規則數</th><th>平均賠率</th><th>ROI</th><th>利潤</th></tr></thead><tbody>';
+  for(var fi=0;fi<result.foldResults.length;fi++){
+    var fr = result.foldResults[fi];
+    html += '<tr>' +
+      '<td>#' + (fi+1) + '</td>' +
+      '<td>' + fr.hits + '</td>' +
+      '<td>' + (fr.betRate*100).toFixed(1) + '%</td>' +
+      '<td>' + (fr.rules.length) + ' 條</td>' +
+      '<td>' + fr.avgPayout.toFixed(2) + '</td>' +
+      '<td class="' + (fr.roi > 0 ? 'pos' : 'neg') + '">' + (fr.roi*100).toFixed(2) + '%</td>' +
+      '<td class="' + (fr.profit > 0 ? 'pos' : 'neg') + '">' + Math.round(fr.profit) + '</td>' +
+      '</tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById('folds').innerHTML = html;
+
+  if(result.rules && result.rules.length > 0){
+    var html2 = '<table><thead><tr><th>#</th><th>預測</th><th>條件</th><th>命中</th><th>平均賠率</th><th>ROI</th><th>利潤</th></tr></thead><tbody>';
+    for(var ri=0;ri<result.rules.length;ri++){
+      var r = result.rules[ri];
+      var condStr = r.conds.map(function(cd){
+        return FEATURES[cd[0]] + OPS[cd[1]] + (Math.round(cd[2]*100)/100);
+      }).join(' & ');
+      html2 += '<tr>' +
+        '<td>R' + (ri+1) + '</td>' +
+        '<td><b>' + RESULTS[r.TC] + '</b></td>' +
+        '<td class="left" style="font-size:10px">' + condStr + '</td>' +
+        '<td>' + r.hits + '</td>' +
+        '<td>' + (r.avgPayout || 0).toFixed(2) + '</td>' +
+        '<td class="pos">' + (r.marginROI*100).toFixed(2) + '%</td>' +
+        '<td class="pos">' + Math.round(r.profit) + '</td>' +
+        '</tr>';
+    }
+    html2 += '</tbody></table>';
+    document.getElementById('rules').innerHTML = html2;
+
+    var formula = genFormula(result.rules);
+    document.getElementById('out').value = formula;
+    document.getElementById('charInfo').textContent = '字符數：' + formula.length;
+  } else {
+    document.getElementById('rules').innerHTML = '<div style="padding:20px;text-align:center;color:#999">沒有找到合格的高賠率規則</div>';
+    document.getElementById('out').value = '=ARRAYFORMULA(IF(A2:A="","","skip"))';
+  }
+
+  log('');
+  log('═════════════════════════════════', 'head');
+  log('平均 ROI：' + (avgROI*100).toFixed(2) + '%（只算下注場次）', avgROI > 0 ? 'ok' : 'err');
+  log('標準差：' + (std*100).toFixed(2) + '%', 'info');
+  log('正 fold 數：' + posCount + '/5', posCount >= 4 ? 'ok' : (posCount >= 3 ? 'warn' : 'err'));
+  log('平均下注率：' + (result.avgBetRate*100).toFixed(1) + '%', 'info');
+  log('平均賠率：' + result.avgPayout.toFixed(2), 'info');
+  log('═════════════════════════════════', 'head');
+  log(verdict, posCount >= 4 ? 'ok' : 'warn');
+
+  running = false;
+  document.getElementById('btnRun').disabled = false;
+  document.getElementById('btnStop').disabled = true;
+}
+
+function stop(){
+  running = false;
+  document.getElementById('btnStop').disabled = true;
+  log('⏹ 手動停止', 'warn');
+}
+
+function copyIt(){
+  var txt = document.getElementById('out').value;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(function(){ alert('已複製 ' + txt.length + ' 字元'); });
+  }
+}
+</script>
+</body>
+</html>
