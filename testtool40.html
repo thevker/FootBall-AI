@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>🚀 v40.0 — v32.4 基底 + 多次試驗</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
+h2{margin:0 0 8px 0}
+textarea{width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #ccc;border-radius:4px}
+#input{height:100px}
+button{padding:10px 22px;font-size:15px;margin:6px 4px 6px 0;cursor:pointer;background:#007bff;color:#fff;border:none;border-radius:5px;font-weight:bold}
+button:hover{background:#0056b3}
+button:disabled{background:#999}
+button.txt{background:#28a745}
+#log{background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:14px;margin-top:12px;height:400px;overflow-y:auto;font-family:Consolas,monospace;font-size:12px;white-space:pre;line-height:1.5;border:1px solid #222}
+.l-head{color:#fff;font-weight:bold}
+.l-ok{color:#4ade80;font-weight:bold}.l-warn{color:#ffc107}.l-err{color:#f87171}
+.l-info{color:#4ea3ff}.l-best{color:#facc15;font-weight:bold;font-size:14px}
+.l-trial{color:#22d3ee}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
+select,input[type=number]{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px}
+.chk{padding:4px 10px;font-size:12px;background:#fff;border:1px solid #ccc;border-radius:4px;cursor:pointer}
+.best{background:#d4edda;padding:16px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
+.verdict{padding:16px;border-radius:8px;text-align:center;margin:10px 0;font-size:18px;font-weight:bold}
+.big{font-size:40px;font-weight:bold;text-align:center;margin:8px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-top:12px}
+@media(max-width:700px){.grid{grid-template-columns:1fr 1fr}}
+.cell{background:#fff;padding:12px;border-radius:6px;text-align:center;border:1px solid #ddd}
+.cell .n{font-size:22px;font-weight:bold;color:#0a7a0a}
+.cell .l{font-size:11px;color:#666;margin-top:4px}
+.cell.warn .n{color:#c00}
+table{border-collapse:collapse;width:100%;font-size:11px;margin-top:10px;background:#fff}
+th,td{border:1px solid #ccc;padding:5px;text-align:center}
+th{background:#e9ecef;font-weight:bold}
+td.left{text-align:left}
+.pos{color:#0a7a0a;font-weight:bold}.neg{color:#c00;font-weight:bold}
+.section{background:#fff;padding:12px;border-radius:6px;margin-top:12px;border:1px solid #ddd}
+h3{margin-top:0;margin-bottom:6px;font-size:15px}
+.notice{background:#fef3c7;border:1px solid #fbbf24;padding:12px 16px;border-radius:6px;font-size:13px;color:#78350f;line-height:1.7;margin-bottom:12px}
+.notice b{color:#7c2d12}
+.out{width:100%;height:200px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto}
+.progress-bar{height:20px;background:#ddd;border-radius:4px;overflow:hidden;margin-top:6px}
+#progbar{height:100%;width:0;background:linear-gradient(90deg,#007bff,#00c6ff);transition:width 0.15s}
+#progText{font-size:12px;color:#666;margin-top:2px;font-family:monospace;text-align:center}
+</style>
+</head>
+<body>
+
+<h2>🚀 v40.0 — v32.4 基底 + 多次試驗</h2>
+<div class="notice">
+  <b>🔧 基底：</b>v32.4 的 34 條 v15 規則 + 掃描優化<br>
+  <b>🔁 新增：</b>跑 N 次（每次隨機 60/20/20 分割），保留驗證 ROI 最佳<br>
+  <b>🔬 真相檢測：</b>第三段 20% 資料完全沒參與決策 → 用它驗證真實性
+</div>
+
+<textarea id="input" placeholder="23	27	49	355	385	169	0:3	A
+62	27	9	158	395	405	3:0	H"></textarea>
+
+<div class="row">
+  <label>試驗次數：</label>
+  <select id="numTrials">
+    <option value="10">10 次（測試）</option>
+    <option value="100" selected>100 次（快）</option>
+    <option value="1000">1000 次</option>
+    <option value="5000">5000 次</option>
+    <option value="10000">10000 次</option>
+  </select>
+  <label>掃描模式：</label>
+  <select id="scanMode">
+    <option value="result" selected>只掃結果（快）</option>
+    <option value="full">全掃描（慢）</option>
+  </select>
+  <label>掃描輪數：</label>
+  <select id="scanRounds">
+    <option value="1" selected>1 輪</option>
+    <option value="2">2 輪</option>
+    <option value="3">3 輪</option>
+  </select>
+  <button id="btnRun" onclick="start()">🚀 開始</button>
+  <button id="btnStop" onclick="stop()" disabled>⏹ 停止</button>
+</div>
+
+<div class="progress-bar"><div id="progbar"></div></div>
+<div id="progText">準備中</div>
+
+<div id="log">等待開始...</div>
+
+<div class="best" id="best">
+  <div class="verdict" id="verdict">-</div>
+  <div class="big" id="big">-</div>
+  <div style="text-align:center;font-size:13px;color:#666" id="detail"></div>
+
+  <div class="grid">
+    <div class="cell" id="c1"><div class="n" id="n1">-</div><div class="l">訓練 ROI</div></div>
+    <div class="cell" id="c2"><div class="n" id="n2">-</div><div class="l">驗證 ROI</div></div>
+    <div class="cell" id="c3"><div class="n" id="n3">-</div><div class="l">第三段 ROI（真相）</div></div>
+    <div class="cell" id="c4"><div class="n" id="n4">-</div><div class="l">勝出試驗</div></div>
+  </div>
+
+  <div class="section">
+    <h3>🎯 真相檢測</h3>
+    <div id="truth" style="font-size:13px;line-height:1.9"></div>
+  </div>
+
+  <div class="section">
+    <h3>🟢 最佳公式</h3>
+    <button class="txt" onclick="copyIt()">📋 複製</button>
+    <textarea id="out" class="out" readonly></textarea>
+    <div style="font-size:11px;color:#666;margin-top:4px" id="charInfo"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ============================================
+   v32.4 的 34 條 v15 規則（原封不動）
+   ============================================ */
+var INIT_RULES = [
+  {on:1, then:'D', cond:[['B','>=',32],['|A-C|','<=',6]]},
+  {on:1, then:'H', cond:[['A','>=',60],['C','<=',11],['D','>=',140],['D','<=',190],['F','>=',400],['F','<=',480]]},
+  {on:1, then:'D', cond:[['|A-C|','<=',3],['E','<',380],['|D-F|','<',40]]},
+  {on:1, then:'D', cond:[['A','>=',45],['C','<=',20],['|D-F|','<',70],['D','<',400]]},
+  {on:1, then:'D', cond:[['|D-F|','<',18]]},
+  {on:1, then:'D', cond:[['A','>=',42],['D','>=',155],['D','<',205],['D-F','!=',0],['F-D','>',0],['|A-C|','>=',50]]},
+  {on:1, then:'H', cond:[['A','>=',42],['D','>=',155],['D','<',205],['D-F','!=',0]]},
+  {on:1, then:'D', cond:[['A','>=',34],['D','>',205],['D','<=',235],['D-F','!=',0]]},
+  {on:1, then:'D', cond:[['D','>=',400],['A','>=',42]]},
+  {on:1, then:'D', cond:[['D','>=',340],['A','>=',38],['F','<',250],['D-F','>',0],['F','<',200],['|A-C|','<=',5]]},
+  {on:1, then:'A', cond:[['D','>=',340],['A','>=',38],['F','<',250],['D-F','>',0],['F','<',200]]},
+  {on:1, then:'D', cond:[['D','>=',340],['A','>=',38],['F','<',250],['D-F','>',0]]},
+  {on:1, then:'D', cond:[['E','<=',315],['B','>=',27],['|A-C|','<=',25],['D','>=',250],['D','<=',350],['E-D','>',0]]},
+  {on:1, then:'D', cond:[['A-C','<',0],['F','>=',490],['F','<=',560],['D','<',200]]},
+  {on:1, then:'H', cond:[['A-C','<',0],['F-D','>',0],['F','<',550],['E','>',320]]},
+  {on:1, then:'A', cond:[['A-C','<',0],['F','>=',184],['F','<=',216],['C','>=',40]]},
+  {on:1, then:'D', cond:[['A-C','<',0],['F-D','>',0],['F','<',300],['C','<',45],['D','<',250]]},
+  {on:1, then:'A', cond:[['D-F','>',0],['F','<=',150],['C','>=',65]]},
+  {on:1, then:'A', cond:[['D-F','>',0],['D','>',1500],['C','>=',50]]},
+  {on:1, then:'D', cond:[['D-F','>',0],['D','>',1500],['A-C','>',0]]},
+  {on:1, then:'skip', cond:[['D-F','>',0],['D','>',1500]]},
+  {on:1, then:'D', cond:[['D-F','>',0],['A','>=',33],['D','>=',350]]},
+  {on:1, then:'H', cond:[['D-F','>',0]]},
+  {on:1, then:'H', cond:[['F-D','>',0],['A','>=',50],['F-D','>=',400]]},
+  {on:1, then:'D', cond:[['F-D','>',0],['F','>=',700],['A','>=',80]]},
+  {on:1, then:'D', cond:[['F-D','>',0],['F','>=',700],['A-C','<',0]]},
+  {on:1, then:'D', cond:[['F-D','>',0],['F','>=',700],['A','<',45]]},
+  {on:1, then:'skip', cond:[['F-D','>',0],['F','>=',700]]},
+  {on:1, then:'D', cond:[['F-D','>',0],['E','>=',470],['F','>=',500]]},
+  {on:1, then:'H', cond:[['F-D','>',0],['A','>=',47],['D','<=',140]]},
+  {on:1, then:'A', cond:[['F-D','>',0]]},
+  {on:1, then:'H', cond:[['A-C','>',0]]},
+  {on:1, then:'A', cond:[['A-C','<',0]]},
+  {on:1, then:'skip', cond:[]}
+];
+
+var FEATURES = [
+  'A','B','C','D','E','F',
+  '|A-B|','|A-C|','|A-D|','|A-E|','|A-F|',
+  '|B-C|','|B-D|','|B-E|','|B-F|',
+  '|C-D|','|C-E|','|C-F|',
+  '|D-E|','|D-F|','|E-F|',
+  'A-B','A-C','B-C','D-F','E-D',
+  'A+B','B+C','D+E','E+F','D+F','A+C',
+  'A+B+C','D+E+F','A+D',
+  'A/C','D/F','D/(D+F)',
+  'MAX(A,B,C)','MIN(A,B,C)','MAX(D,E,F)','MIN(D,E,F)'
+];
+var FCOUNT = FEATURES.length;
+var OPS = ['>','>=','<','<=','==','!='];
+var RESULTS = ['H','D','A','skip'];
+var RESULT_CODES = {H:0, D:1, A:2, skip:3};
+
+var running = false;
+var lastYield = 0;
+
+/* ============ 工具 ============ */
+function log(text, cls){
+  var el = document.getElementById('log');
+  if(el.dataset.started !== '1'){ el.textContent = ''; el.dataset.started = '1'; }
+  var div = document.createElement('div');
+  if(cls) div.className = 'l-' + cls;
+  div.textContent = text;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function yieldUI(){
+  lastYield = Date.now();
+  return new Promise(function(r){ setTimeout(r, 0); });
+}
+
+function updateProgress(pct, text){
+  document.getElementById('progbar').style.width = pct + '%';
+  document.getElementById('progText').textContent = text;
+}
+
+/* ============ 解析 ============ */
+function parseData(text){
+  var rows = [], seen = new Set();
+  var lines = text.split('\n');
+  for(var i=0;i<lines.length;i++){
+    var p = lines[i].trim().split(/\s+/);
+    if(p.length < 8) continue;
+    var v = p.slice(0,6).map(Number);
+    var r = p[7];
+    if(v.some(isNaN)) continue;
+    if(r !== 'H' && r !== 'D' && r !== 'A') continue;
+    var sig = v.join('|') + '|' + p[6] + '|' + r;
+    if(seen.has(sig)) continue;
+    seen.add(sig);
+    rows.push({ A:v[0], B:v[1], C:v[2], D:v[3], E:v[4], F:v[5], result:r });
+  }
+  return rows;
+}
+
+/* ============ 特徵 ============ */
+function extractFeatures(row){
+  var A=row.A,B=row.B,C=row.C,D=row.D,E=row.E,F=row.F;
+  var f = new Float64Array(FCOUNT);
+  f[0]=A;f[1]=B;f[2]=C;f[3]=D;f[4]=E;f[5]=F;
+  f[6]=Math.abs(A-B);f[7]=Math.abs(A-C);f[8]=Math.abs(A-D);f[9]=Math.abs(A-E);f[10]=Math.abs(A-F);
+  f[11]=Math.abs(B-C);f[12]=Math.abs(B-D);f[13]=Math.abs(B-E);f[14]=Math.abs(B-F);
+  f[15]=Math.abs(C-D);f[16]=Math.abs(C-E);f[17]=Math.abs(C-F);
+  f[18]=Math.abs(D-E);f[19]=Math.abs(D-F);f[20]=Math.abs(E-F);
+  f[21]=A-B;f[22]=A-C;f[23]=B-C;f[24]=D-F;f[25]=E-D;
+  f[26]=A+B;f[27]=B+C;f[28]=D+E;f[29]=E+F;f[30]=D+F;f[31]=A+C;
+  f[32]=A+B+C;f[33]=D+E+F;f[34]=A+D;
+  f[35]=C===0?0:A/C;f[36]=F===0?0:D/F;f[37]=(D+F)===0?0:D/(D+F);
+  f[38]=Math.max(A,B,C);f[39]=Math.min(A,B,C);
+  f[40]=Math.max(D,E,F);f[41]=Math.min(D,E,F);
+  return f;
+}
+
+/* ============ 規則轉換 ============ */
+function convertV15Rules(){
+  var out = [];
+  for(var i=0;i<INIT_RULES.length;i++){
+    var v15 = INIT_RULES[i];
+    var groups = [[]];
+    for(var j=0;j<v15.cond.length;j++){
+      var c = v15.cond[j];
+      var featIdx = FEATURES.indexOf(c[0]);
+      if(featIdx === -1) featIdx = 0;
+      var opIdx = OPS.indexOf(c[1]);
+      if(opIdx === -1) opIdx = 1;
+      groups[0].push([featIdx, opIdx, c[2]]);
+    }
+    var code = RESULT_CODES[v15.then];
+    if(code === undefined) code = 3;
+    out.push({on:1, then:v15.then, thenCode:code, groups:groups});
+  }
+  return out;
+}
+
+function cloneRules(rules){
+  var out = [];
+  for(var i=0;i<rules.length;i++){
+    var groups = [];
+    for(var g=0;g<rules[i].groups.length;g++){
+      groups.push(rules[i].groups[g].map(function(c){ return [c[0], c[1], c[2]]; }));
+    }
+    out.push({on:rules[i].on, then:rules[i].then, thenCode:rules[i].thenCode, groups:groups});
+  }
+  return out;
+}
+
+/* ============ 評估 ============ */
+function evalCond(x, opCode, val){
+  switch(opCode){
+    case 0: return x > val;
+    case 1: return x >= val;
+    case 2: return x < val;
+    case 3: return x <= val;
+    case 4: return x === val;
+    case 5: return x !== val;
+  }
+  return false;
+}
+
+function matchRule(f, rule){
+  for(var g=0;g<rule.groups.length;g++){
+    var grp = rule.groups[g];
+    var allOk = true;
+    for(var c=0;c<grp.length;c++){
+      if(!evalCond(f[grp[c][0]], grp[c][1], grp[c][2])){ allOk = false; break; }
+    }
+    if(allOk) return true;
+  }
+  return false;
+}
+
+/* 只算 ROI（只算下注場次） */
+function calcROI(featMat, codes, payouts, N, rules){
+  if(N === 0) return {profit:0, betCount:0, roi:0};
+  var profit = 0, betCount = 0;
+  for(var i=0;i<N;i++){
+    var f = featMat[i];
+    var pred = 3;
+    for(var r=0;r<rules.length;r++){
+      if(!rules[r].on) continue;
+      if(matchRule(f, rules[r])){ pred = rules[r].thenCode; break; }
+    }
+    if(pred === 3) continue;
+    if(pred < 0 || pred > 2) continue;
+    betCount++;
+    if(pred === codes[i]) profit += payouts[i*3 + pred] - 100;
+    else profit -= 100;
+  }
+  return {
+    profit: profit,
+    betCount: betCount,
+    roi: betCount > 0 ? profit / (betCount * 100) : 0
+  };
+}
+
+/* ============ 掃描：只掃結果 ============ */
+function scanResultsOnly(rules, trainFeat, trainCodes, trainPayouts, N){
+  var cur = cloneRules(rules);
+  var curROI = calcROI(trainFeat, trainCodes, trainPayouts, N, cur).roi;
+  var improved = true;
+  var iter = 0;
+  while(improved && iter < 15){
+    improved = false;
+    iter++;
+    for(var ri=0;ri<cur.length;ri++){
+      var oldThen = cur[ri].thenCode;
+      var bestThen = oldThen, bestROI = curROI;
+      for(var tIdx=0;tIdx<4;tIdx++){
+        if(tIdx === oldThen) continue;
+        cur[ri].thenCode = tIdx;
+        cur[ri].then = RESULTS[tIdx];
+        var roi = calcROI(trainFeat, trainCodes, trainPayouts, N, cur).roi;
+        if(roi > bestROI){ bestROI = roi; bestThen = tIdx; }
+      }
+      cur[ri].thenCode = bestThen;
+      cur[ri].then = RESULTS[bestThen];
+      if(bestThen !== oldThen){ curROI = bestROI; improved = true; }
+    }
+  }
+  return cur;
+}
+
+/* ============ 掃描：全掃描（v32.4 核心） ============ */
+function getFeatureCandidates(featMat, N, fi){
+  var vals = [];
+  for(var i=0;i<N;i++) vals.push(featMat[i][fi]);
+  vals.sort(function(a,b){ return a-b; });
+  var cand = [];
+  var nC = Math.min(20, vals.length);
+  for(var k=0;k<nC;k++){
+    var idx = Math.floor(k * (vals.length-1) / Math.max(1, nC-1));
+    if(cand.indexOf(vals[idx]) === -1) cand.push(vals[idx]);
+  }
+  return cand;
+}
+
+async function scanFull(rules, trainFeat, trainCodes, trainPayouts, N, rounds){
+  var cur = cloneRules(rules);
+  var curROI = calcROI(trainFeat, trainCodes, trainPayouts, N, cur).roi;
+
+  for(var round=0;round<rounds;round++){
+    if(!running) break;
+    var improved = false;
+
+    for(var ri=0;ri<cur.length && running;ri++){
+      var rule = cur[ri];
+
+      /* 1. 閾值 */
+      for(var gi=0;gi<rule.groups.length;gi++){
+        for(var ci=0;ci<rule.groups[gi].length;ci++){
+          if(!running) break;
+          var cond = rule.groups[gi][ci];
+          var fi = cond[0], opIdx = cond[1], oldVal = cond[2];
+          var candidates = getFeatureCandidates(trainFeat, N, fi);
+          var bestVal = oldVal, bestROI = curROI;
+          for(var k=0;k<candidates.length;k++){
+            if(candidates[k] === oldVal) continue;
+            var sv = cond[2]; cond[2] = candidates[k];
+            var roi = calcROI(trainFeat, trainCodes, trainPayouts, N, cur).roi;
+            cond[2] = sv;
+            if(roi > bestROI){ bestROI = roi; bestVal = candidates[k]; }
+          }
+          if(bestVal !== oldVal){ cond[2] = bestVal; curROI = bestROI; improved = true; }
+        }
+      }
+
+      /* 2. 運算符 */
+      for(var gi2=0;gi2<rule.groups.length;gi2++){
+        for(var ci2=0;ci2<rule.groups[gi2].length;ci2++){
+          var cond2 = rule.groups[gi2][ci2];
+          var oldOp = cond2[1];
+          var bestOp = oldOp, bestOpROI = curROI;
+          for(var opi=0;opi<6;opi++){
+            if(opi === oldOp) continue;
+            var sv2 = cond2[1]; cond2[1] = opi;
+            var roi2 = calcROI(trainFeat, trainCodes, trainPayouts, N, cur).roi;
+            cond2[1] = sv2;
+            if(roi2 > bestOpROI){ bestOpROI = roi2; bestOp = opi; }
+          }
+          if(bestOp !== oldOp){ cond2[1] = bestOp; curROI = bestOpROI; improved = true; }
+        }
+      }
+
+      /* 3. 特徵（隨機 4 個） */
+      for(var gi3=0;gi3<rule.groups.length;gi3++){
+        for(var ci3=0;ci3<rule.groups[gi3].length;ci3++){
+          var cond3 = rule.groups[gi3][ci3];
+          var oldFeat = cond3[0];
+          var testFeats = [];
+          for(var tf=0;tf<4;tf++){
+            var nf = Math.floor(Math.random() * FCOUNT);
+            if(nf !== oldFeat && testFeats.indexOf(nf) === -1) testFeats.push(nf);
+          }
+          var bestFeat = oldFeat, bestFeatROI = curROI, bestFeatVal = cond3[2];
+          for(var tfi=0;tfi<testFeats.length;tfi++){
+            var candidate = testFeats[tfi];
+            var savedFeat = cond3[0], savedVal = cond3[2];
+            cond3[0] = candidate;
+            var cands = getFeatureCandidates(trainFeat, N, candidate);
+            var step = Math.max(1, Math.floor(cands.length / 6));
+            var localBest = savedVal, localROI = -Infinity;
+            for(var kk=0;kk<cands.length;kk+=step){
+              cond3[2] = cands[kk];
+              var roi3 = calcROI(trainFeat, trainCodes, trainPayouts, N, cur).roi;
+              if(roi3 > localROI){ localROI = roi3; localBest = cands[kk]; }
+            }
+            cond3[0] = savedFeat; cond3[2] = savedVal;
+            if(localROI > bestFeatROI){
+              bestFeatROI = localROI; bestFeat = candidate; bestFeatVal = localBest;
+            }
+          }
+          if(bestFeat !== oldFeat){
+            cond3[0] = bestFeat; cond3[2] = bestFeatVal;
+            curROI = bestFeatROI; improved = true;
+          }
+        }
+      }
+
+      /* 4. 結果 */
+      var oldThen = rule.thenCode;
+      var bestThen = oldThen, bestThenROI = curROI;
+      for(var tIdx=0;tIdx<4;tIdx++){
+        if(tIdx === oldThen) continue;
+        var svT = rule.thenCode; rule.thenCode = tIdx; rule.then = RESULTS[tIdx];
+        var roiT = calcROI(trainFeat, trainCodes, trainPayouts, N, cur).roi;
+        rule.thenCode = svT; rule.then = RESULTS[svT];
+        if(roiT > bestThenROI){ bestThenROI = roiT; bestThen = tIdx; }
+      }
+      if(bestThen !== oldThen){
+        rule.thenCode = bestThen; rule.then = RESULTS[bestThen];
+        curROI = bestThenROI; improved = true;
+      }
+
+      if(Date.now() - lastYield > 50) await yieldUI();
+    }
+    if(!improved) break;
+    await yieldUI();
+  }
+  return cur;
+}
+
+/* ============ 單次試驗 ============ */
+async function runTrial(rows, scanMode, scanRounds){
+  /* 洗牌 */
+  var shuffled = rows.slice();
+  for(var i=shuffled.length-1;i>0;i--){
+    var j = Math.floor(Math.random() * (i+1));
+    var t = shuffled[i]; shuffled[i] = shuffled[j]; shuffled[j] = t;
+  }
+
+  /* 60 / 20 / 20 分割 */
+  var n = shuffled.length;
+  var nTrain = Math.floor(n * 0.6);
+  var nVal = Math.floor(n * 0.2);
+  var trainRows = shuffled.slice(0, nTrain);
+  var valRows = shuffled.slice(nTrain, nTrain + nVal);
+  var thirdRows = shuffled.slice(nTrain + nVal);
+
+  /* 提取特徵 */
+  var trainFeat = trainRows.map(extractFeatures);
+  var valFeat = valRows.map(extractFeatures);
+  var thirdFeat = thirdRows.map(extractFeatures);
+
+  function makeMeta(rows){
+    var codes = new Int8Array(rows.length);
+    var payouts = new Float64Array(rows.length * 3);
+    for(var i=0;i<rows.length;i++){
+      codes[i] = RESULT_CODES[rows[i].result];
+      payouts[i*3] = rows[i].D;
+      payouts[i*3+1] = rows[i].E;
+      payouts[i*3+2] = rows[i].F;
+    }
+    return {codes:codes, payouts:payouts};
+  }
+  var tm = makeMeta(trainRows);
+  var vm = makeMeta(valRows);
+  var thm = makeMeta(thirdRows);
+
+  /* 從 INIT_RULES 開始 */
+  var v15Rules = convertV15Rules();
+  var optimized;
+  if(scanMode === 'result'){
+    optimized = scanResultsOnly(v15Rules, trainFeat, tm.codes, tm.payouts, trainRows.length);
+  } else {
+    optimized = await scanFull(v15Rules, trainFeat, tm.codes, tm.payouts, trainRows.length, scanRounds);
+  }
+
+  /* 三個集合評估 */
+  var trainROI = calcROI(trainFeat, tm.codes, tm.payouts, trainRows.length, optimized).roi;
+  var valROI = calcROI(valFeat, vm.codes, vm.payouts, valRows.length, optimized).roi;
+  var thirdROI = calcROI(thirdFeat, thm.codes, thm.payouts, thirdRows.length, optimized).roi;
+
+  return {
+    rules: optimized,
+    trainROI: trainROI,
+    valROI: valROI,
+    thirdROI: thirdROI,
+    sizes: { train: trainRows.length, val: valRows.length, third: thirdRows.length }
+  };
+}
+
+/* ============ 主流程 ============ */
+async function start(){
+  running = true;
+  document.getElementById('log').textContent = '';
+  document.getElementById('log').dataset.started = '1';
+  document.getElementById('best').style.display = 'none';
+  document.getElementById('btnRun').disabled = true;
+  document.getElementById('btnStop').disabled = false;
+
+  var rows = parseData(document.getElementById('input').value);
+  if(rows.length < 100){ alert('至少需要 100 筆'); running = false; document.getElementById('btnRun').disabled=false; return; }
+
+  var numTrials = parseInt(document.getElementById('numTrials').value);
+  var scanMode = document.getElementById('scanMode').value;
+  var scanRounds = parseInt(document.getElementById('scanRounds').value);
+
+  log('═══════════════════════════════════════', 'head');
+  log('🚀 v40.0 — v32.4 基底 + 多次試驗', 'head');
+  log('═══════════════════════════════════════', 'head');
+  log('資料：' + rows.length + ' 筆', 'info');
+  log('試驗次數：' + numTrials, 'info');
+  log('掃描模式：' + (scanMode === 'result' ? '只掃結果（快）' : '全掃描（慢）'), 'info');
+  log('掃描輪數：' + scanRounds, 'info');
+  log('分割：60% 訓練 / 20% 驗證 / 20% 第三段（真相）', 'info');
+  log('');
+
+  var best = null;
+  var startTime = Date.now();
+  var logInterval = Math.max(1, Math.floor(numTrials / 50));
+
+  for(var trial = 0; trial < numTrials; trial++){
+    if(!running) break;
+
+    var res = await runTrial(rows, scanMode, scanRounds);
+
+    if(!best || res.valROI > best.valROI){
+      var wasNull = !best;
+      best = res;
+      best.trialNum = trial + 1;
+      log('[' + (trial+1) + '] 🏆 新最佳：訓練 ' + (res.trainROI*100).toFixed(2) +
+          '% 驗證 ' + (res.valROI*100).toFixed(2) +
+          '% 第三 ' + (res.thirdROI*100).toFixed(2) + '%', 'best');
+    }
+
+    if(trial % logInterval === 0 || trial === numTrials - 1){
+      var pct = (trial+1) / numTrials * 100;
+      updateProgress(pct, (trial+1) + ' / ' + numTrials);
+      await yieldUI();
+    }
+
+    if(trial % 10 === 0) await yieldUI();
+  }
+
+  if(!best){
+    log('❌ 沒有完成任何試驗', 'err');
+    running = false; return;
+  }
+
+  var elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  log('');
+  log('═══════════════════════════════════════', 'head');
+  log('🏆 全部完成！耗時 ' + elapsed + ' 秒', 'head');
+  log('═══════════════════════════════════════', 'head');
+  log('勝出試驗：#' + best.trialNum, 'best');
+  log('訓練 ROI：' + (best.trainROI*100).toFixed(2) + '%', 'info');
+  log('驗證 ROI：' + (best.valROI*100).toFixed(2) + '%', 'info');
+  log('第三段 ROI：' + (best.thirdROI*100).toFixed(2) + '%', 
+      best.thirdROI > 0 ? 'ok' : 'err');
+
+  /* 顯示 */
+  document.getElementById('best').style.display = 'block';
+  var v = document.getElementById('verdict');
+  var truthVerdict, truthCls;
+  if(best.thirdROI > 0.05){
+    truthVerdict = '✅ 第三段也正！可能真有優勢';
+    truthCls = '#dcfce7';
+  } else if(best.thirdROI > 0){
+    truthVerdict = '🟡 第三段微正，可能只是運氣';
+    truthCls = '#fef3c7';
+  } else {
+    truthVerdict = '❌ 第三段為負 → 公式無效（過擬合）';
+    truthCls = '#fecaca';
+  }
+  v.textContent = truthVerdict;
+  v.style.background = truthCls;
+  v.style.color = '#333';
+
+  document.getElementById('big').textContent = (best.valROI*100).toFixed(2) + '%';
+  document.getElementById('detail').textContent = 
+    '勝出試驗 #' + best.trialNum + ' 的驗證 ROI（共跑 ' + numTrials + ' 次）｜' +
+    '資料分配：訓練 ' + best.sizes.train + ' / 驗證 ' + best.sizes.val + ' / 第三 ' + best.sizes.third;
+
+  document.getElementById('n1').textContent = (best.trainROI*100).toFixed(2) + '%';
+  document.getElementById('n2').textContent = (best.valROI*100).toFixed(2) + '%';
+  document.getElementById('n3').textContent = (best.thirdROI*100).toFixed(2) + '%';
+  document.getElementById('n4').textContent = '#' + best.trialNum;
+
+  document.getElementById('c1').className = 'cell' + (best.trainROI < 0 ? ' warn' : '');
+  document.getElementById('c2').className = 'cell' + (best.valROI < 0 ? ' warn' : '');
+  document.getElementById('c3').className = 'cell' + (best.thirdROI < 0 ? ' warn' : '');
+
+  document.getElementById('truth').innerHTML = 
+    '🔍 <b>為什麼要看第三段？</b><br>' +
+    '你跑了 ' + numTrials + ' 次，每次都挑「驗證 ROI 最高」的。' +
+    '這本身就是在對驗證集過擬合。<br>' +
+    '第三段資料<b>完全沒參與任何決策</b>，所以它的表現才是真實的。<br><br>' +
+    '📊 結果：<br>' +
+    '訓練：<b>' + (best.trainROI*100).toFixed(2) + '%</b>（用於優化）<br>' +
+    '驗證：<b>' + (best.valROI*100).toFixed(2) + '%</b>（挑選依據）<br>' +
+    '第三段：<b style="font-size:16px;color:' + (best.thirdROI > 0 ? '#0a7a0a' : '#c00') + '">' + 
+    (best.thirdROI*100).toFixed(2) + '%</b>（真相）<br><br>' +
+    (best.thirdROI > 0 
+      ? '🟢 第三段為正 → 可能真的有優勢，但仍需更多資料驗證。' 
+      : '🔴 第三段為負 → 跑了 ' + numTrials + ' 次，只是找到「剛好對驗證集有效」的規則，實際上毫無用處。');
+
+  var formula = genFormula(best.rules);
+  document.getElementById('out').value = formula;
+  document.getElementById('charInfo').textContent = '字符數：' + formula.length;
+
+  running = false;
+  document.getElementById('btnRun').disabled = false;
+  document.getElementById('btnStop').disabled = true;
+  updateProgress(100, '完成');
+}
+
+function stop(){
+  running = false;
+  document.getElementById('btnStop').disabled = true;
+  log('⏹ 手動停止', 'warn');
+}
+
+/* ============ 公式生成 ============ */
+function featToSheet(feat){
+  var M = {
+    'A':'A2:A','B':'B2:B','C':'C2:C','D':'D2:D','E':'E2:E','F':'F2:F',
+    '|A-B|':'ABS(A2:A-B2:B)','|A-C|':'ABS(A2:A-C2:C)','|A-D|':'ABS(A2:A-D2:D)',
+    '|A-E|':'ABS(A2:A-E2:E)','|A-F|':'ABS(A2:A-F2:F)',
+    '|B-C|':'ABS(B2:B-C2:C)','|B-D|':'ABS(B2:B-D2:D)','|B-E|':'ABS(B2:B-E2:E)',
+    '|B-F|':'ABS(B2:B-F2:F)','|C-D|':'ABS(C2:C-D2:D)','|C-E|':'ABS(C2:C-E2:E)',
+    '|C-F|':'ABS(C2:C-F2:F)','|D-E|':'ABS(D2:D-E2:E)','|D-F|':'ABS(D2:D-F2:F)',
+    '|E-F|':'ABS(E2:E-F2:F)',
+    'A-B':'(A2:A-B2:B)','A-C':'(A2:A-C2:C)','B-C':'(B2:B-C2:C)',
+    'D-F':'(D2:D-F2:F)','E-D':'(E2:E-D2:D)',
+    'A+B':'(A2:A+B2:B)','B+C':'(B2:B+C2:C)','D+E':'(D2:D+E2:E)',
+    'E+F':'(E2:E+F2:F)','D+F':'(D2:D+F2:F)','A+C':'(A2:A+C2:C)',
+    'A+B+C':'(A2:A+B2:B+C2:C)','D+E+F':'(D2:D+E2:E+F2:F)','A+D':'(A2:A+D2:D)',
+    'A/C':'IF(C2:C=0,0,A2:A/C2:C)','D/F':'IF(F2:F=0,0,D2:D/F2:F)',
+    'D/(D+F)':'IF(D2:D+F2:F=0,0,D2:D/(D2:D+F2:F))',
+    'MAX(A,B,C)':'MAX(A2:A,B2:B,C2:C)','MIN(A,B,C)':'MIN(A2:A,B2:B,C2:C)',
+    'MAX(D,E,F)':'MAX(D2:D,E2:E,F2:F)','MIN(D,E,F)':'MIN(D2:D,E2:E,F2:F)'
+  };
+  return M[feat] || '0';
+}
+function opToSheet(op){
+  if(op === '!=') return '<>';
+  if(op === '==') return '=';
+  return op;
+}
+function genFormula(rules){
+  var active = [];
+  for(var i=0;i<rules.length;i++) if(rules[i].on) active.push(rules[i]);
+  if(!active.length) return '=ARRAYFORMULA(IF(A2:A="","","skip"))';
+  var body = '';
+  for(var i=0;i<active.length;i++){
+    var r = active[i];
+    var parts = [];
+    for(var g=0;g<r.groups.length;g++){
+      var grp = r.groups[g];
+      if(grp.length === 0){ parts.push('TRUE'); continue; }
+      var gparts = [];
+      for(var c=0;c<grp.length;c++){
+        var cd = grp[c];
+        var val = Math.round(cd[2] * 100) / 100;
+        gparts.push('(' + featToSheet(FEATURES[cd[0]]) + opToSheet(OPS[cd[1]]) + val + ')');
+      }
+      parts.push(gparts.join('*'));
+    }
+    var expr = parts.length > 1 ? '(' + parts.map(function(p){ return '(' + p + ')'; }).join('+') + ')' : parts[0];
+    body += 'IF(' + expr + ',"' + r.then + '",';
+  }
+  body += '"skip"';
+  for(var j=0;j<active.length;j++) body += ')';
+  return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",' + body + '))';
+}
+
+function copyIt(){
+  var txt = document.getElementById('out').value;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(function(){ alert('已複製 ' + txt.length + ' 字元'); });
+  }
+}
+</script>
+</body>
+</html>
