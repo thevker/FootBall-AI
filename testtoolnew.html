@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v37 — 空起始演化 + 交叉驗證</title>
+<title>🚀 v38 — 空起始 + 多輪演化 + 交叉驗證</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1500px;margin:auto;background:#f0f2f5}
@@ -32,6 +32,9 @@ button.txt{background:#28a745}
 .l-fold{color:#22d3ee;font-weight:bold;background:rgba(34,211,238,0.1);font-size:13px}
 .l-stats{color:#a78bfa;font-weight:bold;background:rgba(167,139,250,0.1)}
 .l-accept{color:#4ade80;font-weight:bold;background:rgba(74,222,128,0.1)}
+.l-round{color:#f59e0b;font-weight:bold;background:rgba(245,158,11,0.1)}
+.l-prune{color:#f87171;font-weight:bold}
+.l-audit{color:#e879f9;font-weight:bold}
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
 .best b{color:#155724}
 .box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
@@ -52,7 +55,6 @@ td:first-child,td:nth-child(2){text-align:left}
 .tag-ok{background:#28a745;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .tag-off{background:#999;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .tag-pred{background:#007bff;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
-.tag-new{background:#22c55e;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .section{background:#fff;padding:12px;border-radius:6px;border:1px solid #ddd;margin-top:12px}
 h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .progress-row{display:flex;align-items:center;gap:12px;margin-top:12px}
@@ -73,6 +75,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .stat.fold-stat b{color:#0e7490}
 .stat.rules-stat{background:#dcfce7;border-color:#22c55e}
 .stat.rules-stat b{color:#15803d}
+.stat.round-stat{background:#fef3c7;border-color:#f59e0b}
+.stat.round-stat b{color:#92400e}
 .controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .chk{padding:4px 10px;font-size:12px;background:#fff;border:1px solid #ccc;border-radius:4px;cursor:pointer;user-select:none}
 .chk input{vertical-align:middle;margin-right:4px}
@@ -85,14 +89,12 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .verdict-neg{color:#c00}
 .verdict-warn{color:#e67e22}
 .verdict-neutral{color:#666}
-.cmp-table{margin-top:10px}
-.cmp-table th{background:#fef3c7}
 </style>
 </head>
 <body>
 
 <div class="top">
-  <h2 id="title">🚀 v37 — 空起始演化 + 交叉驗證</h2>
+  <h2 id="title">🚀 v38 — 空起始 + 多輪演化 + 交叉驗證</h2>
   <div>
     <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁中</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
@@ -100,12 +102,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </div>
 
 <div class="warn-banner">
-  <b>✨ v37 核心設計：</b><br>
-  🅾️ <b>從 0 條規則開始</b>（不預設任何規則）<br>
-  🧬 <b>每折獨立演化</b>：訓練集上演化出規則集<br>
-  🩷 <b>測試集完全不看</b>：只在最後評估<br>
-  🔄 <b>K 折交叉驗證</b>：看真實泛化能力<br>
-  📊 <b>5 次獨立結果</b>：平均值 ± 標準差
+  <b>✨ v38 核心：</b><br>
+  🅾️ <b>從 0 條規則開始</b>，持續生成<br>
+  🔄 <b>多輪演化</b>：每輪 500 迭代，連續 5 輪無進步才停<br>
+  🧬 <b>55% 機率加規則</b>（v37 只有 40%）<br>
+  🧹 <b>每 10 輪審計</b>：清理毒藥規則<br>
+  🩷 <b>K 折交叉驗證</b>：測試集完全不看<br>
+  ⏱️ <b>這個版本會跑很久</b>（10~60 分鐘）
 </div>
 
 <textarea id="input" placeholder="23 27 49 355 385 169 0:3 A
@@ -118,12 +121,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
     <option value="5" selected>5 折（標準）</option>
     <option value="10">10 折（慢）</option>
   </select>
-  <label>每折演化評估上限：</label>
-  <select id="maxEvals">
-    <option value="2000">2000（快）</option>
-    <option value="5000" selected>5000（標準）</option>
-    <option value="15000">15000（深度）</option>
-    <option value="50000">50000（極限）</option>
+  <label>每折最大輪數：</label>
+  <select id="maxRounds">
+    <option value="30">30 輪（快）</option>
+    <option value="100" selected>100 輪（標準）</option>
+    <option value="500">500 輪（很久）</option>
   </select>
   <button id="btnRun" onclick="start()">🚀 開始</button>
   <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
@@ -145,6 +147,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 <div class="stats" id="liveStats" style="display:none">
   <div class="stat fold-stat" id="stat-fold">🔄 折: 0/0</div>
+  <div class="stat round-stat" id="stat-round">🔁 輪: 0/0</div>
   <div class="stat rules-stat" id="stat-rules">📋 規則: 0</div>
   <div class="stat test-stat" id="stat-test">🩷 測試平均: -</div>
   <div class="stat" id="stat-prog">進度: 0%</div>
@@ -185,8 +188,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 'use strict';
 
 var TXT = {
-  zh: { title: '🚀 v37 — 空起始演化 + 交叉驗證', hRule: '📋 最後一折規則表', noData: '沒有有效數據' },
-  en: { title: '🚀 v37 — Evolve from Empty + CV', hRule: '📋 Last Fold Rules', noData: 'No valid data' }
+  zh: { title: '🚀 v38 — 空起始 + 多輪演化', hRule: '📋 最後一折規則表', noData: '沒有有效數據' },
+  en: { title: '🚀 v38 — Empty Start + Multi-round', hRule: '📋 Last Fold Rules', noData: 'No valid data' }
 };
 var LANG = 'zh';
 function t(k){ return (TXT[LANG] && TXT[LANG][k]) || k; }
@@ -222,23 +225,26 @@ var startTime = 0;
 var evalCount = 0;
 var logBuffer = [];
 var logTimer = null;
-var LOG_MAX = 5000;
+var LOG_MAX = 10000;
 var lastSpeedUpdate = 0;
 
 var currentFold = 0;
 var totalFolds = 0;
 var foldResults = [];
 var lastEvolvedRules = null;
-var currentEvoEvals = 0;
 var currentRuleCount = 0;
+var currentRound = 0;
+var maxRounds = 0;
 
 var RESULTS = ['H','D','A','skip'];
 var RESULT_CODES = {H:0, D:1, A:2, skip:-1};
 var OPS = ['>','>=','<','<=','==','!='];
 
-var MAX_RULES = 60;
-var EVO_MIN_IMPROVE = 0.3;   // 每場
-var STAGNATION_LIMIT = 800;  // 沒進步就停
+var MAX_RULES = 80;
+var EVO_MIN_IMPROVE = 0.2;   // 每場
+var ITER_PER_ROUND = 500;
+var ROUNDS_NO_IMPROVE_LIMIT = 5;
+var AUDIT_INTERVAL = 10;
 
 /* ========== 日誌 ========== */
 function nowTime(){
@@ -250,7 +256,7 @@ function nowTime(){
 }
 function pushLog(text, cls){
   logBuffer.push({ text: text, cls: cls || '' });
-  if(!logTimer) logTimer = setTimeout(flushLog, 100);
+  if(!logTimer) logTimer = setTimeout(flushLog, 80);
 }
 function flushLog(){
   logTimer = null;
@@ -287,18 +293,25 @@ function clearLog(){
 }
 
 function updateProgress(){
-  var pct = totalFolds > 0 ? (currentFold / totalFolds) * 100 : 0;
+  var pct = 0;
+  if(totalFolds > 0 && maxRounds > 0){
+    var foldPct = Math.min(0.95, currentRound / maxRounds);
+    pct = ((currentFold - 1 + foldPct) / totalFolds) * 100;
+    if(pct > 99.5 && running) pct = 99.5;
+  }
   if(!running && startTime > 0 && document.getElementById('best').style.display === 'block') pct = 100;
   var bar = document.getElementById('progbar');
   var txt = document.getElementById('progText');
   var phaseEl = document.getElementById('progPhase');
   if(bar) bar.style.width = pct.toFixed(1) + '%';
   if(txt) txt.textContent = pct.toFixed(1) + '%';
-  if(phaseEl) phaseEl.textContent = currentFold > 0 ? '第 ' + currentFold + '/' + totalFolds + ' 折' : '準備中';
+  if(phaseEl) phaseEl.textContent = currentFold > 0 ? '折 ' + currentFold + '/' + totalFolds + '，輪 ' + currentRound + '/' + maxRounds : '準備中';
   var statProg = document.getElementById('stat-prog');
   if(statProg) statProg.innerHTML = '進度: <b>' + pct.toFixed(1) + '%</b>';
   var statFold = document.getElementById('stat-fold');
   if(statFold) statFold.innerHTML = '🔄 折: <b>' + currentFold + '/' + totalFolds + '</b>';
+  var statRound = document.getElementById('stat-round');
+  if(statRound) statRound.innerHTML = '🔁 輪: <b>' + currentRound + '/' + maxRounds + '</b>';
   var statRules = document.getElementById('stat-rules');
   if(statRules) statRules.innerHTML = '📋 規則: <b>' + currentRuleCount + '</b>';
 }
@@ -419,23 +432,52 @@ function matchRule(f, rule){
   return false;
 }
 
-function calcProfitOn(featMat, codes, payoutsArr, N, rules){
+function calcProfitOn(featMat, codes, payoutsArr, N, rules, track){
   var total = 0;
   for(var i = 0; i < N; i++){
     var f = featMat[i];
-    var pred = -1;
+    var pred = -1, hr = -1;
     for(var r = 0; r < rules.length; r++){
       var rule = rules[r];
       if(!rule.on) continue;
-      if(matchRule(f, rule)){ pred = rule.thenCode; break; }
+      if(matchRule(f, rule)){ pred = rule.thenCode; hr = r; break; }
     }
-    if(pred < 0) continue;
+    if(pred < 0){
+      if(track && hr !== undefined) {} // skip
+      continue;
+    }
     var gp;
     if(pred === codes[i]) gp = payoutsArr[i*3 + pred] - 100;
     else gp = -100;
     total += gp;
   }
   return total;
+}
+
+/* ⭐ 追蹤每條規則的貢獻 */
+function calcProfitWithRuleStats(featMat, codes, payoutsArr, N, rules){
+  var stats = [];
+  for(var i = 0; i < rules.length; i++) stats.push({hit:0, profit:0});
+  var total = 0;
+  for(var i = 0; i < N; i++){
+    var f = featMat[i];
+    var pred = -1, hr = -1;
+    for(var r = 0; r < rules.length; r++){
+      var rule = rules[r];
+      if(!rule.on) continue;
+      if(matchRule(f, rule)){ pred = rule.thenCode; hr = r; break; }
+    }
+    if(pred < 0) continue;
+    var gp;
+    if(pred === codes[i]) gp = payoutsArr[i*3 + pred] - 100;
+    else gp = -100;
+    total += gp;
+    if(hr >= 0){
+      stats[hr].hit++;
+      stats[hr].profit += gp;
+    }
+  }
+  return {total: total, stats: stats};
 }
 
 /* ========== 規則結構 ========== */
@@ -529,109 +571,175 @@ function mutateRule(rule, featMat, N){
   return newRule;
 }
 
-/* ⭐ 從空白開始演化 ⭐ */
-async function evolveFromEmpty(featMat, codes, payoutsArr, N, maxEvals, foldLabel){
+/* ⭐ 剪枝：移除命中少或虧損的規則 */
+function pruneRules(rules, featMat, codes, payoutsArr, N){
+  if(rules.length <= 5) return rules;
+  var res = calcProfitWithRuleStats(featMat, codes, payoutsArr, N, rules);
+  var stats = res.stats;
+  var kept = [];
+  var removed = 0;
+  for(var i = 0; i < rules.length; i++){
+    var s = stats[i];
+    // 保留：命中 >= 3 且 盈利 > 0
+    if(s.hit < 3 || s.profit <= 0){
+      removed++;
+      continue;
+    }
+    kept.push(rules[i]);
+  }
+  if(kept.length === 0) return rules;
+  return kept;
+}
+
+/* ⭐ 審計：禁用測試 */
+function auditRules(rules, featMat, codes, payoutsArr, N){
+  if(rules.length <= 3) return rules;
+  var cur = cloneRules(rules);
+  var baseRes = calcProfitWithRuleStats(featMat, codes, payoutsArr, N, cur);
+  var baseProfit = baseRes.total;
+  var baseStats = baseRes.stats;
+
+  var toDisable = [];
+  for(var i = 0; i < cur.length; i++){
+    if(baseStats[i].profit >= 0) continue;  // 只考慮虧錢的
+    var savedOn = cur[i].on;
+    cur[i].on = 0;
+    var testProfit = calcProfitOn(featMat, codes, payoutsArr, N, cur);
+    cur[i].on = savedOn;
+    if(testProfit > baseProfit){
+      toDisable.push({idx: i, delta: testProfit - baseProfit});
+    }
+  }
+  toDisable.sort(function(a,b){ return b.delta - a.delta; });
+  var disabled = 0;
+  for(var k = 0; k < Math.min(toDisable.length, 5); k++){
+    cur[toDisable[k].idx].on = 0;
+    disabled++;
+  }
+  return {rules: cur, disabled: disabled};
+}
+
+/* ⭐⭐⭐ 空起始 + 多輪演化 ⭐⭐⭐ */
+async function evolveFromEmpty(featMat, codes, payoutsArr, N, maxRounds, foldLabel){
   var cur = [];
   var curProfit = 0;
   var curPerGame = 0;
   var accepted = 0;
   var evals = 0;
-  var sinceImprove = 0;
+  var roundsNoImprove = 0;
   var best = null;
   var bestProfit = -Infinity;
+  var bestPerGame = -Infinity;
 
-  pushLog(nowTime() + '   [' + foldLabel + '] 🅾️ 從 0 條規則開始演化...', 'evo');
+  pushLog(nowTime() + '   [' + foldLabel + '] 🅾️ 從 0 條規則開始，最多 ' + maxRounds + ' 輪', 'evo');
 
-  var t0 = Date.now();
-  var lastReport = 0;
-
-  // 階段 1：先加一些基礎規則（0 → 5）
-  for(var i = 0; i < 5; i++){
+  for(var round = 1; round <= maxRounds; round++){
     if(!running) break;
-    var newRule = genRandomRule(featMat, N);
-    var testRules = cur.concat([newRule]);
-    var testProfit = calcProfitOn(featMat, codes, payoutsArr, N, testRules);
-    evals++;
-    if(testProfit > curProfit){
-      cur = testRules;
-      curProfit = testProfit;
-      curPerGame = N > 0 ? curProfit / N : 0;
-      accepted++;
-    }
-  }
+    currentRound = round;
+    updateProgress();
 
-  pushLog(nowTime() + '   [' + foldLabel + '] 初始 5 條：' + curPerGame.toFixed(2) + '/場（接受 ' + accepted + '）', 'evo');
+    var roundStartProfit = curProfit;
+    var roundAccepted = 0;
 
-  // 階段 2：主演化
-  while(running && evals < maxEvals){
-    var p = Math.random();
-    var candRules = cloneRules(cur);
-    var action = '';
+    // 每輪 ITER_PER_ROUND 次迭代
+    for(var iter = 0; iter < ITER_PER_ROUND; iter++){
+      if(!running) break;
 
-    if(p < 0.4){
-      // 改一條
-      if(candRules.length === 0) continue;
-      var ri = Math.floor(Math.random() * candRules.length);
-      candRules[ri] = mutateRule(candRules[ri], featMat, N);
-      action = 'mutate R' + (ri+1);
-    } else if(p < 0.8){
-      // 加新規則
-      if(candRules.length >= MAX_RULES) continue;
-      var newRule = genRandomRule(featMat, N);
-      var pos = Math.random() < 0.7 ? candRules.length : Math.floor(Math.random() * (candRules.length + 1));
-      candRules.splice(pos, 0, newRule);
-      action = 'add rule';
-    } else {
-      // 刪除
-      if(candRules.length <= 3) continue;
-      var ri2 = Math.floor(Math.random() * candRules.length);
-      candRules.splice(ri2, 1);
-      action = 'del R' + (ri2+1);
-    }
+      var p = Math.random();
+      var candRules = cloneRules(cur);
+      var action = '';
 
-    var candProfit = calcProfitOn(featMat, codes, payoutsArr, N, candRules);
-    evals++;
-    var improvement = candProfit - curProfit;
-
-    if(improvement > EVO_MIN_IMPROVE * N){
-      cur = candRules;
-      curProfit = candProfit;
-      curPerGame = N > 0 ? curProfit / N : 0;
-      accepted++;
-      sinceImprove = 0;
-
-      if(curProfit > bestProfit){
-        bestProfit = curProfit;
-        best = cloneRules(cur);
+      if(p < 0.55){
+        // 加新規則
+        if(candRules.length >= MAX_RULES) continue;
+        var newRule = genRandomRule(featMat, N);
+        var pos = Math.random() < 0.7 ? candRules.length : Math.floor(Math.random() * (candRules.length + 1));
+        candRules.splice(pos, 0, newRule);
+        action = 'add';
+      } else if(p < 0.90){
+        // 改一條
+        if(candRules.length === 0) continue;
+        var ri = Math.floor(Math.random() * candRules.length);
+        candRules[ri] = mutateRule(candRules[ri], featMat, N);
+        action = 'mutate R' + (ri+1);
+      } else {
+        // 刪除
+        if(candRules.length <= 3) continue;
+        var ri2 = Math.floor(Math.random() * candRules.length);
+        candRules.splice(ri2, 1);
+        action = 'del R' + (ri2+1);
       }
 
-      if(document.getElementById('verbose').checked && accepted % 5 === 0){
-        pushLog(nowTime() + '   [' + foldLabel + '] ' + action + ' → ' + curPerGame.toFixed(2) + '/場（規則 ' + cur.length + '，評估 ' + evals + '）', 'accept');
+      var candProfit = calcProfitOn(featMat, codes, payoutsArr, N, candRules);
+      evals++;
+      var improvement = candProfit - curProfit;
+
+      if(improvement > EVO_MIN_IMPROVE * N){
+        cur = candRules;
+        curProfit = candProfit;
+        curPerGame = N > 0 ? curProfit / N : 0;
+        accepted++;
+        roundAccepted++;
+
+        if(curProfit > bestProfit){
+          bestProfit = curProfit;
+          bestPerGame = curPerGame;
+          best = cloneRules(cur);
+          if(document.getElementById('verbose').checked){
+            pushLog(nowTime() + '   [' + foldLabel + '] 🏆 新最優 ' + curPerGame.toFixed(2) + '/場（規則 ' + cur.length + '）', 'best');
+          }
+        }
       }
+    }
+
+    // 每輪結束
+    var roundImproved = curProfit > roundStartProfit;
+    if(roundImproved){
+      roundsNoImprove = 0;
     } else {
-      sinceImprove++;
+      roundsNoImprove++;
     }
 
-    // 沒進步太久 → 停止
-    if(sinceImprove > STAGNATION_LIMIT) break;
+    pushLog(nowTime() + '   [' + foldLabel + '] 第 ' + round + '/' + maxRounds + ' 輪：' + curPerGame.toFixed(2) + '/場，規則 ' + cur.length + '，接受 ' + roundAccepted + '，評估 ' + evals + (roundImproved ? ' ✓' : ''), roundImproved ? 'ok' : 'dim');
 
-    // 每 500 次評估報告一次
-    if(evals - lastReport >= 500){
-      lastReport = evals;
-      pushLog(nowTime() + '   [' + foldLabel + '] 評估 ' + evals + '/' + maxEvals + '，當前 ' + curPerGame.toFixed(2) + '/場，規則 ' + cur.length, 'dim');
-      currentEvoEvals = evals;
-      currentRuleCount = cur.length;
-      await yieldUI();
+    // 每 10 輪做審計
+    if(round % AUDIT_INTERVAL === 0 && cur.length > 5){
+      var auditRes = auditRules(cur, featMat, codes, payoutsArr, N);
+      cur = auditRes.rules;
+      curProfit = calcProfitOn(featMat, codes, payoutsArr, N, cur);
+      curPerGame = N > 0 ? curProfit / N : 0;
+      if(auditRes.disabled > 0){
+        pushLog(nowTime() + '   [' + foldLabel + '] 🧹 審計：禁用 ' + auditRes.disabled + ' 條毒藥規則', 'audit');
+      }
     }
+
+    // 每 5 輪做剪枝
+    if(round % 5 === 0 && cur.length > 5){
+      var pruned = pruneRules(cur, featMat, codes, payoutsArr, N);
+      if(pruned.length < cur.length){
+        cur = pruned;
+        curProfit = calcProfitOn(featMat, codes, payoutsArr, N, cur);
+        curPerGame = N > 0 ? curProfit / N : 0;
+        pushLog(nowTime() + '   [' + foldLabel + '] ✂️ 剪枝：' + cur.length + ' 條', 'prune');
+      }
+    }
+
+    if(roundsNoImprove >= ROUNDS_NO_IMPROVE_LIMIT){
+      pushLog(nowTime() + '   [' + foldLabel + '] ⏹ 連續 ' + ROUNDS_NO_IMPROVE_LIMIT + ' 輪無進步，停止', 'warn');
+      break;
+    }
+
+    currentRuleCount = cur.length;
+    await yieldUI();
   }
 
   if(best === null) best = cloneRules(cur);
-  var elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+  var elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
   var finalProfit = calcProfitOn(featMat, codes, payoutsArr, N, best);
   var finalPerGame = N > 0 ? finalProfit / N : 0;
 
-  pushLog(nowTime() + '   [' + foldLabel + '] ✓ 演化完成：' + finalPerGame.toFixed(2) + '/場，規則 ' + best.length + '，接受 ' + accepted + '，評估 ' + evals + '，耗時 ' + elapsed + 's', 'evo');
+  pushLog(nowTime() + '   [' + foldLabel + '] ✓ 完成：' + finalPerGame.toFixed(2) + '/場，規則 ' + best.length + '，總評估 ' + evals, 'evo');
 
   return {rules: best, profit: finalProfit, perGame: finalPerGame, accepted: accepted, evals: evals};
 }
@@ -778,10 +886,10 @@ async function start(){
   startTime = Date.now();
   evalCount = 0;
   currentFold = 0;
+  currentRound = 0;
+  currentRuleCount = 0;
   foldResults = [];
   lastEvolvedRules = null;
-  currentEvoEvals = 0;
-  currentRuleCount = 0;
   lastSpeedUpdate = 0;
 
   document.getElementById('btnRun').disabled = true;
@@ -797,18 +905,20 @@ async function start(){
   clearLog();
 
   var N_FOLDS = parseInt(document.getElementById('folds').value);
-  var MAX_EVALS = parseInt(document.getElementById('maxEvals').value);
+  maxRounds = parseInt(document.getElementById('maxRounds').value);
   totalFolds = N_FOLDS;
 
   pushLog('═══════════════════════════════════════════════════════════', 'head');
-  pushLog('🚀 v37 — 空起始演化 + 交叉驗證', 'head');
+  pushLog('🚀 v38 — 空起始 + 多輪演化 + 交叉驗證', 'head');
   pushLog('═══════════════════════════════════════════════════════════', 'head');
   pushLog(nowTime() + ' 原始有效行數：' + parsed.total, 'info');
   pushLog(nowTime() + ' 重複：' + parsed.dups + '（已忽略）', 'warn');
   pushLog(nowTime() + ' 去重後：' + parsed.rows.length + ' 筆', 'success');
   pushLog(nowTime() + ' 🅾️ 起點：空（0 條規則）', 'gen');
   pushLog(nowTime() + ' 🔄 ' + N_FOLDS + ' 折交叉驗證', 'fold');
-  pushLog(nowTime() + ' 🧬 每折最多評估：' + MAX_EVALS, 'evo');
+  pushLog(nowTime() + ' 🔁 每折最多 ' + maxRounds + ' 輪 × ' + ITER_PER_ROUND + ' 迭代', 'round');
+  pushLog(nowTime() + ' 🧬 加規則機率 55%', 'evo');
+  pushLog(nowTime() + ' 🧹 每 ' + AUDIT_INTERVAL + ' 輪審計', 'audit');
   pushLog('');
 
   var allRows = parsed.rows.slice();
@@ -823,9 +933,9 @@ async function start(){
   for(var fold = 1; fold <= N_FOLDS; fold++){
     if(!running) break;
     currentFold = fold;
-    updateProgress();
-    currentEvoEvals = 0;
+    currentRound = 0;
     currentRuleCount = 0;
+    updateProgress();
 
     pushLog('═══════════════════════════════════════════════════════════', 'head');
     pushLog(nowTime() + ' 🔄 第 ' + fold + '/' + N_FOLDS + ' 折', 'fold');
@@ -853,13 +963,11 @@ async function start(){
     var tem = extractMeta(testRows);
     testCodes = tem.codes; testPayouts = tem.payouts;
 
-    // 演化（只訓練集）
-    var evoRes = await evolveFromEmpty(trainFeat, trainCodes, trainPayouts, trainN, MAX_EVALS, '折' + fold);
+    var evoRes = await evolveFromEmpty(trainFeat, trainCodes, trainPayouts, trainN, maxRounds, '折' + fold);
     if(!running) break;
 
     evalCount += evoRes.evals;
 
-    // 評估測試集
     var evoTestP = calcProfitOn(testFeat, testCodes, testPayouts, testN, evoRes.rules);
     var evoTestPer = testN > 0 ? evoTestP / testN : 0;
 
@@ -905,7 +1013,7 @@ async function start(){
     var avgTrain = foldResults.length > 0 ? trainSum / foldResults.length : 0;
 
     pushLog('═══════════════════════════════════════════════════════════', 'head');
-    pushLog('🏆 v37 交叉驗證完成', 'stats');
+    pushLog('🏆 v38 交叉驗證完成', 'stats');
     pushLog('═══════════════════════════════════════════════════════════', 'head');
     pushLog('   🩷 真實泛化能力（' + foldResults.length + ' 折測試平均）：', 'test');
     pushLog('      平均每場：' + avg.toFixed(2), 'test');
@@ -924,7 +1032,7 @@ async function start(){
     pushLog('═══════════════════════════════════════════════════════════', 'head');
 
     document.getElementById('best').style.display = 'block';
-    document.getElementById('summary').innerHTML = '🏆 空起始演化　🩷 真實每場 <b>' + avg.toFixed(2) + '</b> ±' + std.toFixed(2);
+    document.getElementById('summary').innerHTML = '🏆 空起始多輪演化　🩷 真實每場 <b>' + avg.toFixed(2) + '</b> ±' + std.toFixed(2);
 
     var verdictHTML = '';
     var absAvg = Math.abs(avg);
