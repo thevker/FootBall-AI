@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v32.2 — 純掃描版（跳過演化）</title>
+<title>🚀 v33 — 三分法驗證（訓練/驗證/測試）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1500px;margin:auto;background:#f0f2f5}
@@ -26,18 +26,12 @@ button.txt{background:#28a745}
 .l-dim{color:#666}.l-head{color:#fff;font-weight:bold;font-size:13px}
 .l-ok{color:#4ade80}.l-bad{color:#f87171}.l-scan{color:#38bdf8}
 .l-best{color:#facc15;font-weight:bold;background:rgba(250,204,21,0.08)}
-.l-gen{color:#e0e7ff}.l-newrule{color:#22d3ee;font-weight:bold}
-.l-hot{color:#f472b6;font-weight:bold}.l-prune{color:#f87171;font-weight:bold}
-.l-val{color:#a78bfa;font-weight:bold}.l-wide{color:#22d3ee;font-weight:bold}
-.l-len{color:#fb923c;font-weight:bold}.l-prog{color:#c084fc;font-weight:bold}
-.l-profit{color:#4ade80;font-weight:bold;background:rgba(74,222,128,0.1)}
-.l-speed{color:#fbbf24;font-weight:bold}
 .l-init{color:#f472b6;font-weight:bold;font-size:13px}
 .l-skip{color:#94a3b8;font-weight:bold;background:rgba(148,163,184,0.15)}
 .l-base{color:#fbbf24;font-weight:bold;background:rgba(251,191,36,0.1);font-size:13px}
-.l-audit{color:#e879f9;font-weight:bold;background:rgba(232,121,249,0.1)}
 .l-tune{color:#34d399;font-weight:bold;background:rgba(52,211,153,0.1)}
 .l-exhaust{color:#f59e0b;font-weight:bold;background:rgba(245,158,11,0.1)}
+.l-test{color:#f472b6;font-weight:bold;background:rgba(244,114,182,0.15);font-size:13px}
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
 .best b{color:#155724}
 .box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
@@ -59,7 +53,6 @@ td:first-child,td:nth-child(2),td:nth-child(3){text-align:left}
 .tag-off{background:#999;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .tag-pred{background:#007bff;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .tag-soft{background:#fbbf24;color:#000;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:bold}
-.tag-new{background:#22c55e;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .section{background:#fff;padding:12px;border-radius:6px;border:1px solid #ddd;margin-top:12px}
 h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .progress-row{display:flex;align-items:center;gap:12px;margin-top:12px}
@@ -80,6 +73,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .stat.base-stat b{color:#92400e}
 .stat.scan-stat{background:#fed7aa;border-color:#f59e0b}
 .stat.scan-stat b{color:#7c2d12}
+.stat.test-stat{background:#fce7f3;border-color:#f472b6}
+.stat.test-stat b{color:#9d174d}
 .controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .chk{padding:4px 10px;font-size:12px;background:#fff;border:1px solid #ccc;border-radius:4px;cursor:pointer;user-select:none}
 .chk input{vertical-align:middle;margin-right:4px}
@@ -89,18 +84,23 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .base-banner b{color:#92400e}
 .val-banner{background:linear-gradient(135deg,#ddd6fe,#c4b5fd);padding:10px 14px;border-radius:6px;border:1px solid #a78bfa;font-size:12px;line-height:1.7;margin-top:10px}
 .val-banner b{color:#4c1d95}
-.val-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:6px}
-.val-cell{background:#fff;padding:8px;border-radius:4px;text-align:center}
-.val-cell .num{font-size:16px;font-weight:bold;color:#4c1d95}
-.val-cell .lbl{font-size:10px;color:#666}
-@media(max-width:700px){.val-grid{grid-template-columns:1fr 1fr}}
+.test-banner{background:linear-gradient(135deg,#fce7f3,#fbcfe8);padding:12px 14px;border-radius:6px;border:1px solid #f472b6;font-size:13px;line-height:1.7;margin-top:10px}
+.test-banner b{color:#9d174d}
+.val-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px}
+.val-cell{background:#fff;padding:10px;border-radius:4px;text-align:center}
+.val-cell .num{font-size:18px;font-weight:bold}
+.val-cell .lbl{font-size:10px;color:#666;margin-top:4px}
+.val-cell.train .num{color:#92400e}
+.val-cell.val .num{color:#4c1d95}
+.val-cell.test .num{color:#9d174d}
+@media(max-width:700px){.val-grid{grid-template-columns:1fr}}
 #valVerdict{white-space:pre-line;margin-top:8px;font-size:11px;color:#4c1d95}
 </style>
 </head>
 <body>
 
 <div class="top">
-  <h2 id="title">🚀 v32.2 — 純掃描版（跳過演化）</h2>
+  <h2 id="title">🚀 v33 — 三分法驗證（訓練/驗證/測試）</h2>
   <div>
     <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁中</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
@@ -108,10 +108,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </div>
 
 <div class="warn-banner">
-  <b>✨ v32.2 核心改動：</b><br>
-  ❌ <b>跳過演化階段</b>（三次實驗證明演化會過擬合）<br>
-  ✅ <b>只保留 v15 參數窮舉掃描</b>（驗證盈利穩定 +6000~+7600）<br>
-  🎯 <b>輸出 = 掃描後結果</b>（不過度優化訓練集）
+  <b>✨ v33 核心機制：</b><br>
+  🟡 <b>訓練集 60%</b> + 🟣 <b>驗證集 20%</b> → 參與掃描優化<br>
+  🩷 <b>測試集 20%</b> → <b>完全不看</b>，掃描結束後才評估<br>
+  ✅ 判斷真實泛化：測試每場 ≈ 驗證每場 → 無過擬合
 </div>
 
 <textarea id="input" placeholder="23 27 49 355 385 169 0:3 A
@@ -132,7 +132,6 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <div class="controls">
   <label class="chk"><input type="checkbox" id="verbose" checked> 詳細日誌</label>
   <label class="chk"><input type="checkbox" id="autoScroll" checked> 自動滾動</label>
-  <label class="chk"><input type="checkbox" id="useVal" checked> 訓練/驗證分割</label>
   <button onclick="clearLog()" style="padding:4px 10px;font-size:12px;background:#6c757d">清空日誌</button>
 </div>
 
@@ -152,6 +151,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <div class="stat speed-stat" id="stat-speed">⚡ 評估/秒: 0</div>
   <div class="stat" id="stat-train">訓練: -</div>
   <div class="stat" id="stat-val">驗證: -</div>
+  <div class="stat test-stat" id="stat-test">🩷 測試: -</div>
   <div class="stat" id="stat-rules">規則: 0</div>
   <div class="stat" id="stat-time">時間: 0s</div>
 </div>
@@ -164,14 +164,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
     <div id="baseStats"></div>
   </div>
 
-  <div class="val-banner">
-    <b>📊 泛化評估（掃描後）</b>
-    <div style="font-size:11px;color:#4c1d95;margin-top:2px">重點看「驗證每場」——這才是真實賺錢能力。</div>
+  <div class="test-banner">
+    <b>🩷 真實泛化評估（測試集，掃描期間完全沒看）</b>
+    <div style="font-size:11px;color:#9d174d;margin-top:2px">測試每場 ≈ 驗證每場 → 沒有過擬合</div>
     <div class="val-grid">
-      <div class="val-cell"><div class="num" id="vTrainTotal">-</div><div class="lbl">訓練總盈利</div></div>
-      <div class="val-cell"><div class="num" id="vValTotal">-</div><div class="lbl">驗證總盈利</div></div>
-      <div class="val-cell"><div class="num" id="vTrainPer">-</div><div class="lbl">訓練每場</div></div>
-      <div class="val-cell"><div class="num" id="vValPer">-</div><div class="lbl">驗證每場</div></div>
+      <div class="val-cell train"><div class="num" id="vTrainPer">-</div><div class="lbl">訓練每場</div></div>
+      <div class="val-cell val"><div class="num" id="vValPer">-</div><div class="lbl">驗證每場</div></div>
+      <div class="val-cell test"><div class="num" id="vTestPer">-</div><div class="lbl">🩷 測試每場</div></div>
     </div>
     <div id="valVerdict"></div>
   </div>
@@ -188,7 +187,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 <div id="diag" style="display:none">
   <div class="section">
-    <h3 id="h-rule">📋 掃描後規則表（🟡=v15 微調後）</h3>
+    <h3 id="h-rule">📋 掃描後規則表</h3>
     <div class="diag" id="ruleTable"></div>
   </div>
 </div>
@@ -198,14 +197,14 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 var TXT = {
   zh: {
-    title: '🚀 v32.2 — 純掃描版（跳過演化）',
+    title: '🚀 v33 — 三分法驗證（訓練/驗證/測試）',
     strength: '掃描強度：',
     run: '🚀 開始掃描', stop: '⏹ 停止',
     hRule: '📋 掃描後規則表',
     noData: '沒有有效數據'
   },
   en: {
-    title: '🚀 v32.2 — Pure Scan (No Evolution)',
+    title: '🚀 v33 — Three-Way Split',
     strength: 'Scan strength: ',
     run: '🚀 Start', stop: '⏹ Stop',
     hRule: '📋 Scanned Rules',
@@ -276,10 +275,12 @@ var INIT_RULES = [
   {on:1, then:'skip', cond:[]}
 ];
 
-var trainFeat = null, valFeat = null;
+/* ⭐ 三分法：訓練/驗證/測試 */
+var trainFeat = null, valFeat = null, testFeat = null;
 var trainCodes = null, trainPayouts = null;
 var valCodes = null, valPayouts = null;
-var trainN = 0, valN = 0;
+var testCodes = null, testPayouts = null;
+var trainN = 0, valN = 0, testN = 0;
 
 var running = false;
 var startTime = 0;
@@ -294,14 +295,12 @@ var lastSpeedUpdate = 0;
 
 var totalPhases = 0;
 var currentPhase = 0;
-var currentPass = 0;
-var maxPassesPerPhase = 1;
 
-var baseline = { train: 0, val: 0, trainPer: 0, valPer: 0, skipPct: 0 };
+var baseline = { train: 0, val: 0, test: 0, trainPer: 0, valPer: 0, testPer: 0 };
 
 var bestProfitSoFar = null;
 var bestProfitVal = null;
-var bestFitGlobal = -Infinity;
+var bestProfitTest = null;
 
 var RESULTS = ['H','D','A','skip'];
 var RESULT_CODES = {H:0, D:1, A:2, skip:-1};
@@ -529,7 +528,7 @@ function calcProfitOn(featMat, codes, payoutsArr, N, rules){
   return total;
 }
 
-/* ⭐ v32.2 純掃描版：fitness = 訓練+驗證加權（無 penalty）*/
+/* ⭐⭐⭐ v33 核心：fitness = 訓練 0.4 + 驗證 0.6（測試集完全不看）*/
 function fitness(rules){
   evalCount++;
 
@@ -548,16 +547,14 @@ function fitness(rules){
 function rawProfits(rules){
   var trainP = trainN > 0 ? calcProfitOn(trainFeat, trainCodes, trainPayouts, trainN, rules) : 0;
   var valP = valN > 0 ? calcProfitOn(valFeat, valCodes, valPayouts, valN, rules) : 0;
-  return {train: trainP, val: valP};
+  var testP = testN > 0 ? calcProfitOn(testFeat, testCodes, testPayouts, testN, rules) : 0;
+  return {train: trainP, val: valP, test: testP};
 }
 
-function skipRatio(rules, useVal){
-  var fMat = useVal ? valFeat : trainFeat;
-  var N = useVal ? valN : trainN;
-  if(N === 0) return {skipped: 0, total: 0, pct: 0};
+function skipRatio(rules){
   var skipped = 0;
-  for(var i = 0; i < N; i++){
-    var f = fMat[i];
+  for(var i = 0; i < trainN; i++){
+    var f = trainFeat[i];
     var matched = false;
     var lastPred = 'skip';
     for(var j = 0; j < rules.length; j++){
@@ -566,7 +563,7 @@ function skipRatio(rules, useVal){
     }
     if(!matched || lastPred === 'skip') skipped++;
   }
-  return {skipped: skipped, total: N, pct: skipped / N * 100};
+  return {skipped: skipped, total: trainN, pct: trainN > 0 ? skipped / trainN * 100 : 0};
 }
 
 /* ========== 規則結構 ========== */
@@ -631,10 +628,11 @@ function getFeatureCandidates(fi){
   return cand;
 }
 
-/* ⭐⭐⭐ v32.2 核心：純掃描 ⭐⭐⭐ */
+/* ⭐ 純掃描（測試集完全不參與）*/
 async function exhaustiveScan(rules, maxIter){
   pushLog('');
   pushLog(nowTime() + ' 🔍 開始 v15 參數窮舉掃描（最多 ' + maxIter + ' 輪）...', 'exhaust');
+  pushLog(nowTime() + ' ⚠️ 測試集不參與優化（只在最後評估）', 'test');
 
   var savedPhase = currentPhase;
   currentPhase = 1.5;
@@ -703,9 +701,7 @@ async function exhaustiveScan(rules, maxIter){
   pushLog(nowTime() + ' ✓ 掃描完成：訓練 ' + rawP.train + ' 驗證 ' + rawP.val + '（共 ' + totalImproved + ' 個參數優化）', 'exhaust');
   pushLog('');
 
-  if(curFit > bestFitGlobal) bestFitGlobal = curFit;
   currentPhase = savedPhase;
-
   await yieldUI();
   return cur;
 }
@@ -722,16 +718,11 @@ function fmtRule(r){
 }
 
 /* ========== 診斷 ========== */
-function diagnose(rules, useVal){
+function diagnose(rules){
   var stats = [];
   for(var i = 0; i < rules.length; i++) stats.push({rule:rules[i], hit:0, correct:0, wrong:0, profit:0});
-  var fMat = useVal ? valFeat : trainFeat;
-  var cArr = useVal ? valCodes : trainCodes;
-  var pArr = useVal ? valPayouts : trainPayouts;
-  var N = useVal ? valN : trainN;
-
-  for(var i = 0; i < N; i++){
-    var f = fMat[i];
+  for(var i = 0; i < trainN; i++){
+    var f = trainFeat[i];
     var pred = -1, hr = -1;
     for(var j = 0; j < rules.length; j++){
       if(!rules[j].on) continue;
@@ -739,9 +730,9 @@ function diagnose(rules, useVal){
     }
     if(pred < 0 || hr === -1) continue;
     stats[hr].hit++;
-    if(pred === cArr[i]){
+    if(pred === trainCodes[i]){
       stats[hr].correct++;
-      stats[hr].profit += pArr[i*3 + pred] - 100;
+      stats[hr].profit += trainPayouts[i*3 + pred] - 100;
     } else {
       stats[hr].wrong++;
       stats[hr].profit -= 100;
@@ -875,12 +866,11 @@ async function start(){
   currentRuleCount = 0;
   currentFormulaLen = 0;
   currentPhase = 0;
-  currentPass = 0;
   totalPhases = 2;
   tunedCount = 0;
   bestProfitSoFar = null;
   bestProfitVal = null;
-  bestFitGlobal = -Infinity;
+  bestProfitTest = null;
   lastSpeedUpdate = 0;
   featureValueCache = {};
   document.getElementById('btnRun').disabled = true;
@@ -897,17 +887,16 @@ async function start(){
   clearLog();
 
   var maxIter = parseInt(document.getElementById('strength').value);
-  var useVal = document.getElementById('useVal').checked;
 
   pushLog('═══════════════════════════════════════════════════════════', 'head');
-  pushLog('🚀 v32.2 — 純掃描版（跳過演化）', 'head');
+  pushLog('🚀 v33 — 三分法驗證（訓練/驗證/測試）', 'head');
   pushLog('═══════════════════════════════════════════════════════════', 'head');
   pushLog(nowTime() + ' 原始有效行數：' + parsed.total, 'info');
   pushLog(nowTime() + ' 重複：' + parsed.dups + '（已忽略）', 'warn');
   pushLog(nowTime() + ' 去重後：' + parsed.rows.length + ' 筆', 'success');
   pushLog(nowTime() + ' 🟡 v15 公式（' + INIT_RULES.length + ' 條）', 'init');
   pushLog(nowTime() + ' 🔍 掃描強度：' + maxIter + ' 輪', 'exhaust');
-  pushLog(nowTime() + ' ❌ 演化階段已跳過（避免過擬合）', 'warn');
+  pushLog(nowTime() + ' 📊 分割：訓練 60% / 驗證 20% / 測試 20%', 'test');
   await yieldUI();
 
   var allRows = parsed.rows.slice();
@@ -916,21 +905,20 @@ async function start(){
     var tmp = allRows[i]; allRows[i] = allRows[j]; allRows[j] = tmp;
   }
 
-  var trainRows, valRows;
-  if(useVal && allRows.length >= 50){
-    var splitIdx = Math.floor(allRows.length * 0.8);
-    trainRows = allRows.slice(0, splitIdx);
-    valRows = allRows.slice(splitIdx);
-  } else {
-    trainRows = allRows;
-    valRows = [];
-  }
+  var n = allRows.length;
+  var trainEnd = Math.floor(n * 0.6);
+  var valEnd = Math.floor(n * 0.8);
+  var trainRows = allRows.slice(0, trainEnd);
+  var valRows = allRows.slice(trainEnd, valEnd);
+  var testRows = allRows.slice(valEnd);
 
   trainN = trainRows.length;
   valN = valRows.length;
+  testN = testRows.length;
 
-  pushLog(nowTime() + ' 訓練集：' + trainN + ' 筆', 'val');
-  pushLog(nowTime() + ' 驗證集：' + valN + ' 筆', valN > 0 ? 'val' : 'warn');
+  pushLog(nowTime() + ' 訓練集：' + trainN + ' 筆（60%）', 'val');
+  pushLog(nowTime() + ' 驗證集：' + valN + ' 筆（20%）', 'val');
+  pushLog(nowTime() + ' 🩷 測試集：' + testN + ' 筆（20%，完全不看）', 'test');
   await yieldUI();
 
   var tPre = Date.now();
@@ -938,13 +926,13 @@ async function start(){
   var trm = extractMeta(trainRows);
   trainCodes = trm.codes; trainPayouts = trm.payouts;
 
-  if(valN > 0){
-    valFeat = extractFeatures(valRows);
-    var vrm = extractMeta(valRows);
-    valCodes = vrm.codes; valPayouts = vrm.payouts;
-  } else {
-    valFeat = null; valCodes = null; valPayouts = null;
-  }
+  valFeat = extractFeatures(valRows);
+  var vrm = extractMeta(valRows);
+  valCodes = vrm.codes; valPayouts = vrm.payouts;
+
+  testFeat = extractFeatures(testRows);
+  var tem = extractMeta(testRows);
+  testCodes = tem.codes; testPayouts = tem.payouts;
 
   pushLog(nowTime() + ' ✓ 特徵預計算（' + (Date.now() - tPre) + ' ms）', 'success');
   await yieldUI();
@@ -959,23 +947,23 @@ async function start(){
 
   var frozenRules = convertV15Rules(INIT_RULES);
   var initP = rawProfits(frozenRules);
-  var initSkip = skipRatio(frozenRules, false);
   baseline.train = initP.train;
   baseline.val = initP.val;
+  baseline.test = initP.test;
   baseline.trainPer = trainN > 0 ? initP.train / trainN : 0;
   baseline.valPer = valN > 0 ? initP.val / valN : 0;
-  baseline.skipPct = initSkip.pct;
+  baseline.testPer = testN > 0 ? initP.test / testN : 0;
 
   pushLog('');
   pushLog(nowTime() + ' 📌 v15 基線：', 'base');
   pushLog(nowTime() + '   訓練 ' + baseline.train + '（每場 ' + baseline.trainPer.toFixed(1) + '）', 'info');
   pushLog(nowTime() + '   驗證 ' + baseline.val + '（每場 ' + baseline.valPer.toFixed(1) + '）', 'val');
-  pushLog(nowTime() + '   Skip ' + initSkip.pct.toFixed(1) + '%', 'skip');
+  pushLog(nowTime() + '   🩷 測試 ' + baseline.test + '（每場 ' + baseline.testPer.toFixed(1) + '）', 'test');
   pushLog('');
   updateStatsUI();
   await yieldUI();
 
-  /* === 階段 2：窮舉掃描 === */
+  /* === 階段 2：掃描 === */
   currentPhase = 2;
   updateProgress();
   pushLog('═══════════════════════════════════════════════════════════', 'head');
@@ -986,27 +974,34 @@ async function start(){
   var scannedRules = await exhaustiveScan(frozenRules, maxIter);
   if(!running){ finish(); return; }
 
-  var finalP = rawProfits(scannedRules);
-  var trainPer = trainN > 0 ? finalP.train / trainN : 0;
-  var valPer = valN > 0 ? finalP.val / valN : 0;
-
-  bestProfitSoFar = finalP.train;
-  bestProfitVal = finalP.val;
-  currentRuleCount = scannedRules.length;
-
   finish();
 
   function finish(){
     var elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    var skipInfo = skipRatio(scannedRules, false);
+    var finalP = rawProfits(scannedRules);
+    var trainPer = trainN > 0 ? finalP.train / trainN : 0;
+    var valPer = valN > 0 ? finalP.val / valN : 0;
+    var testPer = testN > 0 ? finalP.test / testN : 0;
+    var skipInfo = skipRatio(scannedRules);
     var formula = genSingleFormula(scannedRules);
+    currentRuleCount = scannedRules.length;
+
+    bestProfitSoFar = finalP.train;
+    bestProfitVal = finalP.val;
+    bestProfitTest = finalP.test;
 
     pushLog('═══════════════════════════════════════════════════════════', 'head');
     pushLog('🏆 完成！', 'best');
     pushLog('═══════════════════════════════════════════════════════════', 'head');
-    pushLog('   📌 v15 基線：訓練 ' + baseline.train + ' / 驗證 ' + baseline.val, 'base');
-    pushLog('   🔍 掃描後：訓練 ' + finalP.train + ' / 驗證 ' + finalP.val, 'exhaust');
-    pushLog('   掃描貢獻：訓練 ' + (finalP.train - baseline.train) + ' / 驗證 ' + (finalP.val - baseline.val), 'exhaust');
+    pushLog('   📌 v15 基線：訓練 ' + baseline.train + ' / 驗證 ' + baseline.val + ' / 測試 ' + baseline.test, 'base');
+    pushLog('   🔍 掃描後：訓練 ' + finalP.train + ' / 驗證 ' + finalP.val + ' / 測試 ' + finalP.test, 'exhaust');
+    pushLog('   掃描貢獻：訓練 ' + (finalP.train - baseline.train) + ' / 驗證 ' + (finalP.val - baseline.val) + ' / 測試 ' + (finalP.test - baseline.test), 'exhaust');
+    pushLog('');
+    pushLog('   ⭐ 真實泛化評估：', 'test');
+    pushLog('      訓練每場：' + trainPer.toFixed(1), 'info');
+    pushLog('      驗證每場：' + valPer.toFixed(1), 'val');
+    pushLog('      🩷 測試每場：' + testPer.toFixed(1), 'test');
+    pushLog('');
     pushLog('   掃描優化參數：' + tunedCount + ' 個', 'exhaust');
     pushLog('   Skip：' + skipInfo.pct.toFixed(1) + '%', 'skip');
     pushLog('   字元：' + formula.length, 'len');
@@ -1015,45 +1010,45 @@ async function start(){
     pushLog('═══════════════════════════════════════════════════════════', 'head');
 
     document.getElementById('best').style.display = 'block';
-    document.getElementById('summary').innerHTML = '🏆 <b>' + scannedRules.length + '</b> 條規則（🟡v15 掃描後）　💰訓練 <b>' + finalP.train + '</b>　💰驗證 <b>' + finalP.val + '</b>';
+    document.getElementById('summary').innerHTML = '🏆 <b>' + scannedRules.length + '</b> 條規則　🩷 測試每場 <b>' + testPer.toFixed(1) + '</b>';
 
     var baseStats = document.getElementById('baseStats');
     baseStats.innerHTML = '<div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:6px">' +
-      '<div>訓練：<b>' + baseline.train + '</b> → 掃描 <b>' + finalP.train + '</b>（Δ' + (finalP.train - baseline.train >= 0 ? '+' : '') + (finalP.train - baseline.train) + '）</div>' +
-      '<div>驗證：<b>' + baseline.val + '</b> → 掃描 <b>' + finalP.val + '</b>（Δ' + (finalP.val - baseline.val >= 0 ? '+' : '') + (finalP.val - baseline.val) + '）</div>' +
+      '<div>訓練：<b>' + baseline.train + '</b> → <b>' + finalP.train + '</b></div>' +
+      '<div>驗證：<b>' + baseline.val + '</b> → <b>' + finalP.val + '</b></div>' +
+      '<div>🩷 測試：<b>' + baseline.test + '</b> → <b>' + finalP.test + '</b></div>' +
       '</div>';
 
-    document.getElementById('vTrainTotal').textContent = finalP.train;
-    document.getElementById('vValTotal').textContent = finalP.val;
     document.getElementById('vTrainPer').textContent = trainPer.toFixed(1);
     document.getElementById('vValPer').textContent = valPer.toFixed(1);
+    document.getElementById('vTestPer').textContent = testPer.toFixed(1);
 
-    var perRatio = trainPer > 0 ? (valPer / trainPer) : 0;
+    /* ⭐ 真實過擬合判斷 */
     var verdict = '';
-    if(valN === 0){
-      verdict = '⚠ 未啟用驗證分割';
-    } else if(valN < 30){
-      verdict = '⚠ 驗證集只有 ' + valN + ' 場';
-    } else if(valPer <= 0){
-      verdict = '❌ 驗證集虧損';
-    } else if(perRatio >= 0.9){
-      verdict = '✅ 泛化極佳（驗證 ≥ 90% 訓練）';
-    } else if(perRatio >= 0.6){
-      verdict = '🟢 泛化良好';
-    } else if(perRatio >= 0.3){
-      verdict = '🟡 有些過擬合';
+    if(testN === 0){
+      verdict = '⚠ 沒有測試集';
+    } else if(testPer <= 0){
+      verdict = '❌ 測試集虧損 → 公式無法泛化，不可用';
     } else {
-      verdict = '🟠 過擬合嚴重';
+      var testVsVal = valPer > 0 ? (testPer / valPer) : 0;
+      if(testVsVal >= 0.9){
+        verdict = '✅ 測試每場 ≈ 驗證每場（' + (testVsVal * 100).toFixed(0) + '%）→ 沒有過擬合，公式可用！';
+      } else if(testVsVal >= 0.6){
+        verdict = '🟢 測試每場達驗證的 ' + (testVsVal * 100).toFixed(0) + '% → 泛化良好，可用';
+      } else if(testVsVal >= 0.3){
+        verdict = '🟡 測試每場只有驗證的 ' + (testVsVal * 100).toFixed(0) + '% → 有些過擬合，謹慎使用';
+      } else {
+        verdict = '🟠 測試每場只有驗證的 ' + (testVsVal * 100).toFixed(0) + '% → 嚴重過擬合，建議重跑';
+      }
     }
 
-    verdict += '\n📌 vs v15 基線：訓練 ' + (finalP.train - baseline.train >= 0 ? '+' : '') + (finalP.train - baseline.train) + '，驗證 ' + (finalP.val - baseline.val >= 0 ? '+' : '') + (finalP.val - baseline.val);
-    verdict += '\n🎯 掃描優化 ' + tunedCount + ' 個參數（無演化，無過擬合風險）';
+    verdict += '\n📎 訓練 ' + trainN + ' 場 / 驗證 ' + valN + ' 場 / 測試 ' + testN + ' 場';
 
     document.getElementById('valVerdict').textContent = verdict;
     document.getElementById('charInfo').innerHTML = '字符數：<b>' + formula.length + '</b>';
     document.getElementById('txtOut').value = formula;
 
-    var stats = diagnose(scannedRules, false);
+    var stats = diagnose(scannedRules);
     renderRuleTable(stats);
     document.getElementById('diag').style.display = 'block';
 
