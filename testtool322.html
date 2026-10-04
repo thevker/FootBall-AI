@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v32.2 — 純掃描版（跳過演化）</title>
+<title>🚀 v32.3 — 全組件掃描（閾值+運算符+特徵+結果）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1500px;margin:auto;background:#f0f2f5}
@@ -26,18 +26,14 @@ button.txt{background:#28a745}
 .l-dim{color:#666}.l-head{color:#fff;font-weight:bold;font-size:13px}
 .l-ok{color:#4ade80}.l-bad{color:#f87171}.l-scan{color:#38bdf8}
 .l-best{color:#facc15;font-weight:bold;background:rgba(250,204,21,0.08)}
-.l-gen{color:#e0e7ff}.l-newrule{color:#22d3ee;font-weight:bold}
-.l-hot{color:#f472b6;font-weight:bold}.l-prune{color:#f87171;font-weight:bold}
-.l-val{color:#a78bfa;font-weight:bold}.l-wide{color:#22d3ee;font-weight:bold}
-.l-len{color:#fb923c;font-weight:bold}.l-prog{color:#c084fc;font-weight:bold}
-.l-profit{color:#4ade80;font-weight:bold;background:rgba(74,222,128,0.1)}
-.l-speed{color:#fbbf24;font-weight:bold}
 .l-init{color:#f472b6;font-weight:bold;font-size:13px}
-.l-skip{color:#94a3b8;font-weight:bold;background:rgba(148,163,184,0.15)}
 .l-base{color:#fbbf24;font-weight:bold;background:rgba(251,191,36,0.1);font-size:13px}
-.l-audit{color:#e879f9;font-weight:bold;background:rgba(232,121,249,0.1)}
 .l-tune{color:#34d399;font-weight:bold;background:rgba(52,211,153,0.1)}
 .l-exhaust{color:#f59e0b;font-weight:bold;background:rgba(245,158,11,0.1)}
+.l-op{color:#38bdf8;font-weight:bold}
+.l-feat{color:#c084fc;font-weight:bold}
+.l-then{color:#fb7185;font-weight:bold}
+.l-skip{color:#94a3b8;font-weight:bold}
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
 .best b{color:#155724}
 .box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
@@ -82,8 +78,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .chk{padding:4px 10px;font-size:12px;background:#fff;border:1px solid #ccc;border-radius:4px;cursor:pointer;user-select:none}
 .chk input{vertical-align:middle;margin-right:4px}
-.warn-banner{background:linear-gradient(135deg,#d1fae5,#a7f3d0);padding:10px 14px;border-radius:6px;border:1px solid #34d399;font-size:13px;line-height:1.6;margin-bottom:10px}
-.warn-banner b{color:#065f46}
+.warn-banner{background:linear-gradient(135deg,#cffafe,#a5f3fc);padding:10px 14px;border-radius:6px;border:1px solid #22d3ee;font-size:13px;line-height:1.6;margin-bottom:10px}
+.warn-banner b{color:#155e75}
 .base-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);padding:12px 14px;border-radius:6px;border:1px solid #fbbf24;font-size:13px;line-height:1.7;margin-top:10px}
 .base-banner b{color:#92400e}
 .val-banner{background:linear-gradient(135deg,#ddd6fe,#c4b5fd);padding:10px 14px;border-radius:6px;border:1px solid #a78bfa;font-size:12px;line-height:1.7;margin-top:10px}
@@ -99,7 +95,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <body>
 
 <div class="top">
-  <h2 id="title">🚀 v32.2 — 純掃描版（跳過演化）</h2>
+  <h2 id="title">🚀 v32.3 — 全組件掃描</h2>
   <div>
     <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁中</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
@@ -107,17 +103,19 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </div>
 
 <div class="warn-banner">
-  <b>✨ v32.2 核心改動：</b><br>
-  ❌ <b>跳過演化階段</b>（避免過擬合）<br>
-  ✅ <b>只保留 v15 參數窮舉掃描</b>（±20% 保守範圍）<br>
-  🎯 <b>輸出 = 掃描後結果</b>（不會被演化破壞）
+  <b>✨ v32.3 全組件掃描：</b><br>
+  🟢 <b>閾值</b>：±20% 保守範圍<br>
+  🔵 <b>運算符</b>：>= / > / &lt; / &lt;=<br>
+  🟣 <b>特徵</b>：42 個特徵中嘗試替代<br>
+  🔴 <b>結果</b>：H / D / A / skip<br>
+  ⚠️ 每個改動都在<b>訓練+驗證加權分數</b>上驗證後才接受
 </div>
 
 <textarea id="input" placeholder="23	27	49	355	385	169	0:3	A
 62	27	9	158	395	405	3:0	H"></textarea>
 
 <div class="row">
-  <label id="lbl-strength">掃描強度：</label>
+  <label>掃描強度：</label>
   <select id="strength">
     <option value="1">單次掃描</option>
     <option value="3" selected>標準（3 輪掃描）</option>
@@ -132,6 +130,9 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <label class="chk"><input type="checkbox" id="verbose" checked> 詳細日誌</label>
   <label class="chk"><input type="checkbox" id="autoScroll" checked> 自動滾動</label>
   <label class="chk"><input type="checkbox" id="useVal" checked> 訓練/驗證分割</label>
+  <label class="chk"><input type="checkbox" id="scanOp" checked> 掃描運算符</label>
+  <label class="chk"><input type="checkbox" id="scanFeat" checked> 掃描特徵</label>
+  <label class="chk"><input type="checkbox" id="scanThen" checked> 掃描結果</label>
   <button onclick="clearLog()" style="padding:4px 10px;font-size:12px;background:#6c757d">清空日誌</button>
 </div>
 
@@ -145,7 +146,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 <div class="stats" id="liveStats" style="display:none">
   <div class="stat base-stat" id="stat-base">📌 v15基線: -</div>
-  <div class="stat scan-stat" id="stat-scan">🔍 掃描: 0 參數</div>
+  <div class="stat scan-stat" id="stat-scan">🔍 掃描: 0 次改動</div>
   <div class="stat profit-stat" id="stat-bestprofit">💰 掃描後: <b>-</b></div>
   <div class="stat" id="stat-prog">進度: 0%</div>
   <div class="stat speed-stat" id="stat-speed">⚡ 評估/秒: 0</div>
@@ -187,7 +188,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 <div id="diag" style="display:none">
   <div class="section">
-    <h3 id="h-rule">📋 掃描後規則表（🟡=v15 微調後）</h3>
+    <h3 id="h-rule">📋 掃描後規則表</h3>
     <div class="diag" id="ruleTable"></div>
   </div>
 </div>
@@ -197,16 +198,12 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 var TXT = {
   zh: {
-    title: '🚀 v32.2 — 純掃描版（跳過演化）',
-    strength: '掃描強度：',
-    run: '🚀 開始掃描', stop: '⏹ 停止',
+    title: '🚀 v32.3 — 全組件掃描',
     hRule: '📋 掃描後規則表',
     noData: '沒有有效數據'
   },
   en: {
-    title: '🚀 v32.2 — Pure Scan (No Evolution)',
-    strength: 'Scan strength: ',
-    run: '🚀 Start', stop: '⏹ Stop',
+    title: '🚀 v32.3 — Full Component Scan',
     hRule: '📋 Scanned Rules',
     noData: 'No valid data'
   }
@@ -218,9 +215,6 @@ function setLang(lang){
   document.getElementById('btn-zh').className = 'lang-btn' + (lang==='zh'?' active':'');
   document.getElementById('btn-en').className = 'lang-btn' + (lang==='en'?' active':'');
   document.getElementById('title').textContent = t('title');
-  document.getElementById('lbl-strength').textContent = t('strength');
-  document.getElementById('btnRun').textContent = t('run');
-  document.getElementById('btnStop').textContent = t('stop');
   document.getElementById('h-rule').textContent = t('hRule');
 }
 
@@ -293,8 +287,6 @@ var lastSpeedUpdate = 0;
 
 var totalPhases = 0;
 var currentPhase = 0;
-var currentPass = 0;
-var maxPassesPerPhase = 1;
 
 var baseline = { train: 0, val: 0, trainPer: 0, valPer: 0, skipPct: 0 };
 
@@ -367,11 +359,8 @@ function updateProgress(){
   if(bar) bar.style.width = pct.toFixed(1) + '%';
   if(txt) txt.textContent = pct.toFixed(1) + '%';
   if(phaseEl){
-    if(currentPhase === 1.5){
-      phaseEl.textContent = '掃描中';
-    } else {
-      phaseEl.textContent = '階段 ' + currentPhase + '/' + totalPhases + (running ? ' 進行中' : (startTime > 0 ? ' 完成' : ''));
-    }
+    if(currentPhase === 1.5) phaseEl.textContent = '掃描中';
+    else phaseEl.textContent = '階段 ' + currentPhase + '/' + totalPhases + (running ? ' 進行中' : (startTime > 0 ? ' 完成' : ''));
   }
   var statProg = document.getElementById('stat-prog');
   if(statProg) statProg.innerHTML = '進度: <b>' + pct.toFixed(1) + '%</b>';
@@ -384,16 +373,14 @@ function updateBestProfit(){
     stat.innerHTML = '💰 掃描後: <b>-</b>';
   } else {
     var s = '💰 掃描後: <b>' + bestProfitSoFar + '</b>';
-    if(bestProfitVal !== null){
-      s += ' <span style="font-size:11px;color:#666">（驗證 ' + bestProfitVal + '）</span>';
-    }
+    if(bestProfitVal !== null) s += ' <span style="font-size:11px;color:#666">（驗證 ' + bestProfitVal + '）</span>';
     stat.innerHTML = s;
   }
 }
 
 function updateScanUI(){
   var stat = document.getElementById('stat-scan');
-  if(stat) stat.innerHTML = '🔍 掃描: <b>' + tunedCount + '</b> 參數';
+  if(stat) stat.innerHTML = '🔍 掃描: <b>' + tunedCount + '</b> 次改動';
 }
 
 function updateSpeedUI(){
@@ -621,75 +608,207 @@ function getFeatureCandidates(fi){
   return cand;
 }
 
-async function exhaustiveScan(rules, maxIter){
+/* ⭐ 為某個特徵找最佳閾值（用於特徵替代時的初始化） */
+function findBestThresholdForFeature(rules, ri, gi, ci, newFeatIdx){
+  var savedCond = rules[ri].groups[gi][ci].slice();
+  rules[ri].groups[gi][ci][0] = newFeatIdx;
+  var candidates = getFeatureCandidates(newFeatIdx);
+  var bestVal = candidates[0], bestScore = -Infinity;
+  var origOp = savedCond[1];
+  for(var k = 0; k < candidates.length; k++){
+    rules[ri].groups[gi][ci][2] = candidates[k];
+    var s = fitness(rules);
+    if(s > bestScore){ bestScore = s; bestVal = candidates[k]; }
+  }
+  rules[ri].groups[gi][ci][0] = savedCond[0];
+  rules[ri].groups[gi][ci][2] = savedCond[2];
+  return {val: bestVal, score: bestScore};
+}
+
+/* ⭐⭐⭐ v32.3 核心：全組件掃描 ⭐⭐⭐ */
+async function fullScan(rules, maxIter){
   pushLog('');
-  pushLog(nowTime() + ' 🔍 開始 v15 參數窮舉掃描（最多 ' + maxIter + ' 輪）...', 'exhaust');
+  pushLog(nowTime() + ' 🔍 開始全組件掃描（最多 ' + maxIter + ' 輪）...', 'exhaust');
+  pushLog(nowTime() + ' 組件：閾值 + 運算符 + 特徵 + 結果', 'exhaust');
 
   var savedPhase = currentPhase;
   currentPhase = 1.5;
 
   var cur = cloneRules(rules);
   var curFit = fitness(cur);
-  var totalImproved = 0;
+  var totalImprovements = 0;
+
+  var doScanOp = document.getElementById('scanOp').checked;
+  var doScanFeat = document.getElementById('scanFeat').checked;
+  var doScanThen = document.getElementById('scanThen').checked;
 
   for(var iter = 0; iter < maxIter; iter++){
     var iterImproved = false;
-    var iterTunedCount = 0;
+    var roundStats = {thr: 0, op: 0, feat: 0, then: 0};
     var scannedCount = 0;
 
     for(var ri = 0; ri < cur.length && running; ri++){
-      for(var gi = 0; gi < cur[ri].groups.length; gi++){
-        for(var ci = 0; ci < cur[ri].groups[gi].length; ci++){
-          if(!running) break;
+      var rule = cur[ri];
 
-          var cond = cur[ri].groups[gi][ci];
+      // ─────── 1. 掃描閾值 ───────
+      for(var gi = 0; gi < rule.groups.length; gi++){
+        for(var ci = 0; ci < rule.groups[gi].length; ci++){
+          if(!running) break;
+          var cond = rule.groups[gi][ci];
           var fi = cond[0], opIdx = cond[1], oldVal = cond[2];
           var candidates = getFeatureCandidates(fi);
           var bestVal = oldVal, bestScore = curFit;
-          var scanned = 0;
 
           for(var k = 0; k < candidates.length; k++){
             if(!running) break;
             if(candidates[k] === oldVal) continue;
-            var savedVal = cond[2];
+            var sv = cond[2];
             cond[2] = candidates[k];
             var s = fitness(cur);
-            cond[2] = savedVal;
-            scanned++;
-            if(s > bestScore){
-              bestScore = s;
-              bestVal = candidates[k];
-            }
+            cond[2] = sv;
+            scannedCount++;
+            if(s > bestScore){ bestScore = s; bestVal = candidates[k]; }
           }
-
-          scannedCount += scanned;
 
           if(bestVal !== oldVal){
             cond[2] = bestVal;
             curFit = bestScore;
             iterImproved = true;
-            totalImproved++;
-            iterTunedCount++;
+            roundStats.thr++;
             tunedCount++;
-            pushLog(nowTime() + '   🟡 R' + (ri+1) + ' ' + FEATURES[fi] + OPS[opIdx] + ' ' + Math.round(oldVal) + '→' + Math.round(bestVal) + ' 分數 ' + bestScore.toFixed(2), 'tune');
-            updateScanUI();
+            if(document.getElementById('verbose').checked){
+              pushLog(nowTime() + '   🟢 R' + (ri+1) + ' 閾值 ' + FEATURES[fi] + OPS[opIdx] + ' ' + Math.round(oldVal) + '→' + Math.round(bestVal) + ' 分數 ' + bestScore.toFixed(2), 'tune');
+            }
           }
 
-          if(scannedCount % 200 === 0){
-            await yieldUI();
+          if(scannedCount % 200 === 0) await yieldUI();
+        }
+      }
+
+      // ─────── 2. 掃描運算符 ───────
+      if(doScanOp){
+        for(var gi2 = 0; gi2 < rule.groups.length; gi2++){
+          for(var ci2 = 0; ci2 < rule.groups[gi2].length; ci2++){
+            if(!running) break;
+            var cond2 = rule.groups[gi2][ci2];
+            var oldOp = cond2[1];
+            var bestOp = oldOp, bestOpScore = curFit;
+
+            for(var opi = 0; opi < 4; opi++){  // 只試 > >= < <=
+              if(opi === oldOp) continue;
+              var sv2 = cond2[1];
+              cond2[1] = opi;
+              var s2 = fitness(cur);
+              cond2[1] = sv2;
+              scannedCount++;
+              if(s2 > bestOpScore){ bestOpScore = s2; bestOp = opi; }
+            }
+
+            if(bestOp !== oldOp){
+              cond2[1] = bestOp;
+              curFit = bestOpScore;
+              iterImproved = true;
+              roundStats.op++;
+              tunedCount++;
+              if(document.getElementById('verbose').checked){
+                pushLog(nowTime() + '   🔵 R' + (ri+1) + ' 運算符 ' + OPS[oldOp] + '→' + OPS[bestOp] + ' 分數 ' + bestOpScore.toFixed(2), 'op');
+              }
+            }
+            if(scannedCount % 200 === 0) await yieldUI();
           }
         }
       }
+
+      // ─────── 3. 掃描特徵 ───────
+      if(doScanFeat){
+        for(var gi3 = 0; gi3 < rule.groups.length; gi3++){
+          for(var ci3 = 0; ci3 < rule.groups[gi3].length; ci3++){
+            if(!running) break;
+            var cond3 = rule.groups[gi3][ci3];
+            var oldFeat = cond3[0];
+
+            // 挑 5 個隨機特徵測試
+            var testFeats = [];
+            for(var tf = 0; tf < 8; tf++){
+              var nf = Math.floor(Math.random() * FCOUNT);
+              if(nf !== oldFeat && testFeats.indexOf(nf) === -1) testFeats.push(nf);
+            }
+
+            var bestFeat = oldFeat, bestFeatScore = curFit;
+            var bestFeatVal = cond3[2];
+            var bestFeatOp = cond3[1];
+
+            for(var tfi = 0; tfi < testFeats.length; tfi++){
+              if(!running) break;
+              var candidate = testFeats[tfi];
+              var res = findBestThresholdForFeature(cur, ri, gi3, ci3, candidate);
+              scannedCount += 30;
+              if(res.score > bestFeatScore){
+                bestFeatScore = res.score;
+                bestFeat = candidate;
+                bestFeatVal = res.val;
+              }
+            }
+
+            if(bestFeat !== oldFeat){
+              cond3[0] = bestFeat;
+              cond3[2] = bestFeatVal;
+              curFit = bestFeatScore;
+              iterImproved = true;
+              roundStats.feat++;
+              tunedCount++;
+              if(document.getElementById('verbose').checked){
+                pushLog(nowTime() + '   🟣 R' + (ri+1) + ' 特徵 ' + FEATURES[oldFeat] + '→' + FEATURES[bestFeat] + ' 分數 ' + bestFeatScore.toFixed(2), 'feat');
+              }
+            }
+            if(scannedCount % 200 === 0) await yieldUI();
+          }
+        }
+      }
+
+      // ─────── 4. 掃描結果 ───────
+      if(doScanThen){
+        if(!running) break;
+        var oldThen = rule.thenCode;
+        var bestThen = oldThen, bestThenScore = curFit;
+
+        for(var tIdx = 0; tIdx < 4; tIdx++){
+          if(tIdx === oldThen) continue;
+          var svT = rule.thenCode;
+          rule.thenCode = tIdx;
+          rule.then = RESULTS[tIdx];
+          var sT = fitness(cur);
+          rule.thenCode = svT;
+          rule.then = RESULTS[svT];
+          scannedCount++;
+          if(sT > bestThenScore){ bestThenScore = sT; bestThen = tIdx; }
+        }
+
+        if(bestThen !== oldThen){
+          rule.thenCode = bestThen;
+          rule.then = RESULTS[bestThen];
+          curFit = bestThenScore;
+          iterImproved = true;
+          roundStats.then++;
+          tunedCount++;
+          if(document.getElementById('verbose').checked){
+            pushLog(nowTime() + '   🔴 R' + (ri+1) + ' 結果 ' + RESULTS[oldThen] + '→' + RESULTS[bestThen] + ' 分數 ' + bestThenScore.toFixed(2), 'then');
+          }
+        }
+      }
+
+      if(!running) break;
     }
 
-    pushLog(nowTime() + '   第 ' + (iter+1) + '/' + maxIter + ' 輪完成（此輪改進 ' + iterTunedCount + '，累計 ' + totalImproved + '）', iterImproved ? 'ok' : 'dim');
+    pushLog(nowTime() + '   第 ' + (iter+1) + '/' + maxIter + ' 輪：閾值 ' + roundStats.thr + '，運算符 ' + roundStats.op + '，特徵 ' + roundStats.feat + '，結果 ' + roundStats.then + '（累計 ' + (roundStats.thr + roundStats.op + roundStats.feat + roundStats.then) + '）', iterImproved ? 'ok' : 'dim');
+    totalImprovements += roundStats.thr + roundStats.op + roundStats.feat + roundStats.then;
     await yieldUI();
 
     if(!iterImproved) break;
   }
 
   var rawP = rawProfits(cur);
-  pushLog(nowTime() + ' ✓ 掃描完成：訓練 ' + rawP.train + ' 驗證 ' + rawP.val + '（共 ' + totalImproved + ' 個參數優化）', 'exhaust');
+  pushLog(nowTime() + ' ✓ 掃描完成：訓練 ' + rawP.train + ' 驗證 ' + rawP.val + '（共 ' + totalImprovements + ' 次改動）', 'exhaust');
   pushLog('');
 
   if(curFit > bestFitGlobal) bestFitGlobal = curFit;
@@ -752,11 +871,11 @@ function renderRuleTable(stats){
     var pcls = s.profit > 0 ? 'profit-pos' : (s.profit < 0 ? 'profit-neg' : '');
     var onTag = r.on ? '<span class="tag-ok">ON</span>' : '<span class="tag-off">OFF</span>';
     var thenTag = '<span class="tag-pred">' + r.then + '</span>';
-    var typeTag = '<span class="tag-soft">🟡v15</span>';
+    var typeTag = '<span class="tag-soft">🟡v15掃描</span>';
 
-    html += '<tr><td>R' + (i+1) + '</td><td>' + typeTag + '</td><td>' + onTag + '</td>' +
-      '<td style="text-align:left;font-size:10px">' + ss + '</td><td>' + thenTag + '</td>' +
-      '<td>' + s.hit + '</td><td>' + s.correct + '</td><td>' + s.wrong + '</td>' +
+    html += '<tr><td>R' + (i+1) + '</td><td>' + typeTag + '</td><td>'== + onTag + '</td>' +
+      '<td style="text-align'):left;font-size:10px">' + ss + '</td><td return>' + thenTag + '</td>' +
+ '      '<td>' + s.hit + '</td><td>' += s.correct + '</td><td>' + s.wrong + '</td>' +
       '<td class="' + pcls + '">' + s.profit + '</td></tr>';
   }
   html += '</tbody></table>';
@@ -767,7 +886,7 @@ function renderRuleTable(stats){
 function sheetOp(opIdx){
   var op = OPS[opIdx];
   if(op === '!=') return '<>';
-  if(op === '==') return '=';
+  if(op === '';
   return op;
 }
 function featToExpr(feat){
@@ -864,7 +983,6 @@ async function start(){
   currentRuleCount = 0;
   currentFormulaLen = 0;
   currentPhase = 0;
-  currentPass = 0;
   totalPhases = 2;
   tunedCount = 0;
   bestProfitSoFar = null;
@@ -889,14 +1007,17 @@ async function start(){
   var useVal = document.getElementById('useVal').checked;
 
   pushLog('═══════════════════════════════════════════════════════════', 'head');
-  pushLog('🚀 v32.2 — 純掃描版（跳過演化）', 'head');
+  pushLog('🚀 v32.3 — 全組件掃描（閾值+運算符+特徵+結果）', 'head');
   pushLog('═══════════════════════════════════════════════════════════', 'head');
   pushLog(nowTime() + ' 原始有效行數：' + parsed.total, 'info');
   pushLog(nowTime() + ' 重複：' + parsed.dups + '（已忽略）', 'warn');
   pushLog(nowTime() + ' 去重後：' + parsed.rows.length + ' 筆', 'success');
   pushLog(nowTime() + ' 🟡 v15 公式（' + INIT_RULES.length + ' 條）', 'init');
   pushLog(nowTime() + ' 🔍 掃描強度：' + maxIter + ' 輪', 'exhaust');
-  pushLog(nowTime() + ' ❌ 演化階段已跳過（避免過擬合）', 'warn');
+  pushLog(nowTime() + ' 掃描組件：' +
+    (document.getElementById('scanOp').checked ? '運算符✓ ' : '運算符✗ ') +
+    (document.getElementById('scanFeat').checked ? '特徵✓ ' : '特徵✗ ') +
+    (document.getElementById('scanThen').checked ? '結果✓' : '結果✗'), 'exhaust');
   await yieldUI();
 
   var allRows = parsed.rows.slice();
@@ -964,15 +1085,15 @@ async function start(){
   updateStatsUI();
   await yieldUI();
 
-  /* === 階段 2：窮舉掃描 === */
+  /* === 階段 2：全組件掃描 === */
   currentPhase = 2;
   updateProgress();
   pushLog('═══════════════════════════════════════════════════════════', 'head');
-  pushLog(nowTime() + ' 階段 2/2：v15 參數窮舉掃描', 'head');
+  pushLog(nowTime() + ' 階段 2/2：全組件掃描', 'head');
   pushLog('═══════════════════════════════════════════════════════════', 'head');
   await yieldUI();
 
-  var scannedRules = await exhaustiveScan(frozenRules, maxIter);
+  var scannedRules = await fullScan(frozenRules, maxIter);
   if(!running){ finish(); return; }
 
   var finalP = rawProfits(scannedRules);
@@ -996,7 +1117,7 @@ async function start(){
     pushLog('   📌 v15 基線：訓練 ' + baseline.train + ' / 驗證 ' + baseline.val, 'base');
     pushLog('   🔍 掃描後：訓練 ' + finalP.train + ' / 驗證 ' + finalP.val, 'exhaust');
     pushLog('   掃描貢獻：訓練 ' + (finalP.train - baseline.train) + ' / 驗證 ' + (finalP.val - baseline.val), 'exhaust');
-    pushLog('   掃描優化參數：' + tunedCount + ' 個', 'exhaust');
+    pushLog('   掃描改動次數：' + tunedCount, 'exhaust');
     pushLog('   Skip：' + skipInfo.pct.toFixed(1) + '%', 'skip');
     pushLog('   字元：' + formula.length, 'len');
     pushLog('   總掃描：' + evalCount + ' 次', 'speed');
@@ -1004,7 +1125,7 @@ async function start(){
     pushLog('═══════════════════════════════════════════════════════════', 'head');
 
     document.getElementById('best').style.display = 'block';
-    document.getElementById('summary').innerHTML = '🏆 <b>' + scannedRules.length + '</b> 條規則（🟡v15 掃描後）　💰訓練 <b>' + finalP.train + '</b>　💰驗證 <b>' + finalP.val + '</b>';
+    document.getElementById('summary').innerHTML = '🏆 <b>' + scannedRules.length + '</b> 條規則（全組件掃描後）　💰訓練 <b>' + finalP.train + '</b>　💰驗證 <b>' + finalP.val + '</b>';
 
     var baseStats = document.getElementById('baseStats');
     baseStats.innerHTML = '<div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:6px">' +
@@ -1036,7 +1157,8 @@ async function start(){
     }
 
     verdict += '\n📌 vs v15 基線：訓練 ' + (finalP.train - baseline.train >= 0 ? '+' : '') + (finalP.train - baseline.train) + '，驗證 ' + (finalP.val - baseline.val >= 0 ? '+' : '') + (finalP.val - baseline.val);
-    verdict += '\n🎯 掃描優化 ' + tunedCount + ' 個參數（無演化，無過擬合風險）';
+    verdict += '\n🎯 掃描改動 ' + tunedCount + ' 次';
+    verdict += '\n⚠️ 若驗證集比 v15 基線差 → 建議用 v15 原版';
 
     document.getElementById('valVerdict').textContent = verdict;
     document.getElementById('charInfo').innerHTML = '字符數：<b>' + formula.length + '</b>';
