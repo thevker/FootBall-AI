@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v32.5 — 全組件掃描（修復 undefined bug）</title>
+<title>🚀 v32.6 — 全組件掃描（全數據對賬）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1500px;margin:auto;background:#f0f2f5}
@@ -35,6 +35,9 @@ button.txt{background:#28a745}
 .l-then{color:#fb7185;font-weight:bold}
 .l-skip{color:#94a3b8;font-weight:bold}
 .l-fix{color:#22d3ee;font-weight:bold;background:rgba(34,211,238,0.1);font-size:13px}
+.l-val{color:#a78bfa;font-weight:bold}
+.l-len{color:#fbbf24}
+.l-speed{color:#38bdf8}
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
 .best b{color:#155724}
 .box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
@@ -78,6 +81,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .stat.scan-stat b{color:#7c2d12}
 .stat.fix-stat{background:#cffafe;border-color:#22d3ee}
 .stat.fix-stat b{color:#0e7490}
+.stat.total-stat{background:#dcfce7;border-color:#22c55e}
+.stat.total-stat b{color:#14532d;font-size:14px}
 .controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .chk{padding:4px 10px;font-size:12px;background:#fff;border:1px solid #ccc;border-radius:4px;cursor:pointer;user-select:none}
 .chk input{vertical-align:middle;margin-right:4px}
@@ -98,7 +103,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <body>
 
 <div class="top">
-  <h2 id="title">🚀 v32.5 — 全組件掃描（修復 undefined bug）</h2>
+  <h2 id="title">🚀 v32.6 — 全組件掃描（全數據對賬）</h2>
   <div>
     <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁中</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
@@ -106,11 +111,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </div>
 
 <div class="warn-banner">
-  <b>🐛 v32.5 修復：</b><br>
-  🟢 <b>閾值</b>、🔵 <b>運算符</b>、🟣 <b>特徵</b>、🔴 <b>結果</b> 全組件掃描<br>
-  ⚡ 每 30ms 讓出 UI（不卡死）<br>
-  🔧 <b>修復 skip 的 thenCode：-1 → 3</b>（避免生成 <code>"undefined"</code>）<br>
-  🛡️ <b>生成公式前保險</b>：任何 undefined 一律改為 skip
+  <b>🆕 v32.6 更新：</b><br>
+  🧮 <b>新增全數據利潤對賬</b>（跟 Google Sheet 對得上的數字）<br>
+  💰 <b>結果面板頂部顯示總盈利</b>（訓練＋驗證＋全數據）<br>
+  🛡️ 保留 v32.5 全部修復（skip=3、undefined 保險）
 </div>
 
 <textarea id="input" placeholder="23	27	49	355	385	169	0:3	A
@@ -151,6 +155,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <div class="stat scan-stat" id="stat-scan">🔍 掃描: 0 次改動</div>
   <div class="stat fix-stat" id="stat-fix">🛡️ undefined 修復: 0</div>
   <div class="stat profit-stat" id="stat-bestprofit">💰 掃描後: <b>-</b></div>
+  <div class="stat total-stat" id="stat-total">💵 總盈利: <b>-</b></div>
   <div class="stat" id="stat-prog">進度: 0%</div>
   <div class="stat speed-stat" id="stat-speed">⚡ 評估/秒: 0</div>
   <div class="stat" id="stat-train">訓練: -</div>
@@ -165,6 +170,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <div class="base-banner" id="baseBanner">
     <b>📌 v15 基線 vs 掃描後</b>
     <div id="baseStats"></div>
+  </div>
+
+  <div class="base-banner" id="allBanner" style="background:linear-gradient(135deg,#dcfce7,#bbf7d0);border-color:#22c55e">
+    <b>🧮 全數據利潤對賬（跟 Google Sheet 對比用）</b>
+    <div id="allDataInfo" style="margin-top:6px;font-size:13px;line-height:1.8;color:#14532d"></div>
   </div>
 
   <div class="val-banner">
@@ -200,8 +210,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 'use strict';
 
 var TXT = {
-  zh: { title: '🚀 v32.5 — 全組件掃描（修復 undefined）', hRule: '📋 掃描後規則表', noData: '沒有有效數據' },
-  en: { title: '🚀 v32.5 — Full Scan (undefined fix)', hRule: '📋 Scanned Rules', noData: 'No valid data' }
+  zh: { title: '🚀 v32.6 — 全組件掃描（全數據對賬）', hRule: '📋 掃描後規則表', noData: '沒有有效數據' },
+  en: { title: '🚀 v32.6 — Full Scan (All-data reconcile)', hRule: '📋 Scanned Rules', noData: 'No valid data' }
 };
 var LANG = 'zh';
 function t(k){ return (TXT[LANG] && TXT[LANG][k]) || k; }
@@ -269,6 +279,9 @@ var trainCodes = null, trainPayouts = null;
 var valCodes = null, valPayouts = null;
 var trainN = 0, valN = 0;
 
+/* ⭐ v32.6 全數據（對賬用） */
+var allFeatGlobal = null, allCodesGlobal = null, allPayoutsGlobal = null, allNGlobal = 0;
+
 var running = false;
 var startTime = 0;
 var evalCount = 0;
@@ -288,8 +301,9 @@ var baseline = { train: 0, val: 0, trainPer: 0, valPer: 0, skipPct: 0 };
 var bestProfitSoFar = null;
 var bestProfitVal = null;
 var bestFitGlobal = -Infinity;
+var bestTotalSoFar = null;
 
-/* ⭐ v32.5 修復：skip 的 code 改成 3（不是 -1）*/
+/* skip 的 code 改成 3 */
 var RESULTS = ['H','D','A','skip'];
 var RESULT_CODES = {H:0, D:1, A:2, skip:3};
 var OPS = ['>','>=','<','<=','==','!='];
@@ -371,6 +385,11 @@ function updateBestProfit(){
     var s = '💰 掃描後: <b>' + bestProfitSoFar + '</b>';
     if(bestProfitVal !== null) s += ' <span style="font-size:11px;color:#666">（驗證 ' + bestProfitVal + '）</span>';
     stat.innerHTML = s;
+  }
+  var statTotal = document.getElementById('stat-total');
+  if(statTotal){
+    if(bestTotalSoFar === null) statTotal.innerHTML = '💵 總盈利: <b>-</b>';
+    else statTotal.innerHTML = '💵 總盈利: <b>' + bestTotalSoFar + '</b>';
   }
 }
 
@@ -491,19 +510,18 @@ function matchRule(f, rule){
   return false;
 }
 
-/* ⭐ v32.5 修復：用 pred === 3 判斷 skip（不再是 pred < 0）*/
 function calcProfitOn(featMat, codes, payoutsArr, N, rules){
   var total = 0;
   for(var i = 0; i < N; i++){
     var f = featMat[i];
-    var pred = 3;  // 默認 skip
+    var pred = 3;
     for(var r = 0; r < rules.length; r++){
       var rule = rules[r];
       if(!rule.on) continue;
       if(matchRule(f, rule)){ pred = rule.thenCode; break; }
     }
-    if(pred === 3) continue;  // skip
-    if(pred < 0 || pred > 2) continue;  // 保險
+    if(pred === 3) continue;
+    if(pred < 0 || pred > 2) continue;
     var gp;
     if(pred === codes[i]) gp = payoutsArr[i*3 + pred] - 100;
     else gp = -100;
@@ -528,6 +546,11 @@ function rawProfits(rules){
   var trainP = trainN > 0 ? calcProfitOn(trainFeat, trainCodes, trainPayouts, trainN, rules) : 0;
   var valP = valN > 0 ? calcProfitOn(valFeat, valCodes, valPayouts, valN, rules) : 0;
   return {train: trainP, val: valP};
+}
+
+function rawProfitAllData(rules){
+  if(allNGlobal === 0 || !allFeatGlobal) return 0;
+  return calcProfitOn(allFeatGlobal, allCodesGlobal, allPayoutsGlobal, allNGlobal, rules);
 }
 
 function skipRatio(rules, useVal){
@@ -627,7 +650,7 @@ function findBestThresholdForFeature(rules, ri, gi, ci, newFeatIdx){
   return {val: bestVal, score: bestScore};
 }
 
-/* ⭐⭐⭐ v32.5 全組件掃描 ⭐⭐⭐ */
+/* ========== 全組件掃描 ========== */
 async function fullScan(rules, maxIter){
   pushLog('');
   pushLog(nowTime() + ' 🔍 開始全組件掃描（最多 ' + maxIter + ' 輪）...', 'exhaust');
@@ -762,13 +785,12 @@ async function fullScan(rules, maxIter){
         }
       }
 
-      // 4. 掃描結果（跳過 skip，避免改成 skip 造成 undefined）
+      // 4. 掃描結果（只試 H/D/A，避免改成 skip）
       if(doScanThen){
         if(!running) break;
         var oldThen = rule.thenCode;
         var bestThen = oldThen, bestThenScore = curFit;
 
-        // 只嘗試 H/D/A（0/1/2），不試 skip（3）
         for(var tIdx = 0; tIdx < 3; tIdx++){
           if(tIdx === oldThen) continue;
           var svT = rule.thenCode;
@@ -806,7 +828,8 @@ async function fullScan(rules, maxIter){
   }
 
   var rawP = rawProfits(cur);
-  pushLog(nowTime() + ' ✓ 掃描完成：訓練 ' + rawP.train + ' 驗證 ' + rawP.val + '（共 ' + totalImprovements + ' 次改動）', 'exhaust');
+  var allP = rawProfitAllData(cur);
+  pushLog(nowTime() + ' ✓ 掃描完成：訓練 ' + rawP.train + ' 驗證 ' + rawP.val + ' 全數據 ' + allP + '（共 ' + totalImprovements + ' 次改動）', 'exhaust');
   pushLog('');
 
   if(curFit > bestFitGlobal) bestFitGlobal = curFit;
@@ -987,6 +1010,7 @@ async function start(){
   bestProfitSoFar = null;
   bestProfitVal = null;
   bestFitGlobal = -Infinity;
+  bestTotalSoFar = null;
   lastSpeedUpdate = 0;
   lastYieldTime = 0;
   featureValueCache = {};
@@ -1008,14 +1032,14 @@ async function start(){
   var useVal = document.getElementById('useVal').checked;
 
   pushLog('═══════════════════════════════════════════════════════════', 'head');
-  pushLog('🚀 v32.5 — 全組件掃描（修復 undefined bug）', 'head');
+  pushLog('🚀 v32.6 — 全組件掃描（全數據對賬）', 'head');
   pushLog('═══════════════════════════════════════════════════════════', 'head');
   pushLog(nowTime() + ' 原始有效行數：' + parsed.total, 'info');
   pushLog(nowTime() + ' 重複：' + parsed.dups + '（已忽略）', 'warn');
   pushLog(nowTime() + ' 去重後：' + parsed.rows.length + ' 筆', 'success');
   pushLog(nowTime() + ' 🟡 v15 公式（' + INIT_RULES.length + ' 條）', 'init');
   pushLog(nowTime() + ' 🔍 掃描強度：' + maxIter + ' 輪', 'exhaust');
-  pushLog(nowTime() + ' 🛡️ 修復：skip 的 thenCode 從 -1 改成 3（避免 "undefined"）', 'fix');
+  pushLog(nowTime() + ' 🆕 v32.6：新增全數據利潤對賬', 'fix');
   pushLog(nowTime() + ' 掃描組件：' +
     (document.getElementById('scanOp').checked ? '運算符✓ ' : '運算符✗ ') +
     (document.getElementById('scanFeat').checked ? '特徵✓ ' : '特徵✗ ') +
@@ -1027,6 +1051,16 @@ async function start(){
     var j = Math.floor(Math.random() * (i + 1));
     var tmp = allRows[i]; allRows[i] = allRows[j]; allRows[j] = tmp;
   }
+
+  /* ⭐ v32.6 全數據預計算（對賬用，用去重後全部資料，不分割） */
+  var tPreAll = Date.now();
+  allNGlobal = allRows.length;
+  allFeatGlobal = extractFeatures(allRows);
+  var arm = extractMeta(allRows);
+  allCodesGlobal = arm.codes;
+  allPayoutsGlobal = arm.payouts;
+  pushLog(nowTime() + ' ✓ 全數據預計算：' + allNGlobal + ' 筆（' + (Date.now() - tPreAll) + ' ms）', 'success');
+  await yieldUI();
 
   var trainRows, valRows;
   if(useVal && allRows.length >= 50){
@@ -1071,6 +1105,7 @@ async function start(){
 
   var frozenRules = convertV15Rules(INIT_RULES);
   var initP = rawProfits(frozenRules);
+  var initAll = rawProfitAllData(frozenRules);
   var initSkip = skipRatio(frozenRules, false);
   baseline.train = initP.train;
   baseline.val = initP.val;
@@ -1082,6 +1117,7 @@ async function start(){
   pushLog(nowTime() + ' 📌 v15 基線：', 'base');
   pushLog(nowTime() + '   訓練 ' + baseline.train + '（每場 ' + baseline.trainPer.toFixed(1) + '）', 'info');
   pushLog(nowTime() + '   驗證 ' + baseline.val + '（每場 ' + baseline.valPer.toFixed(1) + '）', 'val');
+  pushLog(nowTime() + '   全數據 ' + initAll, 'info');
   pushLog(nowTime() + '   Skip ' + initSkip.pct.toFixed(1) + '%', 'skip');
   pushLog('');
   updateStatsUI();
@@ -1098,7 +1134,7 @@ async function start(){
   var scannedRules = await fullScan(frozenRules, maxIter);
   if(!running){ finish(); return; }
 
-  /* ⭐ v32.5 關鍵修復：生成公式前，掃描所有規則的 then，把 undefined 改成 skip */
+  /* 生成公式前保險：undefined → skip */
   for(var fixI = 0; fixI < scannedRules.length; fixI++){
     var r = scannedRules[fixI];
     if(!r.then || r.then === 'undefined' || r.then === undefined || r.thenCode === undefined || r.thenCode === null || r.thenCode < 0 || r.thenCode > 3){
@@ -1112,9 +1148,12 @@ async function start(){
   var finalP = rawProfits(scannedRules);
   var trainPer = trainN > 0 ? finalP.train / trainN : 0;
   var valPer = valN > 0 ? finalP.val / valN : 0;
+  var finalAll = rawProfitAllData(scannedRules);
+  var totalProfit = finalP.train + finalP.val;
 
   bestProfitSoFar = finalP.train;
   bestProfitVal = finalP.val;
+  bestTotalSoFar = totalProfit;
   currentRuleCount = scannedRules.length;
 
   finish();
@@ -1127,9 +1166,11 @@ async function start(){
     pushLog('═══════════════════════════════════════════════════════════', 'head');
     pushLog('🏆 完成！', 'best');
     pushLog('═══════════════════════════════════════════════════════════', 'head');
-    pushLog('   📌 v15 基線：訓練 ' + baseline.train + ' / 驗證 ' + baseline.val, 'base');
-    pushLog('   🔍 掃描後：訓練 ' + finalP.train + ' / 驗證 ' + finalP.val, 'exhaust');
-    pushLog('   掃描貢獻：訓練 ' + (finalP.train - baseline.train) + ' / 驗證 ' + (finalP.val - baseline.val), 'exhaust');
+    pushLog('   📌 v15 基線：訓練 ' + baseline.train + ' / 驗證 ' + baseline.val + ' / 全數據 ' + initAll, 'base');
+    pushLog('   🔍 掃描後：訓練 ' + finalP.train + ' / 驗證 ' + finalP.val + ' / 全數據 ' + finalAll, 'exhaust');
+    pushLog('   💰 總盈利（訓練+驗證）：' + totalProfit, 'exhaust');
+    pushLog('   🧮 全數據利潤：' + finalAll + '（差 ' + (finalAll - totalProfit) + '）', 'exhaust');
+    pushLog('   掃描貢獻（全數據）：' + (finalAll - initAll), 'exhaust');
     pushLog('   掃描改動次數：' + tunedCount, 'exhaust');
     pushLog('   🛡️ undefined 修復次數：' + fixedUndefinedCount, 'fix');
     pushLog('   Skip：' + skipInfo.pct.toFixed(1) + '%', 'skip');
@@ -1139,13 +1180,39 @@ async function start(){
     pushLog('═══════════════════════════════════════════════════════════', 'head');
 
     document.getElementById('best').style.display = 'block';
-    document.getElementById('summary').innerHTML = '🏆 <b>' + scannedRules.length + '</b> 條規則　💰訓練 <b>' + finalP.train + '</b>　💰驗證 <b>' + finalP.val + '</b>';
+    document.getElementById('summary').innerHTML =
+      '<div style="font-size:26px;color:#0a7a0a;font-weight:bold;margin-bottom:8px">💰 總盈利：' + totalProfit + '</div>' +
+      '<div style="font-size:14px;color:#333;line-height:1.9">' +
+      '🏆 <b>' + scannedRules.length + '</b> 條規則　' +
+      '訓練 <b>' + finalP.train + '</b> ＋ 驗證 <b>' + finalP.val + '</b><br>' +
+      '🧮 全數據（100%）<b style="font-size:16px;color:#0e7490">' + finalAll + '</b>' +
+      '</div>';
 
     var baseStats = document.getElementById('baseStats');
     baseStats.innerHTML = '<div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:6px">' +
       '<div>訓練：<b>' + baseline.train + '</b> → 掃描 <b>' + finalP.train + '</b>（Δ' + (finalP.train - baseline.train >= 0 ? '+' : '') + (finalP.train - baseline.train) + '）</div>' +
       '<div>驗證：<b>' + baseline.val + '</b> → 掃描 <b>' + finalP.val + '</b>（Δ' + (finalP.val - baseline.val >= 0 ? '+' : '') + (finalP.val - baseline.val) + '）</div>' +
+      '<div>全數據：<b>' + initAll + '</b> → 掃描 <b>' + finalAll + '</b>（Δ' + (finalAll - initAll >= 0 ? '+' : '') + (finalAll - initAll) + '）</div>' +
       '</div>';
+
+    /* ⭐ 全數據對賬 banner */
+    var diff = finalAll - totalProfit;
+    var diffPct = totalProfit !== 0 ? (diff / totalProfit * 100).toFixed(2) : '0';
+    var diffHint;
+    if(diff === 0) diffHint = '✅ 完全一致';
+    else diffHint = '差 ' + diff + '（' + diffPct + '%），來自 80/20 分割 + 隨機順序差異';
+
+    document.getElementById('allDataInfo').innerHTML =
+      '<div>🔹 網頁分割：訓練 <b>' + finalP.train + '</b> ＋ 驗證 <b>' + finalP.val + '</b> ＝ <b>' + totalProfit + '</b></div>' +
+      '<div>🔹 全數據（100%）：<b style="font-size:16px">' + finalAll + '</b> — ' + diffHint + '</div>' +
+      '<div style="color:#166534;font-size:12px;margin-top:8px;padding:6px 8px;background:#fff;border-radius:4px">' +
+      '📌 <b>對賬說明：</b>Google Sheet 的 I2 顯示的是「全數據利潤」，應該接近 <b>' + finalAll + '</b>。<br>' +
+      '網頁內部因為要評估泛化能力，採用 80/20 隨機分割，所以訓練+驗證 ≠ 全數據。<br>' +
+      '如要完全一致：取消勾選「訓練/驗證分割」再跑一次，數字就會對上。</div>';
+
+    pushLog(nowTime() + '   💰 總盈利（訓練+驗證）：' + totalProfit, 'exhaust');
+    pushLog(nowTime() + '   🧮 全數據利潤：' + finalAll + '（差 ' + diff + '）', 'exhaust');
+    pushLog(nowTime() + '   📊 Google Sheet 對賬目標：' + finalAll, 'best');
 
     document.getElementById('vTrainTotal').textContent = finalP.train;
     document.getElementById('vValTotal').textContent = finalP.val;
@@ -1170,7 +1237,7 @@ async function start(){
       verdict = '🟠 過擬合嚴重';
     }
 
-    verdict += '\n📌 vs v15 基線：訓練 ' + (finalP.train - baseline.train >= 0 ? '+' : '') + (finalP.train - baseline.train) + '，驗證 ' + (finalP.val - baseline.val >= 0 ? '+' : '') + (finalP.val - baseline.val);
+    verdict += '\n📌 vs v15 基線：訓練 ' + (finalP.train - baseline.train >= 0 ? '+' : '') + (finalP.train - baseline.train) + '，驗證 ' + (finalP.val - baseline.val >= 0 ? '+' : '') + (finalP.val - baseline.val) + '，全數據 ' + (finalAll - initAll >= 0 ? '+' : '') + (finalAll - initAll);
     verdict += '\n🎯 掃描改動 ' + tunedCount + ' 次';
     verdict += '\n🛡️ undefined 修復 ' + fixedUndefinedCount + ' 次';
     verdict += '\n✅ 全部 then 都已保證是 H/D/A/skip（不再有 undefined）';
