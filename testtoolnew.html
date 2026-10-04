@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v26 — 速度優化版</title>
+<title>🚀 v27 — 混合版（v15公式 + v26防護）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1500px;margin:auto;background:#f0f2f5}
@@ -32,6 +32,7 @@ button.txt{background:#28a745}
 .l-len{color:#fb923c;font-weight:bold}.l-prog{color:#c084fc;font-weight:bold}
 .l-profit{color:#4ade80;font-weight:bold;background:rgba(74,222,128,0.1)}
 .l-speed{color:#fbbf24;font-weight:bold}
+.l-init{color:#f472b6;font-weight:bold;font-size:13px}
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
 .best b{color:#155724}
 .box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
@@ -56,6 +57,7 @@ td:first-child,td:nth-child(2){text-align:left}
 .tag-pred{background:#007bff;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .tag-or{background:#c084fc;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .tag-wide{background:#22d3ee;color:#000;padding:1px 5px;border-radius:3px;font-size:9px}
+.tag-init{background:#f472b6;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .section{background:#fff;padding:12px;border-radius:6px;border:1px solid #ddd;margin-top:12px}
 h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .progress-row{display:flex;align-items:center;gap:12px;margin-top:12px}
@@ -75,8 +77,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .chk{padding:4px 10px;font-size:12px;background:#fff;border:1px solid #ccc;border-radius:4px;cursor:pointer;user-select:none}
 .chk input{vertical-align:middle;margin-right:4px}
-.warn-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);padding:10px 14px;border-radius:6px;border:1px solid #fbbf24;font-size:13px;line-height:1.6;margin-bottom:10px}
-.warn-banner b{color:#92400e}
+.warn-banner{background:linear-gradient(135deg,#d1fae5,#a7f3d0);padding:10px 14px;border-radius:6px;border:1px solid #34d399;font-size:13px;line-height:1.6;margin-bottom:10px}
+.warn-banner b{color:#065f46}
 .val-banner{background:linear-gradient(135deg,#ddd6fe,#c4b5fd);padding:10px 14px;border-radius:6px;border:1px solid #a78bfa;font-size:12px;line-height:1.7;margin-top:10px}
 .val-banner b{color:#4c1d95}
 .val-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:6px}
@@ -90,7 +92,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <body>
 
 <div class="top">
-  <h2 id="title">🚀 v26 — 速度優化版（2~3 倍加速）</h2>
+  <h2 id="title">🚀 v27 — 混合版（v15公式 + v26防護）</h2>
   <div>
     <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁中</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
@@ -98,11 +100,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </div>
 
 <div class="warn-banner">
-  <b>⚡ v26 速度優化：</b><br>
-  ① <b>公式字元只在結構變異時算</b>（省 35%）<br>
-  ② <b>兩階段評估</b>：訓練分數太低直接拒絕，跳過驗證集（省 40%）<br>
-  ③ <b>penalty 快取</b>（省 10%）<br>
-  ④ <b>每輪時間縮短到 1.5 秒</b>（反應更快）
+  <b>✨ v27 混合版：</b><br>
+  🎯 <b>起點 = 你的 v15 公式</b>（34 條規則，不從零開始）<br>
+  🛡 <b>防護 = v26 機制</b>（80/20分割 + 最小命中數 + 2000字元限制）<br>
+  ⚡ <b>速度 = v26 優化</b>（兩階段評估 + 字元快取）<br>
+  💰 <b>目標 = 賺錢</b>（驗證集權重高，避免過擬合）
 </div>
 
 <textarea id="input" placeholder="23 27 49 355 385 169 0:3 A
@@ -153,8 +155,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <div id="summary"></div>
 
   <div class="val-banner">
-    <b>📊 泛化評估</b>
-    <div style="font-size:11px;color:#4c1d95;margin-top:2px">重點看「每場盈利」——驗證每場越高越好。</div>
+    <b>📊 泛化評估（賺錢關鍵）</b>
+    <div style="font-size:11px;color:#4c1d95;margin-top:2px">重點看「驗證每場」——這才是真實賺錢能力。</div>
     <div class="val-grid">
       <div class="val-cell"><div class="num" id="vTrainTotal">-</div><div class="lbl">訓練總盈利</div></div>
       <div class="val-cell"><div class="num" id="vValTotal">-</div><div class="lbl">驗證總盈利</div></div>
@@ -186,14 +188,14 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 var TXT = {
   zh: {
-    title: '🚀 v26 — 速度優化版（2~3 倍加速）',
+    title: '🚀 v27 — 混合版（v15公式 + v26防護）',
     strength: '搜尋強度：',
     run: '🚀 開始搜尋', stop: '⏹ 停止',
     hRule: '📋 演化後規則表',
     noData: '沒有有效數據'
   },
   en: {
-    title: '🚀 v26 — Speed Optimized (2-3x)',
+    title: '🚀 v27 — Hybrid (v15 Formula + v26 Guards)',
     strength: 'Strength: ',
     run: '🚀 Search', stop: '⏹ Stop',
     hRule: '📋 Evolved Rules',
@@ -227,8 +229,43 @@ var FEATURES = [
 ];
 var FCOUNT = FEATURES.length;
 
-/* ⭐ 預計算每個特徵的表達式長度（用於公式長度估算） */
-var FEAT_EXPR_LEN = new Array(FCOUNT);
+/* ⭐⭐⭐ v15 原始公式的 34 條結構化規則 ⭐⭐⭐ */
+var INIT_RULES = [
+  {on:1, then:'D', cond:[['B','>=',32],['|A-C|','<=',6]]},
+  {on:1, then:'H', cond:[['A','>=',60],['C','<=',11],['D','>=',140],['D','<=',190],['F','>=',400],['F','<=',480]]},
+  {on:1, then:'D', cond:[['|A-C|','<=',3],['E','<',380],['|D-F|','<',40]]},
+  {on:1, then:'D', cond:[['A','>=',45],['C','<=',20],['|D-F|','<',70],['D','<',400]]},
+  {on:1, then:'D', cond:[['|D-F|','<',18]]},
+  {on:1, then:'D', cond:[['A','>=',42],['D','>=',155],['D','<',205],['D-F','!=',0],['F-D','>',0],['|A-C|','>=',50]]},
+  {on:1, then:'H', cond:[['A','>=',42],['D','>=',155],['D','<',205],['D-F','!=',0]]},
+  {on:1, then:'D', cond:[['A','>=',34],['D','>',205],['D','<=',235],['D-F','!=',0]]},
+  {on:1, then:'D', cond:[['D','>=',400],['A','>=',42]]},
+  {on:1, then:'D', cond:[['D','>=',340],['A','>=',38],['F','<',250],['D-F','>',0],['F','<',200],['|A-C|','<=',5]]},
+  {on:1, then:'A', cond:[['D','>=',340],['A','>=',38],['F','<',250],['D-F','>',0],['F','<',200]]},
+  {on:1, then:'D', cond:[['D','>=',340],['A','>=',38],['F','<',250],['D-F','>',0]]},
+  {on:1, then:'D', cond:[['E','<=',315],['B','>=',27],['|A-C|','<=',25],['D','>=',250],['D','<=',350],['E-D','>',0]]},
+  {on:1, then:'D', cond:[['A-C','<',0],['F','>=',490],['F','<=',560],['D','<',200]]},
+  {on:1, then:'H', cond:[['A-C','<',0],['F-D','>',0],['F','<',550],['E','>',320]]},
+  {on:1, then:'A', cond:[['A-C','<',0],['F','>=',184],['F','<=',216],['C','>=',40]]},
+  {on:1, then:'D', cond:[['A-C','<',0],['F-D','>',0],['F','<',300],['C','<',45],['D','<',250]]},
+  {on:1, then:'A', cond:[['D-F','>',0],['F','<=',150],['C','>=',65]]},
+  {on:1, then:'A', cond:[['D-F','>',0],['D','>',1500],['C','>=',50]]},
+  {on:1, then:'D', cond:[['D-F','>',0],['D','>',1500],['A-C','>',0]]},
+  {on:1, then:'skip', cond:[['D-F','>',0],['D','>',1500]]},
+  {on:1, then:'D', cond:[['D-F','>',0],['A','>=',33],['D','>=',350]]},
+  {on:1, then:'H', cond:[['D-F','>',0]]},
+  {on:1, then:'H', cond:[['F-D','>',0],['A','>=',50],['F-D','>=',400]]},
+  {on:1, then:'D', cond:[['F-D','>',0],['F','>=',700],['A','>=',80]]},
+  {on:1, then:'D', cond:[['F-D','>',0],['F','>=',700],['A-C','<',0]]},
+  {on:1, then:'D', cond:[['F-D','>',0],['F','>=',700],['A','<',45]]},
+  {on:1, then:'skip', cond:[['F-D','>',0],['F','>=',700]]},
+  {on:1, then:'D', cond:[['F-D','>',0],['E','>=',470],['F','>=',500]]},
+  {on:1, then:'H', cond:[['F-D','>',0],['A','>=',47],['D','<=',140]]},
+  {on:1, then:'A', cond:[['F-D','>',0]]},
+  {on:1, then:'H', cond:[['A-C','>',0]]},
+  {on:1, then:'A', cond:[['A-C','<',0]]},
+  {on:1, then:'skip', cond:[]}
+];
 
 var trainFeat = null, valFeat = null;
 var trainCodes = null, trainPayouts = null;
@@ -245,7 +282,6 @@ var logTimer = null;
 var LOG_MAX = 3000;
 var lastNewRuleLogTime = 0;
 var lastSpeedUpdate = 0;
-var lastEvalCount = 0;
 
 var totalPhases = 0;
 var currentPhase = 0;
@@ -261,10 +297,10 @@ var RESULT_CODES = {H:0, D:1, A:2, skip:-1};
 var OPS = ['>','>=','<','<=','==','!='];
 
 var MAX_FORMULA_CHARS = 2000;
-var MAX_RULES = 15;
-var HARD_RULE_CAP = 25;
+var MAX_RULES = 40;
+var HARD_RULE_CAP = 50;
 var MAX_GROUPS = 3;
-var MAX_CONDS = 4;
+var MAX_CONDS = 6;
 
 var CHUNK_MS = 30;
 var PASS_TIME_MS = 1500;
@@ -273,11 +309,8 @@ var PENALTY_PER_RULE = 0.3;
 var PENALTY_PER_EXTRA_COND = 0.1;
 var WIDE_COND_CHANCE = 0.05;
 var MIN_HITS = 5;
-
-/* ⭐ 兩階段評估的緩衝值 */
 var PRUNE_THRESHOLD = 25;
 
-/* ⭐ 標記：當前 fitness 呼叫是否來自結構變異 */
 var lastMutationStructural = false;
 
 /* ========== 日誌 ========== */
@@ -371,7 +404,6 @@ function updateBestProfit(){
   }
 }
 
-/* ⭐ 速度顯示（每秒更新） */
 function updateSpeedUI(){
   var now = Date.now();
   if(now - lastSpeedUpdate < 500) return;
@@ -479,7 +511,6 @@ function matchRule(f, rule){
   return false;
 }
 
-/* ⭐ 只跑訓練集 */
 function calcProfitTrain(rules, track){
   var total = 0;
   var tr = track && ruleProfit !== null;
@@ -510,7 +541,6 @@ function calcProfitTrain(rules, track){
   return total;
 }
 
-/* ⭐ 只跑驗證集 */
 function calcProfitVal(rules){
   var total = 0;
   var N = valN;
@@ -537,7 +567,6 @@ function calcProfitVal(rules){
   return total;
 }
 
-/* 通用版（診斷時用） */
 function calcProfitOn(featMat, codes, payoutsArr, N, rules, track){
   var total = 0;
   var tr = track && ruleProfit !== null;
@@ -566,7 +595,6 @@ function calcProfitOn(featMat, codes, payoutsArr, N, rules, track){
 
 var ruleProfit = null;
 
-/* ⭐ 快速 penalty 計算（用規則數和條件數估算） */
 function calcPenalty(rules){
   var condCount = 0;
   for(var i = 0; i < rules.length; i++){
@@ -578,14 +606,11 @@ function calcPenalty(rules){
   return rules.length * PENALTY_PER_RULE + Math.max(0, condCount - rules.length) * PENALTY_PER_EXTRA_COND;
 }
 
-/* ⭐⭐⭐ 核心優化：兩階段 fitness ⭐⭐⭐ */
 function fitness(rules){
   evalCount++;
 
-  // ① 快速檢查：規則數
   if(rules.length > HARD_RULE_CAP) return -999999;
 
-  // ② 只在結構變異時檢查公式字元
   if(lastMutationStructural){
     var len = genSingleFormula(rules).length;
     currentFormulaLen = len;
@@ -594,18 +619,15 @@ function fitness(rules){
     }
   }
 
-  // ③ 跑訓練集
   var trainP = calcProfitTrain(rules, false);
   var trainPer = trainP / trainN;
   var penalty = calcPenalty(rules);
   var trainFit = trainPer - penalty;
 
-  // ④ 快速剪枝：訓練分數太低 → 跳過驗證集
   if(valN > 0 && trainFit < bestFitGlobal - PRUNE_THRESHOLD){
-    return trainFit;  // 不跑驗證集
+    return trainFit;
   }
 
-  // ⑤ 只有接近 best 時才跑驗證集
   if(valN > 0){
     var valP = calcProfitVal(rules);
     var valPer = valP / valN;
@@ -650,7 +672,7 @@ function cloneRule(r){
     }
     groups.push(gs);
   }
-  return {on:r.on, then:r.then, thenCode:r.thenCode, groups:groups};
+  return {on:r.on, then:r.then, thenCode:r.thenCode, groups:groups, _init: r._init};
 }
 function cloneRules(rules){
   var out = new Array(rules.length);
@@ -658,75 +680,12 @@ function cloneRules(rules){
   return out;
 }
 
-/* ========== 熱啟動 ========== */
-async function hotStart(){
-  pushLog(nowTime() + ' 🔥 熱啟動...', 'hot');
-  await yieldUI();
-  var best = [];
-  var t0 = Date.now();
-  var lastYield = Date.now();
-  var N = trainN;
-
-  for(var fi = 0; fi < FCOUNT; fi++){
-    if(!running) break;
-    var vals = [];
-    for(var i = 0; i < N; i++) vals.push(trainFeat[i][fi]);
-    vals.sort(function(a,b){ return a - b; });
-    var candidates = [];
-    var nC = Math.min(20, vals.length);
-    for(var k = 0; k < nC; k++) candidates.push(vals[Math.floor(k * vals.length / nC)]);
-
-    for(var op = 0; op < 4; op++){
-      for(var ci = 0; ci < candidates.length; ci++){
-        var val = candidates[ci];
-        for(var tc = 0; tc < 3; tc++){
-          var profit = 0, hits = 0;
-          for(var i = 0; i < N; i++){
-            var f = trainFeat[i];
-            if(!evalCond(f, fi, op, val)) continue;
-            hits++;
-            if(tc === trainCodes[i]) profit += trainPayouts[i*3 + tc] - 100;
-            else profit -= 100;
-          }
-          if(profit > 200 && hits >= MIN_HITS){
-            var vp = 0;
-            for(var i = 0; i < valN; i++){
-              var f2 = valFeat[i];
-              if(!evalCond(f2, fi, op, val)) continue;
-              if(tc === valCodes[i]) vp += valPayouts[i*3 + tc] - 100;
-              else vp -= 100;
-            }
-            if(vp > 0 || valN === 0){
-              best.push({fi:fi, op:op, val:val, thenCode:tc, profit:profit, vp:vp, hits:hits});
-            }
-          }
-        }
-      }
-    }
-
-    if(Date.now() - lastYield > 30){
-      pushLog(nowTime() + '   ' + (fi+1) + '/' + FCOUNT + '，候選 ' + best.length, 'dim');
-      await yieldUI();
-      lastYield = Date.now();
-    }
+/* 標記初始規則 */
+function markInitialRules(rules){
+  for(var i = 0; i < rules.length; i++){
+    rules[i]._init = 1;
   }
-
-  best.sort(function(a,b){ return (b.profit + b.vp) - (a.profit + a.vp); });
-  var topN = Math.min(8, best.length);
-  var result = [];
-  for(var i = 0; i < topN; i++){
-    var b = best[i];
-    result.push({
-      on:1, then: RESULTS[b.thenCode], thenCode: b.thenCode,
-      groups: [[[b.fi, b.op, b.val]]]
-    });
-  }
-  pushLog(nowTime() + ' ✓ 熱啟動完成：' + best.length + ' 候選，取前 ' + topN + '（' + (Date.now()-t0) + ' ms）', 'success');
-  if(topN > 0){
-    pushLog(nowTime() + '   最佳：' + FEATURES[best[0].fi] + OPS[best[0].op] + Math.round(best[0].val) + '→' + RESULTS[best[0].thenCode] + '（訓 ' + best[0].profit + ' 驗 ' + best[0].vp + '）', 'hot');
-  }
-  await yieldUI();
-  return result;
+  return rules;
 }
 
 /* ========== 生成 ========== */
@@ -807,11 +766,17 @@ function pruneRules(rules){
 
   var kept = [], removed = 0;
   for(var i = 0; i < rules.length; i++){
-    if(hits[i] < MIN_HITS || profits[i] <= 0){
-      removed++;
-      continue;
+    // ⭐ 保護初始規則：命中數太少才移除，不因虧損移除
+    if(rules[i]._init){
+      if(hits[i] < 2){ removed++; continue; }
+      kept.push(rules[i]);
+    } else {
+      if(hits[i] < MIN_HITS || profits[i] <= 0){
+        removed++;
+        continue;
+      }
+      kept.push(rules[i]);
     }
-    kept.push(rules[i]);
   }
   if(removed > 0 && kept.length > 0){
     pushLog(nowTime() + ' ✂️ 剪枝：移除 ' + removed + ' 條 → ' + kept.length + ' 條', 'prune');
@@ -838,7 +803,6 @@ function pickRuleIdx(rules){
   return rules.length - 1;
 }
 
-/* ⭐ 標記結構變異（會影響公式字元數） */
 function mutateGen(rules){
   lastMutationStructural = true;
   if(rules.length >= HARD_RULE_CAP) return null;
@@ -907,7 +871,8 @@ function mutateDelete(rules){
   lastMutationStructural = true;
   var r = cloneRules(rules);
   if(r.length <= 1) return {rules:r};
-  r.splice(Math.floor(Math.random() * r.length), 1);
+  var idx = Math.floor(Math.random() * r.length);
+  r.splice(idx, 1);
   return {rules:r};
 }
 function mutateSwap(rules){
@@ -960,6 +925,7 @@ function mutateSplit(rules){
   var idx = Math.floor(Math.random() * r.length);
   var copy = cloneRule(r[idx]);
   copy.groups.push(genGroup());
+  copy._init = 0;  // 分裂出來的標記為非初始
   r.splice(idx + 1, 0, copy);
   return {rules:r};
 }
@@ -969,7 +935,7 @@ function mutate(rules, intensity){
   if(cnt === 0) gc = 1.0;
   else if(cnt < 3) gc = 0.5;
   else if(cnt < 8) gc = 0.25;
-  else if(cnt < MAX_RULES) gc = 0.08;
+  else if(cnt < MAX_RULES) gc = 0.05;
   else gc = 0;
 
   if(gc > 0 && Math.random() < gc){
@@ -977,14 +943,14 @@ function mutate(rules, intensity){
     if(g) return g;
   }
   var p = Math.random();
-  if(p < 0.32) return mutateNumeric(rules, intensity);
-  if(p < 0.44) return mutateThen(rules);
-  if(p < 0.52) return mutateOn(rules);
-  if(p < 0.58) return mutateSwap(rules);
-  if(p < 0.70) return mutateDelete(rules);
-  if(p < 0.78) return mutateAddCond(rules);
-  if(p < 0.84) return mutateDelCond(rules);
-  if(p < 0.92) return mutateOp(rules);
+  if(p < 0.35) return mutateNumeric(rules, intensity);
+  if(p < 0.48) return mutateThen(rules);
+  if(p < 0.56) return mutateOn(rules);
+  if(p < 0.62) return mutateSwap(rules);
+  if(p < 0.72) return mutateDelete(rules);
+  if(p < 0.80) return mutateAddCond(rules);
+  if(p < 0.86) return mutateDelCond(rules);
+  if(p < 0.93) return mutateOp(rules);
   if(p < 0.97) return mutateNewFeat(rules);
   return mutateSplit(rules);
 }
@@ -1047,7 +1013,6 @@ async function optimizeRules(startRules, label, maxPasses){
               pushLog(nowTime() + ' 💰💰💰 新最高盈利：' + rp.train + '（驗證 ' + rp.val + '）', 'profit');
             }
             pushLog(nowTime() + ' ★★★ 新最優：訓練 ' + rp.train + '（每場 ' + tPer + '）驗證 ' + rp.val + '（每場 ' + vPer + '）字元 ' + currentFormulaLen, 'best');
-            // ⭐ 更新全域 best fit 供 fitness 剪枝用
             if(bestFit > bestFitGlobal) bestFitGlobal = bestFit;
             updateBestProfit();
           }
@@ -1145,8 +1110,9 @@ function renderRuleTable(stats){
     var thenTag = '<span class="tag-pred">' + r.then + '</span>';
     var orTag = r.groups.length > 1 ? ' <span class="tag-or">OR×' + r.groups.length + '</span>' : '';
     var wideTag = (r.groups.length === 1 && r.groups[0].length === 1 && isWideCond(r.groups[0][0])) ? ' <span class="tag-wide">寬</span>' : '';
+    var initTag = r._init ? ' <span class="tag-init">v15</span>' : '';
 
-    html += '<tr><td>R' + (i+1) + orTag + wideTag + '</td><td>' + onTag + '</td>' +
+    html += '<tr><td>R' + (i+1) + orTag + wideTag + initTag + '</td><td>' + onTag + '</td>' +
       '<td style="text-align:left;font-size:10px">' + ss + '</td><td>' + thenTag + '</td>' +
       '<td>' + s.hit + '</td><td>' + s.correct + '</td><td>' + s.wrong + '</td>' +
       '<td class="' + pcls + '">' + s.profit + '</td></tr>';
@@ -1205,14 +1171,6 @@ function featToExpr(feat){
     default: return '0';
   }
 }
-
-/* 預計算特徵表達式長度 */
-function precomputeFeatExprLen(){
-  for(var i = 0; i < FCOUNT; i++){
-    FEAT_EXPR_LEN[i] = featToExpr(FEATURES[i]).length;
-  }
-}
-
 function buildCondSheet(cond){
   var fi = cond[0], opIdx = cond[1], val = cond[2];
   var op = sheetOp(opIdx);
@@ -1281,22 +1239,21 @@ async function start(){
 
   clearLog();
 
-  precomputeFeatExprLen();
-
   var N = parseInt(document.getElementById('strength').value);
   var useVal = document.getElementById('useVal').checked;
 
   totalPhases = N + 1;
 
   pushLog('═══════════════════════════════════════════════════════════', 'head');
-  pushLog('🚀 v26 — 速度優化版（2~3 倍加速）', 'head');
+  pushLog('🚀 v27 — 混合版（v15公式 + v26防護）', 'head');
   pushLog('═══════════════════════════════════════════════════════════', 'head');
   pushLog(nowTime() + ' 原始有效行數：' + parsed.total, 'info');
   pushLog(nowTime() + ' 重複：' + parsed.dups + '（已忽略）', 'warn');
   pushLog(nowTime() + ' 去重後：' + parsed.rows.length + ' 筆', 'success');
+  pushLog(nowTime() + ' ⭐ 起點：v15 公式（' + INIT_RULES.length + ' 條規則）', 'init');
   pushLog(nowTime() + ' 公式字元上限：' + MAX_FORMULA_CHARS, 'len');
+  pushLog(nowTime() + ' 規則上限：' + MAX_RULES + '（硬上限 ' + HARD_RULE_CAP + '）', 'info');
   pushLog(nowTime() + ' 總階段數：' + totalPhases + '（引導 1 + 主迴圈 ' + N + '）', 'prog');
-  pushLog(nowTime() + ' 速度優化：字元快取 + 兩階段評估', 'speed');
   await yieldUI();
 
   var allRows = parsed.rows.slice();
@@ -1340,14 +1297,30 @@ async function start(){
   await yieldUI();
 
   pushLog('═══════════════════════════════════════════════════════════', 'head');
-  pushLog(nowTime() + ' 階段 1/' + totalPhases + '：熱啟動 + 引導', 'head');
+  pushLog(nowTime() + ' 階段 1/' + totalPhases + '：從 v15 公式引導演化', 'head');
   pushLog('═══════════════════════════════════════════════════════════', 'head');
   await yieldUI();
 
-  var seeds = await hotStart();
-  if(!running){ finish(); return; }
+  var initRules = markInitialRules(cloneRules(INIT_RULES));
 
-  var r0 = await optimizeRules(seeds, '引導', 10);
+  // 顯示 v15 公式原始分數
+  lastMutationStructural = true;
+  var initFit = fitness(initRules);
+  var initP = rawProfits(initRules);
+  var initTPer = trainN > 0 ? (initP.train / trainN).toFixed(1) : 0;
+  var initVPer = valN > 0 ? (initP.val / valN).toFixed(1) : 0;
+  pushLog(nowTime() + ' 📊 v15 公式原始表現：', 'init');
+  pushLog(nowTime() + '   訓練 ' + initP.train + '（每場 ' + initTPer + '）', 'info');
+  pushLog(nowTime() + '   驗證 ' + initP.val + '（每場 ' + initVPer + '）', 'val');
+  pushLog(nowTime() + '   字元 ' + currentFormulaLen, 'len');
+  await yieldUI();
+
+  if(bestProfitSoFar === null || initP.train > bestProfitSoFar){
+    bestProfitSoFar = initP.train;
+    bestProfitVal = initP.val;
+  }
+
+  var r0 = await optimizeRules(initRules, 'v15引導', 12);
   if(!running){ finish(); return; }
   var globalBest = r0.rules;
   var globalFit = r0.fit;
@@ -1356,10 +1329,6 @@ async function start(){
   var rp0 = rawProfits(globalBest);
   var tPer0 = trainN > 0 ? (rp0.train / trainN).toFixed(1) : 0;
   var vPer0 = valN > 0 ? (rp0.val / valN).toFixed(1) : 0;
-  if(bestProfitSoFar === null || rp0.train > bestProfitSoFar){
-    bestProfitSoFar = rp0.train;
-    bestProfitVal = rp0.val;
-  }
   pushLog('');
   pushLog(nowTime() + ' ✓ 階段 1 完成：訓練 ' + rp0.train + '（每場 ' + tPer0 + '）驗證 ' + rp0.val + '（每場 ' + vPer0 + '）字元 ' + currentFormulaLen, 'success');
   pushLog('');
@@ -1382,7 +1351,7 @@ async function start(){
     await yieldUI();
 
     var seedRules = cloneRules(globalBest);
-    var nMuts = 3 + Math.floor(Math.random() * 6);
+    var nMuts = 3 + Math.floor(Math.random() * 8);
     for(var i = 0; i < nMuts; i++){
       var m = mutate(seedRules, 1);
       seedRules = m.rules;
@@ -1427,9 +1396,10 @@ async function start(){
     pushLog('═══════════════════════════════════════════════════════════', 'head');
     pushLog('🏆 完成！', 'best');
     pushLog('═══════════════════════════════════════════════════════════', 'head');
-    pushLog('   💰 最高盈利：' + finalP.train, 'profit');
-    pushLog('   訓練總盈利：' + finalP.train + '（每場 ' + trainPer.toFixed(1) + '）', 'info');
-    pushLog('   驗證總盈利：' + finalP.val + '（每場 ' + valPer.toFixed(1) + '）', 'val');
+    pushLog('   💰 最高盈利（訓練）：' + finalP.train, 'profit');
+    pushLog('   💰 最高盈利（驗證）：' + finalP.val, 'val');
+    pushLog('   訓練每場：' + trainPer.toFixed(1), 'info');
+    pushLog('   驗證每場：' + valPer.toFixed(1), 'val');
     pushLog('   Skip 比例：' + skipInfo.skipped + '/' + skipInfo.total + '（' + skipInfo.pct.toFixed(1) + '%）', skipInfo.pct > 50 ? 'warn' : 'info');
     pushLog('   最終規則數：' + globalBest.length, 'info');
     pushLog('   公式字元數：' + formula.length + ' / ' + MAX_FORMULA_CHARS, formula.length > MAX_FORMULA_CHARS ? 'err' : 'len');
@@ -1438,7 +1408,7 @@ async function start(){
     pushLog('═══════════════════════════════════════════════════════════', 'head');
 
     document.getElementById('best').style.display = 'block';
-    document.getElementById('summary').innerHTML = '🏆 <b>' + globalBest.length + '</b> 條規則　💰 <b>' + finalP.train + '</b>　Skip <b>' + skipInfo.pct.toFixed(0) + '%</b>　字元 <b>' + formula.length + '</b>';
+    document.getElementById('summary').innerHTML = '🏆 <b>' + globalBest.length + '</b> 條規則　💰訓練 <b>' + finalP.train + '</b>　💰驗證 <b>' + finalP.val + '</b>　字元 <b>' + formula.length + '</b>';
 
     document.getElementById('vTrainTotal').textContent = finalP.train;
     document.getElementById('vValTotal').textContent = finalP.val;
@@ -1454,13 +1424,13 @@ async function start(){
     } else if(valPer <= 0){
       verdict = '❌ 驗證集虧損 → 規則無法泛化。';
     } else if(perRatio >= 0.9){
-      verdict = '✅ 驗證每場盈利 ≈ 訓練（≥90%）→ 泛化極佳。';
+      verdict = '✅ 驗證每場 ≈ 訓練（≥90%）→ 泛化極佳！這才是真賺錢能力。';
     } else if(perRatio >= 0.6){
-      verdict = '🟢 驗證每場盈利達訓練 60~90% → 泛化良好。';
+      verdict = '🟢 驗證每場達訓練 60~90% → 泛化良好，可正常使用。';
     } else if(perRatio >= 0.3){
-      verdict = '🟡 驗證每場盈利只有訓練 30~60% → 有些過擬合。';
+      verdict = '🟡 驗證每場只有訓練 30~60% → 有些過擬合。';
     } else {
-      verdict = '🟠 驗證每場盈利 < 訓練 30% → 過擬合嚴重。';
+      verdict = '🟠 驗證每場 < 訓練 30% → 過擬合嚴重，建議加資料。';
     }
 
     var totalRatio = finalP.train > 0 ? (finalP.val / finalP.train) : 0;
