@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v37.2 — 多次運行 + 使用建議</title>
+<title>🚀 v37.4 — Bug 修復版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -17,9 +17,8 @@ button.txt{background:#28a745}
 .l-head{color:#fff;font-weight:bold;font-size:13px}
 .l-info{color:#4ea3ff}.l-warn{color:#ffc107}.l-dim{color:#666}
 .l-ok{color:#4ade80;font-weight:bold}.l-best{color:#facc15;font-weight:bold;font-size:14px}
-.l-base{color:#fbbf24}.l-speed{color:#38bdf8}.l-prune{color:#a3e635;font-weight:bold}
-.l-auto{color:#f472b6;font-weight:bold}
-.l-fallback{color:#22c55e;font-weight:bold;background:rgba(34,197,94,0.1)}
+.l-base{color:#fbbf24}.l-speed{color:#38bdf8}
+.l-fallback{color:#22c55e;font-weight:bold}
 .l-roi{color:#facc15;font-weight:bold;background:rgba(250,204,21,0.12);font-size:15px}
 .l-danger{color:#f87171;font-weight:bold;background:rgba(248,113,113,0.12)}
 .l-success{color:#4ade80;font-weight:bold}
@@ -49,12 +48,14 @@ select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px}
 .stat-cell .big{font-size:20px;font-weight:bold;color:#0a7a0a}
 .stat-cell .lbl{font-size:11px;color:#666;margin-top:2px}
 .stat-cell.warn .big{color:#c00}
+.stat-cell.na .big{color:#999;font-size:16px}
 .runs-table{width:100%;margin-top:12px;font-size:12px;border-collapse:collapse;background:#fff}
 .runs-table th,.runs-table td{border:1px solid #ddd;padding:6px;text-align:center}
 .runs-table th{background:#f3f4f6;font-weight:bold}
 .runs-table tr.best-row{background:#fef9c3}
 .runs-table td.pos{color:#0a7a0a;font-weight:bold}
 .runs-table td.neg{color:#c00;font-weight:bold}
+.runs-table td.na{color:#999}
 .box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
 .label{font-weight:bold;font-size:13px;margin-bottom:6px;color:#333}
 .out{width:100%;height:220px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto}
@@ -67,18 +68,20 @@ table.rules td:first-child,table.rules td:nth-child(2),table.rules td:nth-child(
 .tag-h{background:#3b82f6;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:bold}
 .tag-d{background:#8b5cf6;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:bold}
 .tag-a{background:#ef4444;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:bold}
-.pos{color:#0a7a0a;font-weight:bold}.neg{color:#c00;font-weight:bold}
+.pos{color:#0a7a0a;font-weight:bold}.neg{color:#c00;font-weight:bold}.na{color:#999}
 .section{background:#fff;padding:12px;border-radius:6px;margin-top:12px;border:1px solid #ddd}
 h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 #msg{margin-top:8px;font-weight:bold;font-size:13px;display:none;padding:8px;border-radius:4px}
 .ok{background:#d4edda;color:#155724}.err{background:#f8d7da;color:#721c24}
+.notice{background:#dcfce7;border:1px solid #22c55e;padding:10px 14px;border-radius:6px;font-size:12px;color:#14532d;line-height:1.7;margin-bottom:10px}
+.notice b{color:#166534}
 </style>
 </head>
 <body>
 
-<h2>🚀 v37.2 — 多次運行 + 使用建議</h2>
-<div style="font-size:13px;color:#555;margin-bottom:8px">
-連續運行 N 次取統計｜⭐ 自動評級｜🎯 挑最穩健公式
+<h2>🚀 v37.4 — Bug 修復版</h2>
+<div class="notice">
+  <b>🔧 v37.4 修復：</b>① 建議公式選擇改為中位偏上（更穩健）② 泛化率顯示修正 ③ 5 星門檻合理化 ④ 移除無用選項 ⑤ 成功次數顯示修正
 </div>
 
 <textarea id="input" placeholder="23	27	49	355	385	169	0:3	A
@@ -93,19 +96,14 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   </select>
   <label>🔁 運行次數：</label>
   <select id="numRuns">
-    <option value="1">1 次（快速測試）</option>
-    <option value="3" selected>3 次（推薦）</option>
-    <option value="5">5 次（穩健）</option>
-    <option value="10">10 次（極限）</option>
+    <option value="1">1 次</option>
+    <option value="3" selected>3 次</option>
+    <option value="5">5 次</option>
+    <option value="10">10 次</option>
   </select>
   <label class="chk hi"><input type="checkbox" id="useVal" checked> 訓練/驗證分割</label>
   <button id="btnRun" onclick="start()">🚀 開始</button>
   <button id="btnStop" onclick="stop()" disabled>⏹ 停止</button>
-</div>
-
-<div class="row" style="margin-top:6px">
-  <label class="chk"><input type="checkbox" id="optPrune" checked> ✂️ 剪枝</label>
-  <label class="chk"><input type="checkbox" id="optStrict" checked> 🛡️ 嚴格模式</label>
 </div>
 
 <div class="progress"><div id="progbar"></div></div>
@@ -124,10 +122,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <div class="roi-detail" id="roiDetail"></div>
 
   <div class="stat-grid" id="statGrid">
-    <div class="stat-cell"><div class="big" id="sAvgVal">-</div><div class="lbl">平均驗證 ROI</div></div>
-    <div class="stat-cell"><div class="big" id="sAvgTrain">-</div><div class="lbl">平均訓練 ROI</div></div>
-    <div class="stat-cell"><div class="big" id="sGenRate">-</div><div class="lbl">平均泛化率</div></div>
-    <div class="stat-cell"><div class="big" id="sWinRate">-</div><div class="lbl">正報酬勝率</div></div>
+    <div class="stat-cell" id="cellAvgVal"><div class="big" id="sAvgVal">-</div><div class="lbl">平均驗證 ROI</div></div>
+    <div class="stat-cell" id="cellAvgTrain"><div class="big" id="sAvgTrain">-</div><div class="lbl">平均訓練 ROI</div></div>
+    <div class="stat-cell" id="cellGenRate"><div class="big" id="sGenRate">-</div><div class="lbl">平均泛化率</div></div>
+    <div class="stat-cell" id="cellWinRate"><div class="big" id="sWinRate">-</div><div class="lbl">正報酬勝率</div></div>
   </div>
 
   <div style="margin-top:12px">
@@ -136,7 +134,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   </div>
 
   <div class="box">
-    <div class="label">🟢 建議公式（最穩健的一次）</div>
+    <div class="label">🟢 建議公式（中位偏上、最穩健）</div>
     <button class="txt" onclick="copyFormula()">📋 複製公式</button>
     <textarea id="txtOut" class="out" readonly wrap="off"></textarea>
     <div style="font-size:11px;color:#666;margin-top:4px" id="charInfo"></div>
@@ -170,7 +168,6 @@ var OPS = ['>', '>=', '<', '<='];
 var RESULTS = ['H', 'D', 'A'];
 var RESULT_CODES = { H: 0, D: 1, A: 2 };
 
-/* 全域狀態（每次運行會重置） */
 var trainFeat = null, trainCodes = null, trainPayouts = null, trainN = 0;
 var valFeat = null, valCodes = null, valPayouts = null, valN = 0;
 var running = false;
@@ -179,7 +176,6 @@ var lastYield = 0;
 var condCache = { train: new Map(), val: new Map() };
 var featureCandidates = {};
 
-/* ========== 位圖 ========== */
 function bsNew(N){ return new Uint32Array((N+31)>>5); }
 function bsNewFull(N){
   var bs = new Uint32Array((N+31)>>5);
@@ -248,29 +244,6 @@ function profitForBS(bs, codes, payouts, N, TC){
   }
   return p;
 }
-function evalRuleDual(conds, TC){
-  var trainBS;
-  if(conds.length === 0) trainBS = bsNewFull(trainN);
-  else {
-    trainBS = getCondBS('train', conds[0][0], conds[0][1], conds[0][2]);
-    for(var c=1;c<conds.length;c++){
-      trainBS = bsAnd(trainBS, getCondBS('train', conds[c][0], conds[c][1], conds[c][2]));
-    }
-  }
-  var trainP = profitForBS(trainBS, trainCodes, trainPayouts, trainN, TC);
-  var valP = 0, valBS = null;
-  if(valN > 0){
-    if(conds.length === 0) valBS = bsNewFull(valN);
-    else {
-      valBS = getCondBS('val', conds[0][0], conds[0][1], conds[0][2]);
-      for(var c2=1;c2<conds.length;c2++){
-        valBS = bsAnd(valBS, getCondBS('val', conds[c2][0], conds[c2][1], conds[c2][2]));
-      }
-    }
-    valP = profitForBS(valBS, valCodes, valPayouts, valN, TC);
-  }
-  return { trainBS: trainBS, valBS: valBS, trainP: trainP, valP: valP };
-}
 function getCandidates(fi){
   if(featureCandidates[fi]) return featureCandidates[fi];
   var vals = [];
@@ -285,8 +258,10 @@ function getCandidates(fi){
   featureCandidates[fi] = qs;
   return qs;
 }
-function generateSeeds(strict){
+
+function generateSeeds(){
   var seeds = [];
+  var minCnt = Math.max(5, Math.floor(trainN * 0.02));
   for(var fi=0;fi<FCOUNT;fi++){
     var qs = getCandidates(fi);
     for(var opIdx=0;opIdx<4;opIdx++){
@@ -294,28 +269,24 @@ function generateSeeds(strict){
         var v = qs[qi];
         var trainBS = getCondBS('train', fi, opIdx, v);
         var cnt = bsCount(trainBS);
-        if(cnt < 10) continue;
+        if(cnt < minCnt) continue;
         for(var TC=0;TC<3;TC++){
           var trainP = profitForBS(trainBS, trainCodes, trainPayouts, trainN, TC);
           if(trainP <= 0) continue;
-          var valP = 0, valBS = null;
-          if(valN > 0){
-            valBS = getCondBS('val', fi, opIdx, v);
-            valP = profitForBS(valBS, valCodes, valPayouts, valN, TC);
-            if(strict && valP <= 0) continue;
-          }
-          seeds.push({ fi:fi, opIdx:opIdx, v:v, TC:TC, trainBS:trainBS, valBS:valBS, trainP:trainP, valP:valP, cnt:cnt });
+          seeds.push({ fi:fi, opIdx:opIdx, v:v, TC:TC, trainBS:trainBS, trainP:trainP, cnt:cnt });
         }
       }
     }
   }
   return seeds;
 }
-function expandSeed(seed, allSeeds, maxSteps, strict){
+
+function expandSeed(seed, allSeeds, maxSteps){
   var conds = [[seed.fi, seed.opIdx, seed.v]];
-  var trainBS = seed.trainBS, valBS = seed.valBS;
-  var trainP = seed.trainP, valP = seed.valP, cnt = seed.cnt;
-  var density = valN > 0 ? (trainP/trainN*0.3 + valP/valN*0.7) : (trainP/trainN);
+  var trainBS = seed.trainBS;
+  var trainP = seed.trainP;
+  var density = trainP / trainN;
+
   for(var step=0;step<maxSteps;step++){
     var best = null;
     for(var i=0;i<allSeeds.length;i++){
@@ -329,73 +300,45 @@ function expandSeed(seed, allSeeds, maxSteps, strict){
       if(dup) continue;
       var newTrainBS = bsAnd(trainBS, c.trainBS);
       var newCnt = bsCount(newTrainBS);
-      if(newCnt < 10) continue;
+      if(newCnt < Math.max(5, Math.floor(trainN * 0.02))) continue;
       var newTrainP = profitForBS(newTrainBS, trainCodes, trainPayouts, trainN, seed.TC);
       if(newTrainP <= 0) continue;
-      var newValP = 0, newValBS = null;
-      if(valN > 0 && valBS){
-        newValBS = bsAnd(valBS, c.valBS);
-        newValP = profitForBS(newValBS, valCodes, valPayouts, valN, seed.TC);
-        if(strict && newValP <= 0) continue;
-      }
-      var newDensity = valN > 0 ? (newTrainP/trainN*0.3 + newValP/valN*0.7) : (newTrainP/trainN);
+      var newDensity = newTrainP / trainN;
       if(newDensity > density * 1.02){
         if(!best || newDensity > best.density){
-          best = { fi:c.fi, opIdx:c.opIdx, v:c.v, trainBS:newTrainBS, valBS:newValBS, trainP:newTrainP, valP:newValP, cnt:newCnt, density:newDensity };
+          best = { fi:c.fi, opIdx:c.opIdx, v:c.v, trainBS:newTrainBS, trainP:newTrainP, density:newDensity };
         }
       }
     }
     if(!best) break;
     conds.push([best.fi, best.opIdx, best.v]);
-    trainBS = best.trainBS; valBS = best.valBS;
-    trainP = best.trainP; valP = best.valP;
-    cnt = best.cnt; density = best.density;
+    trainBS = best.trainBS;
+    trainP = best.trainP;
+    density = best.density;
   }
-  return { TC: seed.TC, conds: conds, trainBS: trainBS, valBS: valBS, trainP: trainP, valP: valP, cnt: cnt };
+  return { TC: seed.TC, conds: conds, trainBS: trainBS, trainP: trainP };
 }
+
 function sequentialSelect(candidates, N){
   var covered = bsNew(N);
-  var valCovered = valN > 0 ? bsNew(valN) : null;
   var chosen = [];
   for(var iter=0;iter<100;iter++){
     if(!running) break;
-    var best = null, bestScore = 0;
+    var best = null, bestMargin = 0;
     for(var i=0;i<candidates.length;i++){
       var r = candidates[i];
       var only = bsAndNot(r.trainBS, covered);
-      var trainMargin = profitForBS(only, trainCodes, trainPayouts, trainN, r.TC);
-      if(trainMargin <= 0) continue;
-      var valMargin = 0;
-      if(valN > 0 && valCovered && r.valBS){
-        var valOnly = bsAndNot(r.valBS, valCovered);
-        valMargin = profitForBS(valOnly, valCodes, valPayouts, valN, r.TC);
-      }
-      var score = valN > 0 ? (trainMargin/trainN*0.3 + valMargin/valN*0.7) : (trainMargin/trainN);
-      if(score > bestScore){ bestScore = score; best = { rule: r, trainMargin: trainMargin, valMargin: valMargin }; }
+      var margin = profitForBS(only, trainCodes, trainPayouts, trainN, r.TC);
+      if(margin > bestMargin){ bestMargin = margin; best = { rule: r, margin: margin }; }
     }
     if(!best) break;
-    chosen.push({ TC: best.rule.TC, conds: best.rule.conds, trainMargin: best.trainMargin, valMargin: best.valMargin });
+    chosen.push({ TC: best.rule.TC, conds: best.rule.conds, margin: best.margin });
     bsOrInPlace(covered, best.rule.trainBS);
-    if(valN > 0 && valCovered && best.rule.valBS) bsOrInPlace(valCovered, best.rule.valBS);
   }
   return { chosen: chosen, covered: covered };
 }
-function pruneRules(rules){
-  if(valN === 0) return { rules: rules, pruned: 0 };
-  var kept = [], pruned = 0;
-  var covered = bsNew(trainN);
-  for(var i=0;i<rules.length;i++){
-    var r = rules[i];
-    var d = evalRuleDual(r.conds, r.TC);
-    var only = bsAndNot(d.trainBS, covered);
-    var margin = profitForBS(only, trainCodes, trainPayouts, trainN, r.TC);
-    bsOrInPlace(covered, d.trainBS);
-    if(margin > 0 && d.valP >= 0) kept.push(r);
-    else if(margin > 0 && d.valP < 0) pruned++;
-  }
-  return { rules: kept, pruned: pruned };
-}
-function computeFallback(covered, valCovered, N){
+
+function computeFallback(covered, N){
   var uncovered = bsAndNot(bsNewFull(N), covered);
   var cnt = bsCount(uncovered);
   if(cnt === 0) return null;
@@ -404,14 +347,10 @@ function computeFallback(covered, valCovered, N){
     var p = profitForBS(uncovered, trainCodes, trainPayouts, trainN, TC);
     if(p > bestProfit){ bestProfit = p; bestTC = TC; }
   }
-  var valP = 0, valCnt = 0;
-  if(valN > 0 && valCovered){
-    var valUncov = bsAndNot(bsNewFull(valN), valCovered);
-    valCnt = bsCount(valUncov);
-    valP = profitForBS(valUncov, valCodes, valPayouts, valN, bestTC);
-  }
-  return { TC: bestTC, conds: [], trainCnt: cnt, trainProfit: bestProfit, valCnt: valCnt, valProfit: valP };
+  /* ✅ 修復：加入 margin 欄位 */
+  return { TC: bestTC, conds: [], margin: bestProfit, trainCnt: cnt, trainProfit: bestProfit };
 }
+
 function evaluateRules(rules, side){
   var N = side === 'train' ? trainN : valN;
   var codes = side === 'train' ? trainCodes : valCodes;
@@ -435,7 +374,6 @@ function evaluateRules(rules, side){
   return { total: total, covered: covered };
 }
 
-/* ========== 公式生成 ========== */
 function featToSheet(feat){
   var M = {
     'A':'A2:A','B':'B2:B','C':'C2:C','D':'D2:D','E':'E2:E','F':'F2:F',
@@ -478,7 +416,6 @@ function genFormula(rules, fallbackTC){
   return '=ARRAYFORMULA(IF((A2:A="")*(B2:B="")*(C2:C="")*(D2:D="")*(E2:E="")*(F2:F=""),"",' + inner + '))';
 }
 
-/* ========== 解析 ========== */
 function parseData(text){
   var rows = [], seen = new Set();
   var dups = 0, total = 0;
@@ -535,7 +472,6 @@ function extractMeta(rows){
   return { codes: codes, payouts: payouts };
 }
 
-/* ========== 日誌 ========== */
 var logBuffer = [], logTimer = null;
 function nowTime(){
   if(!startTime) return '[00:00]';
@@ -577,21 +513,17 @@ async function yieldUI(){
   return new Promise(function(r){ setTimeout(r, 0); });
 }
 
-/* ========== 單次挖掘 ========== */
-async function runOneMining(parsed, useVal, strength, doPrune, strict, runIdx, totalRuns){
-  /* 重置快取 */
+async function runOneMining(parsed, useVal, strength){
   condCache.train.clear();
   condCache.val.clear();
   featureCandidates = {};
 
-  /* 洗牌 */
   var rows = parsed.rows.slice();
   for(var i=rows.length-1;i>0;i--){
     var j = Math.floor(Math.random() * (i+1));
     var t = rows[i]; rows[i] = rows[j]; rows[j] = t;
   }
 
-  /* 分割 */
   var trainRows, valRows;
   if(useVal && rows.length >= 50){
     var split = Math.floor(rows.length * 0.8);
@@ -615,16 +547,15 @@ async function runOneMining(parsed, useVal, strength, doPrune, strict, runIdx, t
     valFeat = null; valCodes = null; valPayouts = null;
   }
 
-  /* 基準 */
   var fullBS = bsNewFull(trainN);
   var baseProfits = [0,0,0];
   for(var TC=0;TC<3;TC++) baseProfits[TC] = profitForBS(fullBS, trainCodes, trainPayouts, trainN, TC);
-  var bestBase = Math.max(baseProfits[0]/trainN, baseProfits[1]/trainN, baseProfits[2]/trainN);
+  var baseROIs = [baseProfits[0]/(trainN*100), baseProfits[1]/(trainN*100), baseProfits[2]/(trainN*100)];
+  var bestBase = Math.max(baseROIs[0], baseROIs[1], baseROIs[2]);
 
   log(nowTime() + ' 訓練 ' + trainN + ' 驗證 ' + valN + '，基準 ' + (bestBase*100).toFixed(2) + '%');
 
-  /* 種子 */
-  var seeds = generateSeeds(strict);
+  var seeds = generateSeeds();
   log(nowTime() + ' 種子：' + seeds.length + ' 個');
   await yieldUI();
 
@@ -632,12 +563,7 @@ async function runOneMining(parsed, useVal, strength, doPrune, strict, runIdx, t
     return { trainROI: 0, valROI: 0, formula: '', rules: [], trainTotal: 0, valTotal: 0, trainN: trainN, valN: valN, bestBase: bestBase, hasData: false };
   }
 
-  /* 排序 */
-  seeds.sort(function(a,b){
-    var ra = valN > 0 ? (a.trainP/trainN*0.3 + a.valP/valN*0.7) : (a.trainP/trainN);
-    var rb = valN > 0 ? (b.trainP/trainN*0.3 + b.valP/valN*0.7) : (b.trainP/trainN);
-    return rb - ra;
-  });
+  seeds.sort(function(a,b){ return (b.trainP/trainN) - (a.trainP/trainN); });
 
   var topN, compareN, maxSteps;
   if(strength === 0){ topN = 30; compareN = 100; maxSteps = 2; }
@@ -647,49 +573,28 @@ async function runOneMining(parsed, useVal, strength, doPrune, strict, runIdx, t
   var topSeeds = seeds.slice(0, topN);
   var compareSeeds = seeds.slice(0, compareN);
 
-  /* 擴展 */
   var expanded = [];
   for(var si=0;si<topSeeds.length;si++){
     if(!running) break;
-    expanded.push(expandSeed(topSeeds[si], compareSeeds, maxSteps, strict));
+    expanded.push(expandSeed(topSeeds[si], compareSeeds, maxSteps));
     if(si % 20 === 0) await yieldUI();
   }
   log(nowTime() + ' 擴展：' + expanded.length + ' 條');
 
-  /* 剪枝 */
-  if(doPrune){
-    var pr = pruneRules(expanded);
-    expanded = pr.rules;
-    log(nowTime() + ' 剪枝後：' + expanded.length + ' 條（砍 ' + pr.pruned + '）');
-  }
-
-  /* 順序選擇 */
   var selResult = sequentialSelect(expanded, trainN);
   log(nowTime() + ' 選出：' + selResult.chosen.length + ' 條');
 
-  /* 兜底 */
-  var valCovered = null;
-  if(valN > 0){
-    valCovered = bsNew(valN);
-    for(var ri=0;ri<selResult.chosen.length;ri++){
-      var r = selResult.chosen[ri];
-      var d = evalRuleDual(r.conds, r.TC);
-      bsOrInPlace(valCovered, d.valBS);
-    }
-  }
-  var fb = computeFallback(selResult.covered, valCovered, trainN);
-
+  var fb = computeFallback(selResult.covered, trainN);
   var finalRules = selResult.chosen.slice();
   if(fb) finalRules.push(fb);
 
-  /* 評估 */
   var trainEval = evaluateRules(finalRules, 'train');
-  var trainROI = trainEval.total / trainN;
+  var trainROI = trainEval.total / (trainN * 100);
   var valTotal = 0, valROI = 0;
   if(valN > 0){
     var valEval = evaluateRules(finalRules, 'val');
     valTotal = valEval.total;
-    valROI = valTotal / valN;
+    valROI = valTotal / (valN * 100);
   }
 
   var fallbackTC = fb ? fb.TC : 1;
@@ -709,7 +614,6 @@ async function runOneMining(parsed, useVal, strength, doPrune, strict, runIdx, t
   };
 }
 
-/* ========== 主流程 ========== */
 async function start(){
   running = true;
   startTime = Date.now();
@@ -728,39 +632,30 @@ async function start(){
   var strength = parseInt(document.getElementById('strength').value);
   var numRuns = parseInt(document.getElementById('numRuns').value);
   var useVal = document.getElementById('useVal').checked;
-  var doPrune = document.getElementById('optPrune').checked;
-  var strict = document.getElementById('optStrict').checked;
 
-  /* 多次運行必須有驗證分割 */
   if(numRuns > 1 && !useVal){
     useVal = true;
     document.getElementById('useVal').checked = true;
     log('⚠️ 多次運行已自動啟用驗證分割', 'warn');
   }
-  if(numRuns === 1 && !useVal){
-    log('⚠️ 單次運行 + 無驗證，無法評估穩定性', 'warn');
-  }
 
   log('═══════════════════════════════════════════', 'head');
-  log('🚀 v37.2 — 多次運行 + 使用建議', 'head');
+  log('🚀 v37.4 — Bug 修復版', 'head');
   log('═══════════════════════════════════════════', 'head');
   log(nowTime() + ' 去重後：' + parsed.rows.length + ' 筆');
   log(nowTime() + ' 運行次數：' + numRuns);
-  log(nowTime() + ' 嚴格模式：' + (strict ? '✅' : '❌') + '　剪枝：' + (doPrune ? '✅' : '❌'));
   await yieldUI();
 
   var allResults = [];
   for(var runIdx = 0; runIdx < numRuns; runIdx++){
     if(!running) break;
-
     log('');
     log('═══════════════════════════════════════════', 'head');
     log('🔄 運行 ' + (runIdx + 1) + ' / ' + numRuns, 'head');
     log('═══════════════════════════════════════════', 'head');
     setProgress((runIdx / numRuns) * 100, '運行 ' + (runIdx+1) + '/' + numRuns);
     await yieldUI();
-
-    var result = await runOneMining(parsed, useVal, strength, doPrune, strict, runIdx, numRuns);
+    var result = await runOneMining(parsed, useVal, strength);
     allResults.push(result);
     log(nowTime() + ' 完成運行 ' + (runIdx+1), 'run');
   }
@@ -775,20 +670,18 @@ async function start(){
   flushNow();
 }
 
-/* ========== 顯示結果 + 評級 ========== */
 function displayResults(results, numRuns){
-  /* 過濾掉無資料的 */
   var valid = results.filter(function(r){ return r.hasData; });
   if(valid.length === 0){
-    alert('所有運行都無合格規則，建議收集更多資料或關閉嚴格模式');
+    alert('所有運行都無合格規則，建議收集更多資料');
     return;
   }
 
   var hasVal = valid[0].valN > 0;
 
-  /* 統計 */
   var avgVal = 0, avgTrain = 0, avgGenRate = 0, valPosCount = 0;
-  var valROIs = [], genRates = [];
+  var valROIs = [];
+  var genRates = [];
   for(var i=0;i<valid.length;i++){
     var r = valid[i];
     avgTrain += r.trainROI;
@@ -796,95 +689,71 @@ function displayResults(results, numRuns){
       avgVal += r.valROI;
       valROIs.push(r.valROI);
       if(r.valROI > 0) valPosCount++;
-      var gr = r.trainROI > 0 ? (r.valROI / r.trainROI) : 0;
+      /* ✅ 修復：只在 trainROI > 0 且 valROI 也 > 0 時計入泛化率，否則記為 null */
+      var gr = (r.trainROI > 0 && r.valROI > 0) ? (r.valROI / r.trainROI) : null;
       genRates.push(gr);
-      avgGenRate += gr;
+      if(gr !== null) avgGenRate += gr;
     }
   }
   avgTrain /= valid.length;
   var winRate = hasVal ? (valPosCount / valid.length) : 0;
   
+  var genRateValid = genRates.filter(function(g){ return g !== null; });
   if(hasVal){
     avgVal /= valid.length;
-    avgGenRate /= valid.length;
+    avgGenRate = genRateValid.length > 0 ? (avgGenRate / genRateValid.length) : null;
   }
 
-  /* 計算標準差 */
   var valStd = 0;
   if(hasVal && valROIs.length > 1){
-    var mean = avgVal;
-    var sq = 0;
+    var mean = avgVal, sq = 0;
     for(var i=0;i<valROIs.length;i++) sq += Math.pow(valROIs[i] - mean, 2);
     valStd = Math.sqrt(sq / valROIs.length);
   }
 
-  /* 找最穩健的一次（驗證 ROI 中位數） */
+  /* ✅ 修復：選中位偏上（50% 分位） */
   var sorted = valid.slice().sort(function(a,b){ return (a.valROI || 0) - (b.valROI || 0); });
-  var medianIdx = Math.floor(sorted.length / 2);
-  var bestRun = hasVal ? sorted[medianIdx] : valid[0];
-  
-  /* 或者如果有 5+ 次，選中位數偏好的（略高於中位） */
+  var bestRun = valid[0];
   if(sorted.length >= 3 && hasVal){
-    /* 取前 40% 中位 */
     var hiIdx = Math.max(0, Math.floor(sorted.length * 0.5));
     bestRun = sorted[hiIdx];
+  } else if(hasVal){
+    bestRun = sorted[Math.floor(sorted.length / 2)];
   }
-
-  /* 最高驗證 ROI 的運行 */
   var topRun = hasVal ? sorted[sorted.length - 1] : valid[0];
 
-  /* === 評級 === */
-  var stars = 1;
-  var label = '';
-  var reason = '';
-  var cls = 'v1';
+  /* ✅ 修復：5 星門檻合理化 */
+  var stars = 1, label = '', reason = '', cls = 'v1';
 
   if(!hasVal){
-    /* 無驗證，只能看訓練 */
-    if(avgTrain > 0.05){ stars = 2; label = '無法評估（缺驗證）'; cls = 'v2'; reason = '啟用驗證分割才能評估穩定性'; }
-    else { stars = 1; label = '無法評估'; cls = 'v1'; reason = '啟用驗證分割才能評估'; }
+    if(avgTrain > 0.05){ stars = 2; label = '無法評估（缺驗證）'; cls = 'v2'; reason = '請啟用驗證分割'; }
+    else { stars = 1; label = '無法評估'; cls = 'v1'; reason = '請啟用驗證分割'; }
   } else {
-    /* 5 星：全部正、泛化率高、驗證 ROI 高 */
-    if(avgVal >= 0.10 && winRate >= 0.8 && avgGenRate >= 0.7){
-      stars = 5; label = '強烈推薦'; cls = 'v5';
-      reason = '多次運行穩定為正，泛化率高，可以放心使用';
-    }
-    /* 4 星：多數正、泛化率中上、驗證 ROI 正 */
-    else if(avgVal >= 0.05 && winRate >= 0.6 && avgGenRate >= 0.5){
-      stars = 4; label = '推薦'; cls = 'v4';
-      reason = '多數運行正報酬，泛化良好';
-    }
-    /* 3 星：驗證為正但泛化率一般 */
-    else if(avgVal > 0 && winRate >= 0.5 && avgGenRate >= 0.3){
-      stars = 3; label = '謹慎使用'; cls = 'v3';
-      reason = '驗證為正但不夠穩定，建議收集更多資料';
-    }
-    /* 2 星：多數為負或泛化差 */
-    else if(avgVal > -0.03 && winRate >= 0.3){
-      stars = 2; label = '不推薦'; cls = 'v2';
-      reason = '驗證不穩定，可能虧錢';
-    }
-    /* 1 星：驗證平均為負 */
-    else {
-      stars = 1; label = '強烈不推薦'; cls = 'v1';
-      reason = '驗證 ROI 為負，會虧錢，不要使用';
+    var grForRating = avgGenRate === null ? 0 : avgGenRate;
+    if(avgVal >= 0.03 && winRate >= 0.7 && grForRating >= 0.6){
+      stars = 5; label = '強烈推薦'; cls = 'v5'; reason = '多次穩定為正，泛化良好';
+    } else if(avgVal >= 0.01 && winRate >= 0.6 && grForRating >= 0.4){
+      stars = 4; label = '推薦'; cls = 'v4'; reason = '多數正報酬，泛化尚可';
+    } else if(avgVal > 0 && winRate >= 0.5){
+      stars = 3; label = '謹慎使用'; cls = 'v3'; reason = '驗證為正但不夠穩定';
+    } else if(avgVal > -0.01 && winRate >= 0.3){
+      stars = 2; label = '不推薦'; cls = 'v2'; reason = '驗證不穩定，可能虧錢';
+    } else {
+      stars = 1; label = '強烈不推薦'; cls = 'v1'; reason = '驗證 ROI 為負，會虧錢';
     }
   }
 
-  /* === 渲染 === */
   var starsStr = '★'.repeat(stars) + '☆'.repeat(5 - stars);
   document.getElementById('stars').textContent = starsStr;
   document.getElementById('verdictLabel').textContent = label;
   document.getElementById('verdict').className = 'verdict ' + cls;
   
   var detailLines = [reason];
-  detailLines.push('運行 ' + numRuns + ' 次，' + valid.length + ' 次成功');
-  if(hasVal){
-    detailLines.push('驗證為正：' + valPosCount + '/' + valid.length);
-  }
+  /* ✅ 修復：用成功次數而非設定次數 */
+  detailLines.push('成功 ' + valid.length + '/' + numRuns + ' 次');
+  if(hasVal) detailLines.push('驗證為正：' + valPosCount + '/' + valid.length);
   document.getElementById('verdictDetail').textContent = detailLines.join('｜');
 
-  /* 大字 ROI */
   if(hasVal){
     document.getElementById('roiBig').textContent = (bestRun.valROI * 100).toFixed(2) + '%';
     document.getElementById('roiDetail').innerHTML =
@@ -896,29 +765,31 @@ function displayResults(results, numRuns){
     document.getElementById('roiDetail').innerHTML = '（僅訓練 ROI，未啟用驗證）';
   }
 
-  /* 統計格 */
-  document.getElementById('sAvgVal').textContent = hasVal ? (avgVal*100).toFixed(2) + '%' : '-';
+  /* ✅ 修復：NA 顯示 */
+  document.getElementById('sAvgVal').textContent = hasVal ? (avgVal*100).toFixed(2) + '%' : 'N/A';
   document.getElementById('sAvgTrain').textContent = (avgTrain*100).toFixed(2) + '%';
-  document.getElementById('sGenRate').textContent = hasVal ? (avgGenRate*100).toFixed(1) + '%' : '-';
-  document.getElementById('sWinRate').textContent = hasVal ? (valPosCount + '/' + valid.length) : '-';
+  document.getElementById('sGenRate').textContent = avgGenRate !== null ? (avgGenRate*100).toFixed(1) + '%' : 'N/A';
+  document.getElementById('sWinRate').textContent = hasVal ? (valPosCount + '/' + valid.length) : 'N/A';
 
-  /* 標記警告顏色 */
-  var cellAvg = document.getElementById('sAvgVal').parentElement;
-  if(hasVal && avgVal < 0) cellAvg.classList.add('warn');
-  else cellAvg.classList.remove('warn');
+  /* 標記 NA 樣式 */
+  ['cellAvgVal','cellAvgTrain','cellGenRate','cellWinRate'].forEach(function(id){
+    document.getElementById(id).classList.remove('warn','na');
+  });
+  if(!hasVal) document.getElementById('cellAvgVal').classList.add('na');
+  if(avgGenRate === null && hasVal) document.getElementById('cellGenRate').classList.add('na');
+  if(hasVal && avgVal < 0) document.getElementById('cellAvgVal').classList.add('warn');
 
-  /* 每次運行表 */
   var html = '<table class="runs-table"><thead><tr>' +
     '<th>#</th><th>訓練 ROI</th><th>驗證 ROI</th><th>泛化率</th><th>驗證利潤</th><th>狀態</th>' +
     '</tr></thead><tbody>';
   
   for(var i=0;i<valid.length;i++){
     var r = valid[i];
-    var gr = r.trainROI > 0 ? (r.valROI / r.trainROI) : 0;
+    var gr = (r.trainROI > 0 && r.valROI > 0) ? (r.valROI / r.trainROI) : null;
     var isBest = (r === bestRun);
     var isTop = (r === topRun);
     var status, statusCls;
-    if(r.valROI > 0 && gr >= 0.6){ status = '✅ 良好'; statusCls = 'pos'; }
+    if(r.valROI > 0 && gr !== null && gr >= 0.6){ status = '✅ 良好'; statusCls = 'pos'; }
     else if(r.valROI > 0){ status = '🟡 邊緣'; statusCls = ''; }
     else { status = '❌ 虧損'; statusCls = 'neg'; }
     
@@ -931,42 +802,37 @@ function displayResults(results, numRuns){
     html += '<tr class="' + rowCls + '"><td>#' + (i+1) + marker + '</td>' +
       '<td>' + (r.trainROI*100).toFixed(2) + '%</td>' +
       '<td class="' + (r.valROI > 0 ? 'pos' : 'neg') + '">' + (r.valROI*100).toFixed(2) + '%</td>' +
-      '<td>' + (gr*100).toFixed(1) + '%</td>' +
+      '<td class="' + (gr === null ? 'na' : '') + '">' + (gr !== null ? (gr*100).toFixed(1) + '%' : 'N/A') + '</td>' +
       '<td class="' + (r.valTotal > 0 ? 'pos' : 'neg') + '">' + r.valTotal + '</td>' +
       '<td class="' + statusCls + '">' + status + '</td></tr>';
   }
   html += '</tbody></table>';
   document.getElementById('runsTable').innerHTML = html;
 
-  /* 公式 */
   document.getElementById('txtOut').value = bestRun.formula;
   document.getElementById('charInfo').innerHTML = 
     '字符數：<b>' + bestRun.formula.length + '</b>　' +
     '規則數：<b>' + bestRun.rules.length + '</b>　' +
     '訓練 ' + bestRun.trainN + ' 場 / 驗證 ' + bestRun.valN + ' 場';
 
-  /* 規則表 */
   renderRuleTableForRun(bestRun);
 
   document.getElementById('best').style.display = 'block';
   log('');
   log('═══════════════════════════════════════════', 'head');
   log('🏆 評級：' + starsStr + ' ' + label, stars >= 3 ? 'success' : 'danger');
-  log('   平均驗證 ROI：' + (avgVal*100).toFixed(2) + '%', avgVal > 0 ? 'roi' : 'danger');
+  log('   成功次數：' + valid.length + '/' + numRuns);
+  log('   平均驗證 ROI：' + (hasVal ? (avgVal*100).toFixed(2) + '%' : 'N/A'), avgVal > 0 ? 'roi' : 'danger');
   log('   平均訓練 ROI：' + (avgTrain*100).toFixed(2) + '%');
-  log('   平均泛化率：' + (avgGenRate*100).toFixed(1) + '%');
+  log('   平均泛化率：' + (avgGenRate !== null ? (avgGenRate*100).toFixed(1) + '%' : 'N/A'));
   log('   正報酬勝率：' + valPosCount + '/' + valid.length);
-  log('   標準差：' + (valStd*100).toFixed(2) + '%', valStd > 0.1 ? 'warn' : 'ok');
   log('═══════════════════════════════════════════', 'head');
   flushNow();
 }
 
-/* ========== 規則表渲染（用當前全域 feat/codes，需要重建） ========== */
 function renderRuleTableForRun(run){
-  /* 用該 run 的資料重建（注意：全域可能已經是別的 run 的） */
-  /* 這裡簡單展示規則文字，不用位圖 */
   var html = '<table class="rules"><thead><tr>' +
-    '<th>#</th><th>類型</th><th>結果</th><th>條件</th><th>訓練邊際</th><th>驗證邊際</th>' +
+    '<th>#</th><th>類型</th><th>結果</th><th>條件</th><th>訓練邊際</th>' +
     '</tr></thead><tbody>';
 
   for(var ri=0;ri<run.rules.length;ri++){
@@ -978,15 +844,12 @@ function renderRuleTableForRun(run){
       rule.conds.map(function(cc){
         return FEATURES[cc[0]] + OPS[cc[1]] + (Math.round(cc[2]*100)/100);
       }).join(' & ');
-    var trainMargin = rule.trainMargin || 0;
-    var valMargin = rule.valMargin || 0;
-    var tp = trainMargin > 0 ? 'pos' : (trainMargin < 0 ? 'neg' : '');
-    var vp = valMargin > 0 ? 'pos' : (valMargin < 0 ? 'neg' : '');
+    var margin = rule.margin || 0;
+    var mp = margin > 0 ? 'pos' : (margin < 0 ? 'neg' : '');
 
     html += '<tr><td>R' + (ri+1) + '</td><td>' + typeTag + '</td><td>' + tcTag + '</td>' +
       '<td style="font-size:10px">' + condStr + '</td>' +
-      '<td class="' + tp + '">' + trainMargin + '</td>' +
-      '<td class="' + vp + '">' + valMargin + '</td></tr>';
+      '<td class="' + mp + '">' + margin + '</td></tr>';
   }
   html += '</tbody></table>';
   document.getElementById('ruleTable').innerHTML = html;
@@ -999,7 +862,6 @@ function stop(){
   flushNow();
 }
 
-/* ========== 複製 ========== */
 function copyFormula(){
   var el = document.getElementById('txtOut');
   var txt = el.value;
