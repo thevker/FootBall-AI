@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v38 — 空起始 + 多輪演化 + 交叉驗證</title>
+<title>🚀 v39 — 10折 × 3次重複 + t檢定</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1500px;margin:auto;background:#f0f2f5}
@@ -30,6 +30,7 @@ button.txt{background:#28a745}
 .l-evo{color:#22d3ee;font-weight:bold;background:rgba(34,211,238,0.1)}
 .l-test{color:#f472b6;font-weight:bold;background:rgba(244,114,182,0.15);font-size:13px}
 .l-fold{color:#22d3ee;font-weight:bold;background:rgba(34,211,238,0.1);font-size:13px}
+.l-rep{color:#fb923c;font-weight:bold;background:rgba(251,146,60,0.15);font-size:14px}
 .l-stats{color:#a78bfa;font-weight:bold;background:rgba(167,139,250,0.1)}
 .l-accept{color:#4ade80;font-weight:bold;background:rgba(74,222,128,0.1)}
 .l-round{color:#f59e0b;font-weight:bold;background:rgba(245,158,11,0.1)}
@@ -63,7 +64,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 #progbar::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent);animation:shine 1.5s infinite}
 @keyframes shine{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
 #progText{font-weight:bold;font-size:15px;color:#007bff;min-width:80px;text-align:right;font-family:monospace}
-#progPhase{font-size:12px;color:#666;min-width:140px;text-align:left;font-family:monospace}
+#progPhase{font-size:12px;color:#666;min-width:200px;text-align:left;font-family:monospace}
 .stats{display:flex;gap:15px;flex-wrap:wrap;margin-top:8px;font-size:12px}
 .stat{background:#fff;padding:6px 12px;border-radius:4px;border:1px solid #ddd}
 .stat b{color:#007bff}
@@ -73,6 +74,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .stat.test-stat b{color:#9d174d}
 .stat.fold-stat{background:#cffafe;border-color:#22d3ee}
 .stat.fold-stat b{color:#0e7490}
+.stat.rep-stat{background:#fed7aa;border-color:#fb923c}
+.stat.rep-stat b{color:#9a3412}
 .stat.rules-stat{background:#dcfce7;border-color:#22c55e}
 .stat.rules-stat b{color:#15803d}
 .stat.round-stat{background:#fef3c7;border-color:#f59e0b}
@@ -84,17 +87,19 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .warn-banner b{color:#155e75}
 .stats-banner{background:linear-gradient(135deg,#ede9fe,#ddd6fe);padding:14px;border-radius:6px;border:1px solid #a78bfa;margin-top:10px}
 .stats-banner b{color:#4c1d95}
-.big-num{font-size:32px;font-weight:bold;font-family:monospace}
+.big-num{font-size:36px;font-weight:bold;font-family:monospace}
 .verdict-pos{color:#0a7a0a}
 .verdict-neg{color:#c00}
 .verdict-warn{color:#e67e22}
 .verdict-neutral{color:#666}
+.dist-table{margin-top:10px;font-size:11px}
+.dist-table th{background:#fef3c7}
 </style>
 </head>
 <body>
 
 <div class="top">
-  <h2 id="title">🚀 v38 — 空起始 + 多輪演化 + 交叉驗證</h2>
+  <h2 id="title">🚀 v39 — 10 折 × 3 次重複 + t 檢定</h2>
   <div>
     <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁中</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
@@ -102,13 +107,12 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </div>
 
 <div class="warn-banner">
-  <b>✨ v38 核心：</b><br>
-  🅾️ <b>從 0 條規則開始</b>，持續生成<br>
-  🔄 <b>多輪演化</b>：每輪 500 迭代，連續 5 輪無進步才停<br>
-  🧬 <b>55% 機率加規則</b>（v37 只有 40%）<br>
-  🧹 <b>每 10 輪審計</b>：清理毒藥規則<br>
-  🩷 <b>K 折交叉驗證</b>：測試集完全不看<br>
-  ⏱️ <b>這個版本會跑很久</b>（10~60 分鐘）
+  <b>✨ v39 最嚴謹：</b><br>
+  🅾️ <b>空起始</b>：從 0 條規則開始<br>
+  🔄 <b>10 折 × 3 次重複</b> = 30 個獨立結果<br>
+  🧬 <b>每折最多 100 輪演化</b>（每輪 500 迭代）<br>
+  📊 <b>t 檢定判定</b>：t > 2.0 才算顯著<br>
+  ⏱️ <b>預估 1~3 小時</b>
 </div>
 
 <textarea id="input" placeholder="23 27 49 355 385 169 0:3 A
@@ -117,15 +121,20 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <div class="row">
   <label>折數：</label>
   <select id="folds">
-    <option value="3">3 折（快）</option>
-    <option value="5" selected>5 折（標準）</option>
-    <option value="10">10 折（慢）</option>
+    <option value="5">5 折</option>
+    <option value="10" selected>10 折（推薦）</option>
+  </select>
+  <label>重複次數：</label>
+  <select id="repeats">
+    <option value="1">1 次（快）</option>
+    <option value="3" selected>3 次（推薦）</option>
+    <option value="5">5 次（很久）</option>
   </select>
   <label>每折最大輪數：</label>
   <select id="maxRounds">
-    <option value="30">30 輪（快）</option>
-    <option value="100" selected>100 輪（標準）</option>
-    <option value="500">500 輪（很久）</option>
+    <option value="30">30 輪</option>
+    <option value="100" selected>100 輪（推薦）</option>
+    <option value="300">300 輪</option>
   </select>
   <button id="btnRun" onclick="start()">🚀 開始</button>
   <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
@@ -146,8 +155,9 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <div id="log">等待開始...</div>
 
 <div class="stats" id="liveStats" style="display:none">
+  <div class="stat rep-stat" id="stat-rep">🔁 重複: 0/0</div>
   <div class="stat fold-stat" id="stat-fold">🔄 折: 0/0</div>
-  <div class="stat round-stat" id="stat-round">🔁 輪: 0/0</div>
+  <div class="stat round-stat" id="stat-round">⏱ 輪: 0/0</div>
   <div class="stat rules-stat" id="stat-rules">📋 規則: 0</div>
   <div class="stat test-stat" id="stat-test">🩷 測試平均: -</div>
   <div class="stat" id="stat-prog">進度: 0%</div>
@@ -163,6 +173,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   </div>
 
   <div class="box" style="margin-top:12px">
+    <div class="label">📊 測試每場分佈（30 個結果）</div>
+    <div id="distTable"></div>
+  </div>
+
+  <div class="box">
     <div class="label">📋 每折明細</div>
     <div id="foldTable"></div>
   </div>
@@ -188,8 +203,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 'use strict';
 
 var TXT = {
-  zh: { title: '🚀 v38 — 空起始 + 多輪演化', hRule: '📋 最後一折規則表', noData: '沒有有效數據' },
-  en: { title: '🚀 v38 — Empty Start + Multi-round', hRule: '📋 Last Fold Rules', noData: 'No valid data' }
+  zh: { title: '🚀 v39 — 10 折 × 3 次重複 + t 檢定', hRule: '📋 最後一折規則表', noData: '沒有有效數據' },
+  en: { title: '🚀 v39 — 10-fold × 3-repeat + t-test', hRule: '📋 Last Fold Rules', noData: 'No valid data' }
 };
 var LANG = 'zh';
 function t(k){ return (TXT[LANG] && TXT[LANG][k]) || k; }
@@ -225,9 +240,11 @@ var startTime = 0;
 var evalCount = 0;
 var logBuffer = [];
 var logTimer = null;
-var LOG_MAX = 10000;
+var LOG_MAX = 20000;
 var lastSpeedUpdate = 0;
 
+var currentRep = 0;
+var totalReps = 0;
 var currentFold = 0;
 var totalFolds = 0;
 var foldResults = [];
@@ -241,7 +258,7 @@ var RESULT_CODES = {H:0, D:1, A:2, skip:-1};
 var OPS = ['>','>=','<','<=','==','!='];
 
 var MAX_RULES = 80;
-var EVO_MIN_IMPROVE = 0.2;   // 每場
+var EVO_MIN_IMPROVE = 0.2;
 var ITER_PER_ROUND = 500;
 var ROUNDS_NO_IMPROVE_LIMIT = 5;
 var AUDIT_INTERVAL = 10;
@@ -294,9 +311,11 @@ function clearLog(){
 
 function updateProgress(){
   var pct = 0;
-  if(totalFolds > 0 && maxRounds > 0){
+  var totalJobs = totalReps * totalFolds;
+  if(totalJobs > 0 && maxRounds > 0){
+    var done = (currentRep - 1) * totalFolds + (currentFold - 1);
     var foldPct = Math.min(0.95, currentRound / maxRounds);
-    pct = ((currentFold - 1 + foldPct) / totalFolds) * 100;
+    pct = ((done + foldPct) / totalJobs) * 100;
     if(pct > 99.5 && running) pct = 99.5;
   }
   if(!running && startTime > 0 && document.getElementById('best').style.display === 'block') pct = 100;
@@ -305,13 +324,15 @@ function updateProgress(){
   var phaseEl = document.getElementById('progPhase');
   if(bar) bar.style.width = pct.toFixed(1) + '%';
   if(txt) txt.textContent = pct.toFixed(1) + '%';
-  if(phaseEl) phaseEl.textContent = currentFold > 0 ? '折 ' + currentFold + '/' + totalFolds + '，輪 ' + currentRound + '/' + maxRounds : '準備中';
+  if(phaseEl) phaseEl.textContent = currentRep > 0 ? '重複 ' + currentRep + '/' + totalReps + '，折 ' + currentFold + '/' + totalFolds + '，輪 ' + currentRound + '/' + maxRounds : '準備中';
   var statProg = document.getElementById('stat-prog');
   if(statProg) statProg.innerHTML = '進度: <b>' + pct.toFixed(1) + '%</b>';
+  var statRep = document.getElementById('stat-rep');
+  if(statRep) statRep.innerHTML = '🔁 重複: <b>' + currentRep + '/' + totalReps + '</b>';
   var statFold = document.getElementById('stat-fold');
   if(statFold) statFold.innerHTML = '🔄 折: <b>' + currentFold + '/' + totalFolds + '</b>';
   var statRound = document.getElementById('stat-round');
-  if(statRound) statRound.innerHTML = '🔁 輪: <b>' + currentRound + '/' + maxRounds + '</b>';
+  if(statRound) statRound.innerHTML = '⏱ 輪: <b>' + currentRound + '/' + maxRounds + '</b>';
   var statRules = document.getElementById('stat-rules');
   if(statRules) statRules.innerHTML = '📋 規則: <b>' + currentRuleCount + '</b>';
 }
@@ -322,7 +343,7 @@ function updateTestAvg(){
   if(foldResults.length === 0){ stat.innerHTML = '🩷 測試平均: <b>-</b>'; return; }
   var sum = 0;
   for(var i = 0; i < foldResults.length; i++) sum += foldResults[i].testPer;
-  stat.innerHTML = '🩷 測試平均: <b>' + (sum / foldResults.length).toFixed(2) + '</b>';
+  stat.innerHTML = '🩷 測試平均: <b>' + (sum / foldResults.length).toFixed(2) + '</b>（' + foldResults.length + ' 筆）';
 }
 
 function updateSpeedUI(){
@@ -432,20 +453,17 @@ function matchRule(f, rule){
   return false;
 }
 
-function calcProfitOn(featMat, codes, payoutsArr, N, rules, track){
+function calcProfitOn(featMat, codes, payoutsArr, N, rules){
   var total = 0;
   for(var i = 0; i < N; i++){
     var f = featMat[i];
-    var pred = -1, hr = -1;
+    var pred = -1;
     for(var r = 0; r < rules.length; r++){
       var rule = rules[r];
       if(!rule.on) continue;
-      if(matchRule(f, rule)){ pred = rule.thenCode; hr = r; break; }
+      if(matchRule(f, rule)){ pred = rule.thenCode; break; }
     }
-    if(pred < 0){
-      if(track && hr !== undefined) {} // skip
-      continue;
-    }
+    if(pred < 0) continue;
     var gp;
     if(pred === codes[i]) gp = payoutsArr[i*3 + pred] - 100;
     else gp = -100;
@@ -454,7 +472,6 @@ function calcProfitOn(featMat, codes, payoutsArr, N, rules, track){
   return total;
 }
 
-/* ⭐ 追蹤每條規則的貢獻 */
 function calcProfitWithRuleStats(featMat, codes, payoutsArr, N, rules){
   var stats = [];
   for(var i = 0; i < rules.length; i++) stats.push({hit:0, profit:0});
@@ -571,29 +588,22 @@ function mutateRule(rule, featMat, N){
   return newRule;
 }
 
-/* ⭐ 剪枝：移除命中少或虧損的規則 */
 function pruneRules(rules, featMat, codes, payoutsArr, N){
   if(rules.length <= 5) return rules;
   var res = calcProfitWithRuleStats(featMat, codes, payoutsArr, N, rules);
   var stats = res.stats;
   var kept = [];
-  var removed = 0;
   for(var i = 0; i < rules.length; i++){
     var s = stats[i];
-    // 保留：命中 >= 3 且 盈利 > 0
-    if(s.hit < 3 || s.profit <= 0){
-      removed++;
-      continue;
-    }
+    if(s.hit < 3 || s.profit <= 0) continue;
     kept.push(rules[i]);
   }
   if(kept.length === 0) return rules;
   return kept;
 }
 
-/* ⭐ 審計：禁用測試 */
 function auditRules(rules, featMat, codes, payoutsArr, N){
-  if(rules.length <= 3) return rules;
+  if(rules.length <= 3) return {rules: rules, disabled: 0};
   var cur = cloneRules(rules);
   var baseRes = calcProfitWithRuleStats(featMat, codes, payoutsArr, N, cur);
   var baseProfit = baseRes.total;
@@ -601,7 +611,7 @@ function auditRules(rules, featMat, codes, payoutsArr, N){
 
   var toDisable = [];
   for(var i = 0; i < cur.length; i++){
-    if(baseStats[i].profit >= 0) continue;  // 只考慮虧錢的
+    if(baseStats[i].profit >= 0) continue;
     var savedOn = cur[i].on;
     cur[i].on = 0;
     var testProfit = calcProfitOn(featMat, codes, payoutsArr, N, cur);
@@ -620,7 +630,7 @@ function auditRules(rules, featMat, codes, payoutsArr, N){
 }
 
 /* ⭐⭐⭐ 空起始 + 多輪演化 ⭐⭐⭐ */
-async function evolveFromEmpty(featMat, codes, payoutsArr, N, maxRounds, foldLabel){
+async function evolveFromEmpty(featMat, codes, payoutsArr, N, maxRounds, label){
   var cur = [];
   var curProfit = 0;
   var curPerGame = 0;
@@ -629,9 +639,8 @@ async function evolveFromEmpty(featMat, codes, payoutsArr, N, maxRounds, foldLab
   var roundsNoImprove = 0;
   var best = null;
   var bestProfit = -Infinity;
-  var bestPerGame = -Infinity;
 
-  pushLog(nowTime() + '   [' + foldLabel + '] 🅾️ 從 0 條規則開始，最多 ' + maxRounds + ' 輪', 'evo');
+  pushLog(nowTime() + '   [' + label + '] 🅾️ 從 0 條規則開始，最多 ' + maxRounds + ' 輪', 'evo');
 
   for(var round = 1; round <= maxRounds; round++){
     if(!running) break;
@@ -641,7 +650,6 @@ async function evolveFromEmpty(featMat, codes, payoutsArr, N, maxRounds, foldLab
     var roundStartProfit = curProfit;
     var roundAccepted = 0;
 
-    // 每輪 ITER_PER_ROUND 次迭代
     for(var iter = 0; iter < ITER_PER_ROUND; iter++){
       if(!running) break;
 
@@ -650,24 +658,21 @@ async function evolveFromEmpty(featMat, codes, payoutsArr, N, maxRounds, foldLab
       var action = '';
 
       if(p < 0.55){
-        // 加新規則
         if(candRules.length >= MAX_RULES) continue;
         var newRule = genRandomRule(featMat, N);
         var pos = Math.random() < 0.7 ? candRules.length : Math.floor(Math.random() * (candRules.length + 1));
         candRules.splice(pos, 0, newRule);
         action = 'add';
       } else if(p < 0.90){
-        // 改一條
         if(candRules.length === 0) continue;
         var ri = Math.floor(Math.random() * candRules.length);
         candRules[ri] = mutateRule(candRules[ri], featMat, N);
-        action = 'mutate R' + (ri+1);
+        action = 'mutate';
       } else {
-        // 刪除
         if(candRules.length <= 3) continue;
         var ri2 = Math.floor(Math.random() * candRules.length);
         candRules.splice(ri2, 1);
-        action = 'del R' + (ri2+1);
+        action = 'del';
       }
 
       var candProfit = calcProfitOn(featMat, codes, payoutsArr, N, candRules);
@@ -683,49 +688,39 @@ async function evolveFromEmpty(featMat, codes, payoutsArr, N, maxRounds, foldLab
 
         if(curProfit > bestProfit){
           bestProfit = curProfit;
-          bestPerGame = curPerGame;
           best = cloneRules(cur);
-          if(document.getElementById('verbose').checked){
-            pushLog(nowTime() + '   [' + foldLabel + '] 🏆 新最優 ' + curPerGame.toFixed(2) + '/場（規則 ' + cur.length + '）', 'best');
-          }
         }
       }
     }
 
-    // 每輪結束
     var roundImproved = curProfit > roundStartProfit;
-    if(roundImproved){
-      roundsNoImprove = 0;
-    } else {
-      roundsNoImprove++;
-    }
+    if(roundImproved) roundsNoImprove = 0;
+    else roundsNoImprove++;
 
-    pushLog(nowTime() + '   [' + foldLabel + '] 第 ' + round + '/' + maxRounds + ' 輪：' + curPerGame.toFixed(2) + '/場，規則 ' + cur.length + '，接受 ' + roundAccepted + '，評估 ' + evals + (roundImproved ? ' ✓' : ''), roundImproved ? 'ok' : 'dim');
+    pushLog(nowTime() + '   [' + label + '] 第 ' + round + '/' + maxRounds + ' 輪：' + curPerGame.toFixed(2) + '/場，規則 ' + cur.length + '，接受 ' + roundAccepted + '，評估 ' + evals + (roundImproved ? ' ✓' : ''), roundImproved ? 'ok' : 'dim');
 
-    // 每 10 輪做審計
     if(round % AUDIT_INTERVAL === 0 && cur.length > 5){
       var auditRes = auditRules(cur, featMat, codes, payoutsArr, N);
       cur = auditRes.rules;
       curProfit = calcProfitOn(featMat, codes, payoutsArr, N, cur);
       curPerGame = N > 0 ? curProfit / N : 0;
       if(auditRes.disabled > 0){
-        pushLog(nowTime() + '   [' + foldLabel + '] 🧹 審計：禁用 ' + auditRes.disabled + ' 條毒藥規則', 'audit');
+        pushLog(nowTime() + '   [' + label + '] 🧹 審計：禁用 ' + auditRes.disabled + ' 條毒藥', 'audit');
       }
     }
 
-    // 每 5 輪做剪枝
     if(round % 5 === 0 && cur.length > 5){
       var pruned = pruneRules(cur, featMat, codes, payoutsArr, N);
       if(pruned.length < cur.length){
         cur = pruned;
         curProfit = calcProfitOn(featMat, codes, payoutsArr, N, cur);
         curPerGame = N > 0 ? curProfit / N : 0;
-        pushLog(nowTime() + '   [' + foldLabel + '] ✂️ 剪枝：' + cur.length + ' 條', 'prune');
+        pushLog(nowTime() + '   [' + label + '] ✂️ 剪枝：' + cur.length + ' 條', 'prune');
       }
     }
 
     if(roundsNoImprove >= ROUNDS_NO_IMPROVE_LIMIT){
-      pushLog(nowTime() + '   [' + foldLabel + '] ⏹ 連續 ' + ROUNDS_NO_IMPROVE_LIMIT + ' 輪無進步，停止', 'warn');
+      pushLog(nowTime() + '   [' + label + '] ⏹ 連續 ' + ROUNDS_NO_IMPROVE_LIMIT + ' 輪無進步，停止', 'warn');
       break;
     }
 
@@ -734,12 +729,10 @@ async function evolveFromEmpty(featMat, codes, payoutsArr, N, maxRounds, foldLab
   }
 
   if(best === null) best = cloneRules(cur);
-  var elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-
   var finalProfit = calcProfitOn(featMat, codes, payoutsArr, N, best);
   var finalPerGame = N > 0 ? finalProfit / N : 0;
 
-  pushLog(nowTime() + '   [' + foldLabel + '] ✓ 完成：' + finalPerGame.toFixed(2) + '/場，規則 ' + best.length + '，總評估 ' + evals, 'evo');
+  pushLog(nowTime() + '   [' + label + '] ✓ 完成：' + finalPerGame.toFixed(2) + '/場，規則 ' + best.length + '，評估 ' + evals, 'evo');
 
   return {rules: best, profit: finalProfit, perGame: finalPerGame, accepted: accepted, evals: evals};
 }
@@ -876,6 +869,24 @@ function genSingleFormula(rules){
   return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",' + body + '))';
 }
 
+/* ========== 統計：平均 + 標準差 + t 檢定 ========== */
+function calcStats(values){
+  var n = values.length;
+  if(n === 0) return {mean: 0, std: 0, n: 0, t: 0, min: 0, max: 0, se: 0};
+  var sum = 0;
+  for(var i = 0; i < n; i++) sum += values[i];
+  var mean = sum / n;
+  var sumSq = 0;
+  for(var i = 0; i < n; i++) sumSq += (values[i] - mean) * (values[i] - mean);
+  var variance = n > 1 ? sumSq / (n - 1) : 0;
+  var std = Math.sqrt(variance);
+  var se = n > 0 ? std / Math.sqrt(n) : 0;  // 標準誤
+  var t = se > 0 ? mean / se : 0;
+  var minVal = Math.min.apply(null, values);
+  var maxVal = Math.max.apply(null, values);
+  return {mean: mean, std: std, n: n, t: t, min: minVal, max: maxVal, se: se};
+}
+
 /* ========== 主流程 ========== */
 async function start(){
   var parsed = parseData(document.getElementById('input').value);
@@ -885,6 +896,7 @@ async function start(){
   running = true;
   startTime = Date.now();
   evalCount = 0;
+  currentRep = 0;
   currentFold = 0;
   currentRound = 0;
   currentRuleCount = 0;
@@ -905,91 +917,106 @@ async function start(){
   clearLog();
 
   var N_FOLDS = parseInt(document.getElementById('folds').value);
+  var REPEATS = parseInt(document.getElementById('repeats').value);
   maxRounds = parseInt(document.getElementById('maxRounds').value);
   totalFolds = N_FOLDS;
+  totalReps = REPEATS;
+
+  var totalJobs = N_FOLDS * REPEATS;
 
   pushLog('═══════════════════════════════════════════════════════════', 'head');
-  pushLog('🚀 v38 — 空起始 + 多輪演化 + 交叉驗證', 'head');
+  pushLog('🚀 v39 — ' + N_FOLDS + ' 折 × ' + REPEATS + ' 次重複（共 ' + totalJobs + ' 個結果）', 'head');
   pushLog('═══════════════════════════════════════════════════════════', 'head');
   pushLog(nowTime() + ' 原始有效行數：' + parsed.total, 'info');
   pushLog(nowTime() + ' 重複：' + parsed.dups + '（已忽略）', 'warn');
   pushLog(nowTime() + ' 去重後：' + parsed.rows.length + ' 筆', 'success');
   pushLog(nowTime() + ' 🅾️ 起點：空（0 條規則）', 'gen');
-  pushLog(nowTime() + ' 🔄 ' + N_FOLDS + ' 折交叉驗證', 'fold');
-  pushLog(nowTime() + ' 🔁 每折最多 ' + maxRounds + ' 輪 × ' + ITER_PER_ROUND + ' 迭代', 'round');
-  pushLog(nowTime() + ' 🧬 加規則機率 55%', 'evo');
-  pushLog(nowTime() + ' 🧹 每 ' + AUDIT_INTERVAL + ' 輪審計', 'audit');
+  pushLog(nowTime() + ' 🔄 ' + N_FOLDS + ' 折 × ' + REPEATS + ' 次重複 = ' + totalJobs + ' 個獨立結果', 'rep');
+  pushLog(nowTime() + ' 🧬 每折最多 ' + maxRounds + ' 輪 × ' + ITER_PER_ROUND + ' 迭代', 'round');
+  pushLog(nowTime() + ' 📊 統計方法：t 檢定（t > 2.0 才顯著）', 'stats');
   pushLog('');
 
-  var allRows = parsed.rows.slice();
-  for(var i = allRows.length - 1; i > 0; i--){
-    var j = Math.floor(Math.random() * (i + 1));
-    var tmp = allRows[i]; allRows[i] = allRows[j]; allRows[j] = tmp;
-  }
+  var allRowsBase = parsed.rows.slice();
 
-  var n = allRows.length;
-  var foldSize = Math.floor(n / N_FOLDS);
-
-  for(var fold = 1; fold <= N_FOLDS; fold++){
+  for(var rep = 1; rep <= REPEATS; rep++){
     if(!running) break;
-    currentFold = fold;
-    currentRound = 0;
-    currentRuleCount = 0;
-    updateProgress();
+    currentRep = rep;
 
     pushLog('═══════════════════════════════════════════════════════════', 'head');
-    pushLog(nowTime() + ' 🔄 第 ' + fold + '/' + N_FOLDS + ' 折', 'fold');
+    pushLog(nowTime() + ' 🔁 重複 ' + rep + '/' + REPEATS + '（重新打亂）', 'rep');
     pushLog('═══════════════════════════════════════════════════════════', 'head');
     await yieldUI();
 
-    var testStart = (fold - 1) * foldSize;
-    var testEnd = (fold === N_FOLDS) ? n : fold * foldSize;
-    var trainRows = [], testRows = [];
-    for(var i = 0; i < n; i++){
-      if(i >= testStart && i < testEnd) testRows.push(allRows[i]);
-      else trainRows.push(allRows[i]);
+    // 每次重複重新打亂
+    var allRows = allRowsBase.slice();
+    for(var i = allRows.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = allRows[i]; allRows[i] = allRows[j]; allRows[j] = tmp;
     }
 
-    trainN = trainRows.length;
-    testN = testRows.length;
+    var n = allRows.length;
+    var foldSize = Math.floor(n / N_FOLDS);
 
-    pushLog(nowTime() + '   訓練 ' + trainN + ' 場 / 測試 ' + testN + ' 場', 'dim');
+    for(var fold = 1; fold <= N_FOLDS; fold++){
+      if(!running) break;
+      currentFold = fold;
+      currentRound = 0;
+      currentRuleCount = 0;
+      updateProgress();
 
-    trainFeat = extractFeatures(trainRows);
-    var trm = extractMeta(trainRows);
-    trainCodes = trm.codes; trainPayouts = trm.payouts;
+      var repFoldLabel = '重' + rep + '-折' + fold;
+      pushLog(nowTime() + ' 🔄 [' + repFoldLabel + '] 開始', 'fold');
+      await yieldUI();
 
-    testFeat = extractFeatures(testRows);
-    var tem = extractMeta(testRows);
-    testCodes = tem.codes; testPayouts = tem.payouts;
+      var testStart = (fold - 1) * foldSize;
+      var testEnd = (fold === N_FOLDS) ? n : fold * foldSize;
+      var trainRows = [], testRows = [];
+      for(var i = 0; i < n; i++){
+        if(i >= testStart && i < testEnd) testRows.push(allRows[i]);
+        else trainRows.push(allRows[i]);
+      }
 
-    var evoRes = await evolveFromEmpty(trainFeat, trainCodes, trainPayouts, trainN, maxRounds, '折' + fold);
-    if(!running) break;
+      trainN = trainRows.length;
+      testN = testRows.length;
 
-    evalCount += evoRes.evals;
+      pushLog(nowTime() + '   [' + repFoldLabel + '] 訓練 ' + trainN + ' / 測試 ' + testN, 'dim');
 
-    var evoTestP = calcProfitOn(testFeat, testCodes, testPayouts, testN, evoRes.rules);
-    var evoTestPer = testN > 0 ? evoTestP / testN : 0;
+      trainFeat = extractFeatures(trainRows);
+      var trm = extractMeta(trainRows);
+      trainCodes = trm.codes; trainPayouts = trm.payouts;
 
-    pushLog(nowTime() + '   🩷 測試集：' + evoTestPer.toFixed(2) + '/場', 'test');
-    pushLog('');
+      testFeat = extractFeatures(testRows);
+      var tem = extractMeta(testRows);
+      testCodes = tem.codes; testPayouts = tem.payouts;
 
-    foldResults.push({
-      fold: fold,
-      trainN: trainN,
-      testN: testN,
-      trainPer: evoRes.perGame,
-      testPer: evoTestPer,
-      accepted: evoRes.accepted,
-      evals: evoRes.evals,
-      rulesCount: evoRes.rules.length
-    });
+      var evoRes = await evolveFromEmpty(trainFeat, trainCodes, trainPayouts, trainN, maxRounds, repFoldLabel);
+      if(!running) break;
 
-    lastEvolvedRules = evoRes.rules;
-    currentRuleCount = evoRes.rules.length;
+      evalCount += evoRes.evals;
 
-    updateTestAvg();
-    await yieldUI();
+      var evoTestP = calcProfitOn(testFeat, testCodes, testPayouts, testN, evoRes.rules);
+      var evoTestPer = testN > 0 ? evoTestP / testN : 0;
+
+      pushLog(nowTime() + '   [' + repFoldLabel + '] 🩷 測試集：' + evoTestPer.toFixed(2) + '/場', 'test');
+
+      foldResults.push({
+        rep: rep,
+        fold: fold,
+        trainN: trainN,
+        testN: testN,
+        trainPer: evoRes.perGame,
+        testPer: evoTestPer,
+        accepted: evoRes.accepted,
+        evals: evoRes.evals,
+        rulesCount: evoRes.rules.length
+      });
+
+      lastEvolvedRules = evoRes.rules;
+      currentRuleCount = evoRes.rules.length;
+
+      updateTestAvg();
+      await yieldUI();
+    }
   }
 
   finish();
@@ -997,77 +1024,102 @@ async function start(){
   function finish(){
     var elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
-    var sum = 0, sumSq = 0, minVal = Infinity, maxVal = -Infinity;
-    var trainSum = 0;
+    var testVals = [];
+    var trainVals = [];
     for(var i = 0; i < foldResults.length; i++){
-      var v = foldResults[i].testPer;
-      sum += v;
-      sumSq += v * v;
-      if(v < minVal) minVal = v;
-      if(v > maxVal) maxVal = v;
-      trainSum += foldResults[i].trainPer;
+      testVals.push(foldResults[i].testPer);
+      trainVals.push(foldResults[i].trainPer);
     }
-    var avg = foldResults.length > 0 ? sum / foldResults.length : 0;
-    var variance = foldResults.length > 1 ? (sumSq / foldResults.length - avg * avg) : 0;
-    var std = Math.sqrt(Math.max(0, variance));
-    var avgTrain = foldResults.length > 0 ? trainSum / foldResults.length : 0;
+
+    var sTest = calcStats(testVals);
+    var sTrain = calcStats(trainVals);
 
     pushLog('═══════════════════════════════════════════════════════════', 'head');
-    pushLog('🏆 v38 交叉驗證完成', 'stats');
+    pushLog('🏆 v39 完成', 'stats');
     pushLog('═══════════════════════════════════════════════════════════', 'head');
-    pushLog('   🩷 真實泛化能力（' + foldResults.length + ' 折測試平均）：', 'test');
-    pushLog('      平均每場：' + avg.toFixed(2), 'test');
-    pushLog('      標準差：±' + std.toFixed(2), 'stats');
-    pushLog('      範圍：' + minVal.toFixed(2) + ' ~ ' + maxVal.toFixed(2), 'stats');
-    pushLog('      訓練每場（平均）：' + avgTrain.toFixed(2), 'dim');
+    pushLog('   🩷 測試每場統計（' + sTest.n + ' 個結果）：', 'test');
+    pushLog('      平均：' + sTest.mean.toFixed(3), 'test');
+    pushLog('      標準差：' + sTest.std.toFixed(3), 'stats');
+    pushLog('      標準誤：' + sTest.se.toFixed(3), 'stats');
+    pushLog('      t 值：' + sTest.t.toFixed(3), sTest.t > 2 ? 'success' : 'dim');
+    pushLog('      範圍：' + sTest.min.toFixed(3) + ' ~ ' + sTest.max.toFixed(3), 'dim');
+    pushLog('      訓練每場（平均）：' + sTrain.mean.toFixed(3), 'dim');
     pushLog('');
-    pushLog('   每折明細：', 'dim');
-    for(var i = 0; i < foldResults.length; i++){
-      var r = foldResults[i];
-      pushLog('      折 ' + r.fold + '（訓練' + r.trainN + '/測試' + r.testN + '）：訓練 ' + r.trainPer.toFixed(2) + '，測試 ' + r.testPer.toFixed(2) + '，規則 ' + r.rulesCount + '，接受 ' + r.accepted + '，評估 ' + r.evals, 'dim');
+    pushLog('   統計判定：', 'stats');
+    if(sTest.t > 2 && sTest.mean > 0){
+      pushLog('      ✅ 顯著正信號（t = ' + sTest.t.toFixed(2) + ' > 2.0）', 'success');
+    } else if(sTest.t < -2){
+      pushLog('      ❌ 顯著負信號（t = ' + sTest.t.toFixed(2) + ' < -2.0）', 'err');
+    } else {
+      pushLog('      ⚠️ 無顯著信號（|t| = ' + Math.abs(sTest.t).toFixed(2) + ' < 2.0）', 'warn');
     }
     pushLog('');
-    pushLog('   總掃描：' + evalCount + ' 次', 'speed');
+    pushLog('   總評估：' + evalCount + ' 次', 'speed');
     pushLog('   總耗時：' + elapsed + ' 秒', 'speed');
     pushLog('═══════════════════════════════════════════════════════════', 'head');
 
     document.getElementById('best').style.display = 'block';
-    document.getElementById('summary').innerHTML = '🏆 空起始多輪演化　🩷 真實每場 <b>' + avg.toFixed(2) + '</b> ±' + std.toFixed(2);
+    document.getElementById('summary').innerHTML = '🏆 ' + totalFolds + ' 折 × ' + totalReps + ' 次 = ' + sTest.n + ' 結果　🩷 平均 <b>' + sTest.mean.toFixed(2) + '</b>　t = <b>' + sTest.t.toFixed(2) + '</b>';
 
     var verdictHTML = '';
-    var absAvg = Math.abs(avg);
-    var ratio = std > 0 ? absAvg / std : 0;
-
     if(foldResults.length === 0){
       verdictHTML = '<div class="big-num verdict-neutral">無資料</div>';
     } else {
-      var header = '<div class="big-num ' + (avg > 0 ? 'verdict-pos' : 'verdict-neg') + '">' + avg.toFixed(2) + '</div>' +
-        '<div style="font-size:13px;color:#666;margin-top:4px">每場平均盈利（' + foldResults.length + ' 折平均）</div>' +
-        '<div style="font-size:12px;color:#666;margin-top:4px">標準差 ±' + std.toFixed(2) + '，範圍 ' + minVal.toFixed(2) + ' ~ ' + maxVal.toFixed(2) + '</div>';
+      var color = sTest.mean > 0 ? 'verdict-pos' : 'verdict-neg';
+      verdictHTML = '<div class="big-num ' + color + '">' + sTest.mean.toFixed(2) + '</div>' +
+        '<div style="font-size:13px;color:#666;margin-top:4px">測試每場平均（' + sTest.n + ' 個結果）</div>' +
+        '<div style="font-size:14px;margin-top:8px">標準差 ±' + sTest.std.toFixed(2) + '，標準誤 ±' + sTest.se.toFixed(2) + '</div>' +
+        '<div style="font-size:14px">範圍：' + sTest.min.toFixed(2) + ' ~ ' + sTest.max.toFixed(2) + '</div>';
 
-      var verdict = '';
-      if(avg > 0 && ratio > 2.0){
-        verdict = '✅ 有顯著正信號（|平均| / 標準差 = ' + ratio.toFixed(1) + ' > 2）';
-      } else if(avg > 0 && ratio > 1.0){
-        verdict = '🟡 微弱正信號（' + ratio.toFixed(1) + '）— 建議加資料';
-      } else if(avg > 0){
-        verdict = '⚠️ 信號被雜訊淹沒（|平均| < 標準差）';
+      var verdictLine = '';
+      if(sTest.t > 2 && sTest.mean > 0){
+        verdictLine = '<div style="font-size:16px;font-weight:bold;color:#0a7a0a;margin-top:10px">✅ 顯著正信號（t = ' + sTest.t.toFixed(2) + ' > 2.0）</div>';
+        verdictLine += '<div style="font-size:12px;color:#0a7a0a;margin-top:4px">統計上可確認：真的有賺錢能力</div>';
+      } else if(sTest.t < -2){
+        verdictLine = '<div style="font-size:16px;font-weight:bold;color:#c00;margin-top:10px">❌ 顯著負信號（t = ' + sTest.t.toFixed(2) + ' < -2.0）</div>';
+        verdictLine += '<div style="font-size:12px;color:#c00;margin-top:4px">統計上可確認：平均虧損</div>';
+      } else if(sTest.mean > 0){
+        verdictLine = '<div style="font-size:16px;font-weight:bold;color:#e67e22;margin-top:10px">🟡 微弱正信號（t = ' + sTest.t.toFixed(2) + '）</div>';
+        verdictLine += '<div style="font-size:12px;color:#e67e22;margin-top:4px">統計上不顯著，建議加資料</div>';
       } else {
-        verdict = '❌ 平均虧損 — 空起始演化無法賺錢';
+        verdictLine = '<div style="font-size:16px;font-weight:bold;color:#666;margin-top:10px">⚠️ 無顯著信號（t = ' + sTest.t.toFixed(2) + '）</div>';
+        verdictLine += '<div style="font-size:12px;color:#666;margin-top:4px">與「隨機」無法區分</div>';
       }
 
-      verdictHTML = header + '<div style="font-size:14px;margin-top:8px;font-weight:bold">' + verdict + '</div>';
+      verdictHTML += verdictLine;
     }
     document.getElementById('verdictBox').innerHTML = verdictHTML;
 
+    // 分佈表
+    var sorted = testVals.slice().sort(function(a,b){ return a - b; });
+    var bins = [-100, -50, -30, -20, -10, 0, 10, 20, 30, 50, 100];
+    var distHtml = '<table class="dist-table"><thead><tr>' +
+      '<th>區間</th><th>數量</th><th>比例</th>' +
+      '</tr></thead><tbody>';
+    for(var b = 0; b < bins.length - 1; b++){
+      var lo = bins[b], hi = bins[b+1];
+      var cnt = 0;
+      for(var k = 0; k < sorted.length; k++){
+        if(sorted[k] >= lo && sorted[k] < hi) cnt++;
+      }
+      if(cnt > 0 || (lo <= 0 && hi > 0)){
+        var pct = (cnt / sorted.length * 100).toFixed(1);
+        distHtml += '<tr><td>' + lo + ' ~ ' + hi + '</td><td>' + cnt + '</td><td>' + pct + '%</td></tr>';
+      }
+    }
+    distHtml += '</tbody></table>';
+    document.getElementById('distTable').innerHTML = distHtml;
+
+    // 明細表
     var fHtml = '<table><thead><tr>' +
-      '<th>折</th><th>訓練</th><th>測試</th>' +
+      '<th>重複</th><th>折</th><th>訓練</th><th>測試</th>' +
       '<th>訓練每場</th><th>測試每場</th>' +
       '<th>規則數</th><th>接受</th><th>評估</th>' +
       '</tr></thead><tbody>';
     for(var i = 0; i < foldResults.length; i++){
       var r = foldResults[i];
       fHtml += '<tr>' +
+        '<td>' + r.rep + '</td>' +
         '<td>#' + r.fold + '</td>' +
         '<td>' + r.trainN + '</td>' +
         '<td>' + r.testN + '</td>' +
@@ -1078,12 +1130,6 @@ async function start(){
         '<td>' + r.evals + '</td>' +
         '</tr>';
     }
-    fHtml += '<tr style="background:#ede9fe;font-weight:bold">' +
-      '<td colspan="3">平均</td>' +
-      '<td>' + avgTrain.toFixed(2) + '</td>' +
-      '<td>' + avg.toFixed(2) + '</td>' +
-      '<td>-</td><td>-</td><td>-</td>' +
-      '</tr>';
     fHtml += '</tbody></table>';
     document.getElementById('foldTable').innerHTML = fHtml;
 
