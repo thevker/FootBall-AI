@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v22 — 修正評估 + 寬條件兜底</title>
+<title>🚀 v24 — 單一公式 + 2000 字元 + 進度%</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1500px;margin:auto;background:#f0f2f5}
@@ -17,7 +17,6 @@ button:hover{background:#0056b3}
 button:disabled{background:#999;cursor:not-allowed}
 button.stop{background:#dc3545}
 button.txt{background:#28a745}
-button.aux{background:#9333ea}
 #log{background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:14px;margin-top:12px;height:420px;overflow-y:auto;font-family:'Consolas','Monaco','Menlo',monospace;font-size:12px;white-space:pre;line-height:1.55;border:1px solid #222}
 #log::-webkit-scrollbar{width:10px}
 #log::-webkit-scrollbar-track{background:#1a1a1a}
@@ -30,11 +29,12 @@ button.aux{background:#9333ea}
 .l-gen{color:#e0e7ff}.l-newrule{color:#22d3ee;font-weight:bold}
 .l-hot{color:#f472b6;font-weight:bold}.l-prune{color:#f87171;font-weight:bold}
 .l-val{color:#a78bfa;font-weight:bold}.l-wide{color:#22d3ee;font-weight:bold}
+.l-len{color:#fb923c;font-weight:bold}.l-prog{color:#c084fc;font-weight:bold}
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
 .best b{color:#155724}
 .box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
 .label{font-weight:bold;font-size:13px;margin-bottom:6px;color:#333}
-.out{width:100%;height:150px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto;resize:vertical}
+.out{width:100%;height:180px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto;resize:vertical}
 .param{font-family:monospace;font-size:11px;word-break:break-all;color:#555;margin-top:6px;max-height:80px;overflow:auto;padding:6px;background:#f8f9fa;border-radius:4px}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
 select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px}
@@ -56,8 +56,11 @@ td:first-child,td:nth-child(2){text-align:left}
 .tag-wide{background:#22d3ee;color:#000;padding:1px 5px;border-radius:3px;font-size:9px}
 .section{background:#fff;padding:12px;border-radius:6px;border:1px solid #ddd;margin-top:12px}
 h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
-.progress{height:6px;background:#ddd;border-radius:3px;overflow:hidden;margin-top:8px}
-.progress > div{height:100%;background:#007bff;width:0%;transition:width 0.15s}
+.progress{height:24px;background:#ddd;border-radius:4px;overflow:hidden;margin-top:12px;position:relative;box-shadow:inset 0 2px 4px rgba(0,0,0,0.1)}
+.progress > div{height:100%;background:linear-gradient(90deg,#007bff,#00c6ff);width:0%;transition:width 0.2s;position:relative}
+.progress > div::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent);animation:shine 1.5s infinite}
+@keyframes shine{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.progress-text{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.5);z-index:2;font-family:monospace}
 .stats{display:flex;gap:15px;flex-wrap:wrap;margin-top:8px;font-size:12px}
 .stat{background:#fff;padding:6px 12px;border-radius:4px;border:1px solid #ddd}
 .stat b{color:#007bff}
@@ -79,7 +82,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <body>
 
 <div class="top">
-  <h2 id="title">🚀 v22 — 修正評估 + 寬條件兜底</h2>
+  <h2 id="title">🚀 v24 — 單一公式 + 2000 字元 + 進度%</h2>
   <div>
     <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁中</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
@@ -87,10 +90,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </div>
 
 <div class="warn-banner">
-  <b>✨ v22 修正：</b><br>
-  🎯 <b>每場盈利評估</b>（不再誤報過擬合）<br>
-  🔧 <b>5% 寬條件兜底</b>（讓演化自己決定）<br>
-  📊 <b>Skip 比例顯示</b>（知道放棄多少場）
+  <b>✨ v24 特點：</b><br>
+  📏 <b>單一公式 ≤ 2000 字元</b>（硬限制）<br>
+  📊 <b>即時進度百分比</b>（進度條 + 狀態列）<br>
+  🎯 每場盈利評估 + Skip 比例
 </div>
 
 <textarea id="input" placeholder="23 27 49 355 385 169 0:3 A
@@ -117,15 +120,20 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <button onclick="clearLog()" style="padding:4px 10px;font-size:12px;background:#6c757d">清空日誌</button>
 </div>
 
-<div class="progress"><div id="progbar"></div></div>
+<div class="progress" id="progWrap">
+  <div id="progbar"></div>
+  <div class="progress-text" id="progText">0%</div>
+</div>
+
 <div id="log">等待開始...</div>
 
 <div class="stats" id="liveStats" style="display:none">
-  <div class="stat" id="stat-gen">起點: 0</div>
+  <div class="stat" id="stat-gen">起點: 0/0</div>
+  <div class="stat" id="stat-prog">進度: 0%</div>
   <div class="stat" id="stat-train">訓練: -</div>
   <div class="stat" id="stat-val">驗證: -</div>
+  <div class="stat" id="stat-len">字元: 0/2000</div>
   <div class="stat" id="stat-time">時間: 0s</div>
-  <div class="stat" id="stat-evals">掃描: 0</div>
   <div class="stat" id="stat-rules">規則: 0</div>
 </div>
 
@@ -133,7 +141,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <div id="summary"></div>
 
   <div class="val-banner">
-    <b>📊 泛化評估（避免過擬合）</b>
+    <b>📊 泛化評估</b>
     <div style="font-size:11px;color:#4c1d95;margin-top:2px">重點看「每場盈利」——驗證每場越高越好。</div>
     <div class="val-grid">
       <div class="val-cell"><div class="num" id="vTrainTotal">-</div><div class="lbl">訓練總盈利</div></div>
@@ -145,17 +153,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   </div>
 
   <div class="box">
-    <div class="label">🟢 公式（單一公式模式）</div>
+    <div class="label">🟢 公式（單一公式）</div>
     <div style="font-size:11px;color:#666;margin-bottom:6px" id="charInfo"></div>
     <button class="txt" onclick="copyIt('txtOut')">📋 複製公式</button>
     <textarea id="txtOut" class="out" readonly wrap="off"></textarea>
-  </div>
-
-  <div class="box">
-    <div class="label">🔧 輔助列模式（推薦，避免 Sheets 失靈）</div>
-    <div style="font-size:11px;color:#666;margin-bottom:6px">每個規則一個輔助列，主公式只做最終判斷</div>
-    <button class="aux" onclick="copyIt('auxOut')">📋 複製輔助列公式</button>
-    <textarea id="auxOut" class="out" readonly wrap="off"></textarea>
   </div>
 
   <div id="msg"></div>
@@ -173,14 +174,14 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 var TXT = {
   zh: {
-    title: '🚀 v22 — 修正評估 + 寬條件兜底',
+    title: '🚀 v24 — 單一公式 + 2000 字元 + 進度%',
     strength: '搜尋強度：',
     run: '🚀 開始搜尋', stop: '⏹ 停止',
     hRule: '📋 演化後規則表',
     noData: '沒有有效數據'
   },
   en: {
-    title: '🚀 v22 — Fixed Eval + Wide-Cond Fallback',
+    title: '🚀 v24 — Single Formula + 2000 Char + Progress',
     strength: 'Strength: ',
     run: '🚀 Search', stop: '⏹ Stop',
     hRule: '📋 Evolved Rules',
@@ -223,29 +224,34 @@ var running = false;
 var startTime = 0;
 var evalCount = 0;
 var currentRuleCount = 0;
+var currentFormulaLen = 0;
 var logBuffer = [];
 var logTimer = null;
 var LOG_MAX = 3000;
 var lastNewRuleLogTime = 0;
 
+/* ⭐ 進度追蹤 */
+var totalPhases = 0;
+var currentPhase = 0;
+var currentPass = 0;
+var maxPassesPerPhase = 10;
+
 var RESULTS = ['H','D','A','skip'];
 var RESULT_CODES = {H:0, D:1, A:2, skip:-1};
 var OPS = ['>','>=','<','<=','==','!='];
 
-var MAX_RULES = 12;
-var HARD_RULE_CAP = 20;
+var MAX_FORMULA_CHARS = 2000;
+var MAX_RULES = 15;
+var HARD_RULE_CAP = 25;
 var MAX_GROUPS = 3;
 var MAX_CONDS = 4;
 
 var CHUNK_MS = 40;
+var PASS_TIME_MS = 2500;
 
-/* ⭐ 每場盈利為基礎的懲罰（每場為單位） */
 var PENALTY_PER_RULE = 0.3;
 var PENALTY_PER_EXTRA_COND = 0.1;
-
-/* ⭐ 寬條件生成機率 */
 var WIDE_COND_CHANCE = 0.05;
-
 var MIN_HITS = 5;
 
 /* ========== 日誌 ========== */
@@ -294,6 +300,35 @@ function clearLog(){
   logBuffer = [];
 }
 
+/* ⭐ 進度顯示 */
+function updateProgress(){
+  var pct = 0;
+  if(totalPhases > 0){
+    // 階段 1 是引導（獨立），階段 2~N 是主迴圈
+    // 總進度 = (已完成階段 + 當前階段內部進度) / 總階段
+    var phaseProgress = 0;
+    if(maxPassesPerPhase > 0 && currentPass > 0){
+      phaseProgress = Math.min(0.95, currentPass / maxPassesPerPhase);
+    }
+    pct = ((currentPhase + phaseProgress) / totalPhases) * 100;
+    if(pct > 99.5 && running) pct = 99.5;
+  }
+  if(!running && startTime > 0 && document.getElementById('best').style.display === 'block'){
+    pct = 100;
+  }
+
+  var bar = document.getElementById('progbar');
+  var txt = document.getElementById('progText');
+  if(bar) bar.style.width = pct.toFixed(1) + '%';
+  if(txt) txt.textContent = pct.toFixed(1) + '%' + (running ? ' 搜尋中...' : (startTime > 0 ? ' 完成' : ''));
+
+  var statProg = document.getElementById('stat-prog');
+  if(statProg) statProg.innerHTML = '進度: <b>' + pct.toFixed(1) + '%</b>';
+
+  var statGen = document.getElementById('stat-gen');
+  if(statGen) statGen.innerHTML = '起點: <b>' + currentPhase + '/' + totalPhases + '</b>';
+}
+
 var yieldResolvers = [];
 var yieldChannel = new MessageChannel();
 yieldChannel.port1.onmessage = function(){
@@ -302,6 +337,7 @@ yieldChannel.port1.onmessage = function(){
 };
 function yieldUI(){
   flushNow();
+  updateProgress();
   return new Promise(function(resolve){
     yieldResolvers.push(resolve);
     yieldChannel.port2.postMessage(0);
@@ -414,9 +450,15 @@ function calcProfitOn(featMat, codes, payoutsArr, N, rules, track){
 
 var ruleProfit = null;
 
-/* ⭐ 核心修改：用每場盈利做適應度 */
 function fitness(rules){
   evalCount++;
+
+  var formulaLen = genSingleFormula(rules).length;
+  currentFormulaLen = formulaLen;
+  if(formulaLen > MAX_FORMULA_CHARS){
+    return -999999 - (formulaLen - MAX_FORMULA_CHARS);
+  }
+
   var trainPer = 0, valPer = 0;
   if(trainN > 0){
     var tp = calcProfitOn(trainFeat, trainCodes, trainPayouts, trainN, rules, false);
@@ -427,10 +469,8 @@ function fitness(rules){
     valPer = vp / valN;
   }
 
-  // ⭐ 混合每場盈利（驗證集權重高）
   var mix = (trainN > 0 && valN > 0) ? (trainPer * 0.4 + valPer * 0.6) : trainPer;
 
-  // ⭐ 複雜度懲罰（每場單位）
   var condCount = 0;
   for(var i = 0; i < rules.length; i++){
     for(var g = 0; g < rules[i].groups.length; g++){
@@ -442,14 +482,12 @@ function fitness(rules){
   return mix - penalty;
 }
 
-/* 顯示用的原始總盈利 */
 function rawProfits(rules){
   var trainP = trainN > 0 ? calcProfitOn(trainFeat, trainCodes, trainPayouts, trainN, rules, false) : 0;
   var valP = valN > 0 ? calcProfitOn(valFeat, valCodes, valPayouts, valN, rules, false) : 0;
   return {train: trainP, val: valP};
 }
 
-/* ⭐ Skip 比例 */
 function skipRatio(rules, useVal){
   var fMat = useVal ? valFeat : trainFeat;
   var N = useVal ? valN : trainN;
@@ -540,7 +578,7 @@ async function hotStart(){
   }
 
   best.sort(function(a,b){ return (b.profit + b.vp) - (a.profit + a.vp); });
-  var topN = Math.min(10, best.length);
+  var topN = Math.min(8, best.length);
   var result = [];
   for(var i = 0; i < topN; i++){
     var b = best[i];
@@ -572,27 +610,17 @@ function sampleFeatureValue(fi){
 function genCond(){
   return [Math.floor(Math.random() * FCOUNT), Math.floor(Math.random() * OPS.length), sampleFeatureValue(0)];
 }
-
-/* ⭐ 寬條件生成（兜底） */
 function genWideCond(){
   var fi = Math.floor(Math.random() * FCOUNT);
-  // 用 >= 0 或 > -999 這種幾乎恆真的條件
-  // 選擇性地，讓部分特徵用更寬的閾值
-  var op = 1; // >=
+  var op = 1;
   var val = 0;
-  // 對於可能為負的特徵（如 A-B、A-C），用負值
   var feat = FEATURES[fi];
   if(feat.indexOf('-') >= 0 && feat.indexOf('|') === -1){
-    // 有號差特徵，用 -9999 保證命中
     val = -9999;
-  } else {
-    val = 0;
   }
   return [fi, op, val];
 }
-
 function genGroup(){
-  // ⭐ 5% 機率生成寬條件（兜底）
   if(document.getElementById('useWide').checked && Math.random() < WIDE_COND_CHANCE){
     return [genWideCond()];
   }
@@ -619,8 +647,6 @@ function genRule(){
   for(var g = 0; g < numGroups; g++) groups.push(genGroup());
   return {on:1, then: RESULTS[tIdx], thenCode: tIdx, groups: groups};
 }
-
-/* 判斷是否為寬條件 */
 function isWideCond(c){
   return (c[1] === 1 && c[2] === 0) || (c[1] === 1 && c[2] === -9999) || (c[1] === 0 && c[2] === -9999);
 }
@@ -827,22 +853,24 @@ async function optimizeRules(startRules, label, maxPasses){
   var pass = 0;
   var sinceImprove = 0;
 
-  pushLog(nowTime() + ' ▶ ' + label + ' 起始分數: ' + curFit.toFixed(2) + '（規則 ' + cur.length + '）', 'gen');
+  pushLog(nowTime() + ' ▶ ' + label + ' 起始分數: ' + curFit.toFixed(2) + '（規則 ' + cur.length + '，字元 ' + currentFormulaLen + '）', 'gen');
   await yieldUI();
 
   while(running && pass < maxPasses){
     pass++;
-    pushLog(nowTime() + ' ── ' + label + ' 第 ' + pass + ' 輪（分數 ' + curFit.toFixed(2) + '，規則 ' + cur.length + '）──', 'dim');
+    currentPass = pass;
+    maxPassesPerPhase = maxPasses;
+    updateProgress();
+
+    pushLog(nowTime() + ' ── ' + label + ' 第 ' + pass + '/' + maxPasses + ' 輪（分數 ' + curFit.toFixed(2) + '，規則 ' + cur.length + '，字元 ' + currentFormulaLen + '）──', 'dim');
 
     var improvedThisPass = false;
     var passStart = Date.now();
 
-    while(running && (Date.now() - passStart) < 2500){
+    while(running && (Date.now() - passStart) < PASS_TIME_MS){
       var chunkStart = Date.now();
-      var iterCount = 0;
 
       while(running && (Date.now() - chunkStart) < CHUNK_MS){
-        iterCount++;
         var m = mutate(cur, 1 + Math.floor(pass / 3));
         var cand = m.rules;
         var candFit = fitness(cand);
@@ -856,7 +884,7 @@ async function optimizeRules(startRules, label, maxPasses){
             var now = Date.now();
             if(now - lastNewRuleLogTime > 200){
               var isWide = m.genRule.groups[0].length === 1 && isWideCond(m.genRule.groups[0][0]);
-              pushLog(nowTime() + '   [新增 #' + cur.length + ']' + (isWide ? ' 🔵寬' : '') + ' ' + fmtRule(m.genRule) + '  分數 ' + candFit.toFixed(2), isWide ? 'wide' : 'newrule');
+              pushLog(nowTime() + '   [新增 #' + cur.length + ']' + (isWide ? ' 🔵寬' : '') + ' ' + fmtRule(m.genRule) + '  分數 ' + candFit.toFixed(2) + '  字元 ' + currentFormulaLen, isWide ? 'wide' : 'newrule');
               lastNewRuleLogTime = now;
             }
           }
@@ -866,7 +894,7 @@ async function optimizeRules(startRules, label, maxPasses){
             var rp = rawProfits(best);
             var tPer = trainN > 0 ? (rp.train / trainN).toFixed(1) : 0;
             var vPer = valN > 0 ? (rp.val / valN).toFixed(1) : 0;
-            pushLog(nowTime() + ' ★★★ 新最優：訓練 ' + rp.train + '（每場 ' + tPer + '）驗證 ' + rp.val + '（每場 ' + vPer + '）分數 ' + bestFit.toFixed(2), 'best');
+            pushLog(nowTime() + ' ★★★ 新最優：訓練 ' + rp.train + '（每場 ' + tPer + '）驗證 ' + rp.val + '（每場 ' + vPer + '）字元 ' + currentFormulaLen, 'best');
           }
         } else {
           sinceImprove++;
@@ -896,7 +924,7 @@ async function optimizeRules(startRules, label, maxPasses){
       }
     }
 
-    pushLog(nowTime() + ' 第 ' + pass + ' 輪完成（分數 ' + curFit.toFixed(2) + '，規則 ' + cur.length + '）', improvedThisPass ? 'ok' : 'dim');
+    pushLog(nowTime() + ' 第 ' + pass + ' 輪完成（分數 ' + curFit.toFixed(2) + '，規則 ' + cur.length + '，字元 ' + currentFormulaLen + '）', improvedThisPass ? 'ok' : 'dim');
     if(!improvedThisPass && sinceImprove > 3000) break;
 
     await yieldUI();
@@ -1037,7 +1065,6 @@ function buildRuleSheet(r){
   if(r.groups.length === 1) return buildGroupSheet(r.groups[0]);
   return '(' + r.groups.map(function(g){ return '(' + buildGroupSheet(g) + ')'; }).join('+') + ')';
 }
-
 function genSingleFormula(rules){
   var active = [];
   for(var i = 0; i < rules.length; i++) if(rules[i].on) active.push(rules[i]);
@@ -1056,55 +1083,12 @@ function genSingleFormula(rules){
   return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",' + body + '))';
 }
 
-function genAuxFormulas(rules){
-  var active = [];
-  for(var i = 0; i < rules.length; i++) if(rules[i].on) active.push(rules[i]);
-  if(!active.length) return '（無規則）';
-
-  var lines = [];
-  lines.push('=== 輔助列模式使用步驟 ===');
-  lines.push('1. 下方每個公式貼到對應欄位（H、I、J...）的第 2 列，往下拖');
-  lines.push('2. 最後的總公式貼到 G2');
-  lines.push('');
-  lines.push('=== 輔助列公式（每條規則一欄） ===');
-  lines.push('');
-
-  var colLetters = 'HIJKLMNOPQRSTUVWXYZABCDEF';
-  var colMap = [];
-  for(var i = 0; i < active.length; i++){
-    var r = active[i];
-    var col = colLetters[i] || ('AA' + i);
-    colMap.push({col: col, then: r.then});
-    var expr = buildRuleSheet(r);
-    if(r.groups.length > 1){
-      lines.push(col + '2 = =IF((' + expr + ')>0,1,0)');
-    } else {
-      lines.push(col + '2 = =IF(' + expr + ',1,0)');
-    }
-  }
-
-  lines.push('');
-  lines.push('=== 總判斷公式（貼到 G2）===');
-  lines.push('');
-
-  var final = '=IF(A2="","",';
-  for(var i = 0; i < colMap.length; i++){
-    final += 'IF(' + colMap[i].col + '2=1,"' + colMap[i].then + '",';
-  }
-  final += '"skip"';
-  for(var j = 0; j < colMap.length; j++) final += ')';
-  lines.push('G2 = ' + final);
-
-  return lines.join('\n');
-}
-
 /* ========== 統計 ========== */
-function updateStatsUI(gen){
-  if(gen !== undefined) document.getElementById('stat-gen').innerHTML = '起點: <b>' + gen + '</b>';
+function updateStatsUI(){
   var el = ((Date.now() - startTime) / 1000).toFixed(0);
   document.getElementById('stat-time').innerHTML = '時間: <b>' + el + 's</b>';
-  document.getElementById('stat-evals').innerHTML = '掃描: <b>' + evalCount + '</b>';
   document.getElementById('stat-rules').innerHTML = '規則: <b>' + currentRuleCount + '</b>';
+  document.getElementById('stat-len').innerHTML = '字元: <b>' + currentFormulaLen + '/' + MAX_FORMULA_CHARS + '</b>';
 }
 
 /* ========== 主流程 ========== */
@@ -1116,27 +1100,35 @@ async function start(){
   startTime = Date.now();
   evalCount = 0;
   currentRuleCount = 0;
+  currentFormulaLen = 0;
+  currentPhase = 0;
+  currentPass = 0;
+  totalPhases = 0;
   document.getElementById('btnRun').disabled = true;
   document.getElementById('btnStop').disabled = false;
   document.getElementById('diag').style.display = 'none';
   document.getElementById('best').style.display = 'none';
   document.getElementById('liveStats').style.display = 'flex';
   document.getElementById('progbar').style.width = '0%';
+  document.getElementById('progText').textContent = '0%';
 
   clearLog();
 
   var N = parseInt(document.getElementById('strength').value);
   var useVal = document.getElementById('useVal').checked;
 
+  // ⭐ 總階段數 = 1（引導）+ N（主迴圈）
+  totalPhases = N + 1;
+
   pushLog('═══════════════════════════════════════════════════════════', 'head');
-  pushLog('🚀 v22 — 修正評估 + 寬條件兜底', 'head');
+  pushLog('🚀 v24 — 單一公式 + ' + MAX_FORMULA_CHARS + ' 字元 + 進度%', 'head');
   pushLog('═══════════════════════════════════════════════════════════', 'head');
   pushLog(nowTime() + ' 原始有效行數：' + parsed.total, 'info');
   pushLog(nowTime() + ' 重複：' + parsed.dups + '（已忽略）', 'warn');
   pushLog(nowTime() + ' 去重後：' + parsed.rows.length + ' 筆', 'success');
-  pushLog(nowTime() + ' 規則上限：' + MAX_RULES + '（硬上限 ' + HARD_RULE_CAP + '）', 'info');
-  pushLog(nowTime() + ' 最小命中數：' + MIN_HITS, 'info');
-  pushLog(nowTime() + ' 寬條件機率：' + (WIDE_COND_CHANCE * 100) + '%（' + (document.getElementById('useWide').checked ? '啟用' : '停用') + '）', 'info');
+  pushLog(nowTime() + ' 公式字元上限：' + MAX_FORMULA_CHARS, 'len');
+  pushLog(nowTime() + ' 總階段數：' + totalPhases + '（引導 1 + 主迴圈 ' + N + '）', 'prog');
+  pushLog(nowTime() + ' 規則軟上限：' + MAX_RULES + '（硬上限 ' + HARD_RULE_CAP + '）', 'info');
   await yieldUI();
 
   var allRows = parsed.rows.slice();
@@ -1159,7 +1151,7 @@ async function start(){
   valN = valRows.length;
 
   pushLog(nowTime() + ' 訓練集：' + trainN + ' 筆', 'val');
-  pushLog(nowTime() + ' 驗證集：' + valN + ' 筆' + (valN < 30 ? '（⚠ 樣本較少，統計可能不顯著）' : ''), valN > 0 ? 'val' : 'warn');
+  pushLog(nowTime() + ' 驗證集：' + valN + ' 筆' + (valN < 30 ? '（⚠ 樣本較少）' : ''), valN > 0 ? 'val' : 'warn');
   await yieldUI();
 
   var tPre = Date.now();
@@ -1180,7 +1172,7 @@ async function start(){
   await yieldUI();
 
   pushLog('═══════════════════════════════════════════════════════════', 'head');
-  pushLog(nowTime() + ' 階段 1：熱啟動 + 引導', 'head');
+  pushLog(nowTime() + ' 階段 1/' + totalPhases + '：熱啟動 + 引導', 'head');
   pushLog('═══════════════════════════════════════════════════════════', 'head');
   await yieldUI();
 
@@ -1197,16 +1189,22 @@ async function start(){
   var tPer0 = trainN > 0 ? (rp0.train / trainN).toFixed(1) : 0;
   var vPer0 = valN > 0 ? (rp0.val / valN).toFixed(1) : 0;
   pushLog('');
-  pushLog(nowTime() + ' ✓ 階段 1：訓練 ' + rp0.train + '（每場 ' + tPer0 + '）驗證 ' + rp0.val + '（每場 ' + vPer0 + '）', 'success');
+  pushLog(nowTime() + ' ✓ 階段 1 完成：訓練 ' + rp0.train + '（每場 ' + tPer0 + '）驗證 ' + rp0.val + '（每場 ' + vPer0 + '）字元 ' + currentFormulaLen, 'success');
   pushLog('');
-  updateStatsUI(0);
+  currentPhase = 1;
+  updateStatsUI();
   document.getElementById('stat-train').innerHTML = '訓練: <b>' + tPer0 + '/場</b>';
   document.getElementById('stat-val').innerHTML = '驗證: <b>' + vPer0 + '/場</b>';
+  updateProgress();
   await yieldUI();
 
   for(var k = 1; k <= N && running; k++){
+    currentPhase = k + 1;
+    currentPass = 0;
+    updateProgress();
+
     pushLog('═══════════════════════════════════════════════════════════', 'head');
-    pushLog(nowTime() + ' 起點 #' + k + ' / ' + N, 'head');
+    pushLog(nowTime() + ' 階段 ' + (k + 1) + '/' + totalPhases + '：起點 #' + k, 'head');
     pushLog('═══════════════════════════════════════════════════════════', 'head');
     await yieldUI();
 
@@ -1227,7 +1225,7 @@ async function start(){
       var rp = rawProfits(globalBest);
       var tP = trainN > 0 ? (rp.train / trainN).toFixed(1) : 0;
       var vP = valN > 0 ? (rp.val / valN).toFixed(1) : 0;
-      pushLog('  ★★★ 新最優：訓練 ' + rp.train + '（每場 ' + tP + '）驗證 ' + rp.val + '（每場 ' + vP + '）', 'best');
+      pushLog('  ★★★ 新最優：訓練 ' + rp.train + '（每場 ' + tP + '）驗證 ' + rp.val + '（每場 ' + vP + '）字元 ' + currentFormulaLen, 'best');
       document.getElementById('stat-train').innerHTML = '訓練: <b>' + tP + '/場</b>';
       document.getElementById('stat-val').innerHTML = '驗證: <b>' + vP + '/場</b>';
     } else {
@@ -1235,8 +1233,8 @@ async function start(){
     }
     pushLog('');
 
-    updateStatsUI(k);
-    document.getElementById('progbar').style.width = ((k + 1) / (N + 1) * 100).toFixed(1) + '%';
+    updateStatsUI();
+    updateProgress();
     await yieldUI();
   }
 
@@ -1251,7 +1249,6 @@ async function start(){
     var skipInfo = skipRatio(globalBest, false);
 
     var formula = genSingleFormula(globalBest);
-    var auxText = genAuxFormulas(globalBest);
 
     pushLog('═══════════════════════════════════════════════════════════', 'head');
     pushLog('🏆 完成！', 'best');
@@ -1260,12 +1257,12 @@ async function start(){
     pushLog('   驗證總盈利：' + finalP.val + '（每場 ' + valPer.toFixed(1) + '）', 'val');
     pushLog('   Skip 比例：' + skipInfo.skipped + '/' + skipInfo.total + '（' + skipInfo.pct.toFixed(1) + '%）', skipInfo.pct > 50 ? 'warn' : 'info');
     pushLog('   最終規則數：' + globalBest.length, 'info');
-    pushLog('   單一公式字符數：' + formula.length, formula.length > 8000 ? 'warn' : 'info');
+    pushLog('   公式字元數：' + formula.length + ' / ' + MAX_FORMULA_CHARS, formula.length > MAX_FORMULA_CHARS ? 'err' : 'len');
     pushLog('   總耗時：' + elapsed + ' 秒', 'info');
     pushLog('═══════════════════════════════════════════════════════════', 'head');
 
     document.getElementById('best').style.display = 'block';
-    document.getElementById('summary').innerHTML = '🏆 <b>' + globalBest.length + '</b> 條規則　Skip <b>' + skipInfo.pct.toFixed(0) + '%</b>　訓練每場 <b>' + trainPer.toFixed(1) + '</b>';
+    document.getElementById('summary').innerHTML = '🏆 <b>' + globalBest.length + '</b> 條規則　Skip <b>' + skipInfo.pct.toFixed(0) + '%</b>　字元 <b>' + formula.length + '</b>';
 
     document.getElementById('vTrainTotal').textContent = finalP.train;
     document.getElementById('vValTotal').textContent = finalP.val;
@@ -1277,33 +1274,34 @@ async function start(){
     if(valN === 0){
       verdict = '⚠ 未啟用驗證分割，無法評估泛化能力';
     } else if(valN < 30){
-      verdict = '⚠ 驗證集只有 ' + valN + ' 場 → 樣本不足，統計不顯著。建議增加總資料量。';
+      verdict = '⚠ 驗證集只有 ' + valN + ' 場 → 樣本不足，統計不顯著。';
     } else if(valPer <= 0){
-      verdict = '❌ 驗證集虧損 → 規則無法泛化，請增加資料量或降低搜尋強度。';
+      verdict = '❌ 驗證集虧損 → 規則無法泛化。';
     } else if(perRatio >= 0.9){
-      verdict = '✅ 驗證每場盈利 ≈ 訓練（≥90%）→ 泛化極佳，可放心使用。';
+      verdict = '✅ 驗證每場盈利 ≈ 訓練（≥90%）→ 泛化極佳。';
     } else if(perRatio >= 0.6){
-      verdict = '🟢 驗證每場盈利達訓練 60~90% → 泛化良好，可正常使用。';
+      verdict = '🟢 驗證每場盈利達訓練 60~90% → 泛化良好。';
     } else if(perRatio >= 0.3){
-      verdict = '🟡 驗證每場盈利只有訓練 30~60% → 有些過擬合。建議增加資料 or 降低規則上限。';
+      verdict = '🟡 驗證每場盈利只有訓練 30~60% → 有些過擬合。';
     } else {
-      verdict = '🟠 驗證每場盈利 < 訓練 30% → 過擬合嚴重。強烈建議增加資料量再重跑。';
+      verdict = '🟠 驗證每場盈利 < 訓練 30% → 過擬合嚴重。';
     }
 
     var totalRatio = finalP.train > 0 ? (finalP.val / finalP.train) : 0;
-    verdict += '\n📎 參考：驗證場數 ' + valN + ' / 訓練場數 ' + trainN + '（約 ' + (valN/(trainN+valN)*100).toFixed(0) + '%）；總盈利比 ' + (totalRatio*100).toFixed(0) + '%';
-    verdict += '\n📎 Skip 比例：' + skipInfo.pct.toFixed(1) + '%（' + skipInfo.skipped + '/' + skipInfo.total + ' 場未預測）' + (skipInfo.pct > 50 ? ' ⚠ 放棄太多場次' : skipInfo.pct < 10 ? ' ⚠ 幾乎每場都押注，風險高' : ' ✅ 合理');
+    verdict += '\n📎 驗證場數 ' + valN + ' / 訓練場數 ' + trainN + '（約 ' + (valN/(trainN+valN)*100).toFixed(0) + '%）；總盈利比 ' + (totalRatio*100).toFixed(0) + '%';
+    verdict += '\n📎 Skip 比例：' + skipInfo.pct.toFixed(1) + '%' + (skipInfo.pct > 50 ? ' ⚠ 放棄太多' : skipInfo.pct < 10 ? ' ⚠ 幾乎每場押注' : ' ✅ 合理');
 
     document.getElementById('valVerdict').textContent = verdict;
 
+    var lenStatus = formula.length > MAX_FORMULA_CHARS
+      ? ' <span style="color:#c00">❌ 超出 ' + MAX_FORMULA_CHARS + ' 字元！</span>'
+      : formula.length > MAX_FORMULA_CHARS * 0.9
+      ? ' <span style="color:#e67e22">⚠ 接近上限</span>'
+      : ' ✅';
     document.getElementById('charInfo').innerHTML =
-      '字符數：<b>' + formula.length + '</b>' +
-      (formula.length > 30000 ? ' <span style="color:#c00">⚠ 超過 Sheets 上限，建議用輔助列模式</span>' :
-       formula.length > 8000 ? ' <span style="color:#e67e22">⚠ 較長，Sheets 可能變慢</span>' :
-       ' ✅');
+      '字符數：<b>' + formula.length + '</b> / ' + MAX_FORMULA_CHARS + lenStatus;
 
     document.getElementById('txtOut').value = formula;
-    document.getElementById('auxOut').value = auxText;
 
     var stats = diagnose(globalBest, false);
     renderRuleTable(stats);
@@ -1312,8 +1310,8 @@ async function start(){
     running = false;
     document.getElementById('btnRun').disabled = false;
     document.getElementById('btnStop').disabled = true;
-    document.getElementById('progbar').style.width = '100%';
-    updateStatsUI(undefined);
+    updateStatsUI();
+    updateProgress();
     flushNow();
   }
 }
@@ -1322,6 +1320,7 @@ function stop(){
   running = false;
   document.getElementById('btnStop').disabled = true;
   pushLog('⏹ 使用者手動停止', 'warn');
+  updateProgress();
   flushNow();
 }
 function copyIt(id){
