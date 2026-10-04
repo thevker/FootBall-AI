@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v35 — 保守交叉驗證（避免過擬合）</title>
+<title>🚀 v36 — 交叉驗證 + 演化</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1500px;margin:auto;background:#f0f2f5}
@@ -29,10 +29,10 @@ button.txt{background:#28a745}
 .l-init{color:#f472b6;font-weight:bold;font-size:13px}
 .l-base{color:#fbbf24;font-weight:bold;background:rgba(251,191,36,0.1);font-size:13px}
 .l-tune{color:#34d399;font-weight:bold;background:rgba(52,211,153,0.1)}
+.l-evo{color:#22d3ee;font-weight:bold;background:rgba(34,211,238,0.1)}
 .l-test{color:#f472b6;font-weight:bold;background:rgba(244,114,182,0.15);font-size:13px}
 .l-fold{color:#22d3ee;font-weight:bold;background:rgba(34,211,238,0.1);font-size:13px}
 .l-stats{color:#a78bfa;font-weight:bold;background:rgba(167,139,250,0.1)}
-.l-reject{color:#94a3b8}
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
 .best b{color:#155724}
 .box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
@@ -54,6 +54,7 @@ td:first-child,td:nth-child(2){text-align:left}
 .tag-off{background:#999;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .tag-pred{background:#007bff;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .tag-soft{background:#fbbf24;color:#000;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:bold}
+.tag-new{background:#22c55e;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .section{background:#fff;padding:12px;border-radius:6px;border:1px solid #ddd;margin-top:12px}
 h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .progress-row{display:flex;align-items:center;gap:12px;margin-top:12px}
@@ -84,13 +85,15 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .verdict-neg{color:#c00}
 .verdict-warn{color:#e67e22}
 .verdict-neutral{color:#666}
+.cmp-table{margin-top:10px}
+.cmp-table th{background:#fef3c7}
 @media(max-width:700px){}
 </style>
 </head>
 <body>
 
 <div class="top">
-  <h2 id="title">🚀 v35 — 保守交叉驗證（避免過擬合）</h2>
+  <h2 id="title">🚀 v36 — 交叉驗證 + 演化（v15 → 掃描 → 演化）</h2>
   <div>
     <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁中</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
@@ -98,12 +101,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </div>
 
 <div class="warn-banner">
-  <b>✨ v35 保守設計：</b><br>
-  🔒 <b>每折只掃描 ±20% 範圍</b>（不極端，避免過擬合）<br>
-  🎯 <b>只在訓練集優化</b>（fitness 只用訓練集）<br>
-  ✅ <b>改善必須 > 0.5/場才接受</b>（過濾雜訊）<br>
-  🩷 <b>K 折交叉驗證</b>（真實泛化能力）<br>
-  ⚖️ <b>誠實判定</b>：|平均| < 標準差 → 無顯著信號
+  <b>✨ v36 三段對比：</b><br>
+  ① v15 基線 → ② 保守掃描 → ③ 加入演化<br>
+  🔍 <b>用測試集判斷演化是否真的有效</b><br>
+  🎯 演化只在訓練集上進行，測試集完全不看<br>
+  ⚖️ 誠實判定：如果演化在測試集變差 → 顯示「演化過擬合」
 </div>
 
 <textarea id="input" placeholder="23 27 49 355 385 169 0:3 A
@@ -114,13 +116,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <select id="folds">
     <option value="3">3 折（快）</option>
     <option value="5" selected>5 折（標準）</option>
-    <option value="10">10 折（慢但準）</option>
+    <option value="10">10 折（慢）</option>
   </select>
-  <label>掃描範圍：</label>
-  <select id="range">
-    <option value="0.1">±10%（極保守）</option>
-    <option value="0.2" selected>±20%（標準）</option>
-    <option value="0.4">±40%（寬鬆）</option>
+  <label>演化輪數：</label>
+  <select id="evoIter">
+    <option value="2">2 輪（保守）</option>
+    <option value="5" selected>5 輪（標準）</option>
+    <option value="15">15 輪（深度）</option>
   </select>
   <button id="btnRun" onclick="start()">🚀 開始</button>
   <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
@@ -156,12 +158,17 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   </div>
 
   <div class="box" style="margin-top:12px">
-    <div class="label">📊 每折明細</div>
+    <div class="label">📊 三段對比（v15 → 掃描 → 演化）</div>
+    <div id="cmpTable"></div>
+  </div>
+
+  <div class="box">
+    <div class="label">📋 每折明細</div>
     <div id="foldTable"></div>
   </div>
 
   <div class="box">
-    <div class="label">🟢 最終公式（最後一折掃描後）</div>
+    <div class="label">🟢 最終公式（最後一折演化後）</div>
     <div style="font-size:11px;color:#666;margin-bottom:6px" id="charInfo"></div>
     <button class="txt" onclick="copyIt('txtOut')">📋 複製公式</button>
     <textarea id="txtOut" class="out" readonly wrap="off"></textarea>
@@ -172,7 +179,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 <div id="diag" style="display:none">
   <div class="section">
-    <h3 id="h-rule">📋 最後一折規則表</h3>
+    <h3 id="h-rule">📋 最後一折演化後規則表</h3>
     <div class="diag" id="ruleTable"></div>
   </div>
 </div>
@@ -181,16 +188,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 'use strict';
 
 var TXT = {
-  zh: {
-    title: '🚀 v35 — 保守交叉驗證（避免過擬合）',
-    hRule: '📋 最後一折規則表',
-    noData: '沒有有效數據'
-  },
-  en: {
-    title: '🚀 v35 — Conservative Cross-Validation',
-    hRule: '📋 Last Fold Rules',
-    noData: 'No valid data'
-  }
+  zh: { title: '🚀 v36 — 交叉驗證 + 演化', hRule: '📋 最後一折演化後規則表', noData: '沒有有效數據' },
+  en: { title: '🚀 v36 — CV + Evolution', hRule: '📋 Last Fold Evolved Rules', noData: 'No valid data' }
 };
 var LANG = 'zh';
 function t(k){ return (TXT[LANG] && TXT[LANG][k]) || k; }
@@ -269,10 +268,11 @@ var lastSpeedUpdate = 0;
 var currentFold = 0;
 var totalFolds = 0;
 var foldResults = [];
-var lastScannedRules = null;
+var lastEvolvedRules = null;
 
 var MIN_IMPROVE = 0.5;
 var SCAN_RANGE_PCT = 0.2;
+var EVO_MIN_IMPROVE = 0.5;
 
 var RESULTS = ['H','D','A','skip'];
 var RESULT_CODES = {H:0, D:1, A:2, skip:-1};
@@ -326,17 +326,13 @@ function clearLog(){
 
 function updateProgress(){
   var pct = totalFolds > 0 ? (currentFold / totalFolds) * 100 : 0;
-  if(!running && startTime > 0 && document.getElementById('best').style.display === 'block'){
-    pct = 100;
-  }
+  if(!running && startTime > 0 && document.getElementById('best').style.display === 'block') pct = 100;
   var bar = document.getElementById('progbar');
   var txt = document.getElementById('progText');
   var phaseEl = document.getElementById('progPhase');
   if(bar) bar.style.width = pct.toFixed(1) + '%';
   if(txt) txt.textContent = pct.toFixed(1) + '%';
-  if(phaseEl){
-    phaseEl.textContent = currentFold > 0 ? '第 ' + currentFold + '/' + totalFolds + ' 折' : '準備中';
-  }
+  if(phaseEl) phaseEl.textContent = currentFold > 0 ? '第 ' + currentFold + '/' + totalFolds + ' 折' : '準備中';
   var statProg = document.getElementById('stat-prog');
   if(statProg) statProg.innerHTML = '進度: <b>' + pct.toFixed(1) + '%</b>';
   var statFold = document.getElementById('stat-fold');
@@ -346,14 +342,10 @@ function updateProgress(){
 function updateTestAvg(){
   var stat = document.getElementById('stat-test');
   if(!stat) return;
-  if(foldResults.length === 0){
-    stat.innerHTML = '🩷 測試平均: <b>-</b>';
-  } else {
-    var sum = 0;
-    for(var i = 0; i < foldResults.length; i++) sum += foldResults[i].testPer;
-    var avg = sum / foldResults.length;
-    stat.innerHTML = '🩷 測試平均: <b>' + avg.toFixed(1) + '</b>';
-  }
+  if(foldResults.length === 0){ stat.innerHTML = '🩷 測試平均: <b>-</b>'; return; }
+  var sum = 0;
+  for(var i = 0; i < foldResults.length; i++) sum += foldResults[i].testPerAfterEvo;
+  stat.innerHTML = '🩷 測試平均: <b>' + (sum / foldResults.length).toFixed(2) + '</b>';
 }
 
 function updateSpeedUI(){
@@ -475,11 +467,8 @@ function calcProfitOn(featMat, codes, payoutsArr, N, rules){
     }
     if(pred < 0) continue;
     var gp;
-    if(pred === codes[i]){
-      gp = payoutsArr[i*3 + pred] - 100;
-    } else {
-      gp = -100;
-    }
+    if(pred === codes[i]) gp = payoutsArr[i*3 + pred] - 100;
+    else gp = -100;
     total += gp;
   }
   return total;
@@ -496,7 +485,7 @@ function cloneRule(r){
     }
     groups.push(gs);
   }
-  return {on:r.on, then:r.then, thenCode:r.thenCode, groups:groups};
+  return {on:r.on, then:r.then, thenCode:r.thenCode, groups:groups, _isNew: r._isNew};
 }
 function cloneRules(rules){
   var out = new Array(rules.length);
@@ -521,13 +510,14 @@ function convertV15Rules(v15Rules){
       on: v15.on,
       then: v15.then,
       thenCode: RESULT_CODES[v15.then],
-      groups: groups
+      groups: groups,
+      _isNew: 0
     });
   }
   return out;
 }
 
-/* ⭐ 步長：根據數值大小 */
+/* ========== 掃描 ========== */
 function getStep(val){
   var abs = Math.abs(val);
   if(abs < 20) return 1;
@@ -537,85 +527,174 @@ function getStep(val){
   return 20;
 }
 
-/* ⭐ 掃描單一參數（保守範圍） */
 function scanOneParam(featMat, codes, payoutsArr, N, rules, ri, gi, ci, rangePct){
   var cond = rules[ri].groups[gi][ci];
   var origVal = cond[2];
   var range = Math.max(1, Math.abs(origVal) * rangePct);
   var step = getStep(origVal);
-
   var origProfit = calcProfitOn(featMat, codes, payoutsArr, N, rules);
   var bestProfit = origProfit;
   var bestVal = origVal;
-
   for(var v = origVal - range; v <= origVal + range; v += step){
     if(v < 0) continue;
     if(Math.abs(v - origVal) < 0.001) continue;
     cond[2] = v;
     var profit = calcProfitOn(featMat, codes, payoutsArr, N, rules);
-    if(profit > bestProfit){
-      bestProfit = profit;
-      bestVal = v;
-    }
+    if(profit > bestProfit){ bestProfit = profit; bestVal = v; }
   }
-
   cond[2] = origVal;
-
-  return {
-    origValue: origVal,
-    newValue: bestVal,
-    origProfit: origProfit,
-    newProfit: bestProfit,
-    improvement: bestProfit - origProfit
-  };
+  return {origValue: origVal, newValue: bestVal, origProfit: origProfit, newProfit: bestProfit, improvement: bestProfit - origProfit};
 }
 
-/* ⭐ 座標下降（保守） */
 async function coordDescend(featMat, codes, payoutsArr, N, startRules, rangePct, foldLabel){
   var cur = cloneRules(startRules);
   var curProfit = calcProfitOn(featMat, codes, payoutsArr, N, cur);
-  var curPerGame = N > 0 ? curProfit / N : 0;
-  var acceptedChanges = 0;
-  var rejectedChanges = 0;
+  var accepted = 0;
 
   for(var iter = 0; iter < 3; iter++){
     var iterImproved = false;
     var iterAccepted = 0;
-    var iterRejected = 0;
-
     for(var ri = 0; ri < cur.length && running; ri++){
       for(var gi = 0; gi < cur[ri].groups.length; gi++){
         for(var ci = 0; ci < cur[ri].groups[gi].length; ci++){
           if(!running) break;
-
           var res = scanOneParam(featMat, codes, payoutsArr, N, cur, ri, gi, ci, rangePct);
-
-          // 保守：改善必須 > MIN_IMPROVE * N
           if(res.improvement > MIN_IMPROVE * N){
             cur[ri].groups[gi][ci][2] = res.newValue;
             curProfit = res.newProfit;
-            curPerGame = curProfit / N;
             iterImproved = true;
             iterAccepted++;
-            acceptedChanges++;
+            accepted++;
             if(document.getElementById('verbose').checked){
-              pushLog(nowTime() + '   [' + foldLabel + '] R' + (ri+1) + ' ' + FEATURES[cur[ri].groups[gi][ci][0]] + OPS[cur[ri].groups[gi][ci][1]] + ' ' + Math.round(res.origValue) + '→' + Math.round(res.newValue) + ' 訓練 ' + curPerGame.toFixed(2) + '/場', 'tune');
+              pushLog(nowTime() + '   [' + foldLabel + '-掃描] R' + (ri+1) + ' ' + FEATURES[cur[ri].groups[gi][ci][0]] + OPS[cur[ri].groups[gi][ci][1]] + ' ' + Math.round(res.origValue) + '→' + Math.round(res.newValue), 'tune');
             }
-          } else if(res.newValue !== res.origValue){
-            iterRejected++;
-            rejectedChanges++;
           }
         }
       }
     }
+    pushLog(nowTime() + '   [' + foldLabel + '-掃描] 第 ' + (iter+1) + ' 輪：接受 ' + iterAccepted, iterImproved ? 'ok' : 'dim');
+    await yieldUI();
+    if(!iterImproved) break;
+  }
+  return {rules: cur, profit: curProfit, accepted: accepted};
+}
 
-    pushLog(nowTime() + '   [' + foldLabel + '] 第 ' + (iter+1) + ' 輪：接受 ' + iterAccepted + '，拒絕 ' + iterRejected, iterImproved ? 'ok' : 'dim');
+/* ========== 演化 ========== */
+function sampleFeatureValue(fi, featMat, N){
+  if(N === 0) return Math.random() * 300;
+  var n = Math.min(50, N);
+  var vals = [];
+  for(var i = 0; i < n; i++) vals.push(featMat[Math.floor(Math.random() * N)][fi]);
+  var base = vals[Math.floor(Math.random() * vals.length)];
+  var spread = Math.max(1, Math.abs(base) * 0.25);
+  var v = base + (Math.random() * 2 - 1) * spread;
+  if(base > 5 && Math.abs(base - Math.round(base)) < 0.01) v = Math.round(v);
+  return Math.max(0, v);
+}
+
+function genRandomRule(featMat, N){
+  var tIdx = Math.floor(Math.random() * 4);
+  var numConds = 1 + Math.floor(Math.random() * 2);
+  var group = [];
+  for(var i = 0; i < numConds; i++){
+    var fi = Math.floor(Math.random() * FCOUNT);
+    var op = Math.floor(Math.random() * 4);  // > >= < <=
+    var val = sampleFeatureValue(fi, featMat, N);
+    group.push([fi, op, val]);
+  }
+  return {on:1, then: RESULTS[tIdx], thenCode: tIdx, groups: [group], _isNew: 1};
+}
+
+function mutateRule(rule, featMat, N){
+  var newRule = cloneRule(rule);
+  if(newRule.groups.length === 0) return newRule;
+  var gi = Math.floor(Math.random() * newRule.groups.length);
+  if(newRule.groups[gi].length === 0) return newRule;
+  var ci = Math.floor(Math.random() * newRule.groups[gi].length);
+  var p = Math.random();
+  if(p < 0.6){
+    // 改閾值
+    var cond = newRule.groups[gi][ci];
+    var step = getStep(cond[2]);
+    var delta = (Math.floor(Math.random() * 11) - 5) * step;
+    cond[2] = Math.max(0, cond[2] + delta);
+  } else if(p < 0.8){
+    // 改運算符
+    var cond2 = newRule.groups[gi][ci];
+    var oldOp = cond2[1];
+    var newOp;
+    do { newOp = Math.floor(Math.random() * 4); } while(newOp === oldOp);
+    cond2[1] = newOp;
+  } else {
+    // 改結果
+    var nc = Math.floor(Math.random() * 4);
+    newRule.thenCode = nc;
+    newRule.then = RESULTS[nc];
+  }
+  return newRule;
+}
+
+async function evolveRules(featMat, codes, payoutsArr, N, startRules, maxIter, foldLabel){
+  var cur = cloneRules(startRules);
+  var curProfit = calcProfitOn(featMat, codes, payoutsArr, N, cur);
+  var curPerGame = N > 0 ? curProfit / N : 0;
+  var accepted = 0;
+
+  pushLog(nowTime() + '   [' + foldLabel + '-演化] 起始 ' + curPerGame.toFixed(2) + '/場', 'evo');
+
+  for(var iter = 0; iter < maxIter; iter++){
+    var iterImproved = false;
+    var iterAccepted = 0;
+
+    for(var attempt = 0; attempt < 50 && running; attempt++){
+      var p = Math.random();
+      var candRules = cloneRules(cur);
+      var action = '';
+
+      if(p < 0.5 && candRules.length > 0){
+        // 改一個規則
+        var ri = Math.floor(Math.random() * candRules.length);
+        candRules[ri] = mutateRule(candRules[ri], featMat, N);
+        action = 'mutate R' + (ri+1);
+      } else if(p < 0.8){
+        // 加新規則
+        if(candRules.length >= 50) continue;
+        var newRule = genRandomRule(featMat, N);
+        var pos = Math.random() < 0.7 ? candRules.length : Math.floor(Math.random() * (candRules.length + 1));
+        candRules.splice(pos, 0, newRule);
+        action = 'add rule';
+      } else {
+        // 刪除規則
+        if(candRules.length <= 5) continue;
+        var ri2 = Math.floor(Math.random() * candRules.length);
+        candRules.splice(ri2, 1);
+        action = 'del R' + (ri2+1);
+      }
+
+      var candProfit = calcProfitOn(featMat, codes, payoutsArr, N, candRules);
+      var improvement = candProfit - curProfit;
+
+      // 保守：改善必須 > 0.5/場
+      if(improvement > EVO_MIN_IMPROVE * N){
+        cur = candRules;
+        curProfit = candProfit;
+        curPerGame = N > 0 ? curProfit / N : 0;
+        iterImproved = true;
+        iterAccepted++;
+        accepted++;
+        if(document.getElementById('verbose').checked && accepted % 3 === 0){
+          pushLog(nowTime() + '   [' + foldLabel + '-演化] ' + action + ' → ' + curPerGame.toFixed(2) + '/場', 'evo');
+        }
+      }
+    }
+
+    pushLog(nowTime() + '   [' + foldLabel + '-演化] 第 ' + (iter+1) + '/' + maxIter + ' 輪：接受 ' + iterAccepted + '，規則數 ' + cur.length, iterImproved ? 'ok' : 'dim');
     await yieldUI();
 
     if(!iterImproved) break;
   }
 
-  return {rules: cur, profit: curProfit, perGame: curPerGame, accepted: acceptedChanges, rejected: rejectedChanges};
+  return {rules: cur, profit: curProfit, perGame: curPerGame, accepted: accepted};
 }
 
 /* ========== 格式化 ========== */
@@ -629,7 +708,6 @@ function fmtRule(r){
   return parts.join('|') + '→' + r.then;
 }
 
-/* ========== 診斷 ========== */
 function diagnose(rules, featMat, codes, payoutsArr, N){
   var stats = [];
   for(var i = 0; i < rules.length; i++) stats.push({rule:rules[i], hit:0, correct:0, wrong:0, profit:0});
@@ -642,20 +720,15 @@ function diagnose(rules, featMat, codes, payoutsArr, N){
     }
     if(pred < 0 || hr === -1) continue;
     stats[hr].hit++;
-    if(pred === codes[i]){
-      stats[hr].correct++;
-      stats[hr].profit += payoutsArr[i*3 + pred] - 100;
-    } else {
-      stats[hr].wrong++;
-      stats[hr].profit -= 100;
-    }
+    if(pred === codes[i]){ stats[hr].correct++; stats[hr].profit += payoutsArr[i*3 + pred] - 100; }
+    else { stats[hr].wrong++; stats[hr].profit -= 100; }
   }
   return stats;
 }
 
 function renderRuleTable(stats){
   var html = '<table><thead><tr>' +
-    '<th>#</th><th>ON</th><th>條件</th><th>指向</th>' +
+    '<th>#</th><th>類型</th><th>ON</th><th>條件</th><th>指向</th>' +
     '<th>命中</th><th>對</th><th>錯</th><th>盈利</th>' +
     '</tr></thead><tbody>';
   for(var i = 0; i < stats.length; i++){
@@ -666,8 +739,8 @@ function renderRuleTable(stats){
     var pcls = s.profit > 0 ? 'profit-pos' : (s.profit < 0 ? 'profit-neg' : '');
     var onTag = r.on ? '<span class="tag-ok">ON</span>' : '<span class="tag-off">OFF</span>';
     var thenTag = '<span class="tag-pred">' + r.then + '</span>';
-
-    html += '<tr><td>R' + (i+1) + '</td><td>' + onTag + '</td>' +
+    var typeTag = r._isNew ? '<span class="tag-new">➕新</span>' : '<span class="tag-soft">🟡v15</span>';
+    html += '<tr><td>R' + (i+1) + '</td><td>' + typeTag + '</td><td>' + onTag + '</td>' +
       '<td style="text-align:left;font-size:10px">' + ss + '</td><td>' + thenTag + '</td>' +
       '<td>' + s.hit + '</td><td>' + s.correct + '</td><td>' + s.wrong + '</td>' +
       '<td class="' + pcls + '">' + s.profit + '</td></tr>';
@@ -685,8 +758,7 @@ function sheetOp(opIdx){
 }
 function featToExpr(feat){
   switch(feat){
-    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-      return feat + '2:' + feat;
+    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': return feat + '2:' + feat;
     case '|A-B|': return 'ABS(A2:A-B2:B)';
     case '|A-C|': return 'ABS(A2:A-C2:C)';
     case '|A-D|': return 'ABS(A2:A-D2:D)';
@@ -727,10 +799,9 @@ function featToExpr(feat){
   }
 }
 function buildCondSheet(cond){
-  var fi = cond[0], opIdx = cond[1], val = cond[2];
-  var op = sheetOp(opIdx);
-  var v = Math.round(val * 100) / 100;
-  return '(' + featToExpr(FEATURES[fi]) + op + v + ')';
+  var op = sheetOp(cond[1]);
+  var v = Math.round(cond[2] * 100) / 100;
+  return '(' + featToExpr(FEATURES[cond[0]]) + op + v + ')';
 }
 function buildGroupSheet(g){
   if(!g.length) return 'TRUE';
@@ -770,7 +841,7 @@ async function start(){
   evalCount = 0;
   currentFold = 0;
   foldResults = [];
-  lastScannedRules = null;
+  lastEvolvedRules = null;
   lastSpeedUpdate = 0;
 
   document.getElementById('btnRun').disabled = true;
@@ -786,22 +857,21 @@ async function start(){
   clearLog();
 
   var N_FOLDS = parseInt(document.getElementById('folds').value);
-  SCAN_RANGE_PCT = parseFloat(document.getElementById('range').value);
+  var EVO_ITER = parseInt(document.getElementById('evoIter').value);
+  SCAN_RANGE_PCT = 0.2;
   totalFolds = N_FOLDS;
 
   pushLog('═══════════════════════════════════════════════════════════', 'head');
-  pushLog('🚀 v35 — 保守交叉驗證（' + N_FOLDS + ' 折）', 'head');
+  pushLog('🚀 v36 — 交叉驗證 + 演化（' + N_FOLDS + ' 折）', 'head');
   pushLog('═══════════════════════════════════════════════════════════', 'head');
   pushLog(nowTime() + ' 原始有效行數：' + parsed.total, 'info');
   pushLog(nowTime() + ' 重複：' + parsed.dups + '（已忽略）', 'warn');
   pushLog(nowTime() + ' 去重後：' + parsed.rows.length + ' 筆', 'success');
   pushLog(nowTime() + ' 🔄 ' + N_FOLDS + ' 折交叉驗證', 'fold');
-  pushLog(nowTime() + ' 🔒 掃描範圍：±' + (SCAN_RANGE_PCT*100).toFixed(0) + '%', 'init');
-  pushLog(nowTime() + ' ✅ 接受門檻：+' + MIN_IMPROVE + '/場', 'init');
-  pushLog(nowTime() + ' 🎯 fitness 只看訓練集', 'test');
+  pushLog(nowTime() + ' 🔍 掃描：±' + (SCAN_RANGE_PCT*100).toFixed(0) + '%', 'init');
+  pushLog(nowTime() + ' 🧬 演化：' + EVO_ITER + ' 輪', 'evo');
   pushLog('');
 
-  // 預先打亂並分配資料到 K 折
   var allRows = parsed.rows.slice();
   for(var i = allRows.length - 1; i > 0; i--){
     var j = Math.floor(Math.random() * (i + 1));
@@ -821,12 +891,9 @@ async function start(){
     pushLog('═══════════════════════════════════════════════════════════', 'head');
     await yieldUI();
 
-    // 分配：第 fold-1 段為測試，其餘為訓練
     var testStart = (fold - 1) * foldSize;
     var testEnd = (fold === N_FOLDS) ? n : fold * foldSize;
-
-    var trainRows = [];
-    var testRows = [];
+    var trainRows = [], testRows = [];
     for(var i = 0; i < n; i++){
       if(i >= testStart && i < testEnd) testRows.push(allRows[i]);
       else trainRows.push(allRows[i]);
@@ -845,38 +912,50 @@ async function start(){
     var tem = extractMeta(testRows);
     testCodes = tem.codes; testPayouts = tem.payouts;
 
-    // v15 基線
+    // === 階段 1：v15 基線 ===
     var v15Rules = convertV15Rules(INIT_RULES);
-    var v15TrainP = calcProfitOn(trainFeat, trainCodes, trainPayouts, trainN, v15Rules);
-    var v15TestP = calcProfitOn(testFeat, testCodes, testPayouts, testN, v15Rules);
+    var v15TrainPer = trainN > 0 ? calcProfitOn(trainFeat, trainCodes, trainPayouts, trainN, v15Rules) / trainN : 0;
+    var v15TestPer = testN > 0 ? calcProfitOn(testFeat, testCodes, testPayouts, testN, v15Rules) / testN : 0;
 
-    pushLog(nowTime() + '   v15 基線：訓練 ' + (trainN > 0 ? (v15TrainP/trainN).toFixed(1) : 0) + '/場，測試 ' + (testN > 0 ? (v15TestP/testN).toFixed(1) : 0) + '/場', 'dim');
+    pushLog(nowTime() + '   ① v15 基線：訓練 ' + v15TrainPer.toFixed(2) + '/場，測試 ' + v15TestPer.toFixed(2) + '/場', 'base');
 
-    // 掃描
+    // === 階段 2：掃描 ===
     var scanRes = await coordDescend(trainFeat, trainCodes, trainPayouts, trainN, v15Rules, SCAN_RANGE_PCT, '折' + fold);
     if(!running) break;
 
-    var finalTrainP = calcProfitOn(trainFeat, trainCodes, trainPayouts, trainN, scanRes.rules);
-    var finalTestP = calcProfitOn(testFeat, testCodes, testPayouts, testN, scanRes.rules);
+    var scanTrainPer = trainN > 0 ? scanRes.profit / trainN : 0;
+    var scanTestP = calcProfitOn(testFeat, testCodes, testPayouts, testN, scanRes.rules);
+    var scanTestPer = testN > 0 ? scanTestP / testN : 0;
 
-    var trainPer = trainN > 0 ? finalTrainP / trainN : 0;
-    var testPer = testN > 0 ? finalTestP / testN : 0;
+    pushLog(nowTime() + '   ② 掃描後：訓練 ' + scanTrainPer.toFixed(2) + '/場，測試 ' + scanTestPer.toFixed(2) + '/場（改動 ' + scanRes.accepted + '）', 'tune');
+
+    // === 階段 3：演化 ===
+    var evoRes = await evolveRules(trainFeat, trainCodes, trainPayouts, trainN, scanRes.rules, EVO_ITER, '折' + fold);
+    if(!running) break;
+
+    var evoTrainPer = trainN > 0 ? evoRes.profit / trainN : 0;
+    var evoTestP = calcProfitOn(testFeat, testCodes, testPayouts, testN, evoRes.rules);
+    var evoTestPer = testN > 0 ? evoTestP / testN : 0;
+
+    pushLog(nowTime() + '   ③ 演化後：訓練 ' + evoTrainPer.toFixed(2) + '/場，測試 ' + evoTestPer.toFixed(2) + '/場（改動 ' + evoRes.accepted + '）', 'evo');
+    pushLog('');
 
     foldResults.push({
       fold: fold,
       trainN: trainN,
       testN: testN,
-      trainPer: trainPer,
-      testPer: testPer,
-      v15TestPer: testN > 0 ? v15TestP / testN : 0,
-      accepted: scanRes.accepted,
-      rejected: scanRes.rejected
+      v15TestPer: v15TestPer,
+      testPerAfterScan: scanTestPer,
+      testPerAfterEvo: evoTestPer,
+      v15TrainPer: v15TrainPer,
+      trainPerAfterScan: scanTrainPer,
+      trainPerAfterEvo: evoTrainPer,
+      scanAccepted: scanRes.accepted,
+      evoAccepted: evoRes.accepted,
+      rulesCountAfterEvo: evoRes.rules.length
     });
 
-    lastScannedRules = scanRes.rules;
-
-    pushLog(nowTime() + '   ✓ 折 ' + fold + '：訓練 ' + trainPer.toFixed(2) + '/場，測試 ' + testPer.toFixed(2) + '/場（接受 ' + scanRes.accepted + ' 個改動）', 'test');
-    pushLog('');
+    lastEvolvedRules = evoRes.rules;
 
     updateTestAvg();
     await yieldUI();
@@ -887,128 +966,134 @@ async function start(){
   function finish(){
     var elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
-    var sum = 0, sumSq = 0, minVal = Infinity, maxVal = -Infinity;
-    var v15Sum = 0;
-    for(var i = 0; i < foldResults.length; i++){
-      var v = foldResults[i].testPer;
-      sum += v;
-      sumSq += v * v;
-      if(v < minVal) minVal = v;
-      if(v > maxVal) maxVal = v;
-      v15Sum += foldResults[i].v15TestPer;
+    function avg(key){
+      var s = 0;
+      for(var i = 0; i < foldResults.length; i++) s += foldResults[i][key];
+      return foldResults.length > 0 ? s / foldResults.length : 0;
     }
-    var avg = foldResults.length > 0 ? sum / foldResults.length : 0;
-    var variance = foldResults.length > 1 ? (sumSq / foldResults.length - avg * avg) : 0;
-    var std = Math.sqrt(Math.max(0, variance));
-    var v15Avg = foldResults.length > 0 ? v15Sum / foldResults.length : 0;
+    function std(key){
+      var a = avg(key);
+      var s = 0;
+      for(var i = 0; i < foldResults.length; i++) s += (foldResults[i][key] - a) * (foldResults[i][key] - a);
+      return Math.sqrt(foldResults.length > 1 ? s / foldResults.length : 0);
+    }
+
+    var v15TestAvg = avg('v15TestPer');
+    var scanTestAvg = avg('testPerAfterScan');
+    var evoTestAvg = avg('testPerAfterEvo');
+    var v15TestStd = std('v15TestPer');
+    var scanTestStd = std('testPerAfterScan');
+    var evoTestStd = std('testPerAfterEvo');
 
     pushLog('═══════════════════════════════════════════════════════════', 'head');
-    pushLog('🏆 v35 交叉驗證完成', 'stats');
+    pushLog('🏆 v36 交叉驗證 + 演化 完成', 'stats');
     pushLog('═══════════════════════════════════════════════════════════', 'head');
-    pushLog('   🩷 真實泛化能力（' + foldResults.length + ' 折測試平均）：', 'test');
-    pushLog('      平均每場：' + avg.toFixed(2), 'test');
-    pushLog('      標準差：±' + std.toFixed(2), 'stats');
-    pushLog('      範圍：' + minVal.toFixed(2) + ' ~ ' + maxVal.toFixed(2), 'stats');
-    pushLog('      v15 基線：' + v15Avg.toFixed(2) + '/場', 'dim');
-    pushLog('      改善：' + (avg - v15Avg >= 0 ? '+' : '') + (avg - v15Avg).toFixed(2) + '/場', 'stats');
     pushLog('');
-    pushLog('   每折明細：', 'dim');
-    for(var i = 0; i < foldResults.length; i++){
-      var r = foldResults[i];
-      pushLog('      折 ' + r.fold + '（訓練' + r.trainN + '/測試' + r.testN + '）：訓練 ' + r.trainPer.toFixed(2) + '，測試 ' + r.testPer.toFixed(2) + '，v15 ' + r.v15TestPer.toFixed(2) + '，改動 ' + r.accepted + ' 個', 'dim');
-    }
+    pushLog('   📊 三段測試集平均：', 'stats');
+    pushLog('      ① v15 基線：   ' + v15TestAvg.toFixed(2) + ' ±' + v15TestStd.toFixed(2) + '/場', 'base');
+    pushLog('      ② 掃描後：     ' + scanTestAvg.toFixed(2) + ' ±' + scanTestStd.toFixed(2) + '/場', 'tune');
+    pushLog('      ③ 演化後：     ' + evoTestAvg.toFixed(2) + ' ±' + evoTestStd.toFixed(2) + '/場', 'evo');
+    pushLog('');
+    pushLog('   掃描貢獻：' + (scanTestAvg - v15TestAvg >= 0 ? '+' : '') + (scanTestAvg - v15TestAvg).toFixed(2) + '/場', 'tune');
+    pushLog('   演化貢獻：' + (evoTestAvg - scanTestAvg >= 0 ? '+' : '') + (evoTestAvg - scanTestAvg).toFixed(2) + '/場', 'evo');
     pushLog('');
     pushLog('   總掃描：' + evalCount + ' 次', 'speed');
     pushLog('   總耗時：' + elapsed + ' 秒', 'speed');
     pushLog('═══════════════════════════════════════════════════════════', 'head');
 
     document.getElementById('best').style.display = 'block';
-    document.getElementById('summary').innerHTML = '🏆 ' + foldResults.length + ' 折　🩷 真實每場 <b>' + avg.toFixed(2) + '</b> ±' + std.toFixed(2);
+    document.getElementById('summary').innerHTML = '🏆 演化後測試平均 <b>' + evoTestAvg.toFixed(2) + '</b> ±' + evoTestStd.toFixed(2);
 
-    /* ⭐ 誠實判定 */
-    var verdictHTML = '';
+    /* 誠實判定 */
+    var evoDelta = evoTestAvg - scanTestAvg;
     var verdictColor = 'verdict-neutral';
+    var verdictText = '';
+
     if(foldResults.length === 0){
-      verdictHTML = '<div class="big-num verdict-neutral">無資料</div>';
+      verdictText = '<div class="big-num verdict-neutral">無資料</div>';
     } else {
-      // 判斷：|mean| vs std
-      var absAvg = Math.abs(avg);
-      var ratio = std > 0 ? absAvg / std : 0;
+      var absEvo = Math.abs(evoTestAvg);
+      var ratio = evoTestStd > 0 ? absEvo / evoTestStd : 0;
+      var evoContribution = evoDelta;
+      var scanContribution = scanTestAvg - v15TestAvg;
 
-      if(avg > 0 && ratio > 2.0){
-        verdictColor = 'verdict-pos';
-        verdictHTML = '<div class="big-num ' + verdictColor + '">' + avg.toFixed(2) + '</div>' +
-          '<div style="font-size:13px;color:#666;margin-top:4px">每場平均盈利</div>' +
-          '<div style="font-size:14px;color:#0a7a0a;margin-top:8px;font-weight:bold">✅ 有顯著正信號（平均/標準差 = ' + ratio.toFixed(1) + ' > 2）</div>' +
-          '<div style="font-size:12px;color:#666;margin-top:4px">標準差 ±' + std.toFixed(2) + '，範圍 ' + minVal.toFixed(2) + ' ~ ' + maxVal.toFixed(2) + '</div>' +
-          '<div style="font-size:12px;color:#666;margin-top:6px">vs v15 基線：' + v15Avg.toFixed(2) + '/場 → ' + avg.toFixed(2) + '/場（Δ' + (avg - v15Avg >= 0 ? '+' : '') + (avg - v15Avg).toFixed(2) + '）</div>';
-      } else if(avg > 0 && ratio > 1.0){
-        verdictColor = 'verdict-warn';
-        verdictHTML = '<div class="big-num ' + verdictColor + '">' + avg.toFixed(2) + '</div>' +
-          '<div style="font-size:13px;color:#666;margin-top:4px">每場平均盈利</div>' +
-          '<div style="font-size:14px;color:#e67e22;margin-top:8px;font-weight:bold">🟡 微弱正信號（平均/標準差 = ' + ratio.toFixed(1) + '，建議加資料）</div>' +
-          '<div style="font-size:12px;color:#666;margin-top:4px">標準差 ±' + std.toFixed(2) + '，範圍 ' + minVal.toFixed(2) + ' ~ ' + maxVal.toFixed(2) + '</div>' +
-          '<div style="font-size:12px;color:#666;margin-top:6px">vs v15 基線：' + v15Avg.toFixed(2) + '/場 → ' + avg.toFixed(2) + '/場（Δ' + (avg - v15Avg >= 0 ? '+' : '') + (avg - v15Avg).toFixed(2) + '）</div>';
-      } else if(avg > 0 && ratio > 0){
-        verdictColor = 'verdict-warn';
-        verdictHTML = '<div class="big-num ' + verdictColor + '">' + avg.toFixed(2) + '</div>' +
-          '<div style="font-size:13px;color:#666;margin-top:4px">每場平均盈利</div>' +
-          '<div style="font-size:14px;color:#e67e22;margin-top:8px;font-weight:bold">⚠️ 信號被雜訊淹沒（平均 < 標準差）</div>' +
-          '<div style="font-size:12px;color:#666;margin-top:4px">標準差 ±' + std.toFixed(2) + ' > 平均 ' + avg.toFixed(2) + '，無法區分與「隨機」</div>' +
-          '<div style="font-size:12px;color:#666;margin-top:6px">建議：收集更多資料，或接受「無顯著信號」的結論</div>';
+      var headerHtml = '<div class="big-num ' + (evoTestAvg > 0 ? 'verdict-pos' : 'verdict-neg') + '">' + evoTestAvg.toFixed(2) + '</div>' +
+        '<div style="font-size:13px;color:#666;margin-top:4px">演化後測試每場</div>' +
+        '<div style="font-size:12px;color:#666;margin-top:4px">標準差 ±' + evoTestStd.toFixed(2) + '</div>';
+
+      var scanVerdict = '';
+      if(scanTestAvg > v15TestAvg + 1 && scanTestAvg > 0){
+        scanVerdict = '🟢 掃描有效（+' + scanContribution.toFixed(2) + '/場）';
+      } else if(scanTestAvg > v15TestAvg){
+        scanVerdict = '🟡 掃描略微有效（+' + scanContribution.toFixed(2) + '/場）';
       } else {
-        verdictColor = 'verdict-neg';
-        verdictHTML = '<div class="big-num ' + verdictColor + '">' + avg.toFixed(2) + '</div>' +
-          '<div style="font-size:13px;color:#666;margin-top:4px">每場平均盈利</div>' +
-          '<div style="font-size:14px;color:#c00;margin-top:8px;font-weight:bold">❌ 平均虧損 → 公式不可用</div>' +
-          '<div style="font-size:12px;color:#666;margin-top:4px">標準差 ±' + std.toFixed(2) + '，範圍 ' + minVal.toFixed(2) + ' ~ ' + maxVal.toFixed(2) + '</div>' +
-          '<div style="font-size:12px;color:#666;margin-top:6px">vs v15 基線：' + v15Avg.toFixed(2) + '/場 → ' + avg.toFixed(2) + '/場（Δ' + (avg - v15Avg >= 0 ? '+' : '') + (avg - v15Avg).toFixed(2) + '）</div>';
+        scanVerdict = '🔴 掃描無效或有害（' + scanContribution.toFixed(2) + '/場）';
       }
-    }
-    document.getElementById('verdictBox').innerHTML = verdictHTML;
 
-    // 每折明細表
+      var evoVerdict = '';
+      if(evoDelta > 1 && evoTestAvg > 0){
+        evoVerdict = '✅ 演化有效（+' + evoDelta.toFixed(2) + '/場）';
+      } else if(evoDelta > 0){
+        evoVerdict = '🟡 演化略微有效（+' + evoDelta.toFixed(2) + '/場）';
+      } else if(evoDelta > -1){
+        evoVerdict = '⚪ 演化無效果（' + evoDelta.toFixed(2) + '/場）';
+      } else {
+        evoVerdict = '❌ 演化過擬合（' + evoDelta.toFixed(2) + '/場）';
+      }
+
+      verdictText = headerHtml +
+        '<div style="margin-top:10px;font-size:14px">' + scanVerdict + '</div>' +
+        '<div style="font-size:14px">' + evoVerdict + '</div>' +
+        '<div style="font-size:12px;color:#666;margin-top:6px">' +
+        '平均/標準差 = ' + ratio.toFixed(2) + (ratio > 2 ? ' ✅ 顯著' : ratio > 1 ? ' 🟡 弱' : ' ⚠️ 不顯著') +
+        '</div>';
+    }
+    document.getElementById('verdictBox').innerHTML = verdictText;
+
+    // 三段對比表
+    var cmpHtml = '<table class="cmp-table"><thead><tr>' +
+      '<th>階段</th><th>測試每場</th><th>標準差</th><th>相對前階段</th>' +
+      '</tr></thead><tbody>' +
+      '<tr><td>① v15 基線</td><td>' + v15TestAvg.toFixed(2) + '</td><td>±' + v15TestStd.toFixed(2) + '</td><td>-</td></tr>' +
+      '<tr><td>② 掃描</td><td>' + scanTestAvg.toFixed(2) + '</td><td>±' + scanTestStd.toFixed(2) + '</td>' +
+      '<td class="' + (scanTestAvg - v15TestAvg >= 0 ? 'profit-pos' : 'profit-neg') + '">' +
+      (scanTestAvg - v15TestAvg >= 0 ? '+' : '') + (scanTestAvg - v15TestAvg).toFixed(2) + '</td></tr>' +
+      '<tr style="background:#e0f2fe;font-weight:bold"><td>③ 演化</td><td>' + evoTestAvg.toFixed(2) + '</td><td>±' + evoTestStd.toFixed(2) + '</td>' +
+      '<td class="' + (evoTestAvg - scanTestAvg >= 0 ? 'profit-pos' : 'profit-neg') + '">' +
+      (evoTestAvg - scanTestAvg >= 0 ? '+' : '') + (evoTestAvg - scanTestAvg).toFixed(2) + '</td></tr>' +
+      '</tbody></table>';
+    document.getElementById('cmpTable').innerHTML = cmpHtml;
+
+    // 每折明細
     var fHtml = '<table><thead><tr>' +
-      '<th>折</th><th>訓練場</th><th>測試場</th>' +
-      '<th>訓練每場</th><th>測試每場</th><th>v15 測試每場</th><th>改善</th><th>改動</th>' +
+      '<th>折</th><th>訓練</th><th>測試</th>' +
+      '<th>v15 測試</th><th>掃描測試</th><th>演化測試</th>' +
+      '<th>掃描 Δ</th><th>演化 Δ</th><th>規則數</th>' +
       '</tr></thead><tbody>';
     for(var i = 0; i < foldResults.length; i++){
       var r = foldResults[i];
-      var imp = r.testPer - r.v15TestPer;
-      var impCls = imp > 0 ? 'profit-pos' : (imp < 0 ? 'profit-neg' : '');
+      var sDelta = r.testPerAfterScan - r.v15TestPer;
+      var eDelta = r.testPerAfterEvo - r.testPerAfterScan;
       fHtml += '<tr>' +
         '<td>#' + r.fold + '</td>' +
         '<td>' + r.trainN + '</td>' +
         '<td>' + r.testN + '</td>' +
-        '<td>' + r.trainPer.toFixed(2) + '</td>' +
-        '<td><b>' + r.testPer.toFixed(2) + '</b></td>' +
         '<td>' + r.v15TestPer.toFixed(2) + '</td>' +
-        '<td class="' + impCls + '">' + (imp >= 0 ? '+' : '') + imp.toFixed(2) + '</td>' +
-        '<td>' + r.accepted + '</td>' +
+        '<td>' + r.testPerAfterScan.toFixed(2) + '</td>' +
+        '<td><b>' + r.testPerAfterEvo.toFixed(2) + '</b></td>' +
+        '<td class="' + (sDelta >= 0 ? 'profit-pos' : 'profit-neg') + '">' + (sDelta >= 0 ? '+' : '') + sDelta.toFixed(2) + '</td>' +
+        '<td class="' + (eDelta >= 0 ? 'profit-pos' : 'profit-neg') + '">' + (eDelta >= 0 ? '+' : '') + eDelta.toFixed(2) + '</td>' +
+        '<td>' + r.rulesCountAfterEvo + '</td>' +
         '</tr>';
     }
-    var avgTrainPer = 0;
-    for(var i = 0; i < foldResults.length; i++) avgTrainPer += foldResults[i].trainPer;
-    avgTrainPer = foldResults.length > 0 ? avgTrainPer / foldResults.length : 0;
-    var totalAccepted = 0;
-    for(var i = 0; i < foldResults.length; i++) totalAccepted += foldResults[i].accepted;
-    fHtml += '<tr style="background:#ede9fe;font-weight:bold">' +
-      '<td colspan="3">平均</td>' +
-      '<td>' + avgTrainPer.toFixed(2) + '</td>' +
-      '<td>' + avg.toFixed(2) + '</td>' +
-      '<td>' + v15Avg.toFixed(2) + '</td>' +
-      '<td>' + (avg - v15Avg >= 0 ? '+' : '') + (avg - v15Avg).toFixed(2) + '</td>' +
-      '<td>' + totalAccepted + '</td>' +
-      '</tr>';
     fHtml += '</tbody></table>';
     document.getElementById('foldTable').innerHTML = fHtml;
 
-    if(lastScannedRules){
-      var formula = genSingleFormula(lastScannedRules);
+    if(lastEvolvedRules){
+      var formula = genSingleFormula(lastEvolvedRules);
       document.getElementById('charInfo').innerHTML = '字符數：<b>' + formula.length + '</b>';
       document.getElementById('txtOut').value = formula;
-
-      var stats = diagnose(lastScannedRules, trainFeat, trainCodes, trainPayouts, trainN);
+      var stats = diagnose(lastEvolvedRules, trainFeat, trainCodes, trainPayouts, trainN);
       renderRuleTable(stats);
       document.getElementById('diag').style.display = 'block';
     }
