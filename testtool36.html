@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v36.2 ULTIMATE — 自適應多引擎規則發現</title>
+<title>🚀 v36.3 ULTIMATE — 最高盈利優化版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1600px;margin:auto;background:#f0f2f5}
@@ -36,6 +36,7 @@ button.txt{background:#28a745}
 .l-sub{color:#14b8a6;font-weight:bold}
 .l-ripper{color:#f43f5e;font-weight:bold}
 .l-adapt{color:#a855f7;font-weight:bold;background:rgba(168,85,247,0.1)}
+.l-order{color:#22d3ee;font-weight:bold;background:rgba(34,211,238,0.1)}
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
 .box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
 .label{font-weight:bold;font-size:13px;margin-bottom:6px;color:#333}
@@ -86,11 +87,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .stat.sub-stat{background:#ccfbf1;border-color:#14b8a6}.stat.sub-stat b{color:#134e4a}
 .stat.ripper-stat{background:#ffe4e6;border-color:#f43f5e}.stat.ripper-stat b{color:#881337}
 .stat.adapt-stat{background:#f3e8ff;border-color:#a855f7}.stat.adapt-stat b{color:#6b21a8}
+.stat.order-stat{background:#cffafe;border-color:#0891b2}.stat.order-stat b{color:#155e75}
 .controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px}
 .chk{padding:4px 10px;font-size:12px;background:#fff;border:1px solid #ccc;border-radius:4px;cursor:pointer;user-select:none}
 .chk input{vertical-align:middle;margin-right:4px}
 .chk.hi{background:#fff7ed;border-color:#fb923c}
 .chk.new{background:#eff6ff;border-color:#60a5fa}
+.chk.order{background:#ecfeff;border-color:#22d3ee}
 .warn-banner{background:linear-gradient(135deg,#fce7f3,#fbcfe8);padding:10px 14px;border-radius:6px;border:1px solid #f472b6;font-size:13px;line-height:1.6;margin-bottom:10px}
 .warn-banner b{color:#9d174d}
 .base-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);padding:12px 14px;border-radius:6px;border:1px solid #fbbf24;font-size:13px;line-height:1.7;margin-top:10px}
@@ -109,12 +112,14 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .adapt-cell{background:#fff;padding:8px;border-radius:4px;text-align:center;border:1px solid #e9d5ff}
 .adapt-cell .num{font-size:18px;font-weight:bold;color:#7e22ce}
 .adapt-cell .lbl{font-size:10px;color:#666}
+.order-banner{background:linear-gradient(135deg,#cffafe,#a5f3fc);padding:12px 14px;border-radius:6px;border:1px solid #0891b2;font-size:13px;line-height:1.7;margin-top:10px;color:#155e75}
+.order-banner b{color:#0e7490}
 </style>
 </head>
 <body>
 
 <div class="top">
-  <h2 id="title">🚀 v36.2 ULTIMATE — 自適應多引擎規則發現</h2>
+  <h2 id="title">🚀 v36.3 ULTIMATE — 最高盈利優化版</h2>
   <div>
     <button class="lang-btn active" onclick="setLang('zh')">繁中</button>
     <button class="lang-btn" onclick="setLang('en')">EN</button>
@@ -122,7 +127,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </div>
 
 <div class="warn-banner">
-  <b>🧠 v36.2 ULTIMATE：</b>6 引擎 × 72 特徵 × 🎚️自適應最小樣本數（隨資料自動調整防過擬合）
+  <b>🧠 v36.3 ULTIMATE：</b>6 引擎 + 72 特徵 + 🎚️自適應門檻 + 🎯總盈利目標 + 🔀順序優化（首次匹配最優）
 </div>
 
 <textarea id="input" placeholder="23	27	49	355	385	169	0:3	A
@@ -152,9 +157,14 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
     <option value="8">8</option>
     <option value="10">10</option>
     <option value="15">15</option>
-    <option value="20">20</option>
   </select>
-  <button id="btnRun" onclick="start()">🚀 開始終極發現</button>
+  <label>🎯 目標：</label>
+  <select id="objective">
+    <option value="total" selected>總盈利（推薦）</option>
+    <option value="perAvg">每場平均</option>
+    <option value="weighted">加權（舊）</option>
+  </select>
+  <button id="btnRun" onclick="start()">🚀 開始最高盈利發現</button>
   <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
 </div>
 
@@ -172,6 +182,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <label class="chk new"><input type="checkbox" id="optSubspace" checked> 🎲子空間</label>
   <label class="chk new"><input type="checkbox" id="optRipper" checked> 🐦RIPPER</label>
   <label class="chk hi"><input type="checkbox" id="optCart" checked> 🌳CART</label>
+  <label class="chk order"><input type="checkbox" id="optOrder" checked> 🔀順序優化</label>
+  <label class="chk order"><input type="checkbox" id="optGreedy" checked> 🎯貪婪重建</label>
   <label class="chk hi"><input type="checkbox" id="optSmartFeat" checked> 🎯智慧特徵</label>
   <label class="chk hi"><input type="checkbox" id="optThrBinary" checked> 🔍閾值二分</label>
   <label class="chk hi"><input type="checkbox" id="optSA" checked> 🌡️SA</label>
@@ -198,6 +210,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <div class="stat sa-stat" id="stat-sa">🌡️ SA: 0</div>
   <div class="stat prune-stat" id="stat-prune">✂️ 剪枝: 0</div>
   <div class="stat merge-stat" id="stat-merge">🔗 合併: 0</div>
+  <div class="stat order-stat" id="stat-order">🔀 順序: 0</div>
   <div class="stat adapt-stat" id="stat-adapt">🎚️ 最少樣本: -</div>
   <div class="stat profit-stat" id="stat-bestprofit">💰 訓練後: <b>-</b></div>
   <div class="stat total-stat" id="stat-total">💵 總盈利: <b>-</b></div>
@@ -218,6 +231,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
       <div class="adapt-cell"><div class="num" id="adSrc">-</div><div class="lbl">模式</div></div>
     </div>
     <div id="adInfo" style="margin-top:8px;font-size:11px;color:#581c87"></div>
+  </div>
+  <div class="order-banner" id="orderBanner">
+    <b>🔀 順序優化</b>
+    <div id="orderInfo" style="margin-top:6px;font-size:12px"></div>
   </div>
   <div class="check-banner" id="checkBanner">
     <b>🧮 全數據對賬</b>
@@ -248,7 +265,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 <div id="diag" style="display:none">
   <div class="section">
-    <h3 id="h-rule">📋 全部發現的規則</h3>
+    <h3 id="h-rule">📋 全部發現的規則（依執行順序）</h3>
     <div class="diag" id="ruleTable"></div>
   </div>
 </div>
@@ -257,8 +274,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 'use strict';
 
 var TXT={
-  zh:{title:'🚀 v36.2 ULTIMATE — 自適應多引擎規則發現',hRule:'📋 全部發現的規則',noData:'沒有有效數據'},
-  en:{title:'🚀 v36.2 ULTIMATE — Adaptive Multi-Engine Rule Discovery',hRule:'📋 All Discovered Rules',noData:'No valid data'}
+  zh:{title:'🚀 v36.3 ULTIMATE — 最高盈利優化版',hRule:'📋 全部發現的規則（依執行順序）',noData:'沒有有效數據'},
+  en:{title:'🚀 v36.3 ULTIMATE — Max Profit Edition',hRule:'📋 All Rules (by execution order)',noData:'No valid data'}
 };
 var LANG='zh';
 function t(k){ return (TXT[LANG]&&TXT[LANG][k])||k; }
@@ -292,22 +309,20 @@ var OPS=['>','>=','<','<=','==','!='];
 var RESULTS=['H','D','A','skip'];
 var RESULT_CODES={H:0,D:1,A:2,skip:3};
 
-/* ========== 自適應最小樣本 ========== */
-var MIN_SAMPLES = 5;            // 動態計算
-var MIN_SAMPLES_VAL = 1;        // 驗證集門檻（永遠 1）
-var MIN_SAMPLES_MODE = 'auto';  // auto / 手動值
-var ADAPT_INFO = null;          // 記錄自適應計算結果
+/* ========== 自適應 / 目標 ========== */
+var MIN_SAMPLES = 5;
+var MIN_SAMPLES_VAL = 1;
+var MIN_SAMPLES_MODE = 'auto';
+var ADAPT_INFO = null;
+var OBJECTIVE = 'total';
+var ORDER_INFO = null;
 
 function calcMinSamples(N, targetClassCount){
-  // 第 1 層：隨資料量對數成長（3 → 25）
   var base = Math.round(3 + 3 * Math.log10(Math.max(10, N) / 50));
-  // 第 2 層：不能超過目標類別的 40%
   var cap = Math.max(3, Math.floor(targetClassCount * 0.4));
-  // 第 3 層：絕對上下限（3 ~ 25）
   var val = Math.min(25, Math.max(3, Math.min(base, cap)));
   return {value: val, base: base, cap: cap};
 }
-
 function countTargetClassAll(){
   var c0=0,c1=0,c2=0;
   for(var i=0;i<trainN;i++){
@@ -328,11 +343,12 @@ var trainN=0,valN=0,allNGlobal=0;
 var running=false,startTime=0,evalCount=0;
 var autoRulesCount=0,beamCount=0,onerCount=0,subCount=0,ripperCount=0;
 var cartCount=0,tunedCount=0,saAcceptedCount=0,pruneCount=0,mergeCount=0,fixedUndefinedCount=0;
+var orderOptCount=0,greedyRebuildCount=0;
 var logBuffer=[],logTimer=null,LOG_MAX=5000,lastSpeedUpdate=0;
 var totalPhases=0,currentPhase=0;
 var bestProfitSoFar=null,bestProfitVal=null,bestTotalSoFar=null;
 var allInitProfit=0;
-var EVAL_LIMIT=8000000;
+var EVAL_LIMIT=20000000;
 
 var featureValueCache={};
 var featureScore={};
@@ -446,17 +462,28 @@ function calcProfitSide(side,rules){
   }
   return total;
 }
+
+/* ========== ★ 修復 #1：fitness 改為總盈利 ========== */
+var lastTrainProfit=0, lastValProfit=0;
 function fitness(rules){
   evalCount++;
   if(evalCount>EVAL_LIMIT){ running=false; return -Infinity; }
-  var trainP=trainN>0?calcProfitSide('train',rules):0;
-  var trainPer=trainN>0?trainP/trainN:0;
-  if(valN>0){
-    var valP=calcProfitSide('val',rules);
-    var valPer=valP/valN;
-    return trainPer*0.4+valPer*0.6;
+  var trainP = trainN>0 ? calcProfitSide('train',rules) : 0;
+  var valP   = valN>0   ? calcProfitSide('val',rules)   : 0;
+  lastTrainProfit = trainP;
+  lastValProfit = valP;
+
+  if(OBJECTIVE === 'total'){
+    return trainP + valP;
+  } else if(OBJECTIVE === 'perAvg'){
+    var tp = trainN>0 ? trainP/trainN : 0;
+    var vp = valN>0   ? valP/valN   : 0;
+    return tp + vp;
+  } else {
+    var tp2 = trainN>0 ? trainP/trainN : 0;
+    var vp2 = valN>0   ? valP/valN   : 0;
+    return valN>0 ? (tp2*0.4 + vp2*0.6) : tp2;
   }
-  return trainPer;
 }
 function rawProfits(rules){
   var trainP=trainN>0?calcProfitSide('train',rules):0;
@@ -555,7 +582,7 @@ function binarySearchThreshold(rule,gi,ci,lowV,highV,baseFit){
 }
 
 /* ============================================================
-   引擎 1：貪心（含自適應門檻）
+   引擎 1：貪心
    ============================================================ */
 async function autoDiscoverRules(targetCode,maxRules,maxConds){
   if(trainN===0) return [];
@@ -1042,7 +1069,195 @@ function smartFeaturePick(oldFeat,count){
 }
 
 /* ============================================================
-   優化掃描（含自適應剪枝）
+   ★ 修復 #2：規則順序優化
+   ============================================================ */
+async function optimizeRuleOrder(rules){
+  pushLog(nowTime()+' 🔀 規則順序優化...','order');
+
+  var active = [];
+  var skipRule = null;
+  var offRules = [];
+  for(var i=0;i<rules.length;i++){
+    if(!rules[i].on){ offRules.push(rules[i]); continue; }
+    if(rules[i].groups.length===0 || (rules[i].groups[0] && rules[i].groups[0].length===0)){
+      skipRule = rules[i];
+      continue;
+    }
+    active.push(rules[i]);
+  }
+
+  if(active.length <= 1){
+    pushLog(nowTime()+'   ⏹ 只有 '+active.length+' 條規則，跳過順序優化','order');
+    return rules;
+  }
+
+  var oldFit = fitness(rules);
+
+  // 計算每條規則「單獨執行」的總盈利
+  var scored = [];
+  for(var r=0;r<active.length;r++){
+    var rbs = getRuleBS('train', active[r]);
+    var aloneProfit = evalProfitFromBS(rbs, trainCodes, trainPayouts, trainN, active[r].thenCode);
+    var cnt = bsCount(rbs);
+    scored.push({rule:active[r], profit:aloneProfit, cnt:cnt, per:cnt>0?aloneProfit/cnt:0});
+    if(shouldYield()) await yieldUI();
+  }
+
+  // 嘗試多種排序策略，選最好的
+  var strategies = [
+    {name:'profit-desc', cmp:function(a,b){ return b.profit-a.profit; }},
+    {name:'per-desc',    cmp:function(a,b){ return b.per-a.per; }},
+    {name:'cnt-desc',    cmp:function(a,b){ return b.cnt-a.cnt; }}
+  ];
+
+  var bestOrder = null;
+  var bestFit = oldFit;
+  var bestName = '';
+
+  for(var st=0;st<strategies.length;st++){
+    var sorted = scored.slice().sort(strategies[st].cmp);
+    var newRules = [];
+    for(var o=0;o<offRules.length;o++) newRules.push(offRules[o]);
+    for(var k=0;k<sorted.length;k++) newRules.push(sorted[k].rule);
+    if(skipRule) newRules.push(skipRule);
+    var f = fitness(newRules);
+    if(f > bestFit){
+      bestFit = f;
+      bestOrder = newRules;
+      bestName = strategies[st].name;
+    }
+    if(shouldYield()) await yieldUI();
+  }
+
+  if(bestOrder){
+    orderOptCount++;
+    pushLog(nowTime()+'   ✅ 排序「'+bestName+'」提升：'+oldFit.toFixed(0)+' → '+bestFit.toFixed(0)+'（+'+(bestFit-oldFit).toFixed(0)+'）','order');
+    ORDER_INFO = {before:oldFit, after:bestFit, method:bestName, delta:bestFit-oldFit};
+    return bestOrder;
+  }
+
+  // 嘗試 2-opt 局部搜尋
+  pushLog(nowTime()+'   🔄 排序策略無效，嘗試 2-opt...','order');
+  var best2opt = rules.slice();
+  var best2optFit = oldFit;
+  var attempts = Math.min(80, active.length * 4);
+
+  // 用 score 排序後作為起點
+  scored.sort(function(a,b){ return b.profit-a.profit; });
+  var currentRules = [];
+  for(var o2=0;o2<offRules.length;o2++) currentRules.push(offRules[o2]);
+  for(var k2=0;k2<scored.length;k2++) currentRules.push(scored[k2].rule);
+  if(skipRule) currentRules.push(skipRule);
+  var currentFit = fitness(currentRules);
+  if(currentFit > best2optFit){ best2optFit = currentFit; best2opt = currentRules.slice(); }
+
+  for(var t=0;t<attempts&&running;t++){
+    var idxA = offRules.length + Math.floor(Math.random()*active.length);
+    var idxB = offRules.length + Math.floor(Math.random()*active.length);
+    if(idxA === idxB) continue;
+    var swapped = best2opt.slice();
+    var tmp = swapped[idxA]; swapped[idxA]=swapped[idxB]; swapped[idxB]=tmp;
+    var fSwap = fitness(swapped);
+    if(fSwap > best2optFit){ best2optFit = fSwap; best2opt = swapped; }
+    if(shouldYield()) await yieldUI();
+  }
+
+  if(best2optFit > oldFit){
+    orderOptCount++;
+    pushLog(nowTime()+'   ✅ 2-opt 提升：'+oldFit.toFixed(0)+' → '+best2optFit.toFixed(0)+'（+'+(best2optFit-oldFit).toFixed(0)+'）','order');
+    ORDER_INFO = {before:oldFit, after:best2optFit, method:'2-opt', delta:best2optFit-oldFit};
+    return best2opt;
+  }
+
+  pushLog(nowTime()+'   ⏹ 順序優化無改進（'+oldFit.toFixed(0)+'）','order');
+  ORDER_INFO = {before:oldFit, after:oldFit, method:'none', delta:0};
+  return rules;
+}
+
+/* ============================================================
+   ★ 修復 #3：貪婪順序重建
+   ============================================================ */
+async function greedyReorder(rules){
+  pushLog(nowTime()+' 🎯 貪婪順序重建...','order');
+
+  var pool = [];
+  var offRules = [];
+  var skipRule = null;
+  for(var i=0;i<rules.length;i++){
+    if(!rules[i].on){ offRules.push(rules[i]); continue; }
+    if(rules[i].groups.length===0 || (rules[i].groups[0] && rules[i].groups[0].length===0)){
+      skipRule = rules[i];
+      continue;
+    }
+    pool.push(rules[i]);
+  }
+
+  if(pool.length <= 1) return rules;
+
+  var oldFit = fitness(rules);
+  var ordered = [];
+  var matched = bsNew(trainN);
+  var used = {};
+
+  while(pool.length > 0){
+    if(!running) break;
+    var bestIdx = -1, bestMarg = -Infinity;
+    for(var j=0;j<pool.length;j++){
+      var rbs = getRuleBS('train', pool[j]);
+      var only = bsAndNot(rbs, matched);
+      var cnt = bsCount(only);
+      if(cnt < MIN_SAMPLES){ continue; }
+      var marg = evalProfitFromBS(only, trainCodes, trainPayouts, trainN, pool[j].thenCode);
+      if(marg > bestMarg){ bestMarg = marg; bestIdx = j; }
+    }
+    if(bestIdx < 0) break;
+    if(bestMarg <= 0) break;
+    var chosen = pool.splice(bestIdx, 1)[0];
+    ordered.push(chosen);
+    var rbs2 = getRuleBS('train', chosen);
+    bsOrInPlace(matched, rbs2);
+    if(shouldYield()) await yieldUI();
+  }
+
+  // 沒被選中的啟用規則：關閉
+  for(var k=0;k<pool.length;k++){
+    pool[k].on = 0;
+    offRules.push(pool[k]);
+    pushLog(nowTime()+'   ⏹ 關閉規則（無正邊際）：'+fmtRuleShort(pool[k]),'order');
+  }
+
+  // 組裝：關閉 + 選中 + 兜底
+  var newRules = [];
+  for(var o=0;o<offRules.length;o++) newRules.push(offRules[o]);
+  for(var m=0;m<ordered.length;m++) newRules.push(ordered[m]);
+  if(skipRule) newRules.push(skipRule);
+
+  var newFit = fitness(newRules);
+  if(newFit >= oldFit){
+    greedyRebuildCount++;
+    pushLog(nowTime()+'   ✅ 貪婪重建：'+oldFit.toFixed(0)+' → '+newFit.toFixed(0)+'（'+(newFit>=oldFit?'+':'')+(newFit-oldFit).toFixed(0)+'）','order');
+    if(ORDER_INFO){
+      ORDER_INFO.greedyBefore = oldFit;
+      ORDER_INFO.greedyAfter = newFit;
+    }
+    return newRules;
+  }
+  pushLog(nowTime()+'   ⏹ 貪婪重建無改進','order');
+  return rules;
+}
+
+function fmtRuleShort(r){
+  if(!r.groups||r.groups.length===0) return '(空)→'+r.then;
+  var g=r.groups[0];
+  var parts=[];
+  for(var i=0;i<g.length;i++){
+    parts.push(FEATURES[g[i][0]]+OPS[g[i][1]]+(Math.round(g[i][2]*100)/100));
+  }
+  return parts.join('&')+'→'+r.then;
+}
+
+/* ============================================================
+   優化掃描（參數 + 順序 + 剪枝 + 合併）
    ============================================================ */
 async function optimizeRules(rules,maxIter){
   pushLog('');
@@ -1195,7 +1410,7 @@ async function optimizeRules(rules,maxIter){
         var delta=newFit-curFit;
         var accept=false;
         if(delta>0) accept=true;
-        else if(Math.exp(delta/temperature)>Math.random()) accept=true;
+        else if(Math.exp(delta/Math.max(0.01,temperature))>Math.random()) accept=true;
         if(accept){ curFit=newFit; iterImproved=true; saAcceptedCount++; }
         else {
           condRand[0]=savedC[0]; condRand[1]=savedC[1]; condRand[2]=savedC[2];
@@ -1206,7 +1421,7 @@ async function optimizeRules(rules,maxIter){
 
     var rT=rs.thr+rs.op+rs.feat+rs.then;
     if(iter<10||iter%10===0||iter===maxIter-1){
-      pushLog(nowTime()+'   第 '+(iter+1)+'/'+maxIter+' 輪：閾 '+rs.thr+' 運 '+rs.op+' 徵 '+rs.feat+' 果 '+rs.then+' T='+temperature.toFixed(3), iterImproved?'ok':'dim');
+      pushLog(nowTime()+'   第 '+(iter+1)+'/'+maxIter+' 輪：閾 '+rs.thr+' 運 '+rs.op+' 徵 '+rs.feat+' 果 '+rs.then+' fit='+curFit.toFixed(0), iterImproved?'ok':'dim');
     }
     temperature*=coolingRate;
     await yieldUI();
@@ -1220,7 +1435,15 @@ async function optimizeRules(rules,maxIter){
     } else stagnant=0;
   }
 
-  // 剪枝（含自適應樣本門檻強制執行）
+  // ★ 順序優化（剪枝前）
+  if(document.getElementById('optOrder').checked && running){
+    cur = await optimizeRuleOrder(cur);
+    activeRules = cur;
+    curFit = fitness(cur);
+    pushLog(nowTime()+' 🔀 順序優化後 fit = '+curFit.toFixed(0),'order');
+  }
+
+  // 剪枝
   if(document.getElementById('optPrune').checked&&running){
     pushLog(nowTime()+' ✂️ 自動剪枝（最少樣本 '+MIN_SAMPLES+'）...','prune');
     var safety=0,prunedAny=true;
@@ -1235,7 +1458,6 @@ async function optimizeRules(rules,maxIter){
         var cnt=bsCount(only);
         var profit=evalProfitFromBS(only,trainCodes,trainPayouts,trainN,cur[rI2].thenCode);
         bsOrInPlace(matched,rbs);
-        // ★ 樣本不足直接剪
         if(cnt<MIN_SAMPLES&&cur[rI2].groups.length>0&&cur[rI2].groups[0].length>0){
           cur[rI2].on=0; markDirty(cur[rI2]);
           pruneCount++; prunedAny=true;
@@ -1292,13 +1514,21 @@ async function optimizeRules(rules,maxIter){
     activeRules=cur;
   }
 
-  // ★ 最終過濾：確保所有啟用的規則都 >= MIN_SAMPLES
+  // ★ 貪婪順序重建（最終）
+  if(document.getElementById('optGreedy').checked && running){
+    cur = await greedyReorder(cur);
+    activeRules = cur;
+    curFit = fitness(cur);
+    pushLog(nowTime()+' 🎯 貪婪重建後 fit = '+curFit.toFixed(0),'order');
+  }
+
+  // ★ 最終過濾
   if(running){
     pushLog(nowTime()+' 🎚️ 最終過濾（最少樣本 '+MIN_SAMPLES+'）...','adapt');
     var passed=0,removed=0;
     for(var ff=0;ff<cur.length;ff++){
       if(!cur[ff].on) continue;
-      if(cur[ff].groups.length===0||cur[ff].groups[0].length===0) continue; // 兜底 skip 保留
+      if(cur[ff].groups.length===0||cur[ff].groups[0].length===0) continue;
       var aloneBS=getRuleBS('train',cur[ff]);
       var aloneCnt=bsCount(aloneBS);
       if(aloneCnt<MIN_SAMPLES){
@@ -1308,6 +1538,13 @@ async function optimizeRules(rules,maxIter){
       } else passed++;
     }
     pushLog(nowTime()+' 🎚️ 通過 '+passed+' 條，移除 '+removed+' 條','adapt');
+
+    // 過濾後再跑一次順序優化（順序可能又亂了）
+    if(removed > 0){
+      cur = await optimizeRuleOrder(cur);
+      activeRules = cur;
+      curFit = fitness(cur);
+    }
   }
 
   currentPhase=savedPhase;
@@ -1350,7 +1587,7 @@ function diagnose(rules){
   return stats;
 }
 function renderRuleTable(stats){
-  var html='<table><thead><tr><th>#</th><th>引擎</th><th>ON</th><th>條件</th><th>→</th><th>命中</th><th>對</th><th>錯</th><th>盈利</th></tr></thead><tbody>';
+  var html='<table><thead><tr><th>順序</th><th>引擎</th><th>ON</th><th>條件</th><th>→</th><th>命中</th><th>對</th><th>錯</th><th>盈利</th></tr></thead><tbody>';
   for(var i=0;i<stats.length;i++){
     var s=stats[i],r=s.rule;
     var ss=fmtRule(r);
@@ -1366,12 +1603,11 @@ function renderRuleTable(stats){
     else if(r._sub) typeTag='<span class="tag-sub">🎲子空間</span>';
     else if(r._ripper) typeTag='<span class="tag-ripper">🐦RIPPER</span>';
     else if(r._auto) typeTag='<span class="tag-auto">🧠貪心</span>';
-    else typeTag='🟡';
-    // 命中數顏色（若低於門檻顯示紅底）
+    else typeTag='🟡兜底';
     var hitCls = s.hit < MIN_SAMPLES ? 'hit-low' : 'hit-ok';
     var isEmpty = r.groups.length===0 || (r.groups[0] && r.groups[0].length===0);
-    if(isEmpty) hitCls='';
-    html+='<tr><td>R'+(i+1)+'</td><td>'+typeTag+'</td><td>'+onTag+'</td>'+
+    if(isEmpty){ hitCls=''; typeTag='🟡兜底'; }
+    html+='<tr><td>第 '+(i+1)+'</td><td>'+typeTag+'</td><td>'+onTag+'</td>'+
       '<td style="text-align:left;font-size:10px">'+ss+'</td><td>'+thenTag+'</td>'+
       '<td class="'+hitCls+'">'+s.hit+'</td><td>'+s.correct+'</td><td>'+s.wrong+'</td>'+
       '<td class="'+pcls+'">'+s.profit+'</td></tr>';
@@ -1535,6 +1771,7 @@ function updateAllUI(){
   if((el=document.getElementById('stat-sa'))) el.innerHTML='🌡️ SA: <b>'+saAcceptedCount+'</b>';
   if((el=document.getElementById('stat-prune'))) el.innerHTML='✂️ 剪枝: <b>'+pruneCount+'</b>';
   if((el=document.getElementById('stat-merge'))) el.innerHTML='🔗 合併: <b>'+mergeCount+'</b>';
+  if((el=document.getElementById('stat-order'))) el.innerHTML='🔀 順序: <b>'+orderOptCount+'</b>';
   if((el=document.getElementById('stat-adapt'))) el.innerHTML='🎚️ 最少樣本: <b>'+MIN_SAMPLES+'</b>';
 }
 function updateBestProfit(){
@@ -1647,12 +1884,14 @@ async function start(){
   running=true; startTime=Date.now(); evalCount=0;
   autoRulesCount=0;beamCount=0;onerCount=0;subCount=0;ripperCount=0;
   cartCount=0;tunedCount=0;saAcceptedCount=0;pruneCount=0;mergeCount=0;fixedUndefinedCount=0;
+  orderOptCount=0;greedyRebuildCount=0;
   currentPhase=0; totalPhases=8;
   bestProfitSoFar=null; bestProfitVal=null; bestTotalSoFar=null;
   lastSpeedUpdate=0; lastYieldTime=0;
   featureValueCache={}; featureScore={};
   for(var fk=0;fk<FCOUNT;fk++) featureScore[fk]=1;
   clearCondCache('train'); clearCondCache('val'); clearCondCache('all');
+  ORDER_INFO=null;
 
   document.getElementById('btnRun').disabled=true;
   document.getElementById('btnStop').disabled=false;
@@ -1668,14 +1907,16 @@ async function start(){
   var maxPerTarget=parseInt(document.getElementById('maxPerTarget').value);
   var useVal=document.getElementById('useVal').checked;
   MIN_SAMPLES_MODE=document.getElementById('minSamples').value;
+  OBJECTIVE=document.getElementById('objective').value;
 
   pushLog('═══════════════════════════════════════════════════════════','head');
-  pushLog('🚀 v36.2 ULTIMATE — 自適應多引擎規則發現','head');
-  pushLog('   6 引擎 + 72 特徵 + 🎚️自適應最小樣本','head');
+  pushLog('🚀 v36.3 ULTIMATE — 最高盈利優化版','head');
+  pushLog('   6 引擎 + 72 特徵 + 🎚️自適應 + 🎯總盈利 + 🔀順序優化','head');
   pushLog('═══════════════════════════════════════════════════════════','head');
   pushLog(nowTime()+' 去重後：'+parsed.rows.length+' 筆（共 '+parsed.total+'，去重 '+parsed.dups+'）','success');
   pushLog(nowTime()+' 特徵庫：'+FCOUNT+' 個','auto');
   pushLog(nowTime()+' 掃描強度：'+maxIter+' 輪　每引擎最多 '+maxPerTarget+' 條/目標','exhaust');
+  pushLog(nowTime()+' 🎯 目標函式：'+OBJECTIVE,'adapt');
   await yieldUI();
 
   var allRows=parsed.rows.slice();
@@ -1714,7 +1955,6 @@ async function start(){
   }
   await yieldUI();
 
-  // ★ 計算自適應最小樣本數
   var tcCounts=countTargetClassAll();
   var adaptCalc=calcMinSamples(trainN,tcCounts.max);
   if(MIN_SAMPLES_MODE==='auto'){
@@ -1739,20 +1979,17 @@ async function start(){
   pushLog('═══════════════════════════════════════════════════════════','adapt');
   pushLog(nowTime()+' 訓練樣本：'+trainN,'adapt');
   pushLog(nowTime()+' 類別分佈：H='+tcCounts.H+' D='+tcCounts.D+' A='+tcCounts.A,'adapt');
-  pushLog(nowTime()+' 最多類別：'+tcCounts.max,'adapt');
   if(MIN_SAMPLES_MODE==='auto'){
-    pushLog(nowTime()+' 公式 base = 3 + 3·log10('+trainN+'/50) = '+adaptCalc.base,'adapt');
-    pushLog(nowTime()+' 類別上限 cap = floor('+tcCounts.max+'×0.4) = '+adaptCalc.cap,'adapt');
-    pushLog(nowTime()+' ✅ 最終門檻 = min(25, max(3, min(base, cap))) = '+MIN_SAMPLES,'adapt');
+    pushLog(nowTime()+' base = 3 + 3·log10('+trainN+'/50) = '+adaptCalc.base,'adapt');
+    pushLog(nowTime()+' cap = floor('+tcCounts.max+'×0.4) = '+adaptCalc.cap,'adapt');
+    pushLog(nowTime()+' ✅ 最終 = '+MIN_SAMPLES,'adapt');
   } else {
-    pushLog(nowTime()+' 手動設定：'+MIN_SAMPLES,'adapt');
+    pushLog(nowTime()+' 手動：'+MIN_SAMPLES,'adapt');
   }
-  pushLog(nowTime()+' 驗證集門檻：'+MIN_SAMPLES_VAL+'（驗證集較小不強制）','adapt');
   await yieldUI();
 
   var foundRules=[];
 
-  // 引擎 1：貪心
   if(document.getElementById('optAuto').checked&&running){
     currentPhase=1; updateProgress();
     pushLog('═══════════════════════════════════════════════════════════','head');
@@ -1771,7 +2008,6 @@ async function start(){
     await yieldUI();
   }
 
-  // 引擎 2：Beam Search
   if(document.getElementById('optBeam').checked&&running){
     currentPhase=2; updateProgress();
     pushLog('═══════════════════════════════════════════════════════════','head');
@@ -1790,7 +2026,6 @@ async function start(){
     await yieldUI();
   }
 
-  // 引擎 3：OneR
   if(document.getElementById('optOneR').checked&&running){
     currentPhase=3; updateProgress();
     pushLog('═══════════════════════════════════════════════════════════','head');
@@ -1809,7 +2044,6 @@ async function start(){
     await yieldUI();
   }
 
-  // 引擎 4：隨機子空間
   if(document.getElementById('optSubspace').checked&&running){
     currentPhase=4; updateProgress();
     pushLog('═══════════════════════════════════════════════════════════','head');
@@ -1828,7 +2062,6 @@ async function start(){
     await yieldUI();
   }
 
-  // 引擎 5：RIPPER
   if(document.getElementById('optRipper').checked&&running){
     currentPhase=5; updateProgress();
     pushLog('═══════════════════════════════════════════════════════════','head');
@@ -1847,7 +2080,6 @@ async function start(){
     await yieldUI();
   }
 
-  // 引擎 6：CART
   if(document.getElementById('optCart').checked&&running){
     currentPhase=6; updateProgress();
     pushLog('═══════════════════════════════════════════════════════════','head');
@@ -1880,10 +2112,9 @@ async function start(){
   pushLog(nowTime()+'   規則總數：'+(foundRules.length-1)+' 條','info');
   await yieldUI();
 
-  // 引擎 7：優化
   currentPhase=7; updateProgress();
   pushLog('═══════════════════════════════════════════════════════════','head');
-  pushLog(nowTime()+' 階段 7/8：🔍 聯合優化掃描','head');
+  pushLog(nowTime()+' 階段 7/8：🔍 聯合優化掃描（含順序優化）','head');
   pushLog('═══════════════════════════════════════════════════════════','head');
   await yieldUI();
 
@@ -1909,6 +2140,7 @@ async function start(){
   pushLog('   🧠貪心 '+autoRulesCount+'　🌊Beam '+beamCount+'　🥇OneR '+onerCount,'auto');
   pushLog('   🎲子空間 '+subCount+'　🐦RIPPER '+ripperCount+'　🌳CART '+cartCount,'auto');
   pushLog('   🌡️ SA接受 '+saAcceptedCount+'　✂️ 剪枝 '+pruneCount+'　🔗 合併 '+mergeCount,'exhaust');
+  pushLog('   🔀 順序優化 '+orderOptCount+' 次　🎯 貪婪重建 '+greedyRebuildCount+' 次','order');
   pushLog('   🎚️ 自適應門檻：'+MIN_SAMPLES+'（'+ADAPT_INFO.mode+'）','adapt');
   pushLog('   📌 訓練 '+finalP.train+'　驗證 '+finalP.val+'　全數據 '+finalAll,'exhaust');
   pushLog('   💰 總盈利（訓練+驗證）：'+totalProfit,'exhaust');
@@ -1920,11 +2152,10 @@ async function start(){
   document.getElementById('summary').innerHTML=
     '<div style="font-size:26px;color:#0a7a0a;font-weight:bold;margin-bottom:8px">💰 總盈利：'+totalProfit+'</div>'+
     '<div style="font-size:14px;color:#333;line-height:1.9">'+
-    '🧠'+autoRulesCount+' + 🌊'+beamCount+' + 🥇'+onerCount+' + 🎲'+subCount+' + 🐦'+ripperCount+' + 🌳'+cartCount+'（最終 '+(finalRules.filter(function(r){return r.on;}).length)+' 條啟用）<br>'+
+    '🧠'+autoRulesCount+' + 🌊'+beamCount+' + 🥇'+onerCount+' + 🎲'+subCount+' + 🐦'+ripperCount+' + 🌳'+cartCount+'（最終 '+finalRules.filter(function(r){return r.on;}).length+' 條啟用）<br>'+
     '訓練 <b>'+finalP.train+'</b> ＋ 驗證 <b>'+finalP.val+'</b><br>'+
     '🧮 全數據 <b style="font-size:16px;color:#0e7490">'+finalAll+'</b></div>';
 
-  // 自適應資訊面板
   document.getElementById('adN').textContent=ADAPT_INFO.N;
   document.getElementById('adMax').textContent=ADAPT_INFO.maxClass;
   document.getElementById('adMin').textContent=MIN_SAMPLES;
@@ -1936,13 +2167,27 @@ async function start(){
     adText+='類別上限 cap = floor('+ADAPT_INFO.maxClass+'×0.4) = '+ADAPT_INFO.cap+'\n';
     adText+='最終 = min(25, max(3, min(base, cap))) = '+MIN_SAMPLES;
   } else {
-    adText+='手動模式：使用者指定 '+MIN_SAMPLES;
+    adText+='手動模式：'+MIN_SAMPLES;
   }
   document.getElementById('adInfo').textContent=adText;
 
+  // 順序優化面板
+  var oi='';
+  if(ORDER_INFO){
+    oi += '優化前 fitness：<b>'+ORDER_INFO.before.toFixed(0)+'</b><br>';
+    oi += '排序策略：<b>'+ORDER_INFO.method+'</b><br>';
+    oi += '優化後 fitness：<b>'+ORDER_INFO.after.toFixed(0)+'</b>（'+(ORDER_INFO.delta>=0?'+':'')+ORDER_INFO.delta.toFixed(0)+'）';
+    if(ORDER_INFO.greedyBefore !== undefined){
+      oi += '<br>貪婪重建：<b>'+ORDER_INFO.greedyBefore.toFixed(0)+'</b> → <b>'+ORDER_INFO.greedyAfter.toFixed(0)+'</b>';
+    }
+  } else {
+    oi = '未執行順序優化';
+  }
+  document.getElementById('orderInfo').innerHTML=oi;
+
   document.getElementById('checkInfo').innerHTML=
     '🔹 訓練+驗證：<b>'+totalProfit+'</b>　🔹 全數據（100%）：<b>'+finalAll+'</b><br>'+
-    '<span style="color:#166534;font-size:11px">Google Sheet I2 應該接近 <b>'+finalAll+'</b>。如要完全一致：取消勾選「訓練/驗證分割」。</span>';
+    '<span style="color:#166534;font-size:11px">Google Sheet I2 應該接近 <b>'+finalAll+'</b>。</span>';
 
   document.getElementById('baseStats').innerHTML=
     '<div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:6px">'+
@@ -1964,10 +2209,11 @@ async function start(){
   else if(perRatio>=0.6) verdict='🟢 泛化良好';
   else if(perRatio>=0.3) verdict='🟡 有些過擬合';
   else verdict='🟠 過擬合嚴重';
-  verdict+='\n🎚️ 最少樣本門檻：'+MIN_SAMPLES+'（'+ADAPT_INFO.mode+'）';
+  verdict+='\n🎯 目標：'+OBJECTIVE;
+  verdict+='\n🎚️ 最少樣本：'+MIN_SAMPLES+'（'+ADAPT_INFO.mode+'）';
+  verdict+='\n🔀 順序優化：'+orderOptCount+' 次　🎯 貪婪重建：'+greedyRebuildCount+' 次';
   verdict+='\n🧠貪心 '+autoRulesCount+'　🌊Beam '+beamCount+'　🥇OneR '+onerCount;
   verdict+='\n🎲子空間 '+subCount+'　🐦RIPPER '+ripperCount+'　🌳CART '+cartCount;
-  verdict+='\n✅ 全部 then 都是 H/D/A/skip';
 
   document.getElementById('valVerdict').textContent=verdict;
   document.getElementById('charInfo').innerHTML='字符數：<b>'+formula.length+'</b>';
