@@ -17,7 +17,7 @@ button:hover{background:#0056b3}
 button:disabled{background:#999;cursor:not-allowed}
 button.stop{background:#dc3545}
 button.txt{background:#28a745}
-#log{background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:14px;margin-top:12px;height:420px;overflow-y:auto;font-family:'Consolas','Monaco','Menlo',monospace;font-size:12px;white-space:pre;line-height:1.55;border:1px solid #222}
+#log{background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:14px;margin-top:12px;height:840px;overflow-y:auto;font-family:'Consolas','Monaco','Menlo',monospace;font-size:12px;white-space:pre;line-height:1.55;border:1px solid #222}
 #log::-webkit-scrollbar{width:10px}
 #log::-webkit-scrollbar-track{background:#1a1a1a}
 #log::-webkit-scrollbar-thumb{background:#444;border-radius:5px}
@@ -721,10 +721,8 @@ async function exhaustiveScan(rules, label){
   pushLog('');
   pushLog(nowTime() + ' 🔍 ' + label + '：開始 v15 參數窮舉掃描...', 'exhaust');
 
-  // ⭐ Bug 3 修復：掃描期間不算公式長度
   var savedLastMut = lastMutationStructural;
   lastMutationStructural = false;
-  // ⭐ Bug 9 修復：顯示階段 1.5
   var savedPhase = currentPhase;
   var savedPass = currentPass;
   currentPhase = 1.5;
@@ -754,7 +752,7 @@ async function exhaustiveScan(rules, label){
           var scanned = 0;
 
           for(var k = 0; k < candidates.length; k++){
-            if(!running) break;  // ⭐ Bug 5 修復
+            if(!running) break;
             if(candidates[k] === oldVal) continue;
             var savedVal = cond[2];
             cond[2] = candidates[k];
@@ -788,7 +786,6 @@ async function exhaustiveScan(rules, label){
     }
 
     pushLog(nowTime() + '   第 ' + (iter+1) + ' 輪掃描完成（此輪改進 ' + iterTunedCount + ' 個，累計 ' + totalImproved + '）', iterImproved ? 'ok' : 'dim');
-    // ⭐ Bug 6 修復：刪掉多餘的清零
     await yieldUI();
 
     if(!iterImproved) break;
@@ -798,11 +795,8 @@ async function exhaustiveScan(rules, label){
   pushLog(nowTime() + ' ✓ 掃描完成：訓練 ' + rawP.train + ' 驗證 ' + rawP.val + '（共 ' + totalImproved + ' 個參數被優化）', 'exhaust');
   pushLog('');
 
-  // ⭐ Bug 3 修復：恢復
   lastMutationStructural = savedLastMut;
-  // ⭐ Bug 4 修復：更新 bestFitGlobal
   if(curFit > bestFitGlobal) bestFitGlobal = curFit;
-  // ⭐ Bug 9 修復：恢復階段
   currentPhase = savedPhase;
   currentPass = savedPass;
 
@@ -969,7 +963,6 @@ function mutateGen(rules){
   return {rules:nr, generated:true, genRule:rule};
 }
 
-/* ⭐ v32.1 修復 Bug 8：mutateNumeric typo */
 function mutateNumeric(rules, intensity){
   lastMutationStructural = false;
   var r = cloneRules(rules);
