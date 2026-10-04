@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v27 — 混合版（v15公式 + v26防護）</title>
+<title>🚀 v27 修復版 — 混合版（v15公式 + v26防護）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1500px;margin:auto;background:#f0f2f5}
@@ -92,7 +92,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <body>
 
 <div class="top">
-  <h2 id="title">🚀 v27 — 混合版（v15公式 + v26防護）</h2>
+  <h2 id="title">🚀 v27 修復版 — 混合版（v15公式 + v26防護）</h2>
   <div>
     <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁中</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
@@ -100,11 +100,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </div>
 
 <div class="warn-banner">
-  <b>✨ v27 混合版：</b><br>
-  🎯 <b>起點 = 你的 v15 公式</b>（34 條規則，不從零開始）<br>
-  🛡 <b>防護 = v26 機制</b>（80/20分割 + 最小命中數 + 2000字元限制）<br>
-  ⚡ <b>速度 = v26 優化</b>（兩階段評估 + 字元快取）<br>
-  💰 <b>目標 = 賺錢</b>（驗證集權重高，避免過擬合）
+  <b>✨ v27 修復版：</b><br>
+  🔧 修復 v15 公式格式 → v26 格式轉換（原本卡住的原因）<br>
+  🎯 起點 = 你的 v15 公式（34 條規則）<br>
+  🛡 防護 = v26 機制（80/20分割 + 最小命中數 + 2000字元）<br>
+  ⚡ 速度 = v26 優化（兩階段評估 + 字元快取）
 </div>
 
 <textarea id="input" placeholder="23 27 49 355 385 169 0:3 A
@@ -188,14 +188,14 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 var TXT = {
   zh: {
-    title: '🚀 v27 — 混合版（v15公式 + v26防護）',
+    title: '🚀 v27 修復版 — 混合版（v15公式 + v26防護）',
     strength: '搜尋強度：',
     run: '🚀 開始搜尋', stop: '⏹ 停止',
     hRule: '📋 演化後規則表',
     noData: '沒有有效數據'
   },
   en: {
-    title: '🚀 v27 — Hybrid (v15 Formula + v26 Guards)',
+    title: '🚀 v27 Fix — Hybrid (v15 Formula + v26 Guards)',
     strength: 'Strength: ',
     run: '🚀 Search', stop: '⏹ Stop',
     hRule: '📋 Evolved Rules',
@@ -229,7 +229,7 @@ var FEATURES = [
 ];
 var FCOUNT = FEATURES.length;
 
-/* ⭐⭐⭐ v15 原始公式的 34 條結構化規則 ⭐⭐⭐ */
+/* ⭐ v15 原始公式的 34 條結構化規則（cond 格式） */
 var INIT_RULES = [
   {on:1, then:'D', cond:[['B','>=',32],['|A-C|','<=',6]]},
   {on:1, then:'H', cond:[['A','>=',60],['C','<=',11],['D','>=',140],['D','<=',190],['F','>=',400],['F','<=',480]]},
@@ -680,12 +680,35 @@ function cloneRules(rules){
   return out;
 }
 
-/* 標記初始規則 */
-function markInitialRules(rules){
-  for(var i = 0; i < rules.length; i++){
-    rules[i]._init = 1;
+/* ⭐⭐⭐ 關鍵修復：把 v15 的 cond 格式轉成 v26 的 groups 格式 ⭐⭐⭐ */
+function convertV15Rules(v15Rules){
+  var out = [];
+  for(var i = 0; i < v15Rules.length; i++){
+    var v15 = v15Rules[i];
+    var groups = [[]];
+    for(var j = 0; j < v15.cond.length; j++){
+      var c = v15.cond[j];
+      var featIdx = FEATURES.indexOf(c[0]);
+      if(featIdx === -1){
+        console.warn('Unknown feature: ' + c[0]);
+        featIdx = 0;
+      }
+      var opIdx = OPS.indexOf(c[1]);
+      if(opIdx === -1){
+        console.warn('Unknown op: ' + c[1]);
+        opIdx = 1;
+      }
+      groups[0].push([featIdx, opIdx, c[2]]);
+    }
+    out.push({
+      on: v15.on,
+      then: v15.then,
+      thenCode: RESULT_CODES[v15.then],
+      groups: groups,
+      _init: 1
+    });
   }
-  return rules;
+  return out;
 }
 
 /* ========== 生成 ========== */
@@ -766,7 +789,6 @@ function pruneRules(rules){
 
   var kept = [], removed = 0;
   for(var i = 0; i < rules.length; i++){
-    // ⭐ 保護初始規則：命中數太少才移除，不因虧損移除
     if(rules[i]._init){
       if(hits[i] < 2){ removed++; continue; }
       kept.push(rules[i]);
@@ -925,7 +947,7 @@ function mutateSplit(rules){
   var idx = Math.floor(Math.random() * r.length);
   var copy = cloneRule(r[idx]);
   copy.groups.push(genGroup());
-  copy._init = 0;  // 分裂出來的標記為非初始
+  copy._init = 0;
   r.splice(idx + 1, 0, copy);
   return {rules:r};
 }
@@ -1245,7 +1267,7 @@ async function start(){
   totalPhases = N + 1;
 
   pushLog('═══════════════════════════════════════════════════════════', 'head');
-  pushLog('🚀 v27 — 混合版（v15公式 + v26防護）', 'head');
+  pushLog('🚀 v27 修復版 — 混合版（v15公式 + v26防護）', 'head');
   pushLog('═══════════════════════════════════════════════════════════', 'head');
   pushLog(nowTime() + ' 原始有效行數：' + parsed.total, 'info');
   pushLog(nowTime() + ' 重複：' + parsed.dups + '（已忽略）', 'warn');
@@ -1301,7 +1323,9 @@ async function start(){
   pushLog('═══════════════════════════════════════════════════════════', 'head');
   await yieldUI();
 
-  var initRules = markInitialRules(cloneRules(INIT_RULES));
+  /* ⭐ 關鍵修復：轉換 v15 格式 */
+  var initRules = convertV15Rules(INIT_RULES);
+  pushLog(nowTime() + ' ✓ v15 公式轉換完成（' + initRules.length + ' 條）', 'init');
 
   // 顯示 v15 公式原始分數
   lastMutationStructural = true;
@@ -1309,16 +1333,21 @@ async function start(){
   var initP = rawProfits(initRules);
   var initTPer = trainN > 0 ? (initP.train / trainN).toFixed(1) : 0;
   var initVPer = valN > 0 ? (initP.val / valN).toFixed(1) : 0;
+  pushLog('');
   pushLog(nowTime() + ' 📊 v15 公式原始表現：', 'init');
   pushLog(nowTime() + '   訓練 ' + initP.train + '（每場 ' + initTPer + '）', 'info');
   pushLog(nowTime() + '   驗證 ' + initP.val + '（每場 ' + initVPer + '）', 'val');
   pushLog(nowTime() + '   字元 ' + currentFormulaLen, 'len');
+  pushLog('');
   await yieldUI();
 
   if(bestProfitSoFar === null || initP.train > bestProfitSoFar){
     bestProfitSoFar = initP.train;
     bestProfitVal = initP.val;
+    updateBestProfit();
   }
+  document.getElementById('stat-train').innerHTML = '訓練: <b>' + initTPer + '/場</b>';
+  document.getElementById('stat-val').innerHTML = '驗證: <b>' + initVPer + '/場</b>';
 
   var r0 = await optimizeRules(initRules, 'v15引導', 12);
   if(!running){ finish(); return; }
