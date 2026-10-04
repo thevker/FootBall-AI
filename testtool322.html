@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v32.6 — 全組件掃描（全數據對賬）</title>
+<title>🚀 v32.7 — 全組件掃描（100/1000輪）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1500px;margin:auto;background:#f0f2f5}
@@ -103,7 +103,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <body>
 
 <div class="top">
-  <h2 id="title">🚀 v32.6 — 全組件掃描（全數據對賬）</h2>
+  <h2 id="title">🚀 v32.7 — 全組件掃描（100/1000輪）</h2>
   <div>
     <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁中</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
@@ -111,10 +111,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </div>
 
 <div class="warn-banner">
-  <b>🆕 v32.6 更新：</b><br>
-  🧮 <b>新增全數據利潤對賬</b>（跟 Google Sheet 對得上的數字）<br>
-  💰 <b>結果面板頂部顯示總盈利</b>（訓練＋驗證＋全數據）<br>
-  🛡️ 保留 v32.5 全部修復（skip=3、undefined 保險）
+  <b>🆕 v32.7 更新：</b><br>
+  🔥 <b>新增 100 輪 / 1000 輪掃描選項</b>（爆肝模式）<br>
+  🧮 全數據利潤對賬（跟 Google Sheet 對得上）<br>
+  🛡️ 保留 v32.5/v32.6 全部修復
 </div>
 
 <textarea id="input" placeholder="23	27	49	355	385	169	0:3	A
@@ -127,6 +127,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
     <option value="3" selected>標準（3 輪掃描）</option>
     <option value="5">深度（5 輪掃描）</option>
     <option value="10">極限（10 輪掃描）</option>
+    <option value="100">🔥 超極限（100 輪掃描）</option>
+    <option value="1000">💀 爆肝（1000 輪掃描）</option>
   </select>
   <button id="btnRun" onclick="start()">🚀 開始掃描</button>
   <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
@@ -210,8 +212,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 'use strict';
 
 var TXT = {
-  zh: { title: '🚀 v32.6 — 全組件掃描（全數據對賬）', hRule: '📋 掃描後規則表', noData: '沒有有效數據' },
-  en: { title: '🚀 v32.6 — Full Scan (All-data reconcile)', hRule: '📋 Scanned Rules', noData: 'No valid data' }
+  zh: { title: '🚀 v32.7 — 全組件掃描（100/1000輪）', hRule: '📋 掃描後規則表', noData: '沒有有效數據' },
+  en: { title: '🚀 v32.7 — Full Scan (100/1000 rounds)', hRule: '📋 Scanned Rules', noData: 'No valid data' }
 };
 var LANG = 'zh';
 function t(k){ return (TXT[LANG] && TXT[LANG][k]) || k; }
@@ -279,7 +281,7 @@ var trainCodes = null, trainPayouts = null;
 var valCodes = null, valPayouts = null;
 var trainN = 0, valN = 0;
 
-/* ⭐ v32.6 全數據（對賬用） */
+/* 全數據（對賬用） */
 var allFeatGlobal = null, allCodesGlobal = null, allPayoutsGlobal = null, allNGlobal = 0;
 
 var running = false;
@@ -303,7 +305,6 @@ var bestProfitVal = null;
 var bestFitGlobal = -Infinity;
 var bestTotalSoFar = null;
 
-/* skip 的 code 改成 3 */
 var RESULTS = ['H','D','A','skip'];
 var RESULT_CODES = {H:0, D:1, A:2, skip:3};
 var OPS = ['>','>=','<','<=','==','!='];
@@ -655,6 +656,9 @@ async function fullScan(rules, maxIter){
   pushLog('');
   pushLog(nowTime() + ' 🔍 開始全組件掃描（最多 ' + maxIter + ' 輪）...', 'exhaust');
   pushLog(nowTime() + ' 組件：閾值 + 運算符 + 特徵 + 結果', 'exhaust');
+  if(maxIter >= 100){
+    pushLog(nowTime() + ' 🔥 爆肝模式：' + maxIter + ' 輪，可能需數分鐘至數十分鐘（改進停滯時會提前結束）', 'warn');
+  }
 
   var savedPhase = currentPhase;
   currentPhase = 1.5;
@@ -662,6 +666,8 @@ async function fullScan(rules, maxIter){
   var cur = cloneRules(rules);
   var curFit = fitness(cur);
   var totalImprovements = 0;
+  var stagnantRounds = 0;
+  var STAGNANT_LIMIT = 5; // 連續 5 輪無改進就停
 
   var doScanOp = document.getElementById('scanOp').checked;
   var doScanFeat = document.getElementById('scanFeat').checked;
@@ -785,7 +791,7 @@ async function fullScan(rules, maxIter){
         }
       }
 
-      // 4. 掃描結果（只試 H/D/A，避免改成 skip）
+      // 4. 掃描結果（只試 H/D/A）
       if(doScanThen){
         if(!running) break;
         var oldThen = rule.thenCode;
@@ -824,7 +830,15 @@ async function fullScan(rules, maxIter){
     totalImprovements += roundTotal;
     await yieldUI();
 
-    if(!iterImproved) break;
+    if(!iterImproved){
+      stagnantRounds++;
+      if(stagnantRounds >= STAGNANT_LIMIT){
+        pushLog(nowTime() + ' ⏹ 連續 ' + STAGNANT_LIMIT + ' 輪無改進，提前結束掃描', 'warn');
+        break;
+      }
+    } else {
+      stagnantRounds = 0;
+    }
   }
 
   var rawP = rawProfits(cur);
@@ -1032,14 +1046,14 @@ async function start(){
   var useVal = document.getElementById('useVal').checked;
 
   pushLog('═══════════════════════════════════════════════════════════', 'head');
-  pushLog('🚀 v32.6 — 全組件掃描（全數據對賬）', 'head');
+  pushLog('🚀 v32.7 — 全組件掃描（100/1000輪）', 'head');
   pushLog('═══════════════════════════════════════════════════════════', 'head');
   pushLog(nowTime() + ' 原始有效行數：' + parsed.total, 'info');
   pushLog(nowTime() + ' 重複：' + parsed.dups + '（已忽略）', 'warn');
   pushLog(nowTime() + ' 去重後：' + parsed.rows.length + ' 筆', 'success');
   pushLog(nowTime() + ' 🟡 v15 公式（' + INIT_RULES.length + ' 條）', 'init');
-  pushLog(nowTime() + ' 🔍 掃描強度：' + maxIter + ' 輪', 'exhaust');
-  pushLog(nowTime() + ' 🆕 v32.6：新增全數據利潤對賬', 'fix');
+  pushLog(nowTime() + ' 🔍 掃描強度：' + maxIter + ' 輪' + (maxIter >= 100 ? ' 🔥' : ''), 'exhaust');
+  pushLog(nowTime() + ' 🆕 v32.7：新增 100/1000 輪掃描選項', 'fix');
   pushLog(nowTime() + ' 掃描組件：' +
     (document.getElementById('scanOp').checked ? '運算符✓ ' : '運算符✗ ') +
     (document.getElementById('scanFeat').checked ? '特徵✓ ' : '特徵✗ ') +
@@ -1052,7 +1066,7 @@ async function start(){
     var tmp = allRows[i]; allRows[i] = allRows[j]; allRows[j] = tmp;
   }
 
-  /* ⭐ v32.6 全數據預計算（對賬用，用去重後全部資料，不分割） */
+  /* 全數據預計算（對賬用） */
   var tPreAll = Date.now();
   allNGlobal = allRows.length;
   allFeatGlobal = extractFeatures(allRows);
@@ -1134,7 +1148,7 @@ async function start(){
   var scannedRules = await fullScan(frozenRules, maxIter);
   if(!running){ finish(); return; }
 
-  /* 生成公式前保險：undefined → skip */
+  /* 生成公式前保險 */
   for(var fixI = 0; fixI < scannedRules.length; fixI++){
     var r = scannedRules[fixI];
     if(!r.then || r.then === 'undefined' || r.then === undefined || r.thenCode === undefined || r.thenCode === null || r.thenCode < 0 || r.thenCode > 3){
@@ -1195,7 +1209,6 @@ async function start(){
       '<div>全數據：<b>' + initAll + '</b> → 掃描 <b>' + finalAll + '</b>（Δ' + (finalAll - initAll >= 0 ? '+' : '') + (finalAll - initAll) + '）</div>' +
       '</div>';
 
-    /* ⭐ 全數據對賬 banner */
     var diff = finalAll - totalProfit;
     var diffPct = totalProfit !== 0 ? (diff / totalProfit * 100).toFixed(2) : '0';
     var diffHint;
