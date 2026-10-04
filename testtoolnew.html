@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v30 — 智慧解凍版</title>
+<title>🚀 v32 — v15 參數窮舉掃描</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1500px;margin:auto;background:#f0f2f5}
@@ -37,6 +37,8 @@ button.txt{background:#28a745}
 .l-base{color:#fbbf24;font-weight:bold;background:rgba(251,191,36,0.1);font-size:13px}
 .l-audit{color:#e879f9;font-weight:bold;background:rgba(232,121,249,0.1)}
 .l-unfrozen{color:#fb7185;font-weight:bold}
+.l-tune{color:#34d399;font-weight:bold;background:rgba(52,211,153,0.1)}
+.l-exhaust{color:#f59e0b;font-weight:bold;background:rgba(245,158,11,0.1)}
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
 .best b{color:#155724}
 .box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
@@ -59,6 +61,7 @@ td:first-child,td:nth-child(2),td:nth-child(3){text-align:left}
 .tag-ok{background:#28a745;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .tag-off{background:#999;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
 .tag-pred{background:#007bff;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
+.tag-soft{background:#fbbf24;color:#000;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:bold}
 .tag-frozen{background:#fbbf24;color:#000;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:bold}
 .tag-unfrozen{background:#fb7185;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:bold}
 .tag-new{background:#22c55e;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
@@ -82,11 +85,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .stat.base-stat b{color:#92400e}
 .stat.frozen-stat{background:#fce7f3;border-color:#f472b6}
 .stat.frozen-stat b{color:#9d174d}
+.stat.scan-stat{background:#fed7aa;border-color:#f59e0b}
+.stat.scan-stat b{color:#7c2d12}
 .controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .chk{padding:4px 10px;font-size:12px;background:#fff;border:1px solid #ccc;border-radius:4px;cursor:pointer;user-select:none}
 .chk input{vertical-align:middle;margin-right:4px}
-.warn-banner{background:linear-gradient(135deg,#dbeafe,#bfdbfe);padding:10px 14px;border-radius:6px;border:1px solid #60a5fa;font-size:13px;line-height:1.6;margin-bottom:10px}
-.warn-banner b{color:#1e40af}
+.warn-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);padding:10px 14px;border-radius:6px;border:1px solid #fbbf24;font-size:13px;line-height:1.6;margin-bottom:10px}
+.warn-banner b{color:#92400e}
 .base-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);padding:12px 14px;border-radius:6px;border:1px solid #fbbf24;font-size:13px;line-height:1.7;margin-top:10px}
 .base-banner b{color:#92400e}
 .val-banner{background:linear-gradient(135deg,#ddd6fe,#c4b5fd);padding:10px 14px;border-radius:6px;border:1px solid #a78bfa;font-size:12px;line-height:1.7;margin-top:10px}
@@ -102,7 +107,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <body>
 
 <div class="top">
-  <h2 id="title">🚀 v30 — 智慧解凍版（自動清除毒藥規則）</h2>
+  <h2 id="title">🚀 v32 — v15 參數窮舉掃描</h2>
   <div>
     <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁中</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
@@ -110,24 +115,24 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </div>
 
 <div class="warn-banner">
-  <b>✨ v30 核心機制：</b><br>
-  🔍 <b>每 5 輪自動審計凍結規則</b>：暫時禁用測試<br>
-  🔓 <b>若禁用後分數上升</b> → 該規則是「毒藥」→ 解凍它<br>
-  🗑 <b>解凍後可被刪除</b> → 演化自動清理 v15 的過擬合規則<br>
-  🎯 <b>保留有貢獻的 v15 規則</b>（不盲目凍結，也不盲目刪除）
+  <b>✨ v32 核心機制：</b><br>
+  🔍 <b>階段 1：參數窮舉掃描</b>（對 v15 每個條件掃所有可能值）<br>
+  🔁 <b>多輪迭代</b>（改 A 後 B 的最優可能改變）<br>
+  🛡 <b>訓練+驗證混合評分</b>（避免只顧訓練集）<br>
+  ⚙ <b>階段 2：從最優 v15 跑 v31 演化</b>
 </div>
 
 <textarea id="input" placeholder="23 27 49 355 385 169 0:3 A
 62 27 9 158 395 405 3:0 H"></textarea>
 
 <div class="row">
-  <label id="lbl-strength">搜尋強度：</label>
+  <label id="lbl-strength">演化強度（掃描後）：</label>
   <select id="strength">
     <option value="5">快速（5 起點）</option>
     <option value="20" selected>標準（20 起點）</option>
     <option value="100">深度（100 起點）</option>
   </select>
-  <button id="btnRun" onclick="start()">🚀 開始搜尋</button>
+  <button id="btnRun" onclick="start()">🚀 開始</button>
   <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
 </div>
 
@@ -139,6 +144,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <label class="chk"><input type="checkbox" id="useMinHit" checked> 最小命中數 ≥3</label>
   <label class="chk"><input type="checkbox" id="useWide" checked> 寬條件兜底</label>
   <label class="chk"><input type="checkbox" id="useAudit" checked> 智慧解凍</label>
+  <label class="chk"><input type="checkbox" id="useExhaust" checked> 窮舉掃描</label>
   <button onclick="clearLog()" style="padding:4px 10px;font-size:12px;background:#6c757d">清空日誌</button>
 </div>
 
@@ -152,8 +158,9 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 <div class="stats" id="liveStats" style="display:none">
   <div class="stat base-stat" id="stat-base">📌 v15基線: -</div>
+  <div class="stat scan-stat" id="stat-scan">🔍 掃描: 0 參數</div>
   <div class="stat profit-stat" id="stat-bestprofit">💰 演化後: <b>-</b></div>
-  <div class="stat frozen-stat" id="stat-frozen">🔒 凍結: 0 / 🔓 解凍: 0</div>
+  <div class="stat frozen-stat" id="stat-frozen">🟡 軟凍結: 0 / 🔓 解凍: 0</div>
   <div class="stat" id="stat-gen">起點: 0/0</div>
   <div class="stat" id="stat-prog">進度: 0%</div>
   <div class="stat speed-stat" id="stat-speed">⚡ 評估/秒: 0</div>
@@ -167,7 +174,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <div id="summary"></div>
 
   <div class="base-banner" id="baseBanner">
-    <b>📌 v15 基線（凍結）</b>
+    <b>📌 v15 基線 vs 掃描後</b>
     <div id="baseStats"></div>
   </div>
 
@@ -195,7 +202,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 <div id="diag" style="display:none">
   <div class="section">
-    <h3 id="h-rule">📋 演化後規則表（🔒=凍結v15、🔓=解凍、➕=新）</h3>
+    <h3 id="h-rule">📋 演化後規則表（🟡=軟凍結、🔓=解凍、➕=新）</h3>
     <div class="diag" id="ruleTable"></div>
   </div>
 </div>
@@ -205,16 +212,16 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 var TXT = {
   zh: {
-    title: '🚀 v30 — 智慧解凍版',
-    strength: '搜尋強度：',
-    run: '🚀 開始搜尋', stop: '⏹ 停止',
+    title: '🚀 v32 — v15 參數窮舉掃描',
+    strength: '演化強度（掃描後）：',
+    run: '🚀 開始', stop: '⏹ 停止',
     hRule: '📋 演化後規則表',
     noData: '沒有有效數據'
   },
   en: {
-    title: '🚀 v30 — Smart Unfreeze',
-    strength: 'Strength: ',
-    run: '🚀 Search', stop: '⏹ Stop',
+    title: '🚀 v32 — Exhaustive v15 Param Scan',
+    strength: 'Evolution strength: ',
+    run: '🚀 Start', stop: '⏹ Stop',
     hRule: '📋 Evolved Rules',
     noData: 'No valid data'
   }
@@ -293,12 +300,14 @@ var startTime = 0;
 var evalCount = 0;
 var currentRuleCount = 0;
 var currentFormulaLen = 0;
-var frozenCount = 0;
+var softFrozenCount = 0;
 var unfrozenCount = 0;
+var tunedCount = 0;
 var logBuffer = [];
 var logTimer = null;
 var LOG_MAX = 3000;
 var lastNewRuleLogTime = 0;
+var lastTuneLogTime = 0;
 var lastSpeedUpdate = 0;
 
 var totalPhases = 0;
@@ -307,6 +316,7 @@ var currentPass = 0;
 var maxPassesPerPhase = 10;
 
 var baseline = { train: 0, val: 0, trainPer: 0, valPer: 0, skipPct: 0 };
+var afterScan = { train: 0, val: 0, trainPer: 0, valPer: 0 };
 
 var bestProfitSoFar = null;
 var bestProfitVal = null;
@@ -323,7 +333,7 @@ var MAX_CONDS = 6;
 
 var CHUNK_MS = 30;
 var PASS_TIME_MS = 1500;
-var AUDIT_INTERVAL = 5;  // ⭐ 每 5 輪審計一次
+var AUDIT_INTERVAL = 5;
 
 var PENALTY_PER_NEW_RULE = 0.2;
 var WIDE_COND_CHANCE = 0.05;
@@ -332,6 +342,9 @@ var PRUNE_THRESHOLD = 25;
 var SKIP_GEN_CHANCE = 0.10;
 
 var lastMutationStructural = false;
+
+/* ⭐ 特徵候選值快取 */
+var featureValueCache = {};
 
 /* ========== 日誌 ========== */
 function nowTime(){
@@ -399,7 +412,7 @@ function updateProgress(){
   if(txt) txt.textContent = pct.toFixed(1) + '%';
   if(phaseEl){
     if(totalPhases > 0){
-      phaseEl.textContent = '階段 ' + currentPhase + '/' + totalPhases + (running ? ' 搜尋中' : (startTime > 0 ? ' 完成' : ''));
+      phaseEl.textContent = '階段 ' + currentPhase + '/' + totalPhases + (running ? ' 進行中' : (startTime > 0 ? ' 完成' : ''));
     } else {
       phaseEl.textContent = '準備中';
     }
@@ -426,7 +439,12 @@ function updateBestProfit(){
 
 function updateFrozenUI(){
   var stat = document.getElementById('stat-frozen');
-  if(stat) stat.innerHTML = '🔒 凍結: <b>' + frozenCount + '</b> / 🔓 解凍: <b>' + unfrozenCount + '</b>';
+  if(stat) stat.innerHTML = '🟡 軟凍結: <b>' + softFrozenCount + '</b> / 🔓 解凍: <b>' + unfrozenCount + '</b>';
+}
+
+function updateScanUI(){
+  var stat = document.getElementById('stat-scan');
+  if(stat) stat.innerHTML = '🔍 掃描: <b>' + tunedCount + '</b> 參數';
 }
 
 function updateSpeedUI(){
@@ -452,6 +470,7 @@ function yieldUI(){
   updateProgress();
   updateBestProfit();
   updateFrozenUI();
+  updateScanUI();
   updateSpeedUI();
   return new Promise(function(resolve){
     yieldResolvers.push(resolve);
@@ -667,82 +686,102 @@ function convertV15Rules(v15Rules){
       then: v15.then,
       thenCode: RESULT_CODES[v15.then],
       groups: groups,
-      _frozen: 1,
+      _frozen: 2,
       _skip: isSkip ? 1 : 0
     });
   }
   return out;
 }
 
-/* ⭐⭐⭐ v30 核心：智慧審計 ⭐⭐⭐ */
-async function auditFrozen(rules, label){
-  if(!document.getElementById('useAudit').checked) return rules;
+/* ⭐ 取特徵的候選閾值（快取）*/
+function getFeatureCandidates(fi){
+  if(featureValueCache[fi]) return featureValueCache[fi];
+  var vals = [];
+  for(var i = 0; i < trainN; i++) vals.push(trainFeat[i][fi]);
+  vals.sort(function(a,b){ return a - b; });
+  var cand = [];
+  // 取 30 個分位點
+  var nC = Math.min(30, vals.length);
+  for(var k = 0; k < nC; k++){
+    var idx = Math.floor(k * vals.length / nC);
+    cand.push(vals[idx]);
+  }
+  featureValueCache[fi] = cand;
+  return cand;
+}
+
+/* ⭐⭐⭐ v32 核心：參數窮舉掃描 ⭐⭐⭐ */
+async function exhaustiveScan(rules, label){
+  if(!document.getElementById('useExhaust').checked) return rules;
 
   pushLog('');
-  pushLog(nowTime() + ' 🔍 開始審計凍結規則（' + label + '）...', 'audit');
+  pushLog(nowTime() + ' 🔍 ' + label + '：開始 v15 參數窮舉掃描...', 'exhaust');
 
   var cur = cloneRules(rules);
-  var savedRuleProfit = ruleProfit;
-  ruleProfit = null;  // 不用追蹤，加快速度
+  var curFit = fitness(cur);
+  var totalImproved = 0;
+  var MAX_ITER = 5;
+  var iterTunedCount = 0;
 
-  // 基準：當前總分
-  var baseTrainP = calcProfitOn(trainFeat, trainCodes, trainPayouts, trainN, cur, false);
-  var baseTrainPer = baseTrainP / trainN;
+  for(var iter = 0; iter < MAX_ITER; iter++){
+    var iterImproved = false;
+    var scannedCount = 0;
 
-  var toUnfreeze = [];
+    for(var ri = 0; ri < cur.length && running; ri++){
+      if(!isSoftFrozen(cur[ri])) continue;
 
-  // 對每條凍結規則：禁用它 → 看分數是否上升
-  for(var i = 0; i < cur.length; i++){
-    if(!cur[i]._frozen) continue;
-    if(!running) break;
+      for(var gi = 0; gi < cur[ri].groups.length; gi++){
+        for(var ci = 0; ci < cur[ri].groups[gi].length; ci++){
+          if(!running) break;
 
-    var savedOn = cur[i].on;
-    cur[i].on = 0;
-    var testP = calcProfitOn(trainFeat, trainCodes, trainPayouts, trainN, cur, false);
-    var testPer = testP / trainN;
-    cur[i].on = savedOn;
+          var cond = cur[ri].groups[gi][ci];
+          var fi = cond[0], opIdx = cond[1], oldVal = cond[2];
+          var candidates = getFeatureCandidates(fi);
+          var bestVal = oldVal, bestScore = curFit;
+          var scanned = 0;
 
-    // 禁用後分數上升 → 這條是毒藥
-    if(testPer > baseTrainPer + 0.5){
-      toUnfreeze.push({
-        idx: i,
-        delta: testPer - baseTrainPer
-      });
+          for(var k = 0; k < candidates.length; k++){
+            if(candidates[k] === oldVal) continue;
+            var savedVal = cond[2];
+            cond[2] = candidates[k];
+            var s = fitness(cur);
+            cond[2] = savedVal;
+            scanned++;
+            if(s > bestScore){
+              bestScore = s;
+              bestVal = candidates[k];
+            }
+          }
+
+          scannedCount += scanned;
+
+          if(bestVal !== oldVal){
+            cond[2] = bestVal;
+            curFit = bestScore;
+            iterImproved = true;
+            totalImproved++;
+            iterTunedCount++;
+            tunedCount++;
+            pushLog(nowTime() + '   🟡 R' + (ri+1) + ' ' + FEATURES[fi] + OPS[opIdx] + ' ' + Math.round(oldVal) + '→' + Math.round(bestVal) + ' 分數 ' + bestScore.toFixed(2), 'tune');
+            updateScanUI();
+          }
+
+          if(scannedCount % 100 === 0){
+            await yieldUI();
+          }
+        }
+      }
     }
+
+    pushLog(nowTime() + '   第 ' + (iter+1) + ' 輪掃描完成（此輪改進 ' + iterTunedCount + ' 個，累計 ' + totalImproved + '）', iterImproved ? 'ok' : 'dim');
+    iterTunedCount = 0;
+    await yieldUI();
+
+    if(!iterImproved) break;
   }
 
-  ruleProfit = savedRuleProfit;
-
-  // 按收益降序解凍（一次解凍最毒的）
-  toUnfreeze.sort(function(a,b){ return b.delta - a.delta; });
-
-  // ⭐ 一次解凍所有毒藥規則（保守：最多 10 條）
-  var maxUnfreeze = Math.min(toUnfreeze.length, 10);
-  for(var k = 0; k < maxUnfreeze; k++){
-    var item = toUnfreeze[k];
-    cur[item.idx]._frozen = 0;
-    cur[item.idx]._unfrozenAt = 1;
-    unfrozenCount++;
-    pushLog(nowTime() + '   🔓 解凍 R' + (item.idx+1) + '（禁用後分數 +' + item.delta.toFixed(1) + '）', 'unfrozen');
-  }
-
-  // 重新計算凍結數
-  frozenCount = 0;
-  for(var i = 0; i < cur.length; i++){
-    if(cur[i]._frozen) frozenCount++;
-  }
-
-  if(maxUnfreeze > 0){
-    pushLog(nowTime() + ' ✓ 審計完成：解凍 ' + maxUnfreeze + ' 條毒藥規則', 'audit');
-    // ⭐ 解凍後立即跑一次剪枝
-    var pruned = pruneRules(cur);
-    if(pruned.length < cur.length){
-      pushLog(nowTime() + ' ✂️ 審計後剪枝：' + cur.length + ' → ' + pruned.length, 'prune');
-      cur = pruned;
-    }
-  } else {
-    pushLog(nowTime() + ' ✓ 審計完成：所有凍結規則都有貢獻', 'audit');
-  }
+  var rawP = rawProfits(cur);
+  pushLog(nowTime() + ' ✓ 掃描完成：訓練 ' + rawP.train + ' 驗證 ' + rawP.val + '（共 ' + totalImproved + ' 個參數被優化）', 'exhaust');
   pushLog('');
 
   await yieldUI();
@@ -810,6 +849,9 @@ function isWideCond(c){
   return (c[1] === 1 && c[2] === 0) || (c[1] === 1 && c[2] === -9999) || (c[1] === 0 && c[2] === -9999);
 }
 
+function isSoftFrozen(r){ return r._frozen === 2; }
+function isHardFrozen(r){ return r._frozen === 1; }
+
 /* ========== 剪枝 ========== */
 function pruneRules(rules){
   if(!document.getElementById('useMinHit').checked) return rules;
@@ -832,12 +874,10 @@ function pruneRules(rules){
 
   var kept = [], removed = 0;
   for(var i = 0; i < rules.length; i++){
-    // 凍結規則永久保留
     if(rules[i]._frozen){
       kept.push(rules[i]);
       continue;
     }
-    // 新規則或解凍的：命中 < MIN_HITS 或盈利 ≤ 0 → 移除
     if(hits[i] < MIN_HITS || profits[i] <= 0){
       removed++;
       continue;
@@ -850,8 +890,30 @@ function pruneRules(rules){
   return kept;
 }
 
-/* ========== 變異 ========== */
-function pickEditableIdx(rules){
+/* ========== 變異索引 ========== */
+function pickParamEditableIdx(rules){
+  var candidates = [];
+  for(var i = 0; i < rules.length; i++){
+    if(!isHardFrozen(rules[i])) candidates.push(i);
+  }
+  if(candidates.length === 0) return -1;
+  var total = 0;
+  var weights = new Array(candidates.length);
+  for(var k = 0; k < candidates.length; k++){
+    var p = ruleProfit ? ruleProfit[candidates[k]] : 0;
+    var w = 1 + Math.max(0, p / 500);
+    weights[k] = w;
+    total += w;
+  }
+  if(total <= 0) return candidates[Math.floor(Math.random() * candidates.length)];
+  var r = Math.random() * total, cum = 0;
+  for(var k = 0; k < candidates.length; k++){
+    cum += weights[k];
+    if(cum >= r) return candidates[k];
+  }
+  return candidates[candidates.length - 1];
+}
+function pickStructEditableIdx(rules){
   var candidates = [];
   for(var i = 0; i < rules.length; i++){
     if(!rules[i]._frozen) candidates.push(i);
@@ -874,6 +936,7 @@ function pickEditableIdx(rules){
   return candidates[candidates.length - 1];
 }
 
+/* ========== 變異 ========== */
 function mutateGen(rules){
   lastMutationStructural = true;
   if(rules.length >= HARD_RULE_CAP) return null;
@@ -888,7 +951,7 @@ function mutateNumeric(rules, intensity){
   lastMutationStructural = false;
   var r = cloneRules(rules);
   if(r.length === 0) return {rules:r};
-  var idx = pickEditableIdx(r);
+  var idx = pickParamEditableIdx(r);
   if(idx === -1) return {rules:r};
   var rule = r[idx];
   if(!rule.groups.length) return {rules:r};
@@ -902,14 +965,18 @@ function mutateNumeric(rules, intensity){
   if(av >= 100) step = 5;
   if(av >= 300) step = 10;
   step *= (intensity || 1);
+  var oldV = v;
   cond[2] = Math.max(0, v + (Math.floor(Math.random() * 11) - 5) * step);
+  if(isSoftFrozen(rule) && cond[2] !== oldV){
+    return {rules:r, tuned:true, tuneInfo: {idx:idx, oldV: oldV, newV: cond[2], feat: FEATURES[cond[0]], op: OPS[cond[1]]}};
+  }
   return {rules:r};
 }
 function mutateThen(rules){
   lastMutationStructural = false;
   var r = cloneRules(rules);
   if(!r.length) return {rules:r};
-  var idx = pickEditableIdx(r);
+  var idx = pickStructEditableIdx(r);
   if(idx === -1) return {rules:r};
   var nc = Math.floor(Math.random() * 4);
   r[idx].thenCode = nc; r[idx].then = RESULTS[nc];
@@ -919,7 +986,7 @@ function mutateOp(rules){
   lastMutationStructural = false;
   var r = cloneRules(rules);
   if(!r.length) return {rules:r};
-  var idx = pickEditableIdx(r);
+  var idx = pickParamEditableIdx(r);
   if(idx === -1) return {rules:r};
   if(!r[idx].groups.length) return {rules:r};
   var gi = Math.floor(Math.random() * r[idx].groups.length);
@@ -934,7 +1001,7 @@ function mutateOn(rules){
   lastMutationStructural = false;
   var r = cloneRules(rules);
   if(!r.length) return {rules:r};
-  var idx = pickEditableIdx(r);
+  var idx = pickStructEditableIdx(r);
   if(idx === -1) return {rules:r};
   r[idx].on = r[idx].on ? 0 : 1;
   return {rules:r};
@@ -968,7 +1035,7 @@ function mutateAddCond(rules){
   lastMutationStructural = true;
   var r = cloneRules(rules);
   if(!r.length) return {rules:r};
-  var idx = pickEditableIdx(r);
+  var idx = pickStructEditableIdx(r);
   if(idx === -1) return {rules:r};
   var gi = Math.floor(Math.random() * r[idx].groups.length);
   if(r[idx].groups[gi].length >= MAX_CONDS) return {rules:r};
@@ -979,7 +1046,7 @@ function mutateDelCond(rules){
   lastMutationStructural = true;
   var r = cloneRules(rules);
   if(!r.length) return {rules:r};
-  var idx = pickEditableIdx(r);
+  var idx = pickStructEditableIdx(r);
   if(idx === -1) return {rules:r};
   var gi = Math.floor(Math.random() * r[idx].groups.length);
   if(r[idx].groups[gi].length <= 1) return {rules:r};
@@ -990,7 +1057,7 @@ function mutateNewFeat(rules){
   lastMutationStructural = false;
   var r = cloneRules(rules);
   if(!r.length) return {rules:r};
-  var idx = pickEditableIdx(r);
+  var idx = pickStructEditableIdx(r);
   if(idx === -1) return {rules:r};
   if(!r[idx].groups.length) return {rules:r};
   var gi = Math.floor(Math.random() * r[idx].groups.length);
@@ -1032,19 +1099,77 @@ function mutate(rules, intensity){
     if(g) return g;
   }
   var p = Math.random();
-  if(p < 0.35) return mutateNumeric(rules, intensity);
-  if(p < 0.48) return mutateThen(rules);
-  if(p < 0.56) return mutateOn(rules);
-  if(p < 0.62) return mutateSwap(rules);
+  if(p < 0.40) return mutateNumeric(rules, intensity);
+  if(p < 0.52) return mutateThen(rules);
+  if(p < 0.58) return mutateOn(rules);
+  if(p < 0.64) return mutateSwap(rules);
   if(p < 0.72) return mutateDelete(rules);
-  if(p < 0.80) return mutateAddCond(rules);
-  if(p < 0.86) return mutateDelCond(rules);
-  if(p < 0.93) return mutateOp(rules);
-  if(p < 0.97) return mutateNewFeat(rules);
+  if(p < 0.78) return mutateAddCond(rules);
+  if(p < 0.83) return mutateDelCond(rules);
+  if(p < 0.90) return mutateOp(rules);
+  if(p < 0.94) return mutateNewFeat(rules);
   return mutateSplit(rules);
 }
 
-/* ========== 優化迴圈（含審計）========== */
+/* ========== 審計 ========== */
+async function auditFrozen(rules, label){
+  if(!document.getElementById('useAudit').checked) return rules;
+  pushLog('');
+  pushLog(nowTime() + ' 🔍 審計凍結規則（' + label + '）...', 'audit');
+
+  var cur = cloneRules(rules);
+  var savedRuleProfit = ruleProfit;
+  ruleProfit = null;
+
+  var baseTrainP = calcProfitOn(trainFeat, trainCodes, trainPayouts, trainN, cur, false);
+  var baseTrainPer = baseTrainP / trainN;
+
+  var toUnfreeze = [];
+  for(var i = 0; i < cur.length; i++){
+    if(!cur[i]._frozen) continue;
+    if(!running) break;
+    var savedOn = cur[i].on;
+    cur[i].on = 0;
+    var testP = calcProfitOn(trainFeat, trainCodes, trainPayouts, trainN, cur, false);
+    var testPer = testP / trainN;
+    cur[i].on = savedOn;
+    if(testPer > baseTrainPer + 0.5){
+      toUnfreeze.push({idx: i, delta: testPer - baseTrainPer});
+    }
+  }
+  ruleProfit = savedRuleProfit;
+
+  toUnfreeze.sort(function(a,b){ return b.delta - a.delta; });
+  var maxUnfreeze = Math.min(toUnfreeze.length, 10);
+  for(var k = 0; k < maxUnfreeze; k++){
+    var item = toUnfreeze[k];
+    cur[item.idx]._frozen = 0;
+    cur[item.idx]._unfrozenAt = 1;
+    unfrozenCount++;
+    pushLog(nowTime() + '   🔓 解凍 R' + (item.idx+1) + '（+' + item.delta.toFixed(1) + '）', 'unfrozen');
+  }
+
+  softFrozenCount = 0;
+  for(var i = 0; i < cur.length; i++){
+    if(isSoftFrozen(cur[i])) softFrozenCount++;
+  }
+
+  if(maxUnfreeze > 0){
+    pushLog(nowTime() + ' ✓ 解凍 ' + maxUnfreeze + ' 條', 'audit');
+    var pruned = pruneRules(cur);
+    if(pruned.length < cur.length){
+      pushLog(nowTime() + ' ✂️ 審計後剪枝：' + cur.length + ' → ' + pruned.length, 'prune');
+      cur = pruned;
+    }
+  } else {
+    pushLog(nowTime() + ' ✓ 所有軟凍結規則都有貢獻', 'audit');
+  }
+  pushLog('');
+  await yieldUI();
+  return cur;
+}
+
+/* ========== 優化迴圈 ========== */
 async function optimizeRules(startRules, label, maxPasses){
   var cur = cloneRules(startRules);
   lastMutationStructural = true;
@@ -1055,7 +1180,7 @@ async function optimizeRules(startRules, label, maxPasses){
   var pass = 0;
   var sinceImprove = 0;
 
-  pushLog(nowTime() + ' ▶ ' + label + ' 起始分數: ' + curFit.toFixed(2) + '（規則 ' + cur.length + '，字元 ' + currentFormulaLen + '）', 'gen');
+  pushLog(nowTime() + ' ▶ ' + label + ' 起始分數: ' + curFit.toFixed(2) + '（規則 ' + cur.length + '）', 'gen');
   await yieldUI();
 
   while(running && pass < maxPasses){
@@ -1063,7 +1188,6 @@ async function optimizeRules(startRules, label, maxPasses){
     currentPass = pass;
     maxPassesPerPhase = maxPasses;
     updateProgress();
-
     pushLog(nowTime() + ' ── ' + label + ' 第 ' + pass + '/' + maxPasses + ' 輪 ──', 'dim');
 
     var improvedThisPass = false;
@@ -1071,7 +1195,6 @@ async function optimizeRules(startRules, label, maxPasses){
 
     while(running && (Date.now() - passStart) < PASS_TIME_MS){
       var chunkStart = Date.now();
-
       while(running && (Date.now() - chunkStart) < CHUNK_MS){
         var m = mutate(cur, 1 + Math.floor(pass / 3));
         var cand = m.rules;
@@ -1082,13 +1205,20 @@ async function optimizeRules(startRules, label, maxPasses){
           cur = cand; curFit = candFit;
           improvedThisPass = true; sinceImprove = 0;
 
+          if(m.tuned && verbose){
+            var now = Date.now();
+            if(now - lastTuneLogTime > 300){
+              pushLog(nowTime() + '   [🟡 R' + (m.tuneInfo.idx+1) + '] ' + m.tuneInfo.feat + m.tuneInfo.op + ' ' + Math.round(m.tuneInfo.oldV) + '→' + Math.round(m.tuneInfo.newV) + '  分數 ' + candFit.toFixed(2), 'tune');
+              lastTuneLogTime = now;
+            }
+          }
           if(m.generated && verbose){
             var now = Date.now();
             if(now - lastNewRuleLogTime > 200){
               var isWide = m.genRule.groups[0].length === 1 && isWideCond(m.genRule.groups[0][0]);
               var isSkip = m.genRule.then === 'skip';
               var tag = isSkip ? ' ⏭' : (isWide ? ' 🔵' : '');
-              pushLog(nowTime() + '   [➕新增 #' + cur.length + ']' + tag + ' ' + fmtRule(m.genRule), isSkip ? 'skip' : (isWide ? 'wide' : 'newrule'));
+              pushLog(nowTime() + '   [➕ #' + cur.length + ']' + tag + ' ' + fmtRule(m.genRule), isSkip ? 'skip' : (isWide ? 'wide' : 'newrule'));
               lastNewRuleLogTime = now;
             }
           }
@@ -1096,13 +1226,11 @@ async function optimizeRules(startRules, label, maxPasses){
             bestFit = candFit;
             best = cloneRules(cand);
             var rp = rawProfits(best);
-            var tPer = trainN > 0 ? (rp.train / trainN).toFixed(1) : 0;
-            var vPer = valN > 0 ? (rp.val / valN).toFixed(1) : 0;
             if(bestProfitSoFar === null || rp.train > bestProfitSoFar){
               bestProfitSoFar = rp.train;
               bestProfitVal = rp.val;
             }
-            pushLog(nowTime() + ' ★ 訓練 ' + rp.train + '（每場 ' + tPer + '）驗證 ' + rp.val + '（每場 ' + vPer + '）規則 ' + cur.length, 'best');
+            pushLog(nowTime() + ' ★ 訓練 ' + rp.train + ' 驗證 ' + rp.val + ' 規則 ' + cur.length, 'best');
             if(bestFit > bestFitGlobal) bestFitGlobal = bestFit;
             updateBestProfit();
           }
@@ -1114,13 +1242,11 @@ async function optimizeRules(startRules, label, maxPasses){
           }
         }
       }
-
       currentRuleCount = cur.length;
       await yieldUI();
       if(!running) break;
     }
 
-    // 常規剪枝
     var pruned = pruneRules(cur);
     if(pruned.length < cur.length && pruned.length > 0){
       lastMutationStructural = true;
@@ -1137,9 +1263,8 @@ async function optimizeRules(startRules, label, maxPasses){
 
     pushLog(nowTime() + ' 第 ' + pass + ' 輪完成（分數 ' + curFit.toFixed(2) + '，規則 ' + cur.length + '）', improvedThisPass ? 'ok' : 'dim');
 
-    // ⭐⭐⭐ 每 AUDIT_INTERVAL 輪審計一次 ⭐⭐⭐
     if(pass % AUDIT_INTERVAL === 0 && pass < maxPasses){
-      var audited = await auditFrozen(cur, label + ' 第' + pass + '輪後');
+      var audited = await auditFrozen(cur, label + ' 第' + pass + '輪');
       cur = audited;
       lastMutationStructural = true;
       curFit = fitness(cur);
@@ -1152,7 +1277,6 @@ async function optimizeRules(startRules, label, maxPasses){
     }
 
     if(!improvedThisPass && sinceImprove > 3000) break;
-
     await yieldUI();
   }
 
@@ -1215,9 +1339,10 @@ function renderRuleTable(stats){
     var onTag = r.on ? '<span class="tag-ok">ON</span>' : '<span class="tag-off">OFF</span>';
     var thenTag = '<span class="tag-pred">' + r.then + '</span>';
     var typeTag;
-    if(r._frozen) typeTag = '<span class="tag-frozen">🔒v15</span>';
-    else if(r._unfrozenAt) typeTag = '<span class="tag-unfrozen">🔓解凍</span>';
-    else typeTag = '<span class="tag-new">➕新</span>';
+    if(isSoftFrozen(r)) typeTag = '<span class="tag-soft">🟡v15</span>';
+    else if(isHardFrozen(r)) typeTag = '<span class="tag-frozen">🔒</span>';
+    else if(r._unfrozenAt) typeTag = '<span class="tag-unfrozen">🔓</span>';
+    else typeTag = '<span class="tag-new">➕</span>';
 
     html += '<tr><td>R' + (i+1) + '</td><td>' + typeTag + '</td><td>' + onTag + '</td>' +
       '<td style="text-align:left;font-size:10px">' + ss + '</td><td>' + thenTag + '</td>' +
@@ -1331,12 +1456,15 @@ async function start(){
   currentPhase = 0;
   currentPass = 0;
   totalPhases = 0;
-  frozenCount = 0;
+  softFrozenCount = 0;
   unfrozenCount = 0;
+  tunedCount = 0;
   bestProfitSoFar = null;
   bestProfitVal = null;
   bestFitGlobal = -Infinity;
   lastSpeedUpdate = 0;
+  lastTuneLogTime = 0;
+  featureValueCache = {};
   document.getElementById('btnRun').disabled = true;
   document.getElementById('btnStop').disabled = false;
   document.getElementById('diag').style.display = 'none';
@@ -1347,6 +1475,7 @@ async function start(){
   document.getElementById('progPhase').textContent = '準備中';
   updateBestProfit();
   updateFrozenUI();
+  updateScanUI();
 
   clearLog();
 
@@ -1356,14 +1485,14 @@ async function start(){
   totalPhases = N + 1;
 
   pushLog('═══════════════════════════════════════════════════════════', 'head');
-  pushLog('🚀 v30 — 智慧解凍版', 'head');
+  pushLog('🚀 v32 — v15 參數窮舉掃描', 'head');
   pushLog('═══════════════════════════════════════════════════════════', 'head');
   pushLog(nowTime() + ' 原始有效行數：' + parsed.total, 'info');
   pushLog(nowTime() + ' 重複：' + parsed.dups + '（已忽略）', 'warn');
   pushLog(nowTime() + ' 去重後：' + parsed.rows.length + ' 筆', 'success');
-  pushLog(nowTime() + ' 🔒 初始凍結：v15 公式（' + INIT_RULES.length + ' 條）', 'init');
-  pushLog(nowTime() + ' 🔍 審計間隔：每 ' + AUDIT_INTERVAL + ' 輪', 'audit');
-  pushLog(nowTime() + ' 總階段數：' + totalPhases, 'prog');
+  pushLog(nowTime() + ' 🟡 軟凍結：v15 公式（' + INIT_RULES.length + ' 條）', 'init');
+  pushLog(nowTime() + ' 🔍 階段 1：窮舉掃描 v15 參數', 'exhaust');
+  pushLog(nowTime() + ' ⚙ 階段 2：從最優 v15 跑演化（' + N + ' 起點）', 'gen');
   await yieldUI();
 
   var allRows = parsed.rows.slice();
@@ -1412,7 +1541,7 @@ async function start(){
   await yieldUI();
 
   var frozenRules = convertV15Rules(INIT_RULES);
-  frozenCount = frozenRules.length;
+  softFrozenCount = frozenRules.length;
 
   lastMutationStructural = true;
   fitness(frozenRules);
@@ -1440,22 +1569,57 @@ async function start(){
   document.getElementById('stat-train').innerHTML = '訓練: <b>' + baseline.trainPer.toFixed(1) + '/場</b>';
   document.getElementById('stat-val').innerHTML = '驗證: <b>' + baseline.valPer.toFixed(1) + '/場</b>';
 
-  var r0 = await optimizeRules(frozenRules, 'v15引導', 12);
+  // ⭐⭐⭐ 階段 1.5：窮舉掃描 v15 參數 ⭐⭐⭐
+  pushLog('═══════════════════════════════════════════════════════════', 'head');
+  pushLog(nowTime() + ' 階段 1.5/' + totalPhases + '：v15 參數窮舉掃描', 'exhaust');
+  pushLog('═══════════════════════════════════════════════════════════', 'head');
+  await yieldUI();
+
+  var scannedRules = await exhaustiveScan(frozenRules, 'v15 掃描');
+  if(!running){ finish(); return; }
+  var afterP = rawProfits(scannedRules);
+  afterScan.train = afterP.train;
+  afterScan.val = afterP.val;
+  afterScan.trainPer = trainN > 0 ? afterP.train / trainN : 0;
+  afterScan.valPer = valN > 0 ? afterP.val / valN : 0;
+
+  pushLog('');
+  pushLog(nowTime() + ' 📊 掃描後：', 'exhaust');
+  pushLog(nowTime() + '   訓練 ' + afterScan.train + '（每場 ' + afterScan.trainPer.toFixed(1) + '）', 'exhaust');
+  pushLog(nowTime() + '   驗證 ' + afterScan.val + '（每場 ' + afterScan.valPer.toFixed(1) + '）', 'val');
+  pushLog(nowTime() + '   vs 基線：訓練 ' + (afterScan.train - baseline.train >= 0 ? '+' : '') + (afterScan.train - baseline.train) + '，驗證 ' + (afterScan.val - baseline.val >= 0 ? '+' : '') + (afterScan.val - baseline.val), 'exhaust');
+  pushLog('');
+  await yieldUI();
+
+  // 更新 best
+  if(afterScan.train > bestProfitSoFar){
+    bestProfitSoFar = afterScan.train;
+    bestProfitVal = afterScan.val;
+    updateBestProfit();
+  }
+  document.getElementById('stat-train').innerHTML = '訓練: <b>' + afterScan.trainPer.toFixed(1) + '/場</b>';
+  document.getElementById('stat-val').innerHTML = '驗證: <b>' + afterScan.valPer.toFixed(1) + '/場</b>';
+
+  // ⭐ 階段 2：從掃描後規則跑演化
+  pushLog('═══════════════════════════════════════════════════════════', 'head');
+  pushLog(nowTime() + ' 階段 2/' + totalPhases + '：從最優 v15 跑演化', 'head');
+  pushLog('═══════════════════════════════════════════════════════════', 'head');
+  await yieldUI();
+
+  currentPhase = 1;
+  updateProgress();
+
+  var r0 = await optimizeRules(scannedRules, 'v15最優引導', 12);
   if(!running){ finish(); return; }
   var globalBest = r0.rules;
   var globalFit = r0.fit;
   currentRuleCount = globalBest.length;
 
   var rp0 = rawProfits(globalBest);
-  var tPer0 = trainN > 0 ? (rp0.train / trainN).toFixed(1) : 0;
-  var vPer0 = valN > 0 ? (rp0.val / valN).toFixed(1) : 0;
   pushLog('');
-  pushLog(nowTime() + ' ✓ 階段 1 完成：訓練 ' + rp0.train + ' 驗證 ' + rp0.val + ' 規則 ' + globalBest.length, 'success');
+  pushLog(nowTime() + ' ✓ 引導完成：訓練 ' + rp0.train + ' 驗證 ' + rp0.val + ' 規則 ' + globalBest.length, 'success');
   pushLog('');
-  currentPhase = 1;
   updateStatsUI();
-  document.getElementById('stat-train').innerHTML = '訓練: <b>' + tPer0 + '/場</b>';
-  document.getElementById('stat-val').innerHTML = '驗證: <b>' + vPer0 + '/場</b>';
   updateBestProfit();
   updateProgress();
   updateFrozenUI();
@@ -1501,47 +1665,42 @@ async function start(){
 
   function finish(){
     var elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-
     var finalP = rawProfits(globalBest);
     var trainPer = trainN > 0 ? finalP.train / trainN : 0;
     var valPer = valN > 0 ? finalP.val / valN : 0;
     var skipInfo = skipRatio(globalBest, false);
-
-    var frozenFinal = 0, unfrozenFinal = 0, newFinal = 0;
+    var softFinal = 0, unfrozenFinal = 0, newFinal = 0;
     for(var i = 0; i < globalBest.length; i++){
-      if(globalBest[i]._frozen) frozenFinal++;
+      if(isSoftFrozen(globalBest[i])) softFinal++;
       else if(globalBest[i]._unfrozenAt) unfrozenFinal++;
       else newFinal++;
     }
-
     var formula = genSingleFormula(globalBest);
 
     pushLog('═══════════════════════════════════════════════════════════', 'head');
     pushLog('🏆 完成！', 'best');
     pushLog('═══════════════════════════════════════════════════════════', 'head');
     pushLog('   📌 v15 基線：訓練 ' + baseline.train + ' / 驗證 ' + baseline.val, 'base');
-    pushLog('   💰 演化後：訓練 ' + finalP.train + '（Δ' + (finalP.train - baseline.train >= 0 ? '+' : '') + (finalP.train - baseline.train) + '）', 'profit');
-    pushLog('   💰 演化後：驗證 ' + finalP.val + '（Δ' + (finalP.val - baseline.val >= 0 ? '+' : '') + (finalP.val - baseline.val) + '）', 'val');
-    pushLog('   規則分類：🔒凍結 ' + frozenFinal + ' + 🔓解凍 ' + unfrozenFinal + ' + ➕新增 ' + newFinal, 'init');
-    pushLog('   Skip：' + skipInfo.pct.toFixed(1) + '%', 'skip');
+    pushLog('   🔍 掃描後：訓練 ' + afterScan.train + ' / 驗證 ' + afterScan.val, 'exhaust');
+    pushLog('   💰 演化後：訓練 ' + finalP.train + ' / 驗證 ' + finalP.val, 'profit');
+    pushLog('   規則：🟡軟凍 ' + softFinal + ' + 🔓解凍 ' + unfrozenFinal + ' + ➕新 ' + newFinal, 'init');
+    pushLog('   掃描優化參數：' + tunedCount + ' 個', 'exhaust');
     pushLog('   字元：' + formula.length, 'len');
     pushLog('   總掃描：' + evalCount + ' 次', 'speed');
     pushLog('   總耗時：' + elapsed + ' 秒', 'speed');
     pushLog('═══════════════════════════════════════════════════════════', 'head');
 
     document.getElementById('best').style.display = 'block';
-    document.getElementById('summary').innerHTML = '🏆 <b>' + globalBest.length + '</b> 條（🔒' + frozenFinal + ' + 🔓' + unfrozenFinal + ' + ➕' + newFinal + '）　💰訓練 <b>' + finalP.train + '</b>　💰驗證 <b>' + finalP.val + '</b>';
+    document.getElementById('summary').innerHTML = '🏆 <b>' + globalBest.length + '</b> 條（🟡' + softFinal + ' + 🔓' + unfrozenFinal + ' + ➕' + newFinal + '）　💰訓練 <b>' + finalP.train + '</b>　💰驗證 <b>' + finalP.val + '</b>';
 
     var baseStats = document.getElementById('baseStats');
     baseStats.innerHTML = '<div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:6px">' +
-      '<div>訓練：<b>' + baseline.train + '</b>（每場 ' + baseline.trainPer.toFixed(1) + '）</div>' +
-      '<div>驗證：<b>' + baseline.val + '</b>（每場 ' + baseline.valPer.toFixed(1) + '）</div>' +
-      '<div>Skip：<b>' + baseline.skipPct.toFixed(1) + '%</b></div>' +
-      '<div>凍結 ' + INIT_RULES.length + ' 條</div>' +
+      '<div>訓練：<b>' + baseline.train + '</b> → 掃描 <b>' + afterScan.train + '</b> → 演化 <b>' + finalP.train + '</b></div>' +
+      '<div>驗證：<b>' + baseline.val + '</b> → 掃描 <b>' + afterScan.val + '</b> → 演化 <b>' + finalP.val + '</b></div>' +
       '</div>' +
       '<div style="margin-top:6px;font-size:12px">' +
-      '演化後 vs 基線：訓練 <b>' + (finalP.train - baseline.train >= 0 ? '+' : '') + (finalP.train - baseline.train) + '</b>，' +
-      '驗證 <b>' + (finalP.val - baseline.val >= 0 ? '+' : '') + (finalP.val - baseline.val) + '</b>' +
+      '掃描改進：訓練 <b>' + (afterScan.train - baseline.train >= 0 ? '+' : '') + (afterScan.train - baseline.train) + '</b>，驗證 <b>' + (afterScan.val - baseline.val >= 0 ? '+' : '') + (afterScan.val - baseline.val) + '</b>　|　' +
+      '演化改進：訓練 <b>' + (finalP.train - afterScan.train >= 0 ? '+' : '') + (finalP.train - afterScan.train) + '</b>，驗證 <b>' + (finalP.val - afterScan.val >= 0 ? '+' : '') + (finalP.val - afterScan.val) + '</b>' +
       '</div>';
 
     document.getElementById('vTrainTotal').textContent = finalP.train;
@@ -1554,7 +1713,7 @@ async function start(){
     if(valN === 0){
       verdict = '⚠ 未啟用驗證分割';
     } else if(valN < 30){
-      verdict = '⚠ 驗證集只有 ' + valN + ' 場 → 樣本不足';
+      verdict = '⚠ 驗證集只有 ' + valN + ' 場';
     } else if(valPer <= 0){
       verdict = '❌ 驗證集虧損';
     } else if(perRatio >= 0.9){
@@ -1570,13 +1729,9 @@ async function start(){
     var valDelta = finalP.val - baseline.val;
     var trainDelta = finalP.train - baseline.train;
     verdict += '\n📌 vs v15 基線：訓練 ' + (trainDelta >= 0 ? '+' : '') + trainDelta + '，驗證 ' + (valDelta >= 0 ? '+' : '') + valDelta;
-    if(trainDelta >= 0 && valDelta >= 0){
-      verdict += ' ✅ 全面進步！';
-    } else if(valDelta < 0){
-      verdict += ' ⚠ 驗證退步';
-    }
-
-    verdict += '\n📎 智慧解凍成果：🔒凍結 ' + frozenFinal + '（原 ' + INIT_RULES.length + '）→ 🔓解凍 ' + unfrozenFinal + ' 條毒藥規則';
+    verdict += '\n🔍 掃描貢獻：訓練 ' + (afterScan.train - baseline.train) + '，驗證 ' + (afterScan.val - baseline.val);
+    verdict += '\n⚙ 演化貢獻：訓練 ' + (finalP.train - afterScan.train) + '，驗證 ' + (finalP.val - afterScan.val);
+    verdict += '\n🎯 掃描優化 ' + tunedCount + ' 個參數';
 
     document.getElementById('valVerdict').textContent = verdict;
     document.getElementById('charInfo').innerHTML = '字符數：<b>' + formula.length + '</b>';
@@ -1593,6 +1748,7 @@ async function start(){
     updateBestProfit();
     updateProgress();
     updateFrozenUI();
+    updateScanUI();
     updateSpeedUI();
     flushNow();
   }
