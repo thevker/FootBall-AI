@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>🔬 v15 診斷工具 — 是否過擬合？</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:system-ui;padding:16px;max-width:1200px;margin:auto;background:#f0f2f5}
+h2{margin:0 0 8px 0}
+textarea{width:100%;height:200px;font-family:monospace;font-size:12px;padding:8px;border:1px solid #ccc;border-radius:4px}
+button{padding:14px 32px;font-size:16px;background:#007bff;color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:bold;margin:8px 8px 8px 0}
+button:hover{background:#0056b3}
+button:disabled{background:#999;cursor:not-allowed}
+.box{background:#fff;padding:14px;border-radius:6px;margin-top:14px;border:1px solid #ddd}
+.row{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+.card{background:#f8f9fa;padding:12px;border-radius:6px;border:1px solid #ddd;flex:1;min-width:200px;text-align:center}
+.card .num{font-size:28px;font-weight:bold;font-family:monospace;color:#007bff}
+.card .lbl{font-size:12px;color:#666;margin-top:4px}
+.verdict{padding:16px;border-radius:6px;margin-top:14px;font-size:15px;line-height:1.7}
+.verdict-ok{background:#d4edda;color:#155724;border:1px solid #c3e6cb}
+.verdict-warn{background:#fff3cd;color:#856404;border:1px solid #ffc107}
+.verdict-bad{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb}
+.verdict strong{font-size:18px}
+#log{background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:12px;margin-top:12px;height:200px;overflow-y:auto;font-family:monospace;font-size:12px;white-space:pre-wrap;line-height:1.5}
+table{border-collapse:collapse;width:100%;font-size:13px;margin-top:10px;background:#fff}
+th,td{border:1px solid #ccc;padding:8px 10px;text-align:right}
+th{background:#e9ecef;text-align:center}
+td:first-child{text-align:left}
+.profit-pos{color:#0a7a0a;font-weight:bold}
+.profit-neg{color:#c00;font-weight:bold}
+</style>
+</head>
+<body>
+
+<h2>🔬 v15 診斷工具 — 是否過擬合？</h2>
+<p>貼上你的<b>全部資料</b>（按時間順序，不要打亂）。工具會用 v15 公式分別評估：全部 / 前段 / 後段，判斷是否過擬合。</p>
+
+<textarea id="input" placeholder="23	27	49	355	385	169	0:3	A
+62	27	9	158	395	405	3:0	H
+...（請貼上全部 296 場，順序不要改）"></textarea>
+
+<div class="row">
+  <button id="btnRun" onclick="run()">🚀 開始診斷</button>
+</div>
+
+<div id="log">等待開始...</div>
+
+<div id="results" style="display:none">
+  <div class="box">
+    <h3 style="margin-top:0">📊 全部資料（v15 評估）</h3>
+    <div class="row">
+      <div class="card"><div class="num" id="allTotal">-</div><div class="lbl">總盈利</div></div>
+      <div class="card"><div class="num" id="allPer">-</div><div class="lbl">每場盈利</div></div>
+      <div class="card"><div class="num" id="allGames">-</div><div class="lbl">場數</div></div>
+      <div class="card"><div class="num" id="allSkip">-</div><div class="lbl">Skip 場數</div></div>
+    </div>
+  </div>
+
+  <div class="box">
+    <h3 style="margin-top:0">🔪 前 60% / 後 40% 分割</h3>
+    <div class="row">
+      <div class="card"><div class="num" id="frontTotal">-</div><div class="lbl">前 60% 總盈利</div></div>
+      <div class="card"><div class="num" id="frontPer">-</div><div class="lbl">前 60% 每場</div></div>
+      <div class="card"><div class="num" id="backTotal">-</div><div class="lbl">後 40% 總盈利</div></div>
+      <div class="card"><div class="num" id="backPer">-</div><div class="lbl">後 40% 每場</div></div>
+    </div>
+  </div>
+
+  <div class="box">
+    <h3 style="margin-top:0">📋 詳細結果</h3>
+    <table id="detailTable"></table>
+  </div>
+
+  <div id="verdict" class="verdict"></div>
+</div>
+
+<script>
+'use strict';
+
+/* ============ v15 的 34 條規則 ============ */
+function predict(r){
+  var A=r.A, B=r.B, C=r.C, D=r.D, E=r.E, F=r.F;
+
+  if(B>=32 && Math.abs(A-C)<=6) return 'D';
+  if(A>=60 && C<=11 && D>=140 && D<=190 && F>=400 && F<=480) return 'H';
+  if(Math.abs(A-C)<=3 && E<380 && Math.abs(D-F)<40) return 'D';
+  if(A>=45 && C<=20 && Math.abs(D-F)<70 && D<400) return 'D';
+  if(Math.abs(D-F)<18) return 'D';
+  if(A>=42 && D>=155 && D<205 && D!==F && F>D && Math.abs(A-C)>=50) return 'D';
+  if(A>=42 && D>=155 && D<205 && D!==F) return 'H';
+  if(A>=34 && D>205 && D<=235 && D!==F) return 'D';
+  if(D>=400 && A>=42) return 'D';
+  if(D>=340 && A>=38 && F<250 && D>F){
+    if(F<200) return Math.abs(A-C)<=5 ? 'D' : 'A';
+    return 'D';
+  }
+  if(E<=315 && B>=27 && Math.abs(A-C)<=25 && D>=250 && D<=350 && D<E) return 'D';
+  if(C>A && F>=490 && F<=560 && D<200) return 'D';
+  if(C>A && F>D && F<550 && E>320) return 'H';
+  if(C>A && F>=184 && F<=216 && C>=40) return 'A';
+  if(C>A && F>D && F<300 && C<45 && D<250) return 'D';
+
+  if(D>F){
+    if(F<=150 && C>=65) return 'A';
+    if(D>1500){
+      if(C>=50) return 'A';
+      if(A>C) return 'D';
+      return 'skip';
+    }
+    if(A>=33 && D>=350) return 'D';
+    return 'H';
+  }
+  if(F>D){
+    if(A>=50 && (F-D)>=400) return 'H';
+    if(F>=700){
+      if(A>=80) return 'D';
+      if(C>A) return 'D';
+      if(A<45) return 'D';
+      return 'skip';
+    }
+    if(E>=470 && F>=500) return 'D';
+    if(A>=47 && D<=140) return 'H';
+    return 'A';
+  }
+  if(A>C) return 'H';
+  if(C>A) return 'A';
+  return 'skip';
+}
+
+/* ============ 解析 ============ */
+function parseData(text){
+  var rows = [];
+  var lines = text.split('\n');
+  for(var i = 0; i < lines.length; i++){
+    var p = lines[i].trim().split(/\s+/);
+    if(p.length < 8) continue;
+    var v = p.slice(0,6).map(Number);
+    var r = p[7];
+    if(v.some(isNaN) || ['H','D','A'].indexOf(r) === -1) continue;
+    rows.push({A:v[0],B:v[1],C:v[2],D:v[3],E:v[4],F:v[5],result:r});
+  }
+  return rows;
+}
+
+/* ============ 計算一段的盈利 ============ */
+function calcSegment(rows, name){
+  var total = 0;
+  var betCount = 0;
+  var skipCount = 0;
+  var winCount = 0;
+  var loseCount = 0;
+
+  for(var i = 0; i < rows.length; i++){
+    var r = rows[i];
+    var p = predict(r);
+    if(p === 'skip'){
+      skipCount++;
+      continue;
+    }
+    betCount++;
+    if(p === r.result){
+      winCount++;
+      if(p === 'H') total += r.D - 100;
+      else if(p === 'D') total += r.E - 100;
+      else if(p === 'A') total += r.F - 100;
+    } else {
+      loseCount++;
+      total -= 100;
+    }
+  }
+
+  return {
+    name: name,
+    total: total,
+    games: rows.length,
+    bets: betCount,
+    skips: skipCount,
+    wins: winCount,
+    loses: loseCount,
+    perGame: rows.length > 0 ? total / rows.length : 0,
+    perBet: betCount > 0 ? total / betCount : 0,
+    hitRate: betCount > 0 ? (winCount / betCount * 100) : 0
+  };
+}
+
+/* ============ 主流程 ============ */
+function run(){
+  var logEl = document.getElementById('log');
+  var resultsEl = document.getElementById('results');
+  logEl.textContent = '';
+  resultsEl.style.display = 'none';
+
+  var text = document.getElementById('input').value;
+  if(!text.trim()){
+    logEl.textContent = '⚠️ 請先貼上資料';
+    return;
+  }
+
+  var rows = parseData(text);
+  if(rows.length === 0){
+    logEl.textContent = '❌ 沒有有效資料';
+    return;
+  }
+
+  logEl.textContent = '解析資料...\n';
+  logEl.textContent += '  總行數：' + rows.length + '\n';
+
+  // 全部
+  var all = calcSegment(rows, '全部');
+  logEl.textContent += '\n計算 v15 在全部資料的表現...\n';
+  logEl.textContent += '  總盈利：' + all.total + '\n';
+  logEl.textContent += '  每場：' + all.perGame.toFixed(2) + '\n';
+  logEl.textContent += '  命中率：' + all.hitRate.toFixed(1) + '%\n';
+
+  // 前 60% / 後 40%（按原始順序，不打亂）
+  var cutPoint = Math.floor(rows.length * 0.6);
+  var frontRows = rows.slice(0, cutPoint);
+  var backRows = rows.slice(cutPoint);
+
+  var front = calcSegment(frontRows, '前 60%');
+  var back = calcSegment(backRows, '後 40%');
+
+  logEl.textContent += '\n前 60% (' + frontRows.length + ' 場)：' + front.total + '（每場 ' + front.perGame.toFixed(2) + '）\n';
+  logEl.textContent += '後 40% (' + backRows.length + ' 場)：' + back.total + '（每場 ' + back.perGame.toFixed(2) + '）\n';
+
+  // 顯示
+  document.getElementById('allTotal').textContent = all.total;
+  document.getElementById('allPer').textContent = all.perGame.toFixed(2);
+  document.getElementById('allGames').textContent = all.games;
+  document.getElementById('allSkip').textContent = all.skips;
+
+  document.getElementById('frontTotal').textContent = front.total;
+  document.getElementById('frontPer').textContent = front.perGame.toFixed(2);
+  document.getElementById('backTotal').textContent = back.total;
+  document.getElementById('backPer').textContent = back.perGame.toFixed(2);
+
+  // 著色
+  function colorize(id, val){
+    var el = document.getElementById(id);
+    el.className = 'num ' + (val >= 0 ? 'profit-pos' : 'profit-neg');
+  }
+  colorize('allTotal', all.total);
+  colorize('allPer', all.perGame);
+  colorize('frontTotal', front.total);
+  colorize('frontPer', front.perGame);
+  colorize('backTotal', back.total);
+  colorize('backPer', back.perGame);
+
+  // 明細表
+  var detail = '<thead><tr><th>區段</th><th>場數</th><th>下注</th><th>Skip</th><th>贏</th><th>輸</th><th>命中率</th><th>總盈利</th><th>每場</th><th>每注</th></tr></thead><tbody>';
+  [all, front, back].forEach(function(s){
+    detail += '<tr>' +
+      '<td>' + s.name + '</td>' +
+      '<td>' + s.games + '</td>' +
+      '<td>' + s.bets + '</td>' +
+      '<td>' + s.skips + '</td>' +
+      '<td>' + s.wins + '</td>' +
+      '<td>' + s.loses + '</td>' +
+      '<td>' + s.hitRate.toFixed(1) + '%</td>' +
+      '<td class="' + (s.total >= 0 ? 'profit-pos' : 'profit-neg') + '">' + s.total + '</td>' +
+      '<td class="' + (s.perGame >= 0 ? 'profit-pos' : 'profit-neg') + '">' + s.perGame.toFixed(2) + '</td>' +
+      '<td class="' + (s.perBet >= 0 ? 'profit-pos' : 'profit-neg') + '">' + s.perBet.toFixed(2) + '</td>' +
+      '</tr>';
+  });
+  detail += '</tbody>';
+  document.getElementById('detailTable').innerHTML = detail;
+
+  // 判定
+  var verdict = '';
+  var cls = 'verdict';
+  var frontPer = front.perGame;
+  var backPer = back.perGame;
+
+  if(all.total > 0 && back.total > 0 && Math.abs(backPer) >= Math.abs(frontPer) * 0.3){
+    verdict = '<strong>✅ v15 沒有嚴重過擬合</strong><br>';
+    verdict += '全部賺 ' + all.total + '，後段還賺 ' + back.total + '（每場 ' + backPer.toFixed(2) + '）。<br>';
+    verdict += '→ v15 是真有訊號，可以繼續用。';
+    cls += ' verdict-ok';
+  } else if(all.total > 0 && back.total < 0){
+    verdict = '<strong>⚠️ v15 明顯過擬合</strong><br>';
+    verdict += '全部賺 ' + all.total + '，但後段虧 ' + back.total + '（每場 ' + backPer.toFixed(2) + '）。<br>';
+    verdict += '→ v15 只對「前段資料」有效，真實能力被高估。<br>';
+    verdict += '→ v39 演化結果虧損，是資料本身沒有可預測信號。';
+    cls += ' verdict-warn';
+  } else if(all.total < 0){
+    verdict = '<strong>❌ v15 虧損</strong><br>';
+    verdict += '全部虧 ' + all.total + '（每場 ' + all.perGame.toFixed(2) + '）。<br>';
+    verdict += '→ 這份資料用 v15 無法賺錢。';
+    cls += ' verdict-bad';
+  } else {
+    verdict = '<strong>⚠️ 無法確定</strong><br>';
+    verdict += '結果異常，請檢查資料。';
+    cls += ' verdict-warn';
+  }
+
+  document.getElementById('verdict').className = cls;
+  document.getElementById('verdict').innerHTML = verdict;
+  resultsEl.style.display = 'block';
+
+  logEl.textContent += '\n' + verdict.replace(/<[^>]+>/g, '').replace(/<br>/g, '\n');
+}
+</script>
+</body>
+</html>
