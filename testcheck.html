@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>賠率截圖批量識別 v1.02</title>
+<title>賠率截圖批量識別 v1.03</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:16px;background:#f0f2f5;color:#333}
@@ -40,7 +40,6 @@ td img{width:52px;height:52px;object-fit:cover;border-radius:4px;cursor:zoom-in;
 .status-wait{background:#e2e3e5;color:#383d41}
 .status-processing{background:#fff3cd;color:#856404}
 .status-ok{background:#d4edda;color:#155724}
-.status-warn{background:#fff3cd;color:#856404}
 .status-err{background:#f8d7da;color:#721c24}
 .conf-high{background:#d4edda;color:#155724}
 .conf-mid{background:#fff3cd;color:#856404}
@@ -76,17 +75,18 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
 <body>
 
 <h1>📷 賠率截圖批量識別</h1>
-<div class="version">v1.02 — 針對「猜誰會贏」區塊優化</div>
+<div class="version">v1.03 — 反色預處理 + 分區域識別</div>
 
 <div class="notice">💡 第一次使用 OCR 引擎需下載語言包（約 15MB），請耐心等待 10~30 秒</div>
 
 <div class="rule-box">
-  <b>🎯 識別邏輯（對應你的截圖）：</b><br>
-  ① <b>比分</b>：取圖片頂部的 <code>X-Y</code>（如 2-1）<br>
-  ② <b>A/B/C（%）</b>：取「猜誰會贏」區塊的三個百分比（總和 ≈ 100）<br>
-  ③ <b>D/E/F（賠）</b>：取百分比<b>正下方</b>最近的 3 個賠率（自動排除上方表格賠率）<br>
-  ④ <b>H（結果）</b>：自動依比分判斷（A>B→H、A<B→A、A=B→D）<br>
-  <b>✅ 驗證：</b>A/B/C 需 1-2 位數字、D/E/F 需 3 位以上、比分需存在、結果需為 H/D/A/skip，任一不符 → 輸出「失敗」
+  <b>🎯 v1.03 識別邏輯：</b><br>
+  ① 圖片預處理：灰度化 + 自動反色 + 2x 放大 + 對比拉伸<br>
+  ② <b>比分</b>：只取圖片頂部 15% 區域的 X-Y<br>
+  ③ <b>A/B/C（%）</b>：只取圖片中下部 40~85% 區域，三個總和 97~103<br>
+  ④ <b>D/E/F（賠）</b>：取百分比<b>正下方</b>最近的 3 個賠率<br>
+  ⑤ <b>H</b>：依比分自動判斷（A>B→H、A<B→A、A=B→D）<br>
+  <b>✅ 驗證：</b>A/B/C 需 1-2 位、D/E/F 需 3 位+、比分需存在、結果需 H/D/A/skip，任一不符 → 「失敗」
 </div>
 
 <div id="dropzone">
@@ -104,6 +104,7 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
   <button id="btnCopyValid" class="green" disabled>📋 只複製有效行</button>
   <button id="btnDownload" class="green" disabled>💾 下載 TXT</button>
   <button id="btnShowOutput" class="gray" disabled>👁 顯示/隱藏結果</button>
+  <button id="btnDebug" class="gray" disabled>🔬 除錯資訊</button>
 </div>
 
 <div id="progress">
@@ -143,14 +144,13 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
 <pre id="output"></pre>
 
 <div class="legend">
-  <b>輸出格式（製表符分隔）：</b><br>
-  <code>23	16	61	800	525	128	2:6	A</code><br>
+  <b>輸出格式（製表符分隔）：</b> <code>23	16	61	800	525	128	2:6	A</code><br>
   依序為：主%　和%　客%　主賠　和賠　客賠　比分　結果<br>
-  <b>無效的行：</b>輸出為「<code>失敗</code>」<br>
-  <b>信心度：</b><span class="status conf-high">高</span> 全部欄位齊全　<span class="status conf-mid">中</span> 部分缺失　<span class="status conf-low">低</span> 大量缺失
+  <b>無效的行：</b>輸出為「<code>失敗</code>」
 </div>
 
 <dialog id="previewDlg"><img id="previewImg" alt=""></dialog>
+<dialog id="debugDlg"><pre id="debugContent" style="background:#0c0c0c;color:#d4d4d4;padding:20px;font-size:11px;max-width:80vw;max-height:80vh;overflow:auto;border-radius:6px;margin:0;white-space:pre-wrap"></pre></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
 <script>
@@ -158,12 +158,14 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
 
 var VALID_RESULTS = ['H','D','A','skip'];
 var MAX_IMG_SIZE = 1800;
+var UPSCALE_MIN = 1200;  /* 若圖片小於這個寬度，放大到此 */
 
 var state = {
   rows: [],
   worker: null,
   workerReady: false,
-  busy: false
+  busy: false,
+  debugIdx: null
 };
 
 var $ = function(id){ return document.getElementById(id); };
@@ -199,6 +201,9 @@ function handleFiles(files){
       file: f,
       imageURL: URL.createObjectURL(f),
       ocrText: '',
+      ocrLines: [],
+      ocrWidth: 0,
+      ocrHeight: 0,
       status: 'wait',
       statusText: '待識別',
       confidence: 'wait',
@@ -241,7 +246,6 @@ function validateRow(v){
   if(VALID_RESULTS.indexOf(v.result) === -1) errs.push('結果無效');
   return errs;
 }
-
 function isValidRow(v){ return validateRow(v).length === 0; }
 
 /* ============================================================
@@ -267,7 +271,6 @@ function renderTable(){
     tr.dataset.id = row.id;
 
     var statusClass = 'status-' + (row.status === 'processing' ? 'processing' : row.status);
-
     var scoreVal = (row.values.scoreA !== '' && row.values.scoreB !== '')
       ? row.values.scoreA + ':' + row.values.scoreB
       : '';
@@ -287,7 +290,6 @@ function renderTable(){
       validHtml = '<span class="valid-err" title="' + escapeHtml(errs.join('、')) + '">✗</span>';
     }
 
-    /* 信心度標籤 */
     var confHtml = '';
     if(row.confidence === 'high') confHtml = '<span class="status conf-high">高</span>';
     else if(row.confidence === 'mid') confHtml = '<span class="status conf-mid">中</span>';
@@ -444,6 +446,7 @@ function previewImage(url){
   $('previewDlg').showModal();
 }
 $('previewDlg').addEventListener('click', function(){ this.close(); });
+$('debugDlg').addEventListener('click', function(){ this.close(); });
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, function(c){
@@ -461,6 +464,7 @@ function updateButtons(){
   $('btnCopyValid').disabled = !has;
   $('btnDownload').disabled = !has;
   $('btnShowOutput').disabled = !has;
+  $('btnDebug').disabled = !has;
 }
 
 function updateStats(){
@@ -510,7 +514,11 @@ async function ensureWorker(){
   });
 
   try {
-    await state.worker.setParameters({ preserve_interword_spaces: '1' });
+    await state.worker.setParameters({
+      preserve_interword_spaces: '1',
+      tessedit_char_whitelist: '',  /* 不限制字元，避免數字外的符號被擋 */
+      tessedit_pageseg_mode: '6'    /* 6 = 假設為單一文字區塊，垂直排列 */
+    });
   } catch(e){}
 
   state.workerReady = true;
@@ -561,9 +569,27 @@ async function recognizeAll(forceAll){
       progBar.style.width = (i / targets.length * 100) + '%';
 
       try {
-        var imgFile = await preprocessImage(row.file);
-        var result = await worker.recognize(imgFile);
-        row.ocrText = result.data.text || '';
+        var processed = await preprocessImage(row.file);
+        /* 用 lines 保留 bbox 位置 */
+        var result = await worker.recognize(processed.canvas || processed.file, {}, { text: true, blocks: true, hocr: false, tsv: false });
+        var data = result.data;
+
+        row.ocrText = data.text || '';
+        row.ocrLines = (data.lines || []).map(function(L){
+          return {
+            text: L.text || '',
+            bbox: L.bbox || { x0: 0, y0: 0, x1: 0, y1: 0 }
+          };
+        });
+        /* 若 lines 為空，用 words 組合 */
+        if(row.ocrLines.length === 0 && data.words){
+          row.ocrLines = data.words.map(function(w){
+            return { text: w.text || '', bbox: w.bbox || { x0: 0, y0: 0, x1: 0, y1: 0 } };
+          });
+        }
+        row.ocrWidth = processed.width || (data.width || 1);
+        row.ocrHeight = processed.height || (data.height || 1);
+
         applyHeuristic(row);
         row.status = 'ok';
         row.statusText = '✓ 完成';
@@ -595,74 +621,182 @@ async function recognizeAll(forceAll){
   updateStats();
 }
 
+/* ============================================================
+   ⭐ 圖片預處理（v1.03 核心）
+   步驟：載入 → 灰度 → 反色判斷 → 對比拉伸 → 放大 → 二值化
+   ============================================================ */
 function preprocessImage(file){
   return new Promise(function(resolve){
-    if(file.size < 500 * 1024){ resolve(file); return; }
     var img = new Image();
     img.onload = function(){
       var w = img.width, h = img.height;
-      var scale = Math.min(MAX_IMG_SIZE / w, MAX_IMG_SIZE / h, 1);
-      if(scale >= 1 && file.size < 2 * 1024 * 1024){ resolve(file); return; }
-      var nw = Math.round(w * scale), nh = Math.round(h * scale);
+
+      /* 1. 決定縮放（若原圖太小，放大到 UPSCALE_MIN 寬） */
+      var targetW = w, targetH = h;
+      if(w < UPSCALE_MIN){
+        var s = UPSCALE_MIN / w;
+        targetW = Math.round(w * s);
+        targetH = Math.round(h * s);
+      } else if(w > MAX_IMG_SIZE || h > MAX_IMG_SIZE){
+        var s2 = Math.min(MAX_IMG_SIZE / w, MAX_IMG_SIZE / h);
+        targetW = Math.round(w * s2);
+        targetH = Math.round(h * s2);
+      }
+
       var c = document.createElement('canvas');
-      c.width = nw; c.height = nh;
+      c.width = targetW;
+      c.height = targetH;
       var ctx = c.getContext('2d');
-      ctx.drawImage(img, 0, 0, nw, nh);
-      c.toBlob(function(blob){ resolve(blob || file); }, 'image/jpeg', 0.9);
+      ctx.drawImage(img, 0, 0, targetW, targetH);
+
+      var imgData = ctx.getImageData(0, 0, targetW, targetH);
+      var data = imgData.data;
+      var len = targetW * targetH;
+
+      /* 2. 灰度化 + 計算平均亮度 */
+      var gray = new Uint8Array(len);
+      var sum = 0;
+      for(var i = 0; i < len; i++){
+        var r = data[i*4], g = data[i*4+1], b = data[i*4+2];
+        var y = (r*0.299 + g*0.587 + b*0.114) | 0;
+        gray[i] = y;
+        sum += y;
+      }
+      var avg = sum / len;
+
+      /* 3. 自動反色（若平均偏暗，代表黑底白字 → 反色成白底黑字） */
+      var needInvert = avg < 110;
+
+      /* 4. 對比拉伸 + 二值化 */
+      /* 計算標準差決定閾值 */
+      var varSum = 0;
+      for(var i = 0; i < len; i++){
+        var d = gray[i] - avg;
+        varSum += d * d;
+      }
+      var std = Math.sqrt(varSum / len);
+      var threshold = avg;
+      if(std > 30){
+        /* 對比大，用 Otsu 簡化版：取平均值即可 */
+        threshold = avg;
+      } else {
+        threshold = avg;
+      }
+
+      /* 5. 寫回並二值化 */
+      for(var i = 0; i < len; i++){
+        var v = gray[i];
+        if(needInvert) v = 255 - v;
+        var bin = (v >= threshold) ? 255 : 0;
+        data[i*4] = bin;
+        data[i*4+1] = bin;
+        data[i*4+2] = bin;
+        data[i*4+3] = 255;
+      }
+      ctx.putImageData(imgData, 0, 0);
+
+      c.toBlob(function(blob){
+        resolve({
+          canvas: c,
+          blob: blob,
+          width: targetW,
+          height: targetH,
+          inverted: needInvert,
+          avg: Math.round(avg),
+          std: Math.round(std),
+          threshold: Math.round(threshold)
+        });
+      }, 'image/png');
     };
-    img.onerror = function(){ resolve(file); };
+    img.onerror = function(){
+      resolve({ file: file, width: 0, height: 0 });
+    };
     img.src = URL.createObjectURL(file);
   });
 }
 
 /* ============================================================
-   ⭐ 啟發式提取（v1.02 針對「猜誰會贏」佈局優化）
+   ⭐ 啟發式提取（v1.03：用 bbox 座標分區域）
    ============================================================ */
 function applyHeuristic(row){
-  var t = (row.ocrText || '')
-    .replace(/[\u00A0\u3000]/g, ' ')
-    .replace(/[Oo]/g, function(c, i, s){
-      /* 只把單獨出現的 O 換成 0（避免 "bet365" 之類被改） */
-      return c;
-    })
-    .replace(/\r/g, '\n')
-    .trim();
+  var W = row.ocrWidth || 1;
+  var H = row.ocrHeight || 1;
+  var lines = row.ocrLines || [];
 
-  var tFlat = t.replace(/\s+/g, ' ');
+  /* ---------- 建立候選清單 ---------- */
+  var scoreCands = [];     /* 比分候選 */
+  var pctCands = [];       /* 百分比候選 */
+  var oddCands = [];       /* 賠率候選 */
 
-  /* ================================================================
-     1. 比分：找最靠上的 X-Y 或 X:Y（範圍 0~15）
-     ================================================================ */
-  var scoreCandidates = [];
-  var scoreRe = /(?:^|\s)(\d{1,2})\s*[-:]\s*(\d{1,2})(?=\s|$)/g;
-  var m;
-  while((m = scoreRe.exec(tFlat)) !== null){
-    var a = parseInt(m[1], 10), b = parseInt(m[2], 10);
-    if(a >= 0 && a <= 15 && b >= 0 && b <= 15){
-      scoreCandidates.push({a:a, b:b, pos:m.index});
+  for(var i = 0; i < lines.length; i++){
+    var L = lines[i];
+    var t = (L.text || '').trim();
+    if(!t) continue;
+
+    var x0 = L.bbox.x0, y0 = L.bbox.y0;
+    var cx = (L.bbox.x0 + L.bbox.x1) / 2;   /* 水平中心 */
+    var cy = (L.bbox.y0 + L.bbox.y1) / 2;   /* 垂直中心 */
+    var cyPct = cy / H;                     /* 垂直位置百分比 */
+
+    /* --- 1. 比分候選：字串含 X-Y 或 X:Y --- */
+    var scoreRe = /(\d{1,2})\s*[-:]\s*(\d{1,2})/g;
+    var m;
+    while((m = scoreRe.exec(t)) !== null){
+      var a = parseInt(m[1], 10), b = parseInt(m[2], 10);
+      if(a >= 0 && a <= 15 && b >= 0 && b <= 15){
+        scoreCands.push({ a:a, b:b, cy:cy, cyPct:cyPct, cx:cx, txt:t });
+      }
+    }
+
+    /* --- 2. 百分比候選：含 % 的數字，或純 2 位數字（可能 % 被漏讀） --- */
+    var pctRe = /(\d{1,3})\s*%/g;
+    while((m = pctRe.exec(t)) !== null){
+      var pv = parseInt(m[1], 10);
+      if(pv >= 1 && pv <= 99){
+        pctCands.push({ v:pv, cy:cy, cyPct:cyPct, cx:cx });
+      }
+    }
+
+    /* --- 3. 賠率候選：X.XX 格式 --- */
+    var oddRe1 = /(?:^|\s)(\d{1,2})[.,](\d{2})(?=\s|$)/g;
+    while((m = oddRe1.exec(t)) !== null){
+      var v1 = parseInt(m[1], 10) * 100 + parseInt(m[2], 10);
+      if(v1 >= 100 && v1 <= 2000){
+        oddCands.push({ v:v1, cy:cy, cyPct:cyPct, cx:cx, src:'dec' });
+      }
+    }
+    /* 3 位整數（Tesseract 漏點） */
+    var oddRe2 = /(?:^|\s)(\d{3})(?=\s|$)/g;
+    while((m = oddRe2.exec(t)) !== null){
+      var v2 = parseInt(m[1], 10);
+      if(v2 >= 100 && v2 <= 999){
+        oddCands.push({ v:v2, cy:cy, cyPct:cyPct, cx:cx, src:'int' });
+      }
     }
   }
-  if(scoreCandidates.length > 0){
-    scoreCandidates.sort(function(x, y){ return x.pos - y.pos; });
-    var s = scoreCandidates[0];
-    row.values.scoreA = s.a;
-    row.values.scoreB = s.b;
-    row.values.result = s.a > s.b ? 'H' : s.a < s.b ? 'A' : 'D';
+
+  /* ================================================================
+     比分：取垂直位置最靠上（y 最小）的 X-Y
+     ================================================================ */
+  if(scoreCands.length > 0){
+    scoreCands.sort(function(a, b){ return a.cy - b.cy; });
+    /* 過濾掉太下面的（>40% 高度），因為真正的比分一定在頂部 */
+    var topScores = scoreCands.filter(function(s){ return s.cyPct < 0.4; });
+    var pick = topScores.length > 0 ? topScores[0] : scoreCands[0];
+    row.values.scoreA = pick.a;
+    row.values.scoreB = pick.b;
+    row.values.result = pick.a > pick.b ? 'H' : pick.a < pick.b ? 'A' : 'D';
   }
 
   /* ================================================================
-     2. 百分比：找總和 97~103 的三個百分比（更嚴格）
+     百分比：優先取中下部（y 在 40%~90%）的三個，總和 97~103
      ================================================================ */
-  var pctList = [];
-  var pctRe = /(\d{1,3})\s*%/g;
-  while((m = pctRe.exec(tFlat)) !== null){
-    var pv = parseInt(m[1], 10);
-    if(pv >= 1 && pv <= 99){
-      pctList.push({v:pv, pos:m.index});
-    }
+  var pctMid = pctCands.filter(function(p){ return p.cyPct >= 0.35 && p.cyPct <= 0.95; });
+  if(pctMid.length < 3){
+    pctMid = pctCands.slice();
   }
 
-  var pctTriple = findPctTripleStrict(pctList);
+  var pctTriple = findPctTriple(pctMid);
   if(pctTriple){
     row.values.homePct = pctTriple[0].v;
     row.values.drawPct = pctTriple[1].v;
@@ -670,48 +804,57 @@ function applyHeuristic(row){
   }
 
   /* ================================================================
-     3. 賠率：必須在百分比三元組「正下方」
-        優先 X.XX 格式（最可靠），其次 3 位整數
-        排除 4 位整數（避免「總票數 1424」）
+     賠率：取百分比三元組「正下方」的 3 個
      ================================================================ */
-  var oddList = [];
-
-  /* 3.1 帶小數點：X.XX 或 X,XX */
-  var re1 = /(?:^|\s)(\d{1,2})[.,](\d{2})(?=\s|$)/g;
-  while((m = re1.exec(tFlat)) !== null){
-    var v1 = parseInt(m[1], 10) * 100 + parseInt(m[2], 10);
-    if(v1 >= 100 && v1 <= 2000){
-      oddList.push({v:v1, pos:m.index, src:'dec'});
-    }
-  }
-
-  /* 3.2 純 3 位整數（Tesseract 漏點） */
-  var re2 = /(?:^|\s)(\d{3})(?=\s|$)/g;
-  while((m = re2.exec(tFlat)) !== null){
-    var v2 = parseInt(m[1], 10);
-    if(v2 >= 100 && v2 <= 999){
-      oddList.push({v:v2, pos:m.index, src:'int'});
-    }
-  }
-
-  /* 去重：同位置保留 dec */
-  oddList.sort(function(a, b){ return a.pos - b.pos; });
-  var oddClean = [];
-  for(var i = 0; i < oddList.length; i++){
-    var cur = oddList[i];
-    var dup = false;
-    for(var j = 0; j < oddClean.length; j++){
-      if(Math.abs(oddClean[j].pos - cur.pos) <= 3){
-        if(cur.src === 'dec' && oddClean[j].src === 'int') oddClean[j] = cur;
-        dup = true;
-        break;
+  var oddTriple = null;
+  if(pctTriple){
+    /* 用三個百分比的 y 座標平均，作為 anchor */
+    var anchorY = (pctTriple[0].cy + pctTriple[1].cy + pctTriple[2].cy) / 3;
+    /* 篩選：在 anchor 下方 0~300px 之間 */
+    var below = oddCands.filter(function(o){
+      return o.cy > anchorY - 5 && o.cy - anchorY < 350;
+    });
+    /* 依 x 座標分三組：左（主）、中（和）、右（客） */
+    if(below.length >= 3){
+      below.sort(function(a, b){ return a.cx - b.cx; });
+      /* 取最左、最中、最右三個 */
+      var leftCands = below.filter(function(o){ return o.cx < W * 0.4; });
+      var midCands = below.filter(function(o){ return o.cx >= W * 0.4 && o.cx <= W * 0.65; });
+      var rightCands = below.filter(function(o){ return o.cx > W * 0.65; });
+      if(leftCands.length && midCands.length && rightCands.length){
+        leftCands.sort(function(a, b){ return a.cy - b.cy; });
+        midCands.sort(function(a, b){ return a.cy - b.cy; });
+        rightCands.sort(function(a, b){ return a.cy - b.cy; });
+        /* 優先取 dec 格式 */
+        oddTriple = [
+          pickBestOdd(leftCands),
+          pickBestOdd(midCands),
+          pickBestOdd(rightCands)
+        ];
       }
     }
-    if(!dup) oddClean.push(cur);
   }
 
-  /* 3.3 篩選：嚴格在百分比之後，取最靠近的 3 個 */
-  var oddTriple = findOddTripleAfterPct(oddClean, pctTriple);
+  /* 退路：取所有賠率中最靠後的 3 個（依 x 排序） */
+  if(!oddTriple && oddCands.length >= 3){
+    /* 排除最頂部（<30%）的，避免抓到上方表格 */
+    var lowerOdds = oddCands.filter(function(o){ return o.cyPct > 0.5; });
+    if(lowerOdds.length < 3) lowerOdds = oddCands.slice();
+    /* 依 y 降序（取最下面的），再依 x 排序 */
+    lowerOdds.sort(function(a, b){ return b.cy - a.cy; });
+    var last3 = lowerOdds.slice(0, 6);
+    last3.sort(function(a, b){ return a.cx - b.cx; });
+    /* 分左中右 */
+    var L = last3.filter(function(o){ return o.cx < W * 0.4; });
+    var M = last3.filter(function(o){ return o.cx >= W * 0.4 && o.cx <= W * 0.65; });
+    var R = last3.filter(function(o){ return o.cx > W * 0.65; });
+    if(L.length && M.length && R.length){
+      oddTriple = [pickBestOdd(L), pickBestOdd(M), pickBestOdd(R)];
+    } else {
+      oddTriple = last3.slice(0, 3);
+    }
+  }
+
   if(oddTriple){
     row.values.homeOdd = oddTriple[0].v;
     row.values.drawOdd = oddTriple[1].v;
@@ -719,15 +862,12 @@ function applyHeuristic(row){
   }
 
   /* ================================================================
-     4. 計算信心度
+     信心度
      ================================================================ */
   var filled = 0;
-  if(row.values.homePct !== '') filled++;
-  if(row.values.drawPct !== '') filled++;
-  if(row.values.awayPct !== '') filled++;
-  if(row.values.homeOdd !== '') filled++;
-  if(row.values.drawOdd !== '') filled++;
-  if(row.values.awayOdd !== '') filled++;
+  ['homePct','drawPct','awayPct','homeOdd','drawOdd','awayOdd'].forEach(function(k){
+    if(row.values[k] !== '') filled++;
+  });
   if(row.values.scoreA !== '') filled++;
 
   if(filled >= 7) row.confidence = 'high';
@@ -735,78 +875,49 @@ function applyHeuristic(row){
   else row.confidence = 'low';
 }
 
-/* 找總和 97~103 的三個百分比 */
-function findPctTripleStrict(pcts){
+/* 從候選中挑「最可能是真正賠率」的：優先 dec 格式、其次較低的數值 */
+function pickBestOdd(cands){
+  /* 1. 優先 dec */
+  var decs = cands.filter(function(o){ return o.src === 'dec'; });
+  if(decs.length > 0){
+    decs.sort(function(a, b){ return a.cy - b.cy; });
+    return decs[0];
+  }
+  /* 2. 取最靠上的（同一欄中，越上面越可能是賠率，越下面越可能是其他資訊） */
+  cands.sort(function(a, b){ return a.cy - b.cy; });
+  return cands[0];
+}
+
+/* 找總和 97~103 的三個百分比，優先「水平並排」的那組 */
+function findPctTriple(pcts){
   if(pcts.length < 3) return null;
   var best = null, bestScore = -Infinity;
-  for(var i = 0; i <= pcts.length - 3; i++){
-    for(var step = 1; step <= 3; step++){
-      if(i + 2 * step >= pcts.length) continue;
-      var trio = [pcts[i], pcts[i+step], pcts[i+2*step]];
-      var sum = trio[0].v + trio[1].v + trio[2].v;
-      if(sum < 97 || sum > 103) continue;
-      var sumDiff = Math.abs(100 - sum);
-      /* 位置權重：越靠後越優先（「猜誰會贏」在圖片下方） */
-      var posWeight = trio[0].pos / 5000;
-      var sc = -sumDiff * 10 + posWeight;
-      if(sc > bestScore){
-        bestScore = sc;
-        best = trio;
+  for(var i = 0; i < pcts.length - 2; i++){
+    for(var j = i + 1; j < pcts.length - 1; j++){
+      for(var k = j + 1; k < pcts.length; k++){
+        var trio = [pcts[i], pcts[j], pcts[k]];
+        var sum = trio[0].v + trio[1].v + trio[2].v;
+        if(sum < 97 || sum > 103) continue;
+        /* 評分：y 越接近越好（水平並排） */
+        var ys = [trio[0].cy, trio[1].cy, trio[2].cy];
+        var yMax = Math.max.apply(null, ys);
+        var yMin = Math.min.apply(null, ys);
+        var ySpread = yMax - yMin;
+        /* x 越分散越好（左中右） */
+        var xs = [trio[0].cx, trio[1].cx, trio[2].cx].sort(function(a,b){return a-b;});
+        var xSpread = xs[2] - xs[0];
+        /* 位置：偏中下較好 */
+        var avgY = (ys[0]+ys[1]+ys[2])/3;
+        var yPosScore = 1 - Math.abs(avgY - 0.6 * (pcts[0].cy ? 1 : 1)) / 1000;
+        var sc = -ySpread * 2 + xSpread * 0.5 + avgY * 0.01;
+        if(sc > bestScore){
+          bestScore = sc;
+          best = trio;
+        }
       }
     }
   }
   return best;
-}
-
-/* ⭐ 關鍵：賠率必須嚴格在百分比三元組「之後」，取最靠近的 3 個 */
-function findOddTripleAfterPct(odds, pctTriple){
-  if(odds.length < 3) return null;
-
-  var anchorPos = 0;
-  if(pctTriple){
-    anchorPos = pctTriple[2].pos;  /* 最後一個百分比的位置 */
-  }
-
-  /* 3.1 篩選：在百分比之後 */
-  var after = odds.filter(function(o){ return o.pos > anchorPos; });
-
-  if(after.length < 3){
-    /* 沒有足夠的「之後」賠率，退回取全部最後 3 個 */
-    var last3 = odds.slice(-3);
-    last3.sort(function(a, b){ return a.pos - b.pos; });
-    return last3;
-  }
-
-  /* 3.2 在 after 中，找連續 3 個距離最近的（優先 dec 格式） */
-  var best = null, bestScore = -Infinity;
-  for(var i = 0; i <= after.length - 3; i++){
-    var trio = [after[i], after[i+1], after[i+2]];
-    var span = trio[2].pos - trio[0].pos;
-    if(span > 800) continue;  /* 太分散，可能不是同一行 */
-
-    /* 評分：dec 格式 + 位置緊湊 + 靠前（百分比附近） */
-    var decCount = 0;
-    for(var k = 0; k < 3; k++){
-      if(trio[k].src === 'dec') decCount++;
-    }
-    var compactBonus = Math.max(0, 300 - span) / 100;
-    var proximityBonus = Math.max(0, 500 - (trio[0].pos - anchorPos)) / 100;
-    var sc = decCount * 100 + compactBonus * 10 + proximityBonus;
-    if(sc > bestScore){
-      bestScore = sc;
-      best = trio;
-    }
-  }
-
-  if(best){
-    best.sort(function(a, b){ return a.pos - b.pos; });
-    return best;
-  }
-
-  /* 3.3 退而求其次：取 after 中靠前的 3 個 */
-  var first3 = after.slice(0, 3);
-  first3.sort(function(a, b){ return a.pos - b.pos; });
-  return first3;
 }
 
 /* ============================================================
@@ -893,6 +1004,30 @@ $('btnShowOutput').addEventListener('click', function(){
   var html = escapeHtml(txt).replace(/^失敗$/gm, '<span class="fail-line">失敗</span>');
   out.innerHTML = html;
   out.classList.toggle('show');
+});
+
+/* ============================================================
+   除錯
+   ============================================================ */
+$('btnDebug').addEventListener('click', function(){
+  if(state.rows.length === 0) return;
+  var r = state.rows[state.debugIdx === null ? 0 : state.debugIdx];
+  state.debugIdx = ((state.debugIdx === null ? 0 : state.debugIdx) + 1) % state.rows.length;
+
+  var out = '=== 除錯：第 ' + (state.rows.indexOf(r) + 1) + ' 張 ===\n\n';
+  out += '預處理尺寸：' + r.ocrWidth + ' x ' + r.ocrHeight + '\n';
+  out += '信心度：' + r.confidence + '\n';
+  out += '狀態：' + r.statusText + '\n\n';
+  out += '--- OCR 行（含座標） ---\n';
+  var lines = r.ocrLines || [];
+  for(var i = 0; i < lines.length; i++){
+    var L = lines[i];
+    out += '[' + i + '] y=' + L.bbox.y0 + '~' + L.bbox.y1 + ' x=' + L.bbox.x0 + '~' + L.bbox.x1 + '  text="' + L.text + '"\n';
+  }
+  out += '\n--- 原始文字 ---\n' + r.ocrText;
+
+  $('debugContent').textContent = out;
+  $('debugDlg').showModal();
 });
 
 /* ============================================================
