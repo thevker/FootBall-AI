@@ -3,63 +3,40 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>智慧規則系統 v1.00 — 識別+優化</title>
+<title>賠率截圖批量識別 v1.11</title>
 <style>
 *{box-sizing:border-box}
-body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:16px;background:#f0f2f5;color:#333;max-width:1500px;margin:0 auto}
-h1{font-size:20px;margin:0 0 4px}
-.sub{font-size:13px;color:#666;margin-bottom:14px}
-
-/* Tabs */
-.tabs{display:flex;gap:6px;margin-bottom:12px;border-bottom:2px solid #dee2e6;padding-bottom:0}
-.tab-btn{padding:10px 20px;font-size:14px;font-weight:bold;background:transparent;color:#666;border:none;border-bottom:3px solid transparent;cursor:pointer;margin-bottom:-2px;border-radius:0}
-.tab-btn.active{color:#007bff;border-bottom-color:#007bff}
-.tab-panel{display:none}
-.tab-panel.active{display:block}
-
-/* 通用 */
+body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:16px;background:#f0f2f5;color:#333}
+h1{font-size:18px;margin:0 0 4px}
+.version{font-size:12px;color:#888;margin-bottom:8px}
+#dropzone{border:2px dashed #007bff;border-radius:8px;padding:28px 16px;text-align:center;background:#fff;cursor:pointer;transition:all .2s;margin-bottom:12px}
+#dropzone.hover{background:#e3f2fd;border-color:#0056b3}
+#dropzone .icon{font-size:40px;line-height:1}
+#dropzone .title{font-size:15px;font-weight:bold;margin-top:8px}
+#dropzone .hint{color:#888;font-size:12px;margin-top:6px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
 button{padding:8px 16px;font-size:14px;border:none;border-radius:5px;cursor:pointer;font-weight:bold;background:#007bff;color:#fff;transition:background .15s}
 button:hover:not(:disabled){background:#0056b3}
 button:disabled{background:#999;cursor:not-allowed;opacity:.7}
 button.gray{background:#6c757d}button.gray:hover:not(:disabled){background:#545b62}
 button.green{background:#28a745}button.green:hover:not(:disabled){background:#1e7e34}
 button.red{background:#dc3545}button.red:hover:not(:disabled){background:#b02a37}
-button.stop{background:#dc3545}
-button.txt{background:#28a745}
-select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:13px}
-input[type=number]{padding:5px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-family:monospace}
-textarea{font-family:monospace;font-size:12px;padding:8px;border:1px solid #ccc;border-radius:4px;width:100%}
-
-/* 上傳區 */
-#dropzone{border:2px dashed #007bff;border-radius:8px;padding:24px 16px;text-align:center;background:#fff;cursor:pointer;transition:all .2s;margin-bottom:12px}
-#dropzone.hover{background:#e3f2fd;border-color:#0056b3}
-#dropzone .icon{font-size:36px;line-height:1}
-#dropzone .title{font-size:14px;font-weight:bold;margin-top:6px}
-#dropzone .hint{color:#888;font-size:12px;margin-top:4px}
-
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
-
-/* 進度條 */
-#ocrProgress,#optProgress{background:#fff;padding:10px 12px;border-radius:6px;margin-bottom:12px;display:none;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.progressText{font-size:13px;color:#333;font-weight:bold}
-.progressDetail{font-size:11px;color:#888;margin-top:3px}
-.progressBar{height:6px;background:#e9ecef;border-radius:3px;overflow:hidden;margin-top:6px}
-.progressBarInner{height:100%;background:linear-gradient(90deg,#007bff,#28a745);width:0%;transition:width .2s}
-
-#stats,#optStats{background:#e7f5ff;border:1px solid #b6d4fe;color:#084298;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:12px;display:none;font-weight:bold}
-
-/* 表格 */
+#progress{background:#fff;padding:12px;border-radius:6px;margin-bottom:12px;display:none;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+#progressText{font-size:13px;color:#333;font-weight:bold}
+#progressDetail{font-size:11px;color:#888;margin-top:4px}
+#progressBar{height:8px;background:#e9ecef;border-radius:4px;overflow:hidden;margin-top:8px}
+#progressBarInner{height:100%;background:linear-gradient(90deg,#007bff,#28a745);width:0%;transition:width .2s}
+#stats{background:#e7f5ff;border:1px solid #b6d4fe;color:#084298;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:12px;display:none;font-weight:bold}
 #tableWrap{background:#fff;border-radius:6px;overflow:auto;max-height:70vh;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 table{width:100%;border-collapse:collapse;font-size:12px}
-th,td{padding:5px 5px;border-bottom:1px solid #eee;text-align:left;vertical-align:middle}
+th,td{padding:6px 5px;border-bottom:1px solid #eee;text-align:left;vertical-align:middle}
 th{background:#e9ecef;font-size:11px;position:sticky;top:0;z-index:2;text-align:center;font-weight:bold}
-td input,td select{width:100%;min-width:40px;padding:3px 4px;border:1px solid #ccc;border-radius:3px;font-size:12px;font-family:monospace}
-td input:focus,td select:focus{outline:2px solid #007bff}
+td input[type="text"],td input[type="number"],td select{width:100%;min-width:44px;padding:4px 4px;border:1px solid #ccc;border-radius:3px;font-size:12px;font-family:'Consolas',monospace;box-sizing:border-box;background:#fff}
+td input:focus,td select:focus{outline:2px solid #007bff;border-color:#007bff}
 td input.cell-err,td select.cell-err{background:#ffe5e5;border-color:#dc3545;color:#721c24}
-td img{width:48px;height:48px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid #ddd;display:block}
+td img{width:52px;height:52px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid #ddd;display:block}
 .row-num{color:#999;font-size:11px;text-align:center}
-
-.status{font-size:10px;padding:2px 5px;border-radius:10px;display:inline-block;white-space:nowrap;font-weight:bold;text-align:center}
+.status{font-size:10px;padding:3px 6px;border-radius:10px;display:inline-block;white-space:nowrap;font-weight:bold;text-align:center}
 .status-wait{background:#e2e3e5;color:#383d41}
 .status-processing{background:#fff3cd;color:#856404}
 .status-ok{background:#d4edda;color:#155724}
@@ -67,289 +44,112 @@ td img{width:48px;height:48px;object-fit:cover;border-radius:4px;cursor:zoom-in;
 .conf-high{background:#d4edda;color:#155724}
 .conf-mid{background:#fff3cd;color:#856404}
 .conf-low{background:#f8d7da;color:#721c24}
-.valid-ok{color:#28a745;font-weight:bold;font-size:15px;text-align:center;cursor:help}
-.valid-err{color:#dc3545;font-weight:bold;font-size:15px;text-align:center;cursor:help}
-.valid-wait{color:#ccc;font-size:13px;text-align:center}
-.ocr-text{font-size:10px;color:#666;max-height:40px;overflow:hidden;cursor:pointer;background:#f8f9fa;padding:3px 5px;border-radius:3px;font-family:monospace;white-space:pre-wrap;word-break:break-all;line-height:1.4;transition:max-height .2s;border:1px solid #e9ecef}
+.valid-ok{color:#28a745;font-weight:bold;font-size:16px;text-align:center;cursor:help}
+.valid-err{color:#dc3545;font-weight:bold;font-size:16px;text-align:center;cursor:help}
+.valid-wait{color:#ccc;font-size:14px;text-align:center}
+.ocr-text{font-size:10px;color:#666;max-height:44px;overflow:hidden;cursor:pointer;background:#f8f9fa;padding:4px 6px;border-radius:3px;font-family:'Consolas',monospace;white-space:pre-wrap;word-break:break-all;line-height:1.4;transition:max-height .2s;border:1px solid #e9ecef}
 .ocr-text.expanded{max-height:600px;overflow:auto;background:#fff}
 .ocr-text:empty::before{content:'（無）';color:#ccc}
 .empty{text-align:center;padding:60px 20px;color:#999;font-size:13px}
-
-/* 日誌 */
-#log{background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:12px;margin-top:12px;height:400px;overflow-y:auto;font-family:'Consolas','Monaco','Menlo',monospace;font-size:12px;white-space:pre;line-height:1.55;box-shadow:inset 0 0 20px rgba(0,0,0,.5);border:1px solid #222}
-#log::-webkit-scrollbar{width:10px}
-#log::-webkit-scrollbar-track{background:#1a1a1a}
-#log::-webkit-scrollbar-thumb{background:#444;border-radius:5px}
-.l-info{color:#4ea3ff}.l-success{color:#4ade80;font-weight:bold}
-.l-warn{color:#ffc107}.l-err{color:#f87171}
-.l-dim{color:#666}.l-head{color:#fff;font-weight:bold;font-size:13px}
-.l-ok{color:#4ade80}.l-bad{color:#f87171}
-.l-scan{color:#38bdf8}.l-best{color:#facc15;font-weight:bold;background:rgba(250,204,21,0.08)}
-.l-struct{color:#fb923c}.l-gen{color:#e0e7ff}.l-fold{color:#22d3ee;font-weight:bold}
-.l-time{color:#a78bfa;font-weight:bold}.l-auto{color:#f472b6;font-weight:bold}
-.l-pen{color:#fb7185}
-
-/* 優化器專屬 */
-.mode-bar{display:flex;gap:8px;align-items:center;background:#fff;padding:10px 14px;border-radius:6px;border:2px solid #007bff;margin-bottom:10px}
-.mode-btn{padding:8px 20px;font-size:14px;font-weight:bold;border:2px solid #007bff;background:#fff;color:#007bff;border-radius:6px;cursor:pointer}
-.mode-btn.active{background:#007bff;color:#fff}
-.mode-desc{font-size:12px;color:#666;margin-left:10px}
-.configbox{background:#fff;padding:10px 12px;border-radius:4px;border:1px solid #ccc;margin-bottom:10px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:13px}
-.configbox label{font-size:12px;display:flex;align-items:center;gap:4px}
-.configbox.disabled{background:#f5f5f5;opacity:0.75}
-.configbox.disabled label{color:#999}
-.configbox.disabled select,.configbox.disabled input{background:#eee;color:#999;cursor:not-allowed}
-.controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
-.chk{padding:4px 10px;font-size:12px;background:#fff;border:1px solid #ccc;border-radius:4px;cursor:pointer;user-select:none}
-.chk input{vertical-align:middle;margin-right:4px}
-
-.progress{height:6px;background:#ddd;border-radius:3px;overflow:hidden;margin-top:8px;margin-bottom:10px}
-.progress > div{height:100%;background:#007bff;width:0%;transition:width .15s}
-
-#optInput{height:100px}
-
-.stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:12px;margin-bottom:10px}
-.stat{background:#fff;padding:6px 12px;border-radius:4px;border:1px solid #ddd}
-.stat b{color:#007bff}
-
-.best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
-.best b{color:#155724}
-.box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
-.label{font-weight:bold;font-size:13px;margin-bottom:6px;color:#333}
-.out{width:100%;height:140px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto;resize:vertical}
-.param{font-family:monospace;font-size:11px;word-break:break-all;color:#555;margin-top:6px;max-height:100px;overflow:auto;padding:6px;background:#f8f9fa;border-radius:4px}
-
-#msg{margin-top:8px;font-weight:bold;font-size:13px;display:none;padding:8px;border-radius:4px}
-.ok{background:#d4edda;color:#155724}.err{background:#f8d7da;color:#721c24}
-
-table.rule-table{border-collapse:collapse;width:100%;font-size:11px;margin-top:8px;background:#fff}
-table.rule-table th,table.rule-table td{border:1px solid #ccc;padding:5px 6px;text-align:right}
-table.rule-table th{background:#e9ecef;text-align:center;position:sticky;top:0;z-index:2}
-table.rule-table td:first-child,table.rule-table td:nth-child(2),table.rule-table td:nth-child(3){text-align:left}
-
-.profit-pos{color:#0a7a0a;font-weight:bold}.profit-neg{color:#c00;font-weight:bold}
-.tag-ok{background:#28a745;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
-.tag-off{background:#999;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
-.tag-pred{background:#007bff;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px}
-
-.section{background:#fff;padding:12px;border-radius:6px;border:1px solid #ddd;margin-top:12px}
-h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
-
-.diag{max-height:400px;overflow:auto;border:1px solid #ccc;border-radius:4px;margin-top:10px}
-
-.cv-result{background:#fff;border:1px solid #ccc;border-radius:4px;padding:12px;margin-top:10px;font-size:12px}
-.cv-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee}
-.cv-row:last-child{border-bottom:none;font-weight:bold;background:#f8f9fa;margin:4px -12px -12px;padding:8px 12px}
-
-#optStatus{display:none;background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:8px 12px;border-radius:4px;margin-top:8px;font-size:13px;font-weight:bold}
-
-.notice{background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:10px}
-.rule-box{background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:10px;line-height:1.7}
-.rule-box b{color:#1e3a8a}
-.rule-box .highlight{background:#fef3c7;padding:1px 6px;border-radius:3px;color:#92400e;font-weight:bold}
-
+#output{background:#0c0c0c;color:#d4d4d4;padding:14px;border-radius:6px;font-family:'Consolas',monospace;font-size:12px;white-space:pre;overflow-x:auto;margin-top:12px;display:none;line-height:1.6;box-shadow:inset 0 0 20px rgba(0,0,0,.5);tab-size:4}
+#output.show{display:block}
+#output .fail-line{color:#f87171;font-weight:bold}
 dialog{border:none;border-radius:8px;padding:0;max-width:95vw;max-height:95vh;background:#000}
 dialog::backdrop{background:rgba(0,0,0,.7)}
 dialog img{max-width:90vw;max-height:90vh;display:block}
 #debugDlg{padding:0;background:#0c0c0c}
-#debugContent{background:#0c0c0c;color:#d4d4d4;padding:20px;font-size:11px;max-width:90vw;max-height:85vh;overflow:auto;border-radius:6px;margin:0;white-space:pre;font-family:monospace;line-height:1.5;tab-size:2}
-
-.send-bar{background:linear-gradient(90deg,#d4edda,#c3e6cb);padding:12px 16px;border-radius:6px;margin-top:12px;border:2px solid #28a745;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
-.send-bar .info{font-size:13px;color:#155724;font-weight:bold}
-.send-bar button{font-size:15px;padding:12px 28px}
-
+#debugContent{background:#0c0c0c;color:#d4d4d4;padding:20px;font-size:11px;max-width:90vw;max-height:85vh;overflow:auto;border-radius:6px;margin:0;white-space:pre;font-family:'Consolas',monospace;line-height:1.5;tab-size:2}
+.legend{font-size:11px;color:#666;background:#fff;padding:8px 12px;border-radius:4px;margin-top:12px;line-height:1.7;border:1px solid #ddd}
+.legend code{background:#eef;padding:1px 5px;border-radius:3px;color:#046;font-size:10px}
+.notice{background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:10px}
+.rule-box{background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:10px;line-height:1.7}
+.rule-box b{color:#1e3a8a}
+.rule-box .highlight{background:#fef3c7;padding:1px 6px;border-radius:3px;color:#92400e;font-weight:bold}
 @media(max-width:700px){
   body{padding:10px}
   th,td{padding:3px 2px}
-  td img{width:34px;height:34px}
-  td input{font-size:11px;padding:2px 2px;min-width:30px}
+  td img{width:36px;height:36px}
+  td input{font-size:11px;padding:2px 2px;min-width:32px}
   .toolbar button{padding:6px 10px;font-size:12px}
   h1{font-size:15px}
-  .tab-btn{padding:8px 12px;font-size:12px}
-  #dropzone{padding:16px 10px}
 }
 </style>
 </head>
 <body>
 
-<h1>🧬 智慧規則系統 v1.00</h1>
-<div class="sub">識別截圖 → 送入優化器 → 找出最佳規則。一鍵整合，零複製貼上。</div>
+<h1>📷 賠率截圖批量識別</h1>
+<div class="version">v1.11 — 完整重製版（適配 16 張範例圖）</div>
 
-<div class="tabs">
-  <button class="tab-btn active" data-tab="ocr" onclick="switchTab('ocr')">📷 識別截圖</button>
-  <button class="tab-btn" data-tab="opt" onclick="switchTab('opt')">🧬 規則優化</button>
+<div class="notice">💡 第一次使用 OCR 引擎需下載語言包（約 15MB），請耐心等待 10~30 秒</div>
+
+<div class="rule-box">
+  <b>🎯 v1.11 識別邏輯：</b><br>
+  ① <b>比分</b>：優先找含 <code>-</code> 的；排除時間格式 <code>X:0Y</code><br>
+  ② <b>找「18+」錨點</b>（寬鬆匹配：<code>18+</code>、<code>1843</code>、<code>I8+</code>、<code>18·</code>、<code>18&gt;</code>）<br>
+  ③ <b>18+ 下方第一組 3 個 1-2 位數</b> = A/B/C（總和 97~103）<br>
+  ④ <b>再下方 3 個 ≥100 的數</b> = D/E/F<br>
+  <b>✅ 驗證：</b>A/B/C 需 1-2 位、D/E/F 需 3 位+、比分需存在、結果需 H/D/A/skip、<span class="highlight">A+B+C 必須 = 100</span>
 </div>
 
-<!-- ============================================================
-     TAB 1: OCR
-     ============================================================ -->
-<div id="tab-ocr" class="tab-panel active">
+<div id="dropzone">
+  <div class="icon">📁</div>
+  <div class="title">點擊或拖放圖片到此處</div>
+  <div class="hint">支援 JPG / PNG / WEBP　可一次多選</div>
+</div>
+<input type="file" id="fileInput" multiple accept="image/*" hidden>
 
-  <div class="notice">💡 第一次使用 OCR 引擎需下載語言包（約 15MB），請耐心等待 10~30 秒</div>
-
-  <div class="rule-box">
-    <b>🎯 識別邏輯：</b><br>
-    ① <b>比分</b>：優先找含 <code>-</code> 的；排除時間格式 <code>X:0Y</code><br>
-    ② <b>A/B/C</b>：找 <code>%</code> 數字 + 允許純 2 位數字補位<br>
-    ③ <b>D/E/F</b>：A/B/C <b>正下方 5~400px</b> 內<br>
-    <b>✅ 驗證：</b>A/B/C 需 1-2 位、D/E/F 需 3 位+、比分需存在、結果需 H/D/A/skip、<span class="highlight">A+B+C 必須 = 100</span>
-  </div>
-
-  <div id="dropzone">
-    <div class="icon">📁</div>
-    <div class="title">點擊或拖放圖片到此處</div>
-    <div class="hint">支援 JPG / PNG / WEBP　可一次多選</div>
-  </div>
-  <input type="file" id="fileInput" multiple accept="image/*" hidden>
-
-  <div class="toolbar">
-    <button id="btnRecognize" disabled>🔍 開始識別</button>
-    <button id="btnReOcr" class="gray" disabled>🔄 重新識別</button>
-    <button id="btnClearOcr" class="red" disabled>🗑 清空</button>
-    <button id="btnDebug" class="gray" disabled>🔬 除錯</button>
-    <button id="btnPreviewProcessed" class="gray" disabled>🖼 看黑白圖</button>
-  </div>
-
-  <div id="ocrProgress">
-    <div class="progressText">準備中...</div>
-    <div class="progressDetail"></div>
-    <div class="progressBar"><div class="progressBarInner"></div></div>
-  </div>
-
-  <div id="stats"></div>
-
-  <div id="tableWrap">
-    <div class="empty" id="emptyState">尚未上傳任何圖片</div>
-    <table id="results" style="display:none">
-      <thead>
-        <tr>
-          <th style="width:26px">#</th>
-          <th style="width:56px">圖</th>
-          <th style="width:52px">狀態</th>
-          <th style="width:40px">信心</th>
-          <th style="width:56px">比分</th>
-          <th style="width:40px">主%</th>
-          <th style="width:40px">和%</th>
-          <th style="width:40px">客%</th>
-          <th style="width:48px">主賠</th>
-          <th style="width:48px">和賠</th>
-          <th style="width:48px">客賠</th>
-          <th style="width:50px">結果</th>
-          <th style="width:34px">驗證</th>
-          <th>OCR 原文</th>
-          <th style="width:28px"></th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </div>
-
-  <div class="send-bar" id="sendBar" style="display:none">
-    <div class="info" id="sendInfo">準備中...</div>
-    <button class="green" id="btnSendToOpt" onclick="sendToOptimizer()">🚀 送入優化器</button>
-  </div>
-
+<div class="toolbar">
+  <button id="btnRecognize" disabled>🔍 開始識別</button>
+  <button id="btnReOcr" class="gray" disabled>🔄 重新識別</button>
+  <button id="btnClear" class="red" disabled>🗑 清空</button>
+  <button id="btnCopy" class="green" disabled>📋 複製結果</button>
+  <button id="btnCopyValid" class="green" disabled>📋 只複製有效行</button>
+  <button id="btnDownload" class="green" disabled>💾 下載 TXT</button>
+  <button id="btnShowOutput" class="gray" disabled>👁 顯示/隱藏結果</button>
+  <button id="btnDebug" class="gray" disabled>🔬 除錯</button>
+  <button id="btnPreview" class="gray" disabled>🖼 看黑白圖</button>
 </div>
 
-<!-- ============================================================
-     TAB 2: Optimizer
-     ============================================================ -->
-<div id="tab-opt" class="tab-panel">
+<div id="progress">
+  <div id="progressText">準備中...</div>
+  <div id="progressDetail"></div>
+  <div id="progressBar"><div id="progressBarInner"></div></div>
+</div>
 
-  <p style="font-size:12px;color:#666;margin:0 0 10px 0">
-    每行一筆：<code style="background:#eef;padding:1px 5px;border-radius:3px;color:#046">A B C D E F 比分 結果</code>
-    （A/B/C=勝率%，D/E/F=賠率×100）
-  </p>
+<div id="stats"></div>
 
-  <textarea id="optInput" placeholder="44 33 23 215 290 320 2:1 H
-42 28 30 255 310 262 1:1 D"></textarea>
+<div id="tableWrap">
+  <div class="empty" id="emptyState">尚未上傳任何圖片</div>
+  <table id="results" style="display:none">
+    <thead>
+      <tr>
+        <th style="width:28px">#</th>
+        <th style="width:60px">圖</th>
+        <th style="width:56px">狀態</th>
+        <th style="width:44px">信心</th>
+        <th style="width:58px">比分</th>
+        <th style="width:44px">主%</th>
+        <th style="width:44px">和%</th>
+        <th style="width:44px">客%</th>
+        <th style="width:50px">主賠</th>
+        <th style="width:50px">和賠</th>
+        <th style="width:50px">客賠</th>
+        <th style="width:54px">結果</th>
+        <th style="width:36px">驗證</th>
+        <th>OCR 原文</th>
+        <th style="width:30px"></th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
 
-  <div class="mode-bar">
-    <button class="mode-btn active" id="modeAuto" onclick="setOptMode('auto')">🤖 自動模式</button>
-    <button class="mode-btn" id="modeManual" onclick="setOptMode('manual')">🎛️ 手動模式</button>
-    <span class="mode-desc" id="modeDesc">根據資料量自動選擇最佳參數</span>
-  </div>
+<pre id="output"></pre>
 
-  <div class="toolbar">
-    <label style="font-size:13px">搜尋強度：</label>
-    <select id="strength">
-      <option value="3">快速（3 起點）</option>
-      <option value="8" selected>標準（8 起點）</option>
-      <option value="20">深度（20 起點）</option>
-      <option value="50">極限（50 起點）</option>
-      <option value="200">瘋狂（200 起點）</option>
-    </select>
-    <button id="btnRun" onclick="startOpt()">🚀 開始搜尋</button>
-    <button id="btnStop" class="stop" onclick="stopOpt()" disabled>⏹ 停止</button>
-    <button id="btnPreviewAuto" class="gray" style="font-size:13px;padding:6px 14px" onclick="previewAutoOpt()">🔍 預覽自動參數</button>
-  </div>
-
-  <div class="controls">
-    <label class="chk"><input type="checkbox" id="verbose" checked> 詳細模式</label>
-    <label class="chk"><input type="checkbox" id="showBad"> 顯示失敗嘗試</label>
-    <label class="chk"><input type="checkbox" id="autoScroll" checked> 自動滾動</label>
-    <label class="chk"><input type="checkbox" id="usePenalty" checked> 🛡 複雜度懲罰</label>
-    <button onclick="clearOptLog()" style="padding:4px 10px;font-size:12px;background:#6c757d">清空日誌</button>
-  </div>
-
-  <div class="configbox" id="configBox">
-    <b style="color:#333">🔬 驗證設定</b>
-    <label>分割：
-      <select id="splitRatio">
-        <option value="1">不分（全部訓練）</option>
-        <option value="0.8" selected>80% Train / 20% Test</option>
-        <option value="0.7">70% / 30%</option>
-        <option value="0.6">60% / 40%</option>
-      </select>
-    </label>
-    <label>最少命中：
-      <input type="number" id="minBets" value="0" min="0" step="10" style="width:70px"> 筆
-    </label>
-    <label class="chk"><input type="checkbox" id="useCV"> K-Fold 交叉驗證</label>
-    <label>K =
-      <select id="cvFolds">
-        <option value="3">3</option>
-        <option value="5" selected>5</option>
-        <option value="10">10</option>
-      </select>
-    </label>
-    <label>時間預算：
-      <input type="number" id="timeLimit" value="120" min="30" step="30" style="width:70px"> 秒
-    </label>
-  </div>
-
-  <div class="progress"><div id="progbar"></div></div>
-  <div id="optStatus">⏳ 執行中…</div>
-  <div id="log">等待開始...</div>
-
-  <div class="stats" id="liveStats" style="display:none">
-    <div class="stat" id="stat-gen">起點: 0</div>
-    <div class="stat" id="stat-best">最佳: -</div>
-    <div class="stat" id="stat-time">時間: 0s</div>
-    <div class="stat" id="stat-speed">評估/秒: 0</div>
-    <div class="stat" id="stat-evals">總掃描: 0</div>
-  </div>
-
-  <div class="best" id="best">
-    <div id="summary"></div>
-    <div class="param" id="params"></div>
-    <div class="box">
-      <div class="label">🟢 公式（Google Sheets）</div>
-      <button class="txt" onclick="copyIt('txtOut')">📋 複製公式</button>
-      <textarea id="txtOut" class="out" readonly wrap="off"></textarea>
-    </div>
-    <div id="msg"></div>
-  </div>
-
-  <div id="cvResult" style="display:none"></div>
-
-  <div id="diag" style="display:none">
-    <div class="section">
-      <h3>📋 演化後規則表（最終規則在全部資料上表現）</h3>
-      <div class="diag" id="ruleTable"></div>
-    </div>
-  </div>
-
+<div class="legend">
+  <b>輸出格式（製表符分隔）：</b> <code>44	33	23	215	290	320	2:1	H</code><br>
+  依序：主%　和%　客%　主賠　和賠　客賠　比分　結果<br>
+  <b>無效的行：</b>輸出為「<code>失敗</code>」
 </div>
 
 <dialog id="previewDlg"><img id="previewImg" alt=""></dialog>
@@ -360,103 +160,40 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
 <script>
 'use strict';
 
-/* ============================================================
-   Tab 切換
-   ============================================================ */
-function switchTab(name){
-  var tabs = document.querySelectorAll('.tab-panel');
-  var btns = document.querySelectorAll('.tab-btn');
-  for(var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
-  for(var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
-  document.getElementById('tab-' + name).classList.add('active');
-  var btn = document.querySelector('.tab-btn[data-tab="' + name + '"]');
-  if(btn) btn.classList.add('active');
-}
-
-/* ============================================================
-   共用工具
-   ============================================================ */
-function $(id){ return document.getElementById(id); }
-function ri(min,max){ return min+Math.floor(Math.random()*(max-min+1)); }
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, function(c){
-    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
-  });
-}
-function tick(){ return new Promise(function(r){ setTimeout(r, 0); }); }
-function mulberry32(a){
-  return function(){
-    a |= 0; a = a + 0x6D2B79F5 | 0;
-    var t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-function shuffle(arr, rng){
-  var a = arr.slice();
-  for(var i = a.length - 1; i > 0; i--){
-    var j = Math.floor(rng() * (i + 1));
-    var t = a[i]; a[i] = a[j]; a[j] = t;
-  }
-  return a;
-}
-
-/* ============================================================
-   ======================  OCR 模組  =========================
-   ============================================================ */
-var OCR = {
-  rows: [],
-  worker: null,
-  workerReady: false,
-  busy: false,
-  debugIdx: 0,
-  previewIdx: 0
-};
-
-var dropzone = $('dropzone');
-var fileInput = $('fileInput');
+var VALID_RESULTS = ['H','D','A','skip'];
+var state = { rows: [], worker: null, workerReady: false, busy: false, debugIdx: 0, previewIdx: 0 };
+var $ = function(id){ return document.getElementById(id); };
+var dropzone = $('dropzone'), fileInput = $('fileInput');
 
 dropzone.addEventListener('click', function(){ fileInput.click(); });
 dropzone.addEventListener('dragover', function(e){ e.preventDefault(); dropzone.classList.add('hover'); });
 dropzone.addEventListener('dragleave', function(){ dropzone.classList.remove('hover'); });
-dropzone.addEventListener('drop', function(e){
-  e.preventDefault(); dropzone.classList.remove('hover');
-  handleFiles(e.dataTransfer.files);
-});
-fileInput.addEventListener('change', function(e){
-  handleFiles(e.target.files);
-  fileInput.value = '';
-});
+dropzone.addEventListener('drop', function(e){ e.preventDefault(); dropzone.classList.remove('hover'); handleFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', function(e){ handleFiles(e.target.files); fileInput.value = ''; });
 
 function handleFiles(files){
-  var arr = Array.prototype.slice.call(files).filter(function(f){
-    return f.type && f.type.indexOf('image/') === 0;
-  });
+  var arr = Array.prototype.slice.call(files).filter(function(f){ return f.type && f.type.indexOf('image/') === 0; });
   if(arr.length === 0){ alert('沒有有效的圖片檔案'); return; }
   for(var i = 0; i < arr.length; i++){
     var f = arr[i];
-    OCR.rows.push({
+    state.rows.push({
       id: 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-      file: f,
-      imageURL: URL.createObjectURL(f),
-      processedDataURL: '',
-      ocrText: '', ocrWords: [], ocrWidth: 0, ocrHeight: 0,
-      debugInfo: '',
+      file: f, imageURL: URL.createObjectURL(f), processedDataURL: '',
+      ocrText: '', ocrWords: [], ocrWidth: 0, ocrHeight: 0, debugInfo: '',
       status: 'wait', statusText: '待識別', confidence: 'wait',
       values: { scoreA:'', scoreB:'', homePct:'', drawPct:'', awayPct:'', homeOdd:'', drawOdd:'', awayOdd:'', result:'H' }
     });
   }
-  renderOcrTable(); updateOcrButtons(); updateOcrStats();
+  renderTable(); updateButtons(); updateStats();
 }
 
-/* OCR 驗證 */
-var VALID_RESULTS = ['H','D','A','skip'];
+/* 驗證 */
 function validateRow(v){
   var errs = [];
   var abc = ['homePct','drawPct','awayPct'], abcN = ['主%','和%','客%'];
   var abcValid = true;
-  for(var i = 0; i < 3; i++){
-    var s = String(v[abc[i]] || '').trim();
+  for(var i=0;i<3;i++){
+    var s = String(v[abc[i]]||'').trim();
     if(s === ''){ errs.push(abcN[i] + '缺失'); abcValid = false; }
     else if(!/^\d{1,2}$/.test(s)){ errs.push(abcN[i] + '需1-2位'); abcValid = false; }
   }
@@ -465,12 +202,12 @@ function validateRow(v){
     if(sum !== 100) errs.push('A+B+C=' + sum + '（需=100）');
   }
   var def = ['homeOdd','drawOdd','awayOdd'], defN = ['主賠','和賠','客賠'];
-  for(var i = 0; i < 3; i++){
-    var s = String(v[def[i]] || '').trim();
+  for(var i=0;i<3;i++){
+    var s = String(v[def[i]]||'').trim();
     if(s === '') errs.push(defN[i] + '缺失');
     else if(!/^\d{3,}$/.test(s)) errs.push(defN[i] + '需3位+');
   }
-  var sa = String(v.scoreA || '').trim(), sb = String(v.scoreB || '').trim();
+  var sa = String(v.scoreA||'').trim(), sb = String(v.scoreB||'').trim();
   if(sa === '' || sb === '') errs.push('比分缺失');
   else if(!/^\d{1,2}$/.test(sa) || !/^\d{1,2}$/.test(sb)) errs.push('比分格式錯');
   if(VALID_RESULTS.indexOf(v.result) === -1) errs.push('結果無效');
@@ -481,14 +218,13 @@ function hasAnyValue(v){
   return !!(v.homePct || v.drawPct || v.awayPct || v.homeOdd || v.drawOdd || v.awayOdd || v.scoreA !== '' || v.scoreB !== '');
 }
 
-/* 渲染 OCR 表格 */
-function renderOcrTable(){
+function renderTable(){
   var tbody = $('tbody'), table = $('results'), empty = $('emptyState');
-  if(OCR.rows.length === 0){ table.style.display='none'; empty.style.display='block'; updateSendBar(); return; }
+  if(state.rows.length === 0){ table.style.display='none'; empty.style.display='block'; return; }
   table.style.display = 'table'; empty.style.display = 'none';
   tbody.innerHTML = '';
-  for(var i = 0; i < OCR.rows.length; i++){
-    var row = OCR.rows[i];
+  for(var i = 0; i < state.rows.length; i++){
+    var row = state.rows[i];
     var tr = document.createElement('tr'); tr.dataset.id = row.id;
     var statusClass = 'status-' + (row.status === 'processing' ? 'processing' : row.status);
     var scoreVal = (row.values.scoreA !== '' && row.values.scoreB !== '') ? row.values.scoreA + ':' + row.values.scoreB : '';
@@ -534,8 +270,8 @@ function renderOcrTable(){
     applyCellHighlight(tr, row.values);
   }
   tbody.querySelectorAll('input, select').forEach(function(el){
-    el.addEventListener('input', onOcrInput);
-    el.addEventListener('change', onOcrInput);
+    el.addEventListener('input', onInputChange);
+    el.addEventListener('change', onInputChange);
   });
   tbody.querySelectorAll('img[data-img]').forEach(function(img){
     img.addEventListener('click', function(){ previewImage(this.dataset.img); });
@@ -544,9 +280,8 @@ function renderOcrTable(){
     el.addEventListener('click', function(){ this.classList.toggle('expanded'); });
   });
   tbody.querySelectorAll('button[data-del]').forEach(function(btn){
-    btn.addEventListener('click', function(){ removeOcrRow(this.dataset.del); });
+    btn.addEventListener('click', function(){ removeRow(this.dataset.del); });
   });
-  updateSendBar();
 }
 
 function applyCellHighlight(tr, v){
@@ -584,9 +319,9 @@ function applyCellHighlight(tr, v){
   }
 }
 
-function onOcrInput(e){
+function onInputChange(e){
   var tr = e.target.closest('tr'); if(!tr) return;
-  var row = findOcrRow(tr.dataset.id); if(!row) return;
+  var row = findRow(tr.dataset.id); if(!row) return;
   var field = e.target.dataset.field;
   if(field === 'score'){
     var v = e.target.value;
@@ -600,9 +335,7 @@ function onOcrInput(e){
     } else { row.values.scoreA = ''; row.values.scoreB = ''; }
   } else if(field === 'result'){ row.values.result = e.target.value; }
   else { row.values[field] = e.target.value; }
-  refreshValidation(tr, row);
-  updateOcrStats();
-  updateSendBar();
+  refreshValidation(tr, row); updateStats();
 }
 
 function refreshValidation(tr, row){
@@ -614,37 +347,38 @@ function refreshValidation(tr, row){
   else cell.innerHTML = '<span class="valid-err" title="' + escapeHtml(errs.join('、')) + '">✗</span>';
 }
 
-function findOcrRow(id){
-  for(var i = 0; i < OCR.rows.length; i++) if(OCR.rows[i].id === id) return OCR.rows[i];
-  return null;
-}
-function removeOcrRow(id){
-  for(var i = 0; i < OCR.rows.length; i++){
-    if(OCR.rows[i].id === id){ URL.revokeObjectURL(OCR.rows[i].imageURL); OCR.rows.splice(i, 1); break; }
+function findRow(id){ for(var i = 0; i < state.rows.length; i++) if(state.rows[i].id === id) return state.rows[i]; return null; }
+function removeRow(id){
+  for(var i = 0; i < state.rows.length; i++){
+    if(state.rows[i].id === id){ URL.revokeObjectURL(state.rows[i].imageURL); state.rows.splice(i, 1); break; }
   }
-  renderOcrTable(); updateOcrButtons(); updateOcrStats();
+  renderTable(); updateButtons(); updateStats();
 }
-
 function previewImage(url){ $('previewImg').src = url; $('previewDlg').showModal(); }
 $('previewDlg').addEventListener('click', function(){ this.close(); });
 $('debugDlg').addEventListener('click', function(){ this.close(); });
 $('processedDlg').addEventListener('click', function(){ this.close(); });
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 
-function updateOcrButtons(){
-  var has = OCR.rows.length > 0, busy = OCR.busy;
+function updateButtons(){
+  var has = state.rows.length > 0, busy = state.busy;
   $('btnRecognize').disabled = !has || busy;
   $('btnReOcr').disabled = !has || busy;
-  $('btnClearOcr').disabled = !has || busy;
+  $('btnClear').disabled = !has || busy;
+  $('btnCopy').disabled = !has;
+  $('btnCopyValid').disabled = !has;
+  $('btnDownload').disabled = !has;
+  $('btnShowOutput').disabled = !has;
   $('btnDebug').disabled = !has;
-  $('btnPreviewProcessed').disabled = !has;
+  $('btnPreview').disabled = !has;
 }
 
-function updateOcrStats(){
-  var total = OCR.rows.length;
+function updateStats(){
+  var total = state.rows.length;
   if(total === 0){ $('stats').style.display = 'none'; return; }
   var valid = 0, wait = 0, proc = 0, err = 0, high = 0, mid = 0, low = 0, sumFail = 0;
-  for(var i = 0; i < OCR.rows.length; i++){
-    var r = OCR.rows[i];
+  for(var i = 0; i < state.rows.length; i++){
+    var r = state.rows[i];
     if(r.status === 'wait') wait++;
     else if(r.status === 'processing') proc++;
     else if(r.status === 'err') err++;
@@ -669,25 +403,13 @@ function updateOcrStats(){
   $('stats').style.display = 'block';
 }
 
-function updateSendBar(){
-  var bar = $('sendBar'), info = $('sendInfo');
-  if(OCR.rows.length === 0){ bar.style.display = 'none'; return; }
-  bar.style.display = 'flex';
-  var valid = 0;
-  for(var i = 0; i < OCR.rows.length; i++) if(isValidRow(OCR.rows[i].values)) valid++;
-  info.textContent = '✅ 有效 ' + valid + ' / 共 ' + OCR.rows.length + ' 筆　·　送入優化器只會帶入有效行';
-  $('btnSendToOpt').disabled = valid === 0;
-}
-
-/* OCR Worker */
-async function ensureOcrWorker(){
-  if(OCR.worker && OCR.workerReady) return OCR.worker;
-  var progText = $('ocrProgress').querySelector('.progressText');
-  var progDetail = $('ocrProgress').querySelector('.progressDetail');
-  $('ocrProgress').style.display = 'block';
+async function ensureWorker(){
+  if(state.worker && state.workerReady) return state.worker;
+  var progText = $('progressText'), progDetail = $('progressDetail');
+  $('progress').style.display = 'block';
   progText.textContent = '⚙️ 初始化 OCR 引擎...';
   progDetail.textContent = '第一次使用需下載語言包，請稍候';
-  OCR.worker = await Tesseract.createWorker('eng', 1, {
+  state.worker = await Tesseract.createWorker('eng', 1, {
     logger: function(m){
       if(m.status === 'loading tesseract core') progDetail.textContent = '載入核心引擎...';
       else if(m.status === 'initializing tesseract') progDetail.textContent = '初始化引擎...';
@@ -695,34 +417,30 @@ async function ensureOcrWorker(){
       else if(m.status === 'initializing api') progDetail.textContent = '初始化 API...';
     }
   });
-  try { await OCR.worker.setParameters({ preserve_interword_spaces: '1' }); } catch(e){}
-  OCR.workerReady = true;
-  progDetail.textContent = '引擎就緒';
-  return OCR.worker;
+  try { await state.worker.setParameters({ preserve_interword_spaces: '1' }); } catch(e){}
+  state.workerReady = true; progDetail.textContent = '引擎就緒';
+  return state.worker;
 }
 
 async function recognizeAll(forceAll){
-  if(OCR.busy) return;
-  OCR.busy = true; updateOcrButtons();
-  var progText = $('ocrProgress').querySelector('.progressText');
-  var progDetail = $('ocrProgress').querySelector('.progressDetail');
-  var progBar = $('ocrProgress').querySelector('.progressBarInner');
-  $('ocrProgress').style.display = 'block';
-
+  if(state.busy) return;
+  state.busy = true; updateButtons();
+  var progText = $('progressText'), progDetail = $('progressDetail'), progBar = $('progressBarInner');
+  $('progress').style.display = 'block';
   try {
-    var worker = await ensureOcrWorker();
-    var targets = forceAll ? OCR.rows.slice() : OCR.rows.filter(function(r){ return r.status === 'wait' || r.status === 'err'; });
+    var worker = await ensureWorker();
+    var targets = forceAll ? state.rows.slice() : state.rows.filter(function(r){ return r.status === 'wait' || r.status === 'err'; });
     if(targets.length === 0){
       progText.textContent = '沒有需要識別的圖片';
       progDetail.textContent = '用「🔄 重新識別」可強制重跑';
-      setTimeout(function(){ $('ocrProgress').style.display = 'none'; }, 2000);
-      OCR.busy = false; updateOcrButtons(); return;
+      setTimeout(function(){ $('progress').style.display = 'none'; }, 2000);
+      state.busy = false; updateButtons(); return;
     }
     var t0 = Date.now();
     for(var i = 0; i < targets.length; i++){
       var row = targets[i];
       row.status = 'processing'; row.statusText = '識別中...';
-      renderOcrTable(); updateOcrStats();
+      renderTable(); updateStats();
       progText.textContent = '🔍 識別中 ' + (i+1) + ' / ' + targets.length;
       var elapsed = (Date.now() - t0) / 1000;
       var eta = i > 0 ? (elapsed / i * (targets.length - i)) : 0;
@@ -750,7 +468,7 @@ async function recognizeAll(forceAll){
           });
         }
         row.ocrWords = words;
-        applyOcrHeuristic(row);
+        applyHeuristic(row);
         row.status = 'ok'; row.statusText = '✓ 完成';
       } catch(err){
         console.error(err);
@@ -758,18 +476,18 @@ async function recognizeAll(forceAll){
         row.ocrText = '（識別失敗：' + (err.message || err) + '）';
         row.confidence = 'low';
       }
-      renderOcrTable(); updateOcrStats();
+      renderTable(); updateStats();
     }
     progBar.style.width = '100%';
     progText.textContent = '✅ 全部完成（' + targets.length + ' 張）';
     progDetail.textContent = '總耗時 ' + ((Date.now()-t0)/1000).toFixed(1) + 's';
-    setTimeout(function(){ $('ocrProgress').style.display = 'none'; }, 2500);
+    setTimeout(function(){ $('progress').style.display = 'none'; }, 2500);
   } catch(err){
     console.error(err);
     progText.textContent = '❌ 初始化失敗';
     progDetail.textContent = String(err.message || err);
   }
-  OCR.busy = false; updateOcrButtons(); updateOcrStats();
+  state.busy = false; updateButtons(); updateStats();
 }
 
 function preprocessImage(file){
@@ -800,13 +518,18 @@ function preprocessImage(file){
   });
 }
 
-function applyOcrHeuristic(row){
-  var W = row.ocrWidth || 1, H = row.ocrHeight || 1;
+/* ============================================================
+   ⭐ v1.11 提取邏輯：以「18+」為錨點
+   ============================================================ */
+function applyHeuristic(row){
+  var W = row.ocrWidth || 1;
+  var H = row.ocrHeight || 1;
   var words = row.ocrWords || [];
   var debug = [];
   debug.push('尺寸：' + W + ' x ' + H + '，Word 數：' + words.length);
   debug.push('');
 
+  /* ---- 1. 比分 ---- */
   var score = findScore(words, H);
   if(score){
     row.values.scoreA = score.a;
@@ -815,25 +538,143 @@ function applyOcrHeuristic(row){
     debug.push('[比分] ' + score.a + '-' + score.b + '  y=' + Math.round(score.cy) + '  src=' + score.src);
   } else debug.push('[比分] 未找到');
 
-  var pct = findPct(words, W, H);
-  if(pct){
-    row.values.homePct = pct[0].v;
-    row.values.drawPct = pct[1].v;
-    row.values.awayPct = pct[2].v;
-    var sum = pct[0].v + pct[1].v + pct[2].v;
-    debug.push('[百分比] ' + pct[0].v + ' / ' + pct[1].v + ' / ' + pct[2].v + '  （總和=' + sum + (sum===100?' ✓':' ⚠ 非100') + '）');
-  } else debug.push('[百分比] 未找到');
-
-  if(pct){
-    var odds = findOdds(words, W, H, pct);
-    if(odds){
-      row.values.homeOdd = odds[0].v;
-      row.values.drawOdd = odds[1].v;
-      row.values.awayOdd = odds[2].v;
-      debug.push('[賠率] ' + odds[0].v + ' / ' + odds[1].v + ' / ' + odds[2].v);
-    } else debug.push('[賠率] 未找到');
+  /* ---- 2. 找「18+」錨點（寬鬆匹配） ---- */
+  var anchorInfo = find18Plus(words);
+  var anchorY = anchorInfo ? anchorInfo.y : null;
+  if(anchorInfo){
+    debug.push('[18+ 錨點] y=' + Math.round(anchorY) + '  文字="' + anchorInfo.text + '"  匹配=' + anchorInfo.matchType);
+  } else {
+    debug.push('[18+ 錨點] ⚠ 未找到，改用全部資料');
   }
 
+  /* ---- 3. 取 18+ 下方的所有數字 token ---- */
+  var numbers = [];
+  for(var i = 0; i < words.length; i++){
+    var w = words[i];
+    var t = w.text.trim();
+
+    /* 排除 18+ 自己 */
+    if(anchorInfo && Math.abs(w.cy - anchorY) < 5) continue;
+
+    /* X.XX 或 X,XX */
+    var m1 = t.match(/^(\d{1,2})[.,](\d{2})$/);
+    if(m1){
+      var v1 = parseInt(m1[1], 10) * 100 + parseInt(m1[2], 10);
+      if(v1 >= 100 && v1 <= 2000){
+        numbers.push({ raw: t, v: v1, cy: w.cy, cx: w.cx, type: 'odd', orig: v1 });
+        continue;
+      }
+    }
+    /* XX% 或 XX */
+    var m2 = t.match(/^(\d{1,3})\s*%?$/);
+    if(m2){
+      var v2 = parseInt(m2[1], 10);
+      if(v2 >= 1 && v2 <= 2000){
+        numbers.push({ raw: t, v: v2, cy: w.cy, cx: w.cx, type: v2 <= 99 ? 'pct' : 'odd', orig: v2 });
+      }
+    }
+  }
+
+  /* 篩選：18+ 下方 */
+  var below = numbers;
+  if(anchorY !== null){
+    below = numbers.filter(function(n){ return n.cy > anchorY + 5; });
+  }
+
+  /* 排序 */
+  below.sort(function(a, b){
+    if(Math.abs(a.cy - b.cy) > 25) return a.cy - b.cy;
+    return a.cx - b.cx;
+  });
+
+  debug.push('[18+下方數字] ' + below.map(function(n){
+     return n.raw + '(y=' + Math.round(n.cy) + ',x=' + Math.round(n.cx) + ')';
+  }).join(', '));
+
+  /* ---- 4. 按 y 分行 ---- */
+  var groups = [];
+  var curGroup = null;
+  var yThreshold = Math.max(25, H * 0.02);
+  for(var i = 0; i < below.length; i++){
+    var n = below[i];
+    if(!curGroup || Math.abs(n.cy - curGroup.y) > yThreshold){
+      if(curGroup) groups.push(curGroup);
+      curGroup = { y: n.cy, items: [n] };
+    } else {
+      curGroup.items.push(n);
+      curGroup.y = (curGroup.y * (curGroup.items.length - 1) + n.cy) / curGroup.items.length;
+    }
+  }
+  if(curGroup) groups.push(curGroup);
+  for(var i = 0; i < groups.length; i++) groups[i].items.sort(function(a,b){ return a.cx - b.cx; });
+
+  debug.push('[分行] ' + groups.map(function(g, i){
+    return 'L' + (i+1) + ':' + g.items.map(function(it){ return it.raw; }).join(' ');
+  }).join(' | '));
+
+  /* ---- 5. 找第一組有 3 個「pct 型」（1-99）且總和 97~103 ---- */
+  var pctTriple = null, pctGroupIdx = -1;
+  for(var gi = 0; gi < groups.length; gi++){
+    var items = groups[gi].items;
+    if(items.length < 3) continue;
+    var t = items.slice(0, 3);
+    var allPct = t.every(function(x){ return x.type === 'pct'; });
+    if(!allPct) continue;
+    var sum = t[0].v + t[1].v + t[2].v;
+    if(sum >= 97 && sum <= 103){
+      pctTriple = t;
+      pctGroupIdx = gi;
+      break;
+    }
+  }
+
+  if(pctTriple){
+    row.values.homePct = pctTriple[0].v;
+    row.values.drawPct = pctTriple[1].v;
+    row.values.awayPct = pctTriple[2].v;
+    var sum = pctTriple[0].v + pctTriple[1].v + pctTriple[2].v;
+    debug.push('[百分比] ' + pctTriple[0].v + ' / ' + pctTriple[1].v + ' / ' + pctTriple[2].v +
+      '  （總和=' + sum + (sum===100?' ✓':' ⚠') + '，來自 L' + (pctGroupIdx+1) + '）');
+  } else {
+    debug.push('[百分比] 未找到');
+  }
+
+  /* ---- 6. 找下一組有 3 個 odd 型（>=100） ---- */
+  if(pctTriple){
+    var oddTriple = null;
+    for(var gi = pctGroupIdx + 1; gi < groups.length; gi++){
+      var items = groups[gi].items;
+      if(items.length < 3) continue;
+      var t = items.slice(0, 3);
+      var allOdd = t.every(function(x){ return x.type === 'odd' && x.v >= 100; });
+      if(!allOdd) continue;
+      oddTriple = t;
+      break;
+    }
+    /* 退路：百分比下方所有 ≥100 的數字 */
+    if(!oddTriple){
+      var afterPct = [];
+      for(var i = 0; i < below.length; i++){
+        var n = below[i];
+        if(n.cy > pctTriple[0].cy + 10 && n.v >= 100){
+          afterPct.push(n);
+          if(afterPct.length === 3) break;
+        }
+      }
+      if(afterPct.length === 3) oddTriple = afterPct;
+    }
+
+    if(oddTriple){
+      row.values.homeOdd = oddTriple[0].v;
+      row.values.drawOdd = oddTriple[1].v;
+      row.values.awayOdd = oddTriple[2].v;
+      debug.push('[賠率] ' + oddTriple[0].v + ' / ' + oddTriple[1].v + ' / ' + oddTriple[2].v);
+    } else {
+      debug.push('[賠率] 未找到（可能被鎖住）');
+    }
+  }
+
+  /* 信心度 */
   var filled = 0;
   ['homePct','drawPct','awayPct','homeOdd','drawOdd','awayOdd'].forEach(function(k){
     if(row.values[k] !== '') filled++;
@@ -844,15 +685,41 @@ function applyOcrHeuristic(row){
   else row.confidence = 'low';
 
   debug.push('');
-  debug.push('--- OCR 詞（按 y 排序，前 100） ---');
+  debug.push('--- 所有 OCR 詞（按 y 排序，前 120） ---');
   var sorted = words.slice().sort(function(a,b){ return a.cy - b.cy; });
-  for(var i = 0; i < Math.min(100, sorted.length); i++){
+  for(var i = 0; i < Math.min(120, sorted.length); i++){
     var w = sorted[i];
     debug.push('y=' + String(Math.round(w.cy)).padStart(5) + '  x=' + String(Math.round(w.cx)).padStart(5) + '  "' + w.text + '"');
   }
   row.debugInfo = debug.join('\n');
 }
 
+/* ⭐ v1.11：寬鬆匹配 18+ */
+function find18Plus(words){
+  var best = null;
+  for(var i = 0; i < words.length; i++){
+    var w = words[i];
+    var t = w.text.trim();
+    var matchType = null;
+
+    /* 強匹配：含18 且有 + 或 * 或 ° 或 > 或 · 或 − */
+    if(/18\s*[\+\*\°\>\·\−\-]/.test(t)) matchType = 'strong';
+    /* 純 "18+" 單詞 */
+    else if(/^18\+?$/.test(t)) matchType = 'exact';
+    /* 弱匹配：短 token（≤6 字）含 "18" */
+    else if(t.length <= 6 && /18/.test(t)) matchType = 'loose';
+
+    if(matchType){
+      /* 取最下面的（通常 18+ 在頁面底部） */
+      if(!best || w.cy > best.y){
+        best = { y: w.cy, text: t, matchType: matchType };
+      }
+    }
+  }
+  return best;
+}
+
+/* 找比分 */
 function findScore(words, H){
   var dashCands = [], colonCands = [];
   for(var i = 0; i < words.length; i++){
@@ -895,112 +762,6 @@ function findScore(words, H){
   return null;
 }
 
-function findPct(words, W, H){
-  var pctWith = [], numOnly = [];
-  for(var i = 0; i < words.length; i++){
-    var w = words[i];
-    var m = w.text.match(/^(\d{1,3})\s*%$/);
-    if(m){
-      var v = parseInt(m[1], 10);
-      if(v >= 1 && v <= 99) pctWith.push({ v:v, cy:w.cy, cx:w.cx, hasPct: true });
-      continue;
-    }
-    if(/^\d{2}$/.test(w.text)){
-      var v2 = parseInt(w.text, 10);
-      if(v2 >= 10 && v2 <= 80) numOnly.push({ v:v2, cy:w.cy, cx:w.cx, hasPct: false });
-    }
-  }
-  for(var i = 0; i < words.length; i++){
-    var w1 = words[i];
-    if(w1.text.indexOf('%') !== -1) continue;
-    if(!/^\d{1,3}$/.test(w1.text)) continue;
-    var v1 = parseInt(w1.text, 10);
-    if(v1 < 1 || v1 > 99) continue;
-    var alreadyHas = false;
-    for(var k = 0; k < pctWith.length; k++){
-      if(Math.abs(pctWith[k].cy - w1.cy) < 20 && Math.abs(pctWith[k].cx - w1.cx) < 30){ alreadyHas = true; break; }
-    }
-    if(alreadyHas) continue;
-    for(var j = 0; j < words.length; j++){
-      if(j === i) continue;
-      var w2 = words[j];
-      if(w2.text.trim() !== '%') continue;
-      if(w2.cx > w1.cx && w2.cx - w1.cx < 80 && Math.abs(w2.cy - w1.cy) < 40){
-        pctWith.push({ v:v1, cy:(w1.cy+w2.cy)/2, cx:w1.cx, hasPct: true });
-        break;
-      }
-    }
-  }
-  var all = pctWith.concat(numOnly);
-  var best = null, bestScore = -Infinity;
-  for(var i = 0; i < all.length - 2; i++){
-    for(var j = i + 1; j < all.length - 1; j++){
-      for(var k = j + 1; k < all.length; k++){
-        var trio = [all[i], all[j], all[k]];
-        var sum = trio[0].v + trio[1].v + trio[2].v;
-        if(sum < 97 || sum > 103) continue;
-        var pctCount = 0;
-        for(var t = 0; t < 3; t++) if(trio[t].hasPct) pctCount++;
-        if(pctCount === 0) continue;
-        var ys = [trio[0].cy, trio[1].cy, trio[2].cy];
-        var ySpread = Math.max.apply(null, ys) - Math.min.apply(null, ys);
-        if(ySpread > Math.max(80, H * 0.05)) continue;
-        var avgY = (ys[0]+ys[1]+ys[2])/3;
-        var yPct = avgY / H;
-        var score = pctCount * 100 - ySpread;
-        if(yPct > 0.4 && yPct < 0.9) score += 50;
-        else if(yPct > 0.3 && yPct < 0.95) score += 20;
-        if(sum === 100) score += 200;
-        if(score > bestScore){ bestScore = score; best = trio.slice(); }
-      }
-    }
-  }
-  if(best){ best.sort(function(a, b){ return a.cx - b.cx; }); return best; }
-  return null;
-}
-
-function findOdds(words, W, H, pct){
-  var anchorY = (pct[0].cy + pct[1].cy + pct[2].cy) / 3;
-  var cands = [];
-  for(var i = 0; i < words.length; i++){
-    var w = words[i];
-    if(w.text.indexOf('%') !== -1) continue;
-    var m1 = w.text.match(/^(\d{1,2})[.,](\d{2})$/);
-    if(m1){
-      var v = parseInt(m1[1], 10) * 100 + parseInt(m1[2], 10);
-      if(v >= 100 && v <= 2000 && w.cy > anchorY + 5 && w.cy - anchorY < 400){
-        cands.push({ v:v, cx:w.cx, cy:w.cy, src:'dec' });
-      }
-      continue;
-    }
-    var m2 = w.text.match(/^(\d{3})$/);
-    if(m2){
-      var v2 = parseInt(m2[1], 10);
-      if(v2 >= 100 && v2 <= 999 && w.cy > anchorY + 5 && w.cy - anchorY < 400){
-        cands.push({ v:v2, cx:w.cx, cy:w.cy, src:'int' });
-      }
-    }
-  }
-  if(cands.length < 3) return null;
-  var lefts  = cands.filter(function(c){ return c.cx < W * 0.4; });
-  var mids   = cands.filter(function(c){ return c.cx >= W * 0.4 && c.cx < W * 0.65; });
-  var rights = cands.filter(function(c){ return c.cx >= W * 0.65; });
-  function pickBest(arr){
-    if(arr.length === 0) return null;
-    var decs = arr.filter(function(c){ return c.src === 'dec'; });
-    var pool = decs.length > 0 ? decs : arr;
-    pool.sort(function(a, b){ return a.cy - b.cy; });
-    return pool[0];
-  }
-  if(lefts.length && mids.length && rights.length){
-    return [pickBest(lefts), pickBest(mids), pickBest(rights)];
-  }
-  cands.sort(function(a, b){ return (a.cy - anchorY) - (b.cy - anchorY); });
-  var three = cands.slice(0, 3);
-  three.sort(function(a, b){ return a.cx - b.cx; });
-  return three;
-}
-
 function groupRows(words, yThreshold){
   if(!words || words.length === 0) return [];
   var sorted = words.slice().sort(function(a, b){ return a.cy - b.cy; });
@@ -1018,1074 +779,87 @@ function groupRows(words, yThreshold){
   return rows;
 }
 
-/* ============================================================
-   ⭐ 送入優化器
-   ============================================================ */
-function sendToOptimizer(){
+function buildOutput(onlyValid){
   var lines = [];
-  for(var i = 0; i < OCR.rows.length; i++){
-    var v = OCR.rows[i].values;
-    if(!isValidRow(v)) continue;
+  for(var i = 0; i < state.rows.length; i++){
+    var v = state.rows[i].values;
+    if(!isValidRow(v)){ if(!onlyValid) lines.push('失敗'); continue; }
     lines.push([
-      String(v.homePct).trim(),
-      String(v.drawPct).trim(),
-      String(v.awayPct).trim(),
-      String(v.homeOdd).trim(),
-      String(v.drawOdd).trim(),
-      String(v.awayOdd).trim(),
-      v.scoreA + ':' + v.scoreB,
-      v.result
-    ].join(' '));
+      String(v.homePct).trim(), String(v.drawPct).trim(), String(v.awayPct).trim(),
+      String(v.homeOdd).trim(), String(v.drawOdd).trim(), String(v.awayOdd).trim(),
+      v.scoreA + ':' + v.scoreB, v.result
+    ].join('\t'));
   }
-  if(lines.length === 0){ alert('沒有有效行可送入'); return; }
-
-  /* 若優化器已有資料，問使用者是否覆蓋或追加 */
-  var cur = $('optInput').value.trim();
-  if(cur !== ''){
-    var choice = confirm('優化器已有 ' + cur.split('\n').length + ' 行資料。\n\n按「確定」= 追加\n按「取消」= 覆蓋');
-    if(choice){
-      $('optInput').value = cur + '\n' + lines.join('\n');
-    } else {
-      $('optInput').value = lines.join('\n');
-    }
-  } else {
-    $('optInput').value = lines.join('\n');
-  }
-
-  switchTab('opt');
-  previewAutoOpt();
-  setTimeout(function(){
-    alert('✅ 已送入 ' + lines.length + ' 筆有效資料到優化器。\n\n按「🚀 開始搜尋」即可。');
-  }, 200);
+  return lines.join('\n');
 }
-
-/* ============================================================
-   按鈕綁定 OCR
-   ============================================================ */
-$('btnRecognize').addEventListener('click', function(){ recognizeAll(false); });
-$('btnReOcr').addEventListener('click', function(){
-  if(!confirm('重新識別全部 ' + OCR.rows.length + ' 張圖片？')) return;
-  recognizeAll(true);
+function doCopy(onlyValid){
+  var txt = buildOutput(onlyValid);
+  if(txt === ''){ alert(onlyValid ? '沒有有效行' : '沒有內容'); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){
+      flashBtn(onlyValid ? 'btnCopyValid' : 'btnCopy', '✅ 已複製 ' + txt.split('\n').length + ' 行');
+    }).catch(function(){ fallbackCopy(txt); flashBtn(onlyValid ? 'btnCopyValid' : 'btnCopy', '✅ 已複製'); });
+  } else { fallbackCopy(txt); flashBtn(onlyValid ? 'btnCopyValid' : 'btnCopy', '✅ 已複製'); }
+}
+$('btnCopy').addEventListener('click', function(){ doCopy(false); });
+$('btnCopyValid').addEventListener('click', function(){ doCopy(true); });
+function fallbackCopy(text){
+  var ta = document.createElement('textarea'); ta.value = text;
+  ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch(e){}
+  document.body.removeChild(ta);
+}
+function flashBtn(id, msg){
+  var b = $(id), orig = b.textContent;
+  b.textContent = msg; b.disabled = true;
+  setTimeout(function(){ b.textContent = orig; b.disabled = false; }, 1500);
+}
+$('btnDownload').addEventListener('click', function(){
+  var txt = buildOutput(false);
+  var blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href = url;
+  a.download = 'odds_' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.txt';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
 });
-$('btnClearOcr').addEventListener('click', function(){
-  if(!confirm('清空全部 ' + OCR.rows.length + ' 張圖片？')) return;
-  for(var i = 0; i < OCR.rows.length; i++) URL.revokeObjectURL(OCR.rows[i].imageURL);
-  OCR.rows = [];
-  renderOcrTable(); updateOcrButtons(); updateOcrStats();
+$('btnShowOutput').addEventListener('click', function(){
+  var out = $('output'); var txt = buildOutput(false);
+  out.innerHTML = escapeHtml(txt).replace(/^失敗$/gm, '<span class="fail-line">失敗</span>');
+  out.classList.toggle('show');
 });
 $('btnDebug').addEventListener('click', function(){
-  if(OCR.rows.length === 0) return;
-  var r = OCR.rows[OCR.debugIdx % OCR.rows.length];
-  OCR.debugIdx++;
-  var out = '=== 第 ' + (OCR.rows.indexOf(r) + 1) + ' 張：' + (r.file ? r.file.name : '') + ' ===\n\n';
+  if(state.rows.length === 0) return;
+  var r = state.rows[state.debugIdx % state.rows.length];
+  state.debugIdx++;
+  var out = '=== 第 ' + (state.rows.indexOf(r) + 1) + ' 張：' + (r.file ? r.file.name : '') + ' ===\n\n';
   out += r.debugInfo || '（無除錯資訊）';
   out += '\n\n--- OCR 原始文字 ---\n' + (r.ocrText || '（無）');
   $('debugContent').textContent = out;
   $('debugDlg').showModal();
 });
-$('btnPreviewProcessed').addEventListener('click', function(){
-  if(OCR.rows.length === 0) return;
-  var r = OCR.rows[OCR.previewIdx % OCR.rows.length];
-  OCR.previewIdx++;
+$('btnPreview').addEventListener('click', function(){
+  if(state.rows.length === 0) return;
+  var r = state.rows[state.previewIdx % state.rows.length];
+  state.previewIdx++;
   if(!r.processedDataURL){ alert('這張還沒識別'); return; }
   $('processedImg').src = r.processedDataURL;
   $('processedDlg').showModal();
 });
-
-/* ============================================================
-   ==================  優化器模組（v20.01）  ==================
-   ============================================================ */
-
-var OPT = {
-  data: [],
-  running: false,
-  startTime: 0,
-  evalCount: 0,
-  logBuffer: [],
-  logTimer: null,
-  LOG_MAX: 3000,
-  lastYield: 0,
-  YIELD_MS: 30
-};
-var optCFG = { minBets:0, splitRatio:1.0, useCV:false, cvFolds:5, penaltyUnit:10000, timeLimit:120 };
-var OPT_MODE = 'auto';
-var PENALTY_ON = true;
-var RULE_PENALTY = 30;
-var COND_PENALTY = 15;
-var MAX_RULES = 12;
-var MAX_CONDS = 4;
-
-var INIT_RULES = [
-  {on:1, then:'D', cond:[['B','>=',32],['|A-C|','<=',6]]},
-  {on:1, then:'H', cond:[['A','>=',60],['C','<=',11],['D','>=',140],['D','<=',190],['F','>=',400],['F','<=',480]]},
-  {on:1, then:'D', cond:[['|A-C|','<=',3],['E','<',380],['|D-F|','<',40]]},
-  {on:1, then:'D', cond:[['A','>=',45],['C','<=',20],['|D-F|','<',70],['D','<',400]]},
-  {on:1, then:'D', cond:[['|D-F|','<',18]]},
-  {on:1, then:'D', cond:[['A','>=',42],['D','>=',155],['D','<',205],['D-F','!=',0],['F-D','>',0],['|A-C|','>=',50]]},
-  {on:1, then:'H', cond:[['A','>=',42],['D','>=',155],['D','<',205],['D-F','!=',0]]},
-  {on:1, then:'D', cond:[['A','>=',34],['D','>',205],['D','<=',235],['D-F','!=',0]]},
-  {on:1, then:'D', cond:[['D','>=',400],['A','>=',42]]},
-  {on:1, then:'D', cond:[['D','>=',340],['A','>=',38],['F','<',250],['D-F','>',0],['F','<',200],['|A-C|','<=',5]]},
-  {on:1, then:'A', cond:[['D','>=',340],['A','>=',38],['F','<',250],['D-F','>',0],['F','<',200]]},
-  {on:1, then:'D', cond:[['D','>=',340],['A','>=',38],['F','<',250],['D-F','>',0]]},
-  {on:1, then:'D', cond:[['E','<=',315],['B','>=',27],['|A-C|','<=',25],['D','>=',250],['D','<=',350],['E-D','>',0]]},
-  {on:1, then:'D', cond:[['C-A','>',0],['F','>=',490],['F','<=',560],['D','<',200]]},
-  {on:1, then:'H', cond:[['C-A','>',0],['F-D','>',0],['F','<',550],['E','>',320]]},
-  {on:1, then:'A', cond:[['C-A','>',0],['F','>=',184],['F','<=',216],['C','>=',40]]},
-  {on:1, then:'D', cond:[['C-A','>',0],['F-D','>',0],['F','<',300],['C','<',45],['D','<',250]]},
-  {on:1, then:'A', cond:[['D-F','>',0],['F','<=',150],['C','>=',65]]},
-  {on:1, then:'A', cond:[['D-F','>',0],['D','>',1500],['C','>=',50]]},
-  {on:1, then:'D', cond:[['D-F','>',0],['D','>',1500],['A-C','>',0]]},
-  {on:1, then:'skip', cond:[['D-F','>',0],['D','>',1500]]},
-  {on:1, then:'D', cond:[['D-F','>',0],['A','>=',33],['D','>=',350]]},
-  {on:1, then:'H', cond:[['D-F','>',0]]},
-  {on:1, then:'H', cond:[['F-D','>',0],['A','>=',50],['F-D','>=',400]]},
-  {on:1, then:'D', cond:[['F-D','>',0],['F','>=',700],['A','>=',80]]},
-  {on:1, then:'D', cond:[['F-D','>',0],['F','>=',700],['C-A','>',0]]},
-  {on:1, then:'D', cond:[['F-D','>',0],['F','>=',700],['A','<',45]]},
-  {on:1, then:'skip', cond:[['F-D','>',0],['F','>=',700]]},
-  {on:1, then:'D', cond:[['F-D','>',0],['E','>=',470],['F','>=',500]]},
-  {on:1, then:'H', cond:[['F-D','>',0],['A','>=',47],['D','<=',140]]},
-  {on:1, then:'A', cond:[['F-D','>',0]]},
-  {on:1, then:'H', cond:[['A-C','>',0]]},
-  {on:1, then:'A', cond:[['C-A','>',0]]},
-  {on:1, then:'skip', cond:[]}
-];
-
-var COLS = ['A','B','C','D','E','F','|A-C|','|D-F|','D-F','F-D','A-C','C-A','E-D','E-F','D-E','impA','impB','impC','valA','valB','valC','ratioA','ratioB','ratioC','A+B','B+C','A+C','A+B+C'];
-var OPS = ['>','>=','<','<=','==','!='];
-var COL_IDX = {};
-for(var _ci = 0; _ci < COLS.length; _ci++) COL_IDX[COLS[_ci]] = _ci;
-
-async function maybeYield(force){
-  var now = Date.now();
-  if(force || now - OPT.lastYield >= OPT.YIELD_MS){
-    OPT.lastYield = now;
-    await new Promise(function(r){ setTimeout(r, 0); });
-  }
-}
-
-function optNowTime(){
-  if(!OPT.startTime) return '[00:00.000]';
-  var ms = Date.now() - OPT.startTime;
-  var s = Math.floor(ms/1000), m = Math.floor(s/60), sec = s%60, frac = ms%1000;
-  return '[' + String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0') + '.' + String(frac).padStart(3,'0') + ']';
-}
-function optPushLog(text, cls){
-  OPT.logBuffer.push({text:text, cls:cls||''});
-  if(!OPT.logTimer) OPT.logTimer = setTimeout(optFlushLog, 80);
-}
-function optFlushLog(){
-  OPT.logTimer = null;
-  if(OPT.logBuffer.length === 0) return;
-  var logEl = $('log');
-  if(!logEl.dataset.started){ logEl.innerHTML = ''; logEl.dataset.started = '1'; }
-  var frag = document.createDocumentFragment();
-  for(var i = 0; i < OPT.logBuffer.length; i++){
-    var e = OPT.logBuffer[i];
-    var div = document.createElement('div');
-    if(e.cls) div.className = 'l-' + e.cls;
-    div.textContent = e.text;
-    frag.appendChild(div);
-  }
-  OPT.logBuffer = [];
-  logEl.appendChild(frag);
-  while(logEl.children.length > OPT.LOG_MAX) logEl.removeChild(logEl.firstChild);
-  if($('autoScroll').checked) logEl.scrollTop = logEl.scrollHeight;
-}
-function clearOptLog(){
-  var logEl = $('log');
-  logEl.innerHTML = ''; logEl.dataset.started = '1';
-  OPT.logBuffer = [];
-}
-function isOptVerbose(){ return optCFG.useCV ? false : $('verbose').checked; }
-function isOptShowBad(){ return optCFG.useCV ? false : $('showBad').checked; }
-
-/* 解析優化器資料 */
-function parseOptData(text){
-  var rows = [], seen = {}, dups = 0, totalValid = 0;
-  var lines = text.split('\n');
-  for(var i = 0; i < lines.length; i++){
-    var line = lines[i].trim();
-    if(!line) continue;
-    var p = line.split(/\s+/);
-    if(p.length < 8) continue;
-    var v = p.slice(0, 6).map(Number);
-    var score = p[6], r = p[7].toUpperCase();
-    if(v.some(isNaN)) continue;
-    if(['H','D','A'].indexOf(r) === -1) continue;
-    totalValid++;
-    var sig = v.join('|') + '|' + score + '|' + r;
-    if(seen[sig]){ dups++; continue; }
-    seen[sig] = 1;
-    rows.push({A:v[0],B:v[1],C:v[2],D:v[3],E:v[4],F:v[5],score:score,result:r,sig:sig});
-  }
-  return {rows:rows, total:totalValid, dups:dups};
-}
-
-function precacheOptRows(rows){
-  for(var i = 0; i < rows.length; i++){
-    var r = rows[i];
-    var impA = r.D > 0 ? 10000 / r.D : 0;
-    var impB = r.E > 0 ? 10000 / r.E : 0;
-    var impC = r.F > 0 ? 10000 / r.F : 0;
-    r._c = [
-      r.A, r.B, r.C, r.D, r.E, r.F,
-      Math.abs(r.A-r.C), Math.abs(r.D-r.F),
-      r.D-r.F, r.F-r.D, r.A-r.C, r.C-r.A,
-      r.E-r.D, r.E-r.F, r.D-r.E,
-      Math.round(impA), Math.round(impB), Math.round(impC),
-      r.A-impA, r.B-impB, r.C-impC,
-      r.A*r.D/100, r.B*r.E/100, r.C*r.F/100,
-      r.A+r.B, r.B+r.C, r.A+r.C, r.A+r.B+r.C
-    ];
-  }
-}
-
-function optEvalRules(rows, rules){
-  OPT.evalCount++;
-  var profit = 0, hits = 0, correct = 0;
-  var nRules = rules.length;
-  for(var i = 0; i < rows.length; i++){
-    var row = rows[i], cols = row._c, pred = 'skip';
-    for(var r = 0; r < nRules; r++){
-      var rule = rules[r];
-      if(!rule.on) continue;
-      var conds = rule.cond, match = true;
-      for(var k = 0; k < conds.length; k++){
-        var c = conds[k];
-        var v = cols[COL_IDX[c[0]]], tv = c[2], op = c[1], ok;
-        if(op === '>') ok = v > tv;
-        else if(op === '>=') ok = v >= tv;
-        else if(op === '<') ok = v < tv;
-        else if(op === '<=') ok = v <= tv;
-        else if(op === '==') ok = Math.abs(v-tv) < 1e-9;
-        else ok = Math.abs(v-tv) >= 1e-9;
-        if(!ok){ match = false; break; }
-      }
-      if(match){ pred = rule.then; break; }
-    }
-    if(pred === 'skip') continue;
-    hits++;
-    if(pred === row.result){
-      correct++;
-      if(pred === 'H') profit += row.D - 100;
-      else if(pred === 'D') profit += row.E - 100;
-      else profit += row.F - 100;
-    } else profit -= 100;
-  }
-  return {profit:profit, hits:hits, correct:correct, wrong:hits-correct};
-}
-
-function complexityPenalty(rules){
-  if(!PENALTY_ON) return 0;
-  var activeCount = 0, totalConds = 0;
-  for(var i = 0; i < rules.length; i++){
-    if(!rules[i].on) continue;
-    activeCount++;
-    totalConds += rules[i].cond.length;
-  }
-  return activeCount * RULE_PENALTY + totalConds * COND_PENALTY;
-}
-
-function optCalcProfit(rows, rules){
-  var r = optEvalRules(rows, rules);
-  var score = r.profit;
-  if(optCFG.minBets > 0 && r.hits < optCFG.minBets){
-    score -= (optCFG.minBets - r.hits) * optCFG.penaltyUnit;
-  }
-  score -= complexityPenalty(rules);
-  return score;
-}
-
-function optCloneRules(rules){
-  var out = [];
-  for(var i = 0; i < rules.length; i++){
-    var r = rules[i], c = [];
-    for(var j = 0; j < r.cond.length; j++) c.push([r.cond[j][0], r.cond[j][1], r.cond[j][2]]);
-    out.push({on:r.on, then:r.then, cond:c});
-  }
-  return out;
-}
-function optCloneConds(cond){
-  var out = [];
-  for(var i = 0; i < cond.length; i++) out.push([cond[i][0], cond[i][1], cond[i][2]]);
-  return out;
-}
-function optFmtCond(c){ return c[0] + c[1] + c[2]; }
-
-function updateOptStats(gen, best){
-  $('stat-gen').innerHTML = '起點: <b>' + gen + '</b>';
-  $('stat-best').innerHTML = '最佳: <b>' + best + '</b>';
-  var el = ((Date.now() - OPT.startTime) / 1000).toFixed(0);
-  $('stat-time').innerHTML = '時間: <b>' + el + 's</b>';
-  var speed = el > 0 ? (OPT.evalCount / el).toFixed(0) : '0';
-  $('stat-speed').innerHTML = '評估/秒: <b>' + speed + '</b>';
-  $('stat-evals').innerHTML = '總掃描: <b>' + OPT.evalCount + '</b>';
-}
-
-function optRandValFor(col){
-  if(col === 'A' || col === 'B' || col === 'C') return ri(15,80);
-  if(col === 'D' || col === 'E' || col === 'F') return ri(100,800);
-  if(col === '|A-C|' || col === 'A+C' || col === 'A+B' || col === 'B+C') return ri(2,80);
-  if(col === '|D-F|') return ri(10,300);
-  if(col === 'impA' || col === 'impB' || col === 'impC') return ri(10,70);
-  if(col === 'valA' || col === 'valB' || col === 'valC') return ri(-30,30);
-  if(col === 'ratioA' || col === 'ratioB' || col === 'ratioC') return ri(50,180);
-  return ri(-100,100);
-}
-function optAddCondition(rule){
-  if(rule.cond.length >= MAX_CONDS) return rule;
-  var nr = {on:rule.on, then:rule.then, cond:optCloneConds(rule.cond)};
-  var col = COLS[ri(0, COLS.length-1)];
-  var op = OPS[ri(0, OPS.length-1)];
-  nr.cond.push([col, op, optRandValFor(col)]);
-  return nr;
-}
-function optRemoveCondition(rule){
-  if(rule.cond.length <= 1) return null;
-  var nr = {on:rule.on, then:rule.then, cond:optCloneConds(rule.cond)};
-  nr.cond.splice(ri(0, nr.cond.length-1), 1);
-  return nr;
-}
-function getScanParams(curVal){
-  var av = Math.abs(curVal);
-  if(av < 20)  return {window:10, step:1};
-  if(av < 50)  return {window:15, step:1};
-  if(av < 100) return {window:20, step:2};
-  if(av < 300) return {window:30, step:5};
-  if(av < 700) return {window:50, step:10};
-  return {window:80, step:20};
-}
-
-async function optOptimizeOneRule(rows, rules, ruleIdx, curProfit){
-  var verbose = isOptVerbose(), showBad = isOptShowBad();
-  var rule = rules[ruleIdx];
-  var bestProfit = curProfit, changed = false;
-  var prefix = '  ' + optNowTime() + ' [R' + (ruleIdx+1) + '] ';
-
-  var savedThen = rule.then;
-  for(var ti = 0; ti < 4; ti++){
-    var altThen = ['H','D','A','skip'][ti];
-    if(altThen === savedThen) continue;
-    rule.then = altThen;
-    var p = optCalcProfit(rows, rules);
-    if(p > bestProfit){
-      if(verbose) optPushLog(prefix + 'then ' + savedThen + '→' + altThen + ' 分數 ' + bestProfit + '→' + p + ' ✓', 'ok');
-      bestProfit = p; savedThen = altThen; changed = true;
-    } else if(showBad){
-      optPushLog(prefix + 'then ' + savedThen + '→' + altThen + ' ✗ ' + p, 'bad');
-    }
-  }
-  rule.then = savedThen;
-
-  var savedOn = rule.on;
-  rule.on = savedOn ? 0 : 1;
-  var p2 = optCalcProfit(rows, rules);
-  if(p2 > bestProfit){
-    if(verbose) optPushLog(prefix + 'toggle 分數 ' + bestProfit + '→' + p2 + ' ✓', 'ok');
-    bestProfit = p2; savedOn = rule.on; changed = true;
-  }
-  rule.on = savedOn;
-
-  if(rule.cond.length > 1){
-    for(var rci = 0; rci < rule.cond.length; rci++){
-      var removed = rule.cond[rci];
-      rule.cond.splice(rci, 1);
-      var p4 = optCalcProfit(rows, rules);
-      if(p4 > bestProfit){
-        if(verbose) optPushLog(prefix + 'remove ' + optFmtCond(removed) + ' ✓', 'ok');
-        bestProfit = p4; changed = true; break;
-      } else {
-        rule.cond.splice(rci, 0, removed);
-      }
-    }
-  }
-
-  for(var ci = 0; ci < rule.cond.length; ci++){
-    var c = rule.cond[ci];
-    var curVal = c[2];
-    var params = getScanParams(curVal);
-    var window = params.window, step = params.step;
-    if(verbose) optPushLog(prefix + 'scan ' + c[0] + c[1] + ' ±' + window, 'scan');
-    var bestV = curVal;
-    for(var v = curVal - window; v <= curVal + window; v += step){
-      if(v < 0 && curVal >= 0) continue;
-      c[2] = v;
-      var p3 = optCalcProfit(rows, rules);
-      if(p3 > bestProfit){ bestV = v; bestProfit = p3; }
-      await maybeYield();
-      if(!OPT.running){ c[2] = curVal; return {profit:bestProfit, changed:changed}; }
-    }
-    if(bestV !== curVal){
-      if(verbose) optPushLog(prefix + '  ↳ ' + c[0] + c[1] + ' ' + curVal + '→' + bestV + ' ✓', 'ok');
-      c[2] = bestV; changed = true;
-    } else {
-      c[2] = curVal;
-      if(verbose) optPushLog(prefix + '  ↳ 無改進', 'dim');
-    }
-    var origOp = c[1], bestOp = origOp;
-    for(var oi = 0; oi < OPS.length; oi++){
-      var altOp = OPS[oi];
-      if(altOp === origOp) continue;
-      c[1] = altOp;
-      var p5 = optCalcProfit(rows, rules);
-      if(p5 > bestProfit){ bestOp = altOp; bestProfit = p5; }
-      await maybeYield();
-    }
-    c[1] = bestOp;
-    if(bestOp !== origOp){
-      if(verbose) optPushLog(prefix + '  ↳ op ' + origOp + '→' + bestOp + ' ✓', 'ok');
-      changed = true;
-    }
-  }
-  return {profit:bestProfit, changed:changed};
-}
-
-async function optCoordinateDescent(rows, startRules, label){
-  var cur = optCloneRules(startRules);
-  var curProfit = optCalcProfit(rows, cur);
-  var improved = true, totalIter = 0, pass = 0;
-  optPushLog('  ' + optNowTime() + ' ' + label + ' 起始分數: ' + curProfit, 'gen');
-  while(improved && OPT.running){
-    pass++;
-    improved = false;
-    optPushLog('  ' + optNowTime() + ' ── ' + label + ' 第 ' + pass + ' 輪 ──', 'dim');
-    for(var i = 0; i < cur.length; i++){
-      if(!OPT.running) return {rules:cur, profit:curProfit, iter:totalIter};
-      if(Date.now() - OPT.startTime > optCFG.timeLimit * 1000){
-        optPushLog('  ' + optNowTime() + ' ⏰ 時間到', 'warn');
-        return {rules:cur, profit:curProfit, iter:totalIter, timedOut:true};
-      }
-      var res = await optOptimizeOneRule(rows, cur, i, curProfit);
-      totalIter++;
-      if(res.profit > curProfit){ curProfit = res.profit; improved = true; }
-      await maybeYield();
-    }
-    optPushLog('  ' + optNowTime() + ' 第 ' + pass + ' 輪完成，分數: ' + curProfit, improved ? 'ok' : 'dim');
-  }
-  optPushLog('  ' + optNowTime() + ' ✓ ' + label + ' 收斂於 ' + curProfit, 'success');
-  return {rules:cur, profit:curProfit, iter:totalIter};
-}
-
-async function optStructureSearch(rows, startRules, maxAttempts){
-  optPushLog('  ' + optNowTime() + ' ━━━ 結構搜尋（最多 ' + maxAttempts + ' 次）━━━', 'struct');
-  var cur = optCloneRules(startRules);
-  var curProfit = optCalcProfit(rows, cur);
-  var bestProfit = curProfit, bestRules = optCloneRules(cur);
-  var attempts = 0, successes = 0, lastReport = 0;
-  while(OPT.running && attempts < maxAttempts){
-    attempts++;
-    if(Date.now() - OPT.startTime > optCFG.timeLimit * 1000){ optPushLog('  ⏰ 時間到', 'warn'); break; }
-    var test = optCloneRules(cur);
-    var p = Math.random();
-    var action = '', detail = '';
-    if(p < 0.22){
-      if(test.length >= MAX_RULES) continue;
-      var idx = ri(0, test.length-1);
-      if(test[idx].cond.length >= MAX_CONDS) continue;
-      test[idx] = optAddCondition(test[idx]);
-      action = 'ADD_COND'; detail = 'R' + (idx+1);
-    } else if(p < 0.40){
-      var idx2 = ri(0, test.length-1);
-      var newR = optRemoveCondition(test[idx2]);
-      if(newR){ test[idx2] = newR; action = 'DEL_COND'; detail = 'R' + (idx2+1); }
-      else continue;
-    } else if(p < 0.55){
-      if(test.length > 5){
-        var minIdx = Math.min(3, test.length-1);
-        var delIdx = ri(minIdx, test.length-1);
-        test.splice(delIdx, 1);
-        action = 'DEL_RULE'; detail = 'R' + (delIdx+1);
-      } else continue;
-    } else if(p < 0.72){
-      if(test.length >= MAX_RULES) continue;
-      var srcIdx = ri(0, test.length-1);
-      var copy = {on:test[srcIdx].on, then:test[srcIdx].then, cond:optCloneConds(test[srcIdx].cond)};
-      copy = optAddCondition(copy);
-      test.splice(srcIdx+1, 0, copy);
-      action = 'SPLIT'; detail = 'R' + (srcIdx+1);
-    } else if(p < 0.85){
-      if(test.length >= 2){
-        var i2 = ri(0, test.length-2);
-        var tmp = test[i2]; test[i2] = test[i2+1]; test[i2+1] = tmp;
-        action = 'SWAP'; detail = 'R' + (i2+1) + '↔R' + (i2+2);
-      } else continue;
-    } else {
-      var idx3 = ri(0, test.length-1);
-      var oldThen = test[idx3].then;
-      var opts = ['H','D','A','skip'].filter(function(x){ return x !== oldThen; });
-      var newThen = opts[ri(0, opts.length-1)];
-      test[idx3].then = newThen;
-      action = 'CHANGE_THEN'; detail = 'R' + (idx3+1) + ' ' + oldThen + '→' + newThen;
-    }
-    var newProfit = optCalcProfit(rows, test);
-    if(newProfit > curProfit){
-      cur = test; curProfit = newProfit; successes++;
-      optPushLog('  ' + optNowTime() + ' [' + attempts + '] ' + action + ' ' + detail + ' → ' + newProfit + ' ✓', 'ok');
-      if(newProfit > bestProfit){
-        bestProfit = newProfit;
-        bestRules = optCloneRules(test);
-        optPushLog('  ' + optNowTime() + ' ★★★ 結構新最優：' + bestProfit, 'best');
-      }
-    } else if(isOptShowBad()){
-      optPushLog('  ' + optNowTime() + ' [' + attempts + '] ' + action + ' ' + detail + ' ✗', 'bad');
-    }
-    if(attempts - lastReport >= 20){
-      lastReport = attempts;
-      optPushLog('  ' + optNowTime() + ' 進度 ' + attempts + '/' + maxAttempts + '，成功 ' + successes, 'info');
-    }
-    await maybeYield();
-  }
-  optPushLog('  ' + optNowTime() + ' 結構結束：' + attempts + ' 次，' + successes + ' 改進', 'struct');
-  return {rules:bestRules, profit:bestProfit, attempts:attempts, successes:successes};
-}
-
-function optRandomRestart(nMut){
-  var r = optCloneRules(INIT_RULES);
-  for(var k = 0; k < nMut; k++){
-    var p = Math.random();
-    if(p < 0.35){
-      var idx = ri(0, r.length-1);
-      if(r[idx].cond.length === 0) continue;
-      var ci = ri(0, r[idx].cond.length-1);
-      var v = r[idx].cond[ci][2];
-      var step = 1;
-      if(Math.abs(v) >= 50) step = 2;
-      if(Math.abs(v) >= 100) step = 5;
-      if(Math.abs(v) >= 300) step = 10;
-      if(Math.abs(v) >= 700) step = 20;
-      r[idx].cond[ci][2] = v + ri(-10, 10) * step;
-      var col = r[idx].cond[ci][0];
-      if(col === 'A' || col === 'B' || col === 'C') r[idx].cond[ci][2] = Math.max(0, Math.min(100, r[idx].cond[ci][2]));
-    } else if(p < 0.50){
-      var idx2 = ri(0, r.length-1);
-      var opts = ['H','D','A','skip'].filter(function(x){ return x !== r[idx2].then; });
-      r[idx2].then = opts[ri(0, opts.length-1)];
-    } else if(p < 0.62){
-      var idx3 = ri(0, r.length-1);
-      r[idx3].on = r[idx3].on ? 0 : 1;
-    } else if(p < 0.72){
-      var i2 = ri(0, r.length-2);
-      var tmp = r[i2]; r[i2] = r[i2+1]; r[i2+1] = tmp;
-    } else if(p < 0.80){
-      if(r.length > 5){
-        var minIdx = Math.min(3, r.length-1);
-        r.splice(ri(minIdx, r.length-1), 1);
-      }
-    } else if(p < 0.90){
-      var idx4 = ri(0, r.length-1);
-      if(r[idx4].cond.length < MAX_CONDS) r[idx4] = optAddCondition(r[idx4]);
-    } else {
-      if(r.length >= MAX_RULES) continue;
-      var srcIdx = ri(0, r.length-1);
-      var copy = {on:r[srcIdx].on, then:r[srcIdx].then, cond:optCloneConds(r[srcIdx].cond)};
-      copy = optAddCondition(copy);
-      r.splice(srcIdx+1, 0, copy);
-    }
-  }
-  return r;
-}
-
-function optSplitData(rows, ratio, seed){
-  var rng = mulberry32(seed || 12345);
-  var sh = shuffle(rows, rng);
-  var nTrain = Math.floor(rows.length * ratio);
-  return {train: sh.slice(0, nTrain), test: sh.slice(nTrain)};
-}
-function optGetFold(rows, fold, folds, seed){
-  var rng = mulberry32(seed || 12345);
-  var sh = shuffle(rows, rng);
-  var n = rows.length;
-  var foldSize = Math.floor(n / folds);
-  var start = fold * foldSize;
-  var end = (fold === folds - 1) ? n : start + foldSize;
-  var test = sh.slice(start, end);
-  var train = sh.slice(0, start).concat(sh.slice(end));
-  return {train:train, test:test};
-}
-
-function optDiagnose(rows, rules){
-  var stats = [];
-  for(var i = 0; i < rules.length; i++) stats.push({idx:i, rule:rules[i], hit:0, correct:0, wrong:0, profit:0});
-  for(var i = 0; i < rows.length; i++){
-    var row = rows[i], cols = row._c, pred = 'skip', hitRule = -1;
-    for(var j = 0; j < rules.length; j++){
-      if(!rules[j].on) continue;
-      var conds = rules[j].cond, match = true;
-      for(var k = 0; k < conds.length; k++){
-        var c = conds[k];
-        var v = cols[COL_IDX[c[0]]], tv = c[2], op = c[1], ok;
-        if(op === '>') ok = v > tv;
-        else if(op === '>=') ok = v >= tv;
-        else if(op === '<') ok = v < tv;
-        else if(op === '<=') ok = v <= tv;
-        else if(op === '==') ok = Math.abs(v-tv) < 1e-9;
-        else ok = Math.abs(v-tv) >= 1e-9;
-        if(!ok){ match = false; break; }
-      }
-      if(match){ pred = rules[j].then; hitRule = j; break; }
-    }
-    if(pred === 'skip' || hitRule === -1) continue;
-    var s = stats[hitRule]; s.hit++;
-    var gp;
-    if(pred === row.result){
-      s.correct++;
-      if(pred === 'H') gp = row.D - 100;
-      else if(pred === 'D') gp = row.E - 100;
-      else gp = row.F - 100;
-    } else { s.wrong++; gp = -100; }
-    s.profit += gp;
-  }
-  return stats;
-}
-
-function optRenderRuleTable(stats){
-  var html = '<table class="rule-table"><thead><tr>' +
-    '<th>規則</th><th>啟用</th><th>條件</th><th>指向</th><th>命中</th><th>對</th><th>錯</th><th>盈利</th>' +
-    '</tr></thead><tbody>';
-  for(var i = 0; i < stats.length; i++){
-    var s = stats[i], r = s.rule;
-    var condStr = r.cond.map(function(c){ return c[0]+c[1]+c[2]; }).join(' & ');
-    if(!condStr) condStr = '—';
-    if(condStr.length > 90) condStr = condStr.slice(0, 87) + '...';
-    var pcls = s.profit > 0 ? 'profit-pos' : (s.profit < 0 ? 'profit-neg' : '');
-    var onTag = r.on ? '<span class="tag-ok">ON</span>' : '<span class="tag-off">OFF</span>';
-    var thenTag = '<span class="tag-pred">' + r.then + '</span>';
-    html += '<tr><td>R' + (i+1) + '</td><td>' + onTag + '</td><td style="font-size:10px">' + condStr + '</td><td>' + thenTag + '</td>' +
-      '<td>' + s.hit + '</td><td>' + s.correct + '</td><td>' + s.wrong + '</td><td class="' + pcls + '">' + s.profit + '</td></tr>';
-  }
-  html += '</tbody></table>';
-  $('ruleTable').innerHTML = html;
-}
-
-function sheetOp(op){ if(op === '!=') return '<>'; if(op === '==') return '='; return op; }
-function buildCond(c){
-  var col = c[0], op = c[1], val = c[2], sop = sheetOp(op);
-  switch(col){
-    case 'A': return '(A2:A'+sop+val+')';
-    case 'B': return '(B2:B'+sop+val+')';
-    case 'C': return '(C2:C'+sop+val+')';
-    case 'D': return '(D2:D'+sop+val+')';
-    case 'E': return '(E2:E'+sop+val+')';
-    case 'F': return '(F2:F'+sop+val+')';
-    case '|A-C|': return '(ABS(A2:A-C2:C)'+sop+val+')';
-    case '|D-F|': return '(ABS(D2:D-F2:F)'+sop+val+')';
-    case 'D-F': return '((D2:D-F2:F)'+sop+val+')';
-    case 'F-D': return '((F2:F-D2:D)'+sop+val+')';
-    case 'A-C': return '((A2:A-C2:C)'+sop+val+')';
-    case 'C-A': return '((C2:C-A2:A)'+sop+val+')';
-    case 'E-D': return '((E2:E-D2:D)'+sop+val+')';
-    case 'E-F': return '((E2:E-F2:F)'+sop+val+')';
-    case 'D-E': return '((D2:D-E2:E)'+sop+val+')';
-    case 'impA': return '(ROUND(10000/D2:D,0)'+sop+val+')';
-    case 'impB': return '(ROUND(10000/E2:E,0)'+sop+val+')';
-    case 'impC': return '(ROUND(10000/F2:F,0)'+sop+val+')';
-    case 'valA': return '((A2:A-10000/D2:D)'+sop+val+')';
-    case 'valB': return '((B2:B-10000/E2:E)'+sop+val+')';
-    case 'valC': return '((C2:C-10000/F2:F)'+sop+val+')';
-    case 'ratioA': return '((A2:A*D2:D/100)'+sop+val+')';
-    case 'ratioB': return '((B2:B*E2:E/100)'+sop+val+')';
-    case 'ratioC': return '((C2:C*F2:F/100)'+sop+val+')';
-    case 'A+B': return '((A2:A+B2:B)'+sop+val+')';
-    case 'B+C': return '((B2:B+C2:C)'+sop+val+')';
-    case 'A+C': return '((A2:A+C2:C)'+sop+val+')';
-    case 'A+B+C': return '((A2:A+B2:B+C2:C)'+sop+val+')';
-    default: return 'FALSE';
-  }
-}
-function buildCondExpr(rule){
-  if(rule.cond.length === 0) return 'TRUE';
-  var parts = [];
-  for(var i = 0; i < rule.cond.length; i++) parts.push(buildCond(rule.cond[i]));
-  return parts.join('*');
-}
-function genFormula(rules){
-  var active = [];
-  for(var i = 0; i < rules.length; i++) if(rules[i].on) active.push(rules[i]);
-  if(active.length === 0) return '=ARRAYFORMULA(IF(A2:A="","","skip"))';
-  var body = '';
-  for(var i = 0; i < active.length; i++) body += 'IF(' + buildCondExpr(active[i]) + ',"' + active[i].then + '",';
-  body += '"skip"';
-  for(var j = 0; j < active.length; j++) body += ')';
-  return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",' + body + '))';
-}
-
-/* 自動參數 */
-function optAutoConfig(n){
-  var cfg = {};
-  if(n < 100){
-    cfg.splitRatio = 1; cfg.useCV = false; cfg.cvFolds = 5; cfg.minBets = 0;
-    cfg.timeLimit = 60; cfg.strength = 3;
-  } else if(n < 300){
-    cfg.splitRatio = 0.8; cfg.useCV = false; cfg.cvFolds = 5;
-    cfg.minBets = Math.max(10, Math.round(n * 0.8 * 0.20 / 10) * 10);
-    cfg.timeLimit = 90; cfg.strength = 8;
-  } else if(n < 800){
-    cfg.splitRatio = 0.8; cfg.useCV = true; cfg.cvFolds = 5;
-    cfg.minBets = Math.max(20, Math.round(n * 0.64 * 0.20 / 10) * 10);
-    cfg.timeLimit = 180; cfg.strength = 5;
-  } else if(n < 2000){
-    cfg.splitRatio = 0.8; cfg.useCV = true; cfg.cvFolds = 5;
-    cfg.minBets = Math.max(50, Math.round(n * 0.64 * 0.20 / 10) * 10);
-    cfg.timeLimit = 300; cfg.strength = 10;
-  } else {
-    cfg.splitRatio = 0.7; cfg.useCV = true; cfg.cvFolds = 10;
-    cfg.minBets = Math.max(100, Math.round(n * 0.9 * 0.20 / 10) * 10);
-    cfg.timeLimit = 600; cfg.strength = 20;
-  }
-  return cfg;
-}
-function applyOptAutoConfig(){
-  var parsed = parseOptData($('optInput').value);
-  var n = parsed.rows.length;
-  if(n === 0) return null;
-  var cfg = optAutoConfig(n);
-  $('splitRatio').value = String(cfg.splitRatio);
-  $('useCV').checked = cfg.useCV;
-  $('cvFolds').value = String(cfg.cvFolds);
-  $('minBets').value = cfg.minBets;
-  $('timeLimit').value = cfg.timeLimit;
-  $('strength').value = String(cfg.strength);
-  return {cfg:cfg, n:n};
-}
-function previewAutoOpt(){
-  if(OPT_MODE !== 'auto') return;
-  var res = applyOptAutoConfig();
-  var descEl = $('modeDesc');
-  if(!res){ descEl.textContent = '⚠ 請先貼上資料'; return; }
-  var c = res.cfg;
-  var desc = '🤖 自動（' + res.n + ' 筆）：';
-  desc += '分割 ' + (c.splitRatio === 1 ? '不分' : Math.round(c.splitRatio*100) + '/' + Math.round((1-c.splitRatio)*100));
-  desc += '｜' + (c.useCV ? 'K=' + c.cvFolds : '無CV');
-  desc += '｜最少命中 ' + c.minBets;
-  desc += '｜' + c.timeLimit + 's';
-  desc += '｜強度 ' + c.strength;
-  descEl.textContent = desc;
-}
-function setOptMode(m){
-  OPT_MODE = m;
-  $('modeAuto').className = 'mode-btn' + (m === 'auto' ? ' active' : '');
-  $('modeManual').className = 'mode-btn' + (m === 'manual' ? ' active' : '');
-  var ids = ['strength','splitRatio','minBets','useCV','cvFolds','timeLimit'];
-  if(m === 'auto'){
-    $('modeDesc').textContent = '根據資料量自動選擇最佳參數';
-    $('configBox').classList.add('disabled');
-    for(var i = 0; i < ids.length; i++) $(ids[i]).disabled = true;
-    previewAutoOpt();
-  } else {
-    $('modeDesc').textContent = '🎛️ 手動調整所有參數';
-    $('configBox').classList.remove('disabled');
-    for(var j = 0; j < ids.length; j++) $(ids[j]).disabled = false;
-  }
-}
-
-async function optOptimizeOnce(trainRows, N, label){
-  var globalBest = null, globalProfit = -Infinity;
-  optPushLog('');
-  optPushLog('═══════════════════════════════════════════════════════════', 'head');
-  optPushLog(optNowTime() + ' ' + label + ' ▶ 階段 1：初始規則座標下降', 'fold');
-  optPushLog('═══════════════════════════════════════════════════════════', 'head');
-  await tick();
-  var baseP = optCalcProfit(trainRows, INIT_RULES);
-  optPushLog(optNowTime() + ' 初始分數（含懲罰）：' + baseP, 'info');
-  await tick();
-  var r0 = await optCoordinateDescent(trainRows, INIT_RULES, label + ' 初始');
-  globalBest = r0.rules;
-  globalProfit = r0.profit;
-  optPushLog('');
-  optPushLog(optNowTime() + ' ✓ 階段 1 完成：' + baseP + ' → ' + r0.profit, 'success');
-  updateOptStats(0, globalProfit);
-  $('progbar').style.width = (1/(N+1)*100).toFixed(1) + '%';
-  await maybeYield(true);
-
-  for(var k = 1; k <= N; k++){
-    if(!OPT.running) return {rules:globalBest, profit:globalProfit};
-    if(Date.now() - OPT.startTime > optCFG.timeLimit * 1000){
-      optPushLog(optNowTime() + ' ⏰ 時間預算到，結束', 'warn');
-      break;
-    }
-    if(k % 10 === 0){
-      optPushLog('');
-      optPushLog(optNowTime() + ' ' + label + ' ▶ 結構搜尋', 'fold');
-      var beforeProfit = globalProfit;
-      var sres = await optStructureSearch(trainRows, globalBest, 100);
-      if(sres.profit > globalProfit){
-        globalProfit = sres.profit;
-        globalBest = sres.rules;
-        optPushLog('  ✓ 結構成功：' + beforeProfit + ' → ' + globalProfit, 'success');
-      } else {
-        optPushLog('  ✗ 結構無改進', 'warn');
-      }
-    }
-    var nMut = 3 + ri(0, 15);
-    optPushLog('');
-    optPushLog(optNowTime() + ' ' + label + ' ▶ 起點 #' + k + '/' + N + '：' + nMut + ' 次變異', 'fold');
-    var startRules = optRandomRestart(nMut);
-    var r = await optCoordinateDescent(trainRows, startRules, label + ' #' + k);
-    if(r.profit > globalProfit){
-      globalProfit = r.profit;
-      globalBest = r.rules;
-      optPushLog('  ★★★ 新全局最優：' + globalProfit, 'best');
-    } else {
-      optPushLog('  ✗ 收斂於 ' + r.profit, 'dim');
-    }
-    updateOptStats(k, globalProfit);
-    $('progbar').style.width = ((k+1)/(N+1)*100).toFixed(1) + '%';
-    await maybeYield(true);
-  }
-  return {rules:globalBest, profit:globalProfit};
-}
-
-async function startOpt(){
-  clearOptLog();
-  optPushLog('🚀 啟動中...', 'head');
-  $('log').dataset.started = '1';
-  await tick();
-
-  PENALTY_ON = $('usePenalty').checked;
-
-  if(OPT_MODE === 'auto'){
-    var applied = applyOptAutoConfig();
-    if(!applied){ alert('沒有有效資料'); return; }
-  }
-
-  var parsed = parseOptData($('optInput').value);
-  OPT.data = parsed.rows;
-  if(OPT.data.length === 0){ alert('沒有有效數據'); return; }
-
-  optCFG.minBets = parseInt($('minBets').value) || 0;
-  optCFG.splitRatio = parseFloat($('splitRatio').value);
-  optCFG.useCV = $('useCV').checked;
-  optCFG.cvFolds = parseInt($('cvFolds').value);
-  optCFG.timeLimit = parseInt($('timeLimit').value) || 120;
-
-  OPT.running = true;
-  OPT.startTime = Date.now();
-  OPT.evalCount = 0;
-  OPT.lastYield = 0;
-  $('btnRun').disabled = true;
-  $('btnStop').disabled = false;
-  $('diag').style.display = 'none';
-  $('best').style.display = 'none';
-  $('cvResult').style.display = 'none';
-  $('liveStats').style.display = 'flex';
-  $('optStatus').style.display = 'block';
-  $('optStatus').textContent = '⏳ 執行中…';
-  $('progbar').style.width = '0%';
-  clearOptLog();
-  precacheOptRows(OPT.data);
-
-  var N = parseInt($('strength').value);
-
-  optPushLog('═══════════════════════════════════════════════════════════', 'head');
-  optPushLog('🧬 智慧規則優化器 v20.01 啟動', 'head');
-  optPushLog('═══════════════════════════════════════════════════════════', 'head');
-  optPushLog(optNowTime() + ' 模式：' + (OPT_MODE === 'auto' ? '🤖 自動' : '🎛️ 手動'), 'auto');
-  optPushLog(optNowTime() + ' 複雜度懲罰：' + (PENALTY_ON ? '✅ 開（規則-'+RULE_PENALTY+'/條件-'+COND_PENALTY+'）' : '❌ 關'), 'pen');
-  optPushLog(optNowTime() + ' 上限：' + MAX_RULES + ' 條規則，每條 ' + MAX_CONDS + ' 個條件', 'pen');
-  optPushLog(optNowTime() + ' 資料：' + parsed.total + ' 原始，' + parsed.dups + ' 重複，' + OPT.data.length + ' 有效', 'info');
-  optPushLog(optNowTime() + ' 起點：' + (N+1) + '，時間：' + optCFG.timeLimit + 's，最少命中：' + optCFG.minBets, 'info');
-  optPushLog('');
-  await tick();
-
-  var folds = optCFG.useCV ? optCFG.cvFolds : 1;
-  var foldResults = [];
-
-  for(var f = 0; f < folds; f++){
-    if(!OPT.running) break;
-    if(Date.now() - OPT.startTime > optCFG.timeLimit * 1000){
-      optPushLog(optNowTime() + ' ⏰ 時間到，中止', 'warn');
-      break;
-    }
-    var fold, label;
-    if(optCFG.useCV){
-      label = '[Fold ' + (f+1) + '/' + folds + ']';
-      fold = optGetFold(OPT.data, f, folds, 12345);
-    } else if(optCFG.splitRatio < 1){
-      label = '[Split]';
-      fold = optSplitData(OPT.data, optCFG.splitRatio, 12345);
-    } else {
-      label = '[Full]';
-      fold = {train:OPT.data, test:OPT.data};
-    }
-    optPushLog('📂 ' + label + '  Train: ' + fold.train.length + ' / Test: ' + fold.test.length, 'fold');
-    await tick();
-    var result = await optOptimizeOnce(fold.train, N, label);
-    if(!OPT.running) break;
-    var trainEval = optEvalRules(fold.train, result.rules);
-    var testEval = optEvalRules(fold.test, result.rules);
-    optPushLog('📊 ' + label + ' Train ' + trainEval.profit + ' | Test ' + testEval.profit, 'fold');
-    foldResults.push({
-      label:label, rules:result.rules,
-      trainEval:trainEval, testEval:testEval,
-      trainProfit:result.profit
-    });
-    await tick();
-  }
-
-  if(foldResults.length === 0){
-    OPT.running = false;
-    $('btnRun').disabled = false;
-    $('btnStop').disabled = true;
-    $('optStatus').style.display = 'none';
-    return;
-  }
-  finishOpt(parsed, foldResults, N);
-}
-
-function finishOpt(parsed, foldResults, N){
-  var elapsed = ((Date.now() - OPT.startTime) / 1000).toFixed(1);
-  var best;
-  var useTestSelection = foldResults[0].testEval !== foldResults[0].trainEval || optCFG.useCV;
-  if(useTestSelection && foldResults.length >= 1){
-    best = foldResults[0];
-    var bestScore = foldResults[0].testEval.profit - complexityPenalty(foldResults[0].rules);
-    for(var i = 1; i < foldResults.length; i++){
-      var sc = foldResults[i].testEval.profit - complexityPenalty(foldResults[i].rules);
-      if(sc > bestScore){ bestScore = sc; best = foldResults[i]; }
-    }
-    optPushLog('🎯 最終規則用 Test 盈利挑選（非 Train）', 'best');
-  } else {
-    best = foldResults[0];
-    for(var j = 1; j < foldResults.length; j++){
-      if(foldResults[j].trainProfit > best.trainProfit) best = foldResults[j];
-    }
-  }
-  var finalRules = best.rules;
-
-  optPushLog('');
-  optPushLog('🏆 完成！耗時 ' + elapsed + 's，總掃描 ' + OPT.evalCount + ' 次', 'head');
-  optPushLog('');
-
-  var overfitDetected = false;
-
-  if(optCFG.useCV && foldResults.length > 1){
-    var avgTrain = 0, avgTest = 0, avgHits = 0;
-    for(var i = 0; i < foldResults.length; i++){
-      avgTrain += foldResults[i].trainEval.profit;
-      avgTest += foldResults[i].testEval.profit;
-      avgHits += foldResults[i].testEval.hits;
-    }
-    avgTrain /= foldResults.length;
-    avgTest /= foldResults.length;
-    avgHits /= foldResults.length;
-    var sd = 0;
-    for(var i = 0; i < foldResults.length; i++) sd += Math.pow(foldResults[i].testEval.profit - avgTest, 2);
-    sd = Math.sqrt(sd / foldResults.length);
-
-    optPushLog('📈 K-Fold 匯總（K=' + optCFG.cvFolds + '）', 'fold');
-    optPushLog('   平均 Train：' + avgTrain.toFixed(0), 'info');
-    optPushLog('   平均 Test ：' + avgTest.toFixed(0) + ' ± ' + sd.toFixed(0), 'success');
-    optPushLog('   平均命中  ：' + avgHits.toFixed(1), 'info');
-
-    var gapRatio = avgTrain > 0 ? avgTrain / Math.max(1, Math.abs(avgTest)) : 1;
-    if(avgTest < 0){
-      overfitDetected = true;
-      optPushLog('   🚨 平均 Test 為負 → 規則完全無法泛化', 'err');
-    } else if(gapRatio > 5){
-      overfitDetected = true;
-      optPushLog('   🚨 Train/Test 差距 ' + gapRatio.toFixed(1) + ' 倍 → 嚴重過擬合', 'err');
-    } else if(gapRatio > 2){
-      optPushLog('   ⚠ Train/Test 差距 ' + gapRatio.toFixed(1) + ' 倍 → 中度過擬合', 'warn');
-    } else if(sd > Math.abs(avgTest)){
-      optPushLog('   ⚠ Test 波動大（SD > 平均）', 'warn');
-    } else {
-      optPushLog('   ✓ Test 穩定，泛化良好', 'ok');
-    }
-
-    var cvHtml = '<div class="cv-result"><b style="color:#007bff">📈 K-Fold 結果</b>';
-    for(var i = 0; i < foldResults.length; i++){
-      var fr = foldResults[i];
-      cvHtml += '<div class="cv-row"><span>' + fr.label + '</span><span>Train ' + fr.trainEval.profit + ' | Test <b style="color:' + (fr.testEval.profit > 0 ? '#0a7a0a' : '#c00') + '">' + fr.testEval.profit + '</b></span></div>';
-    }
-    cvHtml += '<div class="cv-row"><span>平均 Test</span><span>' + avgTest.toFixed(0) + ' ± ' + sd.toFixed(0) + '</span></div></div>';
-    $('cvResult').innerHTML = cvHtml;
-    $('cvResult').style.display = 'block';
-    if(overfitDetected){
-      $('cvResult').innerHTML += '<div style="background:#f8d7da;border:2px solid #dc3545;color:#721c24;padding:14px;border-radius:6px;margin-top:12px;font-size:14px;font-weight:bold">🚨 嚴重過擬合：Train 平均 ' + avgTrain.toFixed(0) + '，但 Test 平均只有 ' + avgTest.toFixed(0) + '。建議：① 這批資料可能沒有可用規律 ② 減少條件數、提高最少命中門檻 ③ 增加更多資料</div>';
-    }
-  } else if(optCFG.splitRatio < 1){
-    var fr = foldResults[0];
-    var gap = fr.trainEval.profit - fr.testEval.profit;
-    var gapPct = fr.trainEval.profit !== 0 ? (gap / Math.abs(fr.trainEval.profit) * 100).toFixed(0) : '—';
-    var cvHtml = '<div class="cv-result"><b style="color:#007bff">📊 Train/Test 分割</b>';
-    cvHtml += '<div class="cv-row"><span>Train（' + fr.trainEval.hits + ' 命中）</span><span><b>' + fr.trainEval.profit + '</b></span></div>';
-    cvHtml += '<div class="cv-row"><span>Test（' + fr.testEval.hits + ' 命中）</span><span><b style="color:' + (fr.testEval.profit > 0 ? '#0a7a0a' : '#c00') + '">' + fr.testEval.profit + '</b></span></div>';
-    cvHtml += '<div class="cv-row"><span>衰減</span><span>' + (gap >= 0 ? '-' : '+') + Math.abs(gap) + '（' + gapPct + '%）</span></div></div>';
-    $('cvResult').innerHTML = cvHtml;
-    $('cvResult').style.display = 'block';
-    if(fr.testEval.profit < 0){
-      overfitDetected = true;
-      $('cvResult').innerHTML += '<div style="background:#f8d7da;border:2px solid #dc3545;color:#721c24;padding:14px;border-radius:6px;margin-top:12px;font-size:14px;font-weight:bold">🚨 Test 盈利為負（' + fr.testEval.profit + '）→ 規則無法泛化</div>';
-    }
-  }
-
-  var fullEval = optEvalRules(OPT.data, finalRules);
-  var formula = genFormula(finalRules);
-  $('best').style.display = 'block';
-  var summaryHtml = '🏆 最終規則（全部資料）：<b>盈利 ' + fullEval.profit + '</b>（命中 ' + fullEval.hits + '，對 ' + fullEval.correct + '，錯 ' + fullEval.wrong + '）';
-  if(optCFG.minBets > 0 && fullEval.hits < optCFG.minBets){
-    summaryHtml += '　<span style="color:#c00">⚠ 未達最少命中 ' + optCFG.minBets + '</span>';
-  }
-  $('summary').innerHTML = summaryHtml;
-  $('params').textContent = JSON.stringify(finalRules);
-  $('txtOut').value = formula;
-
-  var stats = optDiagnose(OPT.data, finalRules);
-  optRenderRuleTable(stats);
-  $('diag').style.display = 'block';
-
-  OPT.running = false;
-  $('btnRun').disabled = false;
-  $('btnStop').disabled = true;
-  $('optStatus').style.display = 'none';
-  $('progbar').style.width = '100%';
-  updateOptStats(N, fullEval.profit);
-}
-
-function stopOpt(){
-  OPT.running = false;
-  $('btnStop').disabled = true;
-  optPushLog('⏹ 手動停止', 'warn');
-}
-
-function copyIt(id){
-  var el = $(id); if(!el) return;
-  var txt = el.value;
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(function(){
-      showOptMsg('✅ 已複製 ' + txt.length + ' 字元', true);
-    }).catch(function(){ fallbackCopy(txt); });
-  } else fallbackCopy(txt);
-}
-function fallbackCopy(text){
-  var ta = document.createElement('textarea');
-  ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
-  document.body.appendChild(ta); ta.focus(); ta.select();
-  var ok = false;
-  try { ok = document.execCommand('copy'); } catch(e){}
-  document.body.removeChild(ta);
-  if(ok) showOptMsg('✅ 已複製', true);
-  else showOptMsg('❌ 複製失敗', false);
-}
-function showOptMsg(text, ok){
-  var m = $('msg');
-  m.textContent = text; m.className = ok ? 'ok' : 'err'; m.style.display = 'block';
-  setTimeout(function(){ m.style.display = 'none'; }, 3000);
-}
-
-/* 監聽 textarea 變化 */
-$('optInput').addEventListener('input', function(){
-  if(OPT_MODE === 'auto') previewAutoOpt();
+$('btnRecognize').addEventListener('click', function(){ recognizeAll(false); });
+$('btnReOcr').addEventListener('click', function(){
+  if(!confirm('重新識別全部 ' + state.rows.length + ' 張圖片？')) return;
+  recognizeAll(true);
+});
+$('btnClear').addEventListener('click', function(){
+  if(!confirm('清空全部 ' + state.rows.length + ' 張圖片？')) return;
+  for(var i = 0; i < state.rows.length; i++) URL.revokeObjectURL(state.rows[i].imageURL);
+  state.rows = []; $('output').classList.remove('show');
+  renderTable(); updateButtons(); updateStats();
 });
 
-/* 初始化 */
-(function init(){
-  setOptMode('auto');
-  $('log').textContent = '等待開始...';
-  $('log').dataset.started = '1';
-})();
+updateButtons(); updateStats();
 </script>
 </body>
 </html>
