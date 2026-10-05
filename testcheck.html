@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>賠率截圖批量識別 v1.12</title>
+<title>賠率截圖批量識別 v1.13</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:16px;background:#f0f2f5;color:#333}
 h1{font-size:18px;margin:0 0 4px}
 .version{font-size:12px;color:#888;margin-bottom:8px}
-#dropzone{border:2px dashed #007bff;border-radius:8px;padding:28px 16px;text-align:center;background:#fff;cursor:pointer;transition:all .2s;margin-bottom:12px}
+#dropzone{border:2px dashed #007bff;border-radius:8px;padding:28px 16px;text-align:center;background:#fff;cursor:pointer;transition:all .2s;margin-bottom:12px;position:relative;z-index:10}
 #dropzone.hover{background:#e3f2fd;border-color:#0056b3}
 #dropzone .icon{font-size:40px;line-height:1}
-#dropzone .title{font-size:15px;font-weight:bold;margin-top:8px}
-#dropzone .hint{color:#888;font-size:12px;margin-top:6px}
+#dropzone .title{font-size:15px;font-weight:bold;margin-top:8px;pointer-events:none}
+#dropzone .hint{color:#888;font-size:12px;margin-top:6px;pointer-events:none}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
 button{padding:8px 16px;font-size:14px;border:none;border-radius:5px;cursor:pointer;font-weight:bold;background:#007bff;color:#fff;transition:background .15s}
 button:hover:not(:disabled){background:#0056b3}
@@ -62,11 +62,12 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
 .legend{font-size:11px;color:#666;background:#fff;padding:8px 12px;border-radius:4px;margin-top:12px;line-height:1.7;border:1px solid #ddd}
 .legend code{background:#eef;padding:1px 5px;border-radius:3px;color:#046;font-size:10px}
 .notice{background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:10px}
-.notice-big{background:#d4edda;border:2px solid #28a745;color:#155724;padding:12px 14px;border-radius:6px;font-size:13px;margin-bottom:12px;line-height:1.8}
-.notice-big b{color:#0a5a1a}
 .rule-box{background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:10px;line-height:1.7}
 .rule-box b{color:#1e3a8a}
 .rule-box .highlight{background:#fef3c7;padding:1px 6px;border-radius:3px;color:#92400e;font-weight:bold}
+#loadStatus{background:#e2e3e5;color:#383d41;padding:6px 10px;border-radius:4px;font-size:12px;margin-bottom:8px;display:inline-block}
+#loadStatus.ok{background:#d4edda;color:#155724}
+#loadStatus.err{background:#f8d7da;color:#721c24}
 @media(max-width:700px){
   body{padding:10px}
   th,td{padding:3px 2px}
@@ -80,23 +81,18 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
 <body>
 
 <h1>📷 賠率截圖批量識別</h1>
-<div class="version">v1.12 — 中文 OCR + 「猜誰會贏」錨點</div>
+<div class="version">v1.13 — 修復上傳 + 只用中文錨點</div>
 
-<div class="notice-big">
-  <b>⚠️ 重要提醒：</b>你的截圖如果來自<b>網頁</b>（有網址），最準的方法是<b>直接從網頁複製文字</b>，完全不用 OCR。<br>
-  如果是 <b>App</b>（bet365 / 1XBET 官方 App），才需要 OCR。<br>
-  <b>如果是網頁，請告訴我，我幫你做一個直接輸入資料的工具。</b>
-</div>
+<div id="loadStatus">⏳ OCR 引擎載入中...</div>
 
-<div class="notice">💡 第一次使用 OCR 引擎需下載<b>中文+英文</b>語言包（約 30MB），請耐心等待 20~60 秒</div>
+<div class="notice">💡 第一次使用需下載<b>中文+英文</b>語言包（約 30MB），約 20~60 秒</div>
 
 <div class="rule-box">
-  <b>🎯 v1.12 識別邏輯：</b><br>
+  <b>🎯 v1.13 識別邏輯：</b><br>
   ① <b>比分</b>：優先找含 <code>-</code> 的；排除時間格式 <code>X:0Y</code><br>
-  ② <b>主錨點：「猜誰會贏？」</b>（中文 OCR，模糊匹配「猜/贏/赢/誰」）<br>
-  ③ <b>備用錨點：「18+」</b>（若中文錨點找不到）<br>
-  ④ <b>錨點下方第一組 3 個 1-2 位數</b> = A/B/C（總和 97~103）<br>
-  ⑤ <b>再下方 3 個 ≥100 的數</b> = D/E/F<br>
+  ② <b>唯一錨點：「猜誰會贏」</b>（中文 OCR，模糊匹配「猜」或「贏/赢/羸」）<br>
+  ③ <b>錨點下方第一組 3 個 1-2 位數</b> = A/B/C（總和 97~103）<br>
+  ④ <b>再下方 3 個 ≥100 的數</b> = D/E/F<br>
   <b>✅ 驗證：</b>A/B/C 需 1-2 位、D/E/F 需 3 位+、比分需存在、結果需 H/D/A/skip、<span class="highlight">A+B+C 必須 = 100</span>
 </div>
 
@@ -105,7 +101,7 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
   <div class="title">點擊或拖放圖片到此處</div>
   <div class="hint">支援 JPG / PNG / WEBP　可一次多選</div>
 </div>
-<input type="file" id="fileInput" multiple accept="image/*" hidden>
+<input type="file" id="fileInput" multiple accept="image/*" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;">
 
 <div class="toolbar">
   <button id="btnRecognize" disabled>🔍 開始識別</button>
@@ -165,24 +161,68 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
 <dialog id="debugDlg"><pre id="debugContent"></pre></dialog>
 <dialog id="processedDlg"><img id="processedImg" alt=""></dialog>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
 <script>
 'use strict';
 
-var VALID_RESULTS = ['H','D','A','skip'];
-var state = { rows: [], worker: null, workerReady: false, busy: false, debugIdx: 0, previewIdx: 0 };
+/* ============================================================
+   第一部分：立即綁定 DOM 事件（不依賴 Tesseract）
+   ============================================================ */
 var $ = function(id){ return document.getElementById(id); };
 var dropzone = $('dropzone'), fileInput = $('fileInput');
 
-dropzone.addEventListener('click', function(){ fileInput.click(); });
+/* 用 mousedown + click 雙保險 */
+function triggerFileInput(e){
+  if(e) { e.preventDefault(); e.stopPropagation(); }
+  console.log('[triggerFileInput] 觸發');
+  try {
+    fileInput.click();
+  } catch(err){
+    console.error('fileInput.click 失敗:', err);
+    alert('無法開啟檔案選擇器：' + err.message);
+  }
+}
+
+dropzone.addEventListener('click', triggerFileInput);
+dropzone.addEventListener('mousedown', function(e){
+  /* 有些瀏覽器 mousedown 就能觸發 */
+  if(e.button !== 0) return;
+});
+
+/* hover 效果 */
 dropzone.addEventListener('dragover', function(e){ e.preventDefault(); dropzone.classList.add('hover'); });
-dropzone.addEventListener('dragleave', function(){ dropzone.classList.remove('hover'); });
-dropzone.addEventListener('drop', function(e){ e.preventDefault(); dropzone.classList.remove('hover'); handleFiles(e.dataTransfer.files); });
-fileInput.addEventListener('change', function(e){ handleFiles(e.target.files); fileInput.value = ''; });
+dropzone.addEventListener('dragenter', function(e){ e.preventDefault(); dropzone.classList.add('hover'); });
+dropzone.addEventListener('dragleave', function(e){ e.preventDefault(); dropzone.classList.remove('hover'); });
+dropzone.addEventListener('drop', function(e){
+  e.preventDefault();
+  e.stopPropagation();
+  dropzone.classList.remove('hover');
+  console.log('[drop] 收到', e.dataTransfer.files.length, '個檔案');
+  handleFiles(e.dataTransfer.files);
+});
+
+fileInput.addEventListener('change', function(e){
+  console.log('[fileInput change]', e.target.files.length, '個檔案');
+  handleFiles(e.target.files);
+  fileInput.value = '';
+});
+
+console.log('[v1.13] DOM 事件綁定完成');
+
+/* ============================================================
+   第二部分：全域狀態（不依賴 Tesseract）
+   ============================================================ */
+var VALID_RESULTS = ['H','D','A','skip'];
+var state = { rows: [], worker: null, workerReady: false, busy: false, debugIdx: 0, previewIdx: 0 };
 
 function handleFiles(files){
-  var arr = Array.prototype.slice.call(files).filter(function(f){ return f.type && f.type.indexOf('image/') === 0; });
-  if(arr.length === 0){ alert('沒有有效的圖片檔案'); return; }
+  var arr = Array.prototype.slice.call(files).filter(function(f){
+    return f.type && f.type.indexOf('image/') === 0;
+  });
+  if(arr.length === 0){
+    alert('沒有有效的圖片檔案（' + files.length + ' 個檔案被過濾掉）');
+    return;
+  }
+  console.log('[handleFiles] 接受', arr.length, '張圖');
   for(var i = 0; i < arr.length; i++){
     var f = arr[i];
     state.rows.push({
@@ -196,6 +236,9 @@ function handleFiles(files){
   renderTable(); updateButtons(); updateStats();
 }
 
+/* ============================================================
+   第三部分：所有 UI 函式
+   ============================================================ */
 function validateRow(v){
   var errs = [];
   var abc = ['homePct','drawPct','awayPct'], abcN = ['主%','和%','客%'];
@@ -224,6 +267,11 @@ function validateRow(v){
 function isValidRow(v){ return validateRow(v).length === 0; }
 function hasAnyValue(v){
   return !!(v.homePct || v.drawPct || v.awayPct || v.homeOdd || v.drawOdd || v.awayOdd || v.scoreA !== '' || v.scoreB !== '');
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
 }
 
 function renderTable(){
@@ -300,10 +348,10 @@ function applyCellHighlight(tr, v){
   for(var i = 0; i < checks.length; i++){
     var inp = tr.querySelector('input[data-field="' + checks[i][0] + '"]'); if(!inp) continue;
     var s = String(inp.value || '').trim();
-    var bad = (s !== '') && score !checks[i][1].Badtest(s);
-    if(bad) inp.classList.add('cell =-err'); else inp.classList.remove (('cell-err');
+    var bad = (s !== '') && !checks[i][1].test(s);
+    if(bad) inp.classList.add('cell-err'); else inp.classList.remove('cell-err');
   }
-sv  var hInp = tr.querySelector('input[data-field="homePct"]');
+  var hInp = tr.querySelector('input[data-field="homePct"]');
   var dInp = tr.querySelector('input[data-field="drawPct"]');
   var aInp = tr.querySelector('input[data-field="awayPct"]');
   if(hInp && dInp && aInp){
@@ -322,7 +370,7 @@ sv  var hInp = tr.querySelector('input[data-field="homePct"]');
   var scoreInp = tr.querySelector('input[data-field="score"]');
   if(scoreInp){
     var sv = String(scoreInp.value || '').trim();
-    var !== '') && !/^\d{1,2}\s*[-:.]\s*\d{1,2}$/.test(sv);
+    var scoreBad = (sv !== '') && !/^\d{1,2}\s*[-:.]\s*\d{1,2}$/.test(sv);
     if(scoreBad) scoreInp.classList.add('cell-err'); else scoreInp.classList.remove('cell-err');
   }
 }
@@ -366,7 +414,6 @@ function previewImage(url){ $('previewImg').src = url; $('previewDlg').showModal
 $('previewDlg').addEventListener('click', function(){ this.close(); });
 $('debugDlg').addEventListener('click', function(){ this.close(); });
 $('processedDlg').addEventListener('click', function(){ this.close(); });
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 
 function updateButtons(){
   var has = state.rows.length > 0, busy = state.busy;
@@ -411,15 +458,54 @@ function updateStats(){
   $('stats').style.display = 'block';
 }
 
-/* ⭐ v1.12：中文+英文 OCR */
+/* ============================================================
+   第四部分：OCR 引擎動態載入 + 識別
+   ============================================================ */
+var tesseractLoading = false, tesseractLoaded = false;
+
+function loadTesseractScript(cb){
+  if(tesseractLoaded){ cb(true); return; }
+  if(tesseractLoading){ setTimeout(function(){ loadTesseractScript(cb); }, 100); return; }
+  tesseractLoading = true;
+  console.log('[loadTesseractScript] 開始載入');
+  var s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js';
+  s.onload = function(){
+    console.log('[loadTesseractScript] 載入完成');
+    tesseractLoaded = true;
+    tesseractLoading = false;
+    $('loadStatus').textContent = '✅ OCR 引擎已就緒';
+    $('loadStatus').className = 'ok';
+    cb(true);
+  };
+  s.onerror = function(){
+    console.error('[loadTesseractScript] 載入失敗');
+    tesseractLoading = false;
+    $('loadStatus').textContent = '❌ OCR 引擎載入失敗，請檢查網路';
+    $('loadStatus').className = 'err';
+    cb(false);
+  };
+  document.head.appendChild(s);
+}
+
+/* 頁面載入後就開始下載 Tesseract（不阻塞 UI） */
+setTimeout(function(){ loadTesseractScript(function(){}); }, 100);
+
 async function ensureWorker(){
   if(state.worker && state.workerReady) return state.worker;
+
+  if(!tesseractLoaded){
+    var loaded = await new Promise(function(resolve){
+      loadTesseractScript(resolve);
+    });
+    if(!loaded) throw new Error('OCR 引擎載入失敗');
+  }
+
   var progText = $('progressText'), progDetail = $('progressDetail');
   $('progress').style.display = 'block';
   progText.textContent = '⚙️ 初始化 OCR 引擎...';
-  progDetail.textContent = '下載中文+英文語言包（約 30MB），第一次會比較久';
+  progDetail.textContent = '下載中文+英文語言包，第一次會比較久';
 
-  /* 使用中文簡體 + 英文 */
   state.worker = await Tesseract.createWorker(['chi_sim', 'eng'], 1, {
     logger: function(m){
       if(m.status === 'loading tesseract core') progDetail.textContent = '載入核心引擎...';
@@ -431,7 +517,7 @@ async function ensureWorker(){
   try {
     await state.worker.setParameters({
       preserve_interword_spaces: '1',
-      tessedit_pageseg_mode: '6'  /* 假設為單一文字區塊 */
+      tessedit_pageseg_mode: '6'
     });
   } catch(e){}
   state.workerReady = true; progDetail.textContent = '引擎就緒';
@@ -440,6 +526,8 @@ async function ensureWorker(){
 
 async function recognizeAll(forceAll){
   if(state.busy) return;
+  if(state.rows.length === 0){ alert('尚未上傳圖片'); return; }
+
   state.busy = true; updateButtons();
   var progText = $('progressText'), progDetail = $('progressDetail'), progBar = $('progressBarInner');
   $('progress').style.display = 'block';
@@ -535,7 +623,7 @@ function preprocessImage(file){
 }
 
 /* ============================================================
-   ⭐ v1.12 提取邏輯：中文錨點優先
+   第五部分：提取邏輯（v1.13 只用中文錨點）
    ============================================================ */
 function applyHeuristic(row){
   var W = row.ocrWidth || 1;
@@ -554,13 +642,24 @@ function applyHeuristic(row){
     debug.push('[比分] ' + score.a + '-' + score.b + '  y=' + Math.round(score.cy) + '  src=' + score.src);
   } else debug.push('[比分] 未找到');
 
-  /* ---- 2. 找錨點：「猜誰會贏」優先，18+ 備用 ---- */
-  var anchorInfo = findChineseAnchor(words) || find18Plus(words);
+  /* ---- 2. ⭐ 只用中文錨點 ---- */
+  var anchorInfo = findChineseAnchor(words);
   var anchorY = anchorInfo ? anchorInfo.y : null;
   if(anchorInfo){
-    debug.push('[錨點] ' + anchorInfo.type + '  y=' + Math.round(anchorY) + '  文字="' + anchorInfo.text + '"');
+    debug.push('[中文錨點] ✓ y=' + Math.round(anchorY) + '  文字="' + anchorInfo.text + '"');
   } else {
-    debug.push('[錨點] ⚠ 未找到（中文和 18+ 都沒有），改用全部資料');
+    debug.push('[中文錨點] ✗ 未找到「猜誰會贏」（不做 fallback）');
+    /* 找不到錨點 → 留空，不猜 */
+    row.confidence = 'low';
+    debug.push('');
+    debug.push('--- 所有 OCR 詞（按 y 排序，前 150） ---');
+    var sortedD = words.slice().sort(function(a,b){ return a.cy - b.cy; });
+    for(var i = 0; i < Math.min(150, sortedD.length); i++){
+      var wd = sortedD[i];
+      debug.push('y=' + String(Math.round(wd.cy)).padStart(5) + '  x=' + String(Math.round(wd.cx)).padStart(5) + '  "' + wd.text + '"');
+    }
+    row.debugInfo = debug.join('\n');
+    return;
   }
 
   /* ---- 3. 取錨點下方的所有數字 token ---- */
@@ -568,11 +667,8 @@ function applyHeuristic(row){
   for(var i = 0; i < words.length; i++){
     var w = words[i];
     var t = w.text.trim();
+    if(Math.abs(w.cy - anchorY) < 5) continue;
 
-    /* 排除錨點本身 */
-    if(anchorInfo && Math.abs(w.cy - anchorY) < 5) continue;
-
-    /* X.XX 或 X,XX */
     var m1 = t.match(/^(\d{1,2})[.,](\d{2})$/);
     if(m1){
       var v1 = parseInt(m1[1], 10) * 100 + parseInt(m1[2], 10);
@@ -581,7 +677,6 @@ function applyHeuristic(row){
         continue;
       }
     }
-    /* XX% 或 XX */
     var m2 = t.match(/^(\d{1,3})\s*%?$/);
     if(m2){
       var v2 = parseInt(m2[1], 10);
@@ -591,17 +686,13 @@ function applyHeuristic(row){
     }
   }
 
-  var below = numbers;
-  if(anchorY !== null){
-    below = numbers.filter(function(n){ return n.cy > anchorY + 5; });
-  }
-
+  var below = numbers.filter(function(n){ return n.cy > anchorY + 5; });
   below.sort(function(a, b){
     if(Math.abs(a.cy - b.cy) > 25) return a.cy - b.cy;
     return a.cx - b.cx;
   });
 
-  debug.push('[下方數字] ' + below.map(function(n){
+  debug.push('[錨點下方數字] ' + below.map(function(n){
     return n.raw + '(y=' + Math.round(n.cy) + ',x=' + Math.round(n.cx) + ')';
   }).join(', '));
 
@@ -706,40 +797,27 @@ function applyHeuristic(row){
   row.debugInfo = debug.join('\n');
 }
 
-/* ⭐ 中文錨點：找「猜誰會贏」 */
+/* ⭐ v1.13：中文錨點「猜誰會贏」 */
 function findChineseAnchor(words){
   var best = null;
   for(var i = 0; i < words.length; i++){
     var w = words[i];
     var t = w.text;
-    /* 模糊匹配：含「猜」或含「贏/赢/羸」 */
+
+    /* 匹配條件（任一成立）：
+       1. 含「猜」
+       2. 含「贏」/「赢」/「羸」
+       3. 含「誰」+「贏」
+    */
     var match = false;
     if(/猜/.test(t)) match = true;
     else if(/[贏赢羸]/.test(t)) match = true;
-    else if(/猜誰會贏/.test(t)) match = true;
+    else if(/[誰谁]/.test(t) && /[贏赢羸]/.test(t)) match = true;
 
     if(match){
+      /* 取最下面的（「猜誰會贏」通常在頁面中下部） */
       if(!best || w.cy > best.y){
-        best = { y: w.cy, text: t, type: '「猜誰會贏」', matchType: 'chinese' };
-      }
-    }
-  }
-  return best;
-}
-
-/* ⭐ 18+ 備用錨點 */
-function find18Plus(words){
-  var best = null;
-  for(var i = 0; i < words.length; i++){
-    var w = words[i];
-    var t = w.text.trim();
-    var matchType = null;
-    if(/18\s*[\+\*\°\>\·\−\-]/.test(t)) matchType = 'strong';
-    else if(/^18\+?$/.test(t)) matchType = 'exact';
-    else if(t.length <= 6 && /18/.test(t)) matchType = 'loose';
-    if(matchType){
-      if(!best || w.cy > best.y){
-        best = { y: w.cy, text: t, type: '18+', matchType: matchType };
+        best = { y: w.cy, text: t, type: 'chinese' };
       }
     }
   }
@@ -805,6 +883,9 @@ function groupRows(words, yThreshold){
   return rows;
 }
 
+/* ============================================================
+   第六部分：輸出
+   ============================================================ */
 function buildOutput(onlyValid){
   var lines = [];
   for(var i = 0; i < state.rows.length; i++){
@@ -885,6 +966,7 @@ $('btnClear').addEventListener('click', function(){
   renderTable(); updateButtons(); updateStats();
 });
 
+/* 初始化 */
 updateButtons(); updateStats();
 </script>
 </body>
