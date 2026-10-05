@@ -2,303 +2,913 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🔬 v15 診斷工具 — 是否過擬合？</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>賠率截圖批量識別 v1.01</title>
 <style>
 *{box-sizing:border-box}
-body{font-family:system-ui;padding:16px;max-width:1200px;margin:auto;background:#f0f2f5}
-h2{margin:0 0 8px 0}
-textarea{width:100%;height:200px;font-family:monospace;font-size:12px;padding:8px;border:1px solid #ccc;border-radius:4px}
-button{padding:14px 32px;font-size:16px;background:#007bff;color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:bold;margin:8px 8px 8px 0}
-button:hover{background:#0056b3}
-button:disabled{background:#999;cursor:not-allowed}
-.box{background:#fff;padding:14px;border-radius:6px;margin-top:14px;border:1px solid #ddd}
-.row{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
-.card{background:#f8f9fa;padding:12px;border-radius:6px;border:1px solid #ddd;flex:1;min-width:200px;text-align:center}
-.card .num{font-size:28px;font-weight:bold;font-family:monospace;color:#007bff}
-.card .lbl{font-size:12px;color:#666;margin-top:4px}
-.verdict{padding:16px;border-radius:6px;margin-top:14px;font-size:15px;line-height:1.7}
-.verdict-ok{background:#d4edda;color:#155724;border:1px solid #c3e6cb}
-.verdict-warn{background:#fff3cd;color:#856404;border:1px solid #ffc107}
-.verdict-bad{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb}
-.verdict strong{font-size:18px}
-#log{background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:12px;margin-top:12px;height:200px;overflow-y:auto;font-family:monospace;font-size:12px;white-space:pre-wrap;line-height:1.5}
-table{border-collapse:collapse;width:100%;font-size:13px;margin-top:10px;background:#fff}
-th,td{border:1px solid #ccc;padding:8px 10px;text-align:right}
-th{background:#e9ecef;text-align:center}
-td:first-child{text-align:left}
-.profit-pos{color:#0a7a0a;font-weight:bold}
-.profit-neg{color:#c00;font-weight:bold}
+body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:16px;background:#f0f2f5;color:#333}
+h1{font-size:18px;margin:0 0 4px}
+.version{font-size:12px;color:#888;margin-bottom:8px}
+.sub{font-size:12px;color:#666;margin-bottom:12px}
+#dropzone{border:2px dashed #007bff;border-radius:8px;padding:28px 16px;text-align:center;background:#fff;cursor:pointer;transition:all .2s;margin-bottom:12px}
+#dropzone.hover{background:#e3f2fd;border-color:#0056b3}
+#dropzone .icon{font-size:40px;line-height:1}
+#dropzone .title{font-size:15px;font-weight:bold;margin-top:8px}
+#dropzone .hint{color:#888;font-size:12px;margin-top:6px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+button{padding:8px 16px;font-size:14px;border:none;border-radius:5px;cursor:pointer;font-weight:bold;background:#007bff;color:#fff;transition:background .15s}
+button:hover:not(:disabled){background:#0056b3}
+button:disabled{background:#999;cursor:not-allowed;opacity:.7}
+button.gray{background:#6c757d}button.gray:hover:not(:disabled){background:#545b62}
+button.green{background:#28a745}button.green:hover:not(:disabled){background:#1e7e34}
+button.red{background:#dc3545}button.red:hover:not(:disabled){background:#b02a37}
+.opt{display:inline-flex;align-items:center;gap:4px;font-size:12px;background:#fff;padding:6px 10px;border:1px solid #ccc;border-radius:4px;cursor:pointer;user-select:none}
+#progress{background:#fff;padding:12px;border-radius:6px;margin-bottom:12px;display:none;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+#progressText{font-size:13px;color:#333;font-weight:bold}
+#progressDetail{font-size:11px;color:#888;margin-top:4px}
+#progressBar{height:8px;background:#e9ecef;border-radius:4px;overflow:hidden;margin-top:8px}
+#progressBarInner{height:100%;background:linear-gradient(90deg,#007bff,#28a745);width:0%;transition:width .2s}
+#stats{background:#e7f5ff;border:1px solid #b6d4fe;color:#084298;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:12px;display:none;font-weight:bold}
+#tableWrap{background:#fff;border-radius:6px;overflow:auto;max-height:70vh;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:6px 5px;border-bottom:1px solid #eee;text-align:left;vertical-align:middle}
+th{background:#e9ecef;font-size:11px;position:sticky;top:0;z-index:2;text-align:center;font-weight:bold}
+td input[type="text"],td input[type="number"],td select{width:100%;min-width:44px;padding:4px 4px;border:1px solid #ccc;border-radius:3px;font-size:12px;font-family:'Consolas',monospace;box-sizing:border-box;background:#fff}
+td input:focus,td select:focus{outline:2px solid #007bff;border-color:#007bff}
+td input.cell-err,td select.cell-err{background:#ffe5e5;border-color:#dc3545;color:#721c24}
+td img{width:52px;height:52px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid #ddd;display:block}
+.row-num{color:#999;font-size:11px;text-align:center}
+.status{font-size:10px;padding:3px 6px;border-radius:10px;display:inline-block;white-space:nowrap;font-weight:bold;text-align:center}
+.status-wait{background:#e2e3e5;color:#383d41}
+.status-processing{background:#fff3cd;color:#856404}
+.status-ok{background:#d4edda;color:#155724}
+.status-warn{background:#fff3cd;color:#856404}
+.status-err{background:#f8d7da;color:#721c24}
+.valid-ok{color:#28a745;font-weight:bold;font-size:16px;text-align:center;cursor:help}
+.valid-err{color:#dc3545;font-weight:bold;font-size:16px;text-align:center;cursor:help}
+.valid-wait{color:#ccc;font-size:14px;text-align:center}
+.ocr-text{font-size:10px;color:#999;max-height:44px;overflow:hidden;cursor:pointer;background:#f8f9fa;padding:4px 6px;border-radius:3px;font-family:'Consolas',monospace;white-space:pre-wrap;word-break:break-all;line-height:1.4;transition:max-height .2s}
+.ocr-text.expanded{max-height:500px;overflow:auto}
+.ocr-text:empty::before{content:'（無）';color:#ccc}
+.empty{text-align:center;padding:60px 20px;color:#999;font-size:13px}
+#output{background:#0c0c0c;color:#d4d4d4;padding:14px;border-radius:6px;font-family:'Consolas',monospace;font-size:12px;white-space:pre;overflow-x:auto;margin-top:12px;display:none;line-height:1.6;box-shadow:inset 0 0 20px rgba(0,0,0,.5);tab-size:4}
+#output.show{display:block}
+#output .fail-line{color:#f87171;font-weight:bold}
+dialog{border:none;border-radius:8px;padding:0;max-width:95vw;max-height:95vh;background:#000}
+dialog::backdrop{background:rgba(0,0,0,.7)}
+dialog img{max-width:90vw;max-height:90vh;display:block}
+.legend{font-size:11px;color:#666;background:#fff;padding:8px 12px;border-radius:4px;margin-top:12px;line-height:1.7;border:1px solid #ddd}
+.legend code{background:#eef;padding:1px 5px;border-radius:3px;color:#046;font-size:10px}
+.notice{background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:10px}
+.rule-box{background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:10px;line-height:1.7}
+.rule-box b{color:#1e3a8a}
+@media(max-width:700px){
+  body{padding:10px}
+  th,td{padding:3px 2px}
+  td img{width:36px;height:36px}
+  td input{font-size:11px;padding:2px 2px;min-width:32px}
+  .toolbar button{padding:6px 10px;font-size:12px}
+  h1{font-size:15px}
+}
 </style>
 </head>
 <body>
 
-<h2>🔬 v15 診斷工具 — 是否過擬合？</h2>
-<p>貼上你的<b>全部資料</b>（按時間順序，不要打亂）。工具會用 v15 公式分別評估：全部 / 前段 / 後段，判斷是否過擬合。</p>
+<h1>📷 賠率截圖批量識別</h1>
+<div class="version">v1.01 — 加入嚴格驗證 + 製表符輸出</div>
 
-<textarea id="input" placeholder="23	27	49	355	385	169	0:3	A
-62	27	9	158	395	405	3:0	H
-...（請貼上全部 296 場，順序不要改）"></textarea>
+<div class="notice">💡 第一次使用 OCR 引擎需下載語言包（約 15MB），請耐心等待 10~30 秒</div>
 
-<div class="row">
-  <button id="btnRun" onclick="run()">🚀 開始診斷</button>
+<div class="rule-box">
+  <b>✅ 驗證規則：</b><br>
+  ① <b>A/B/C（主/和/客%）</b>：必須是 <code>1~2 位數字</code><br>
+  ② <b>D/E/F（主/和/客賠）</b>：必須是 <code>3 位數字以上</code>（如 215 = 2.15）<br>
+  ③ <b>G（比分）</b>：必須存在（如 2:1）<br>
+  ④ <b>H（結果）</b>：必須是 <code>H</code> / <code>D</code> / <code>A</code> / <code>skip</code> 之一<br>
+  ⑤ 任一項不成立 → 該筆輸出為「<b>失敗</b>」
 </div>
 
-<div id="log">等待開始...</div>
+<div id="dropzone">
+  <div class="icon">📁</div>
+  <div class="title">點擊或拖放圖片到此處</div>
+  <div class="hint">支援 JPG / PNG / WEBP　可一次多選（建議 ≤ 100 張）</div>
+</div>
+<input type="file" id="fileInput" multiple accept="image/*" hidden>
 
-<div id="results" style="display:none">
-  <div class="box">
-    <h3 style="margin-top:0">📊 全部資料（v15 評估）</h3>
-    <div class="row">
-      <div class="card"><div class="num" id="allTotal">-</div><div class="lbl">總盈利</div></div>
-      <div class="card"><div class="num" id="allPer">-</div><div class="lbl">每場盈利</div></div>
-      <div class="card"><div class="num" id="allGames">-</div><div class="lbl">場數</div></div>
-      <div class="card"><div class="num" id="allSkip">-</div><div class="lbl">Skip 場數</div></div>
-    </div>
-  </div>
-
-  <div class="box">
-    <h3 style="margin-top:0">🔪 前 60% / 後 40% 分割</h3>
-    <div class="row">
-      <div class="card"><div class="num" id="frontTotal">-</div><div class="lbl">前 60% 總盈利</div></div>
-      <div class="card"><div class="num" id="frontPer">-</div><div class="lbl">前 60% 每場</div></div>
-      <div class="card"><div class="num" id="backTotal">-</div><div class="lbl">後 40% 總盈利</div></div>
-      <div class="card"><div class="num" id="backPer">-</div><div class="lbl">後 40% 每場</div></div>
-    </div>
-  </div>
-
-  <div class="box">
-    <h3 style="margin-top:0">📋 詳細結果</h3>
-    <table id="detailTable"></table>
-  </div>
-
-  <div id="verdict" class="verdict"></div>
+<div class="toolbar">
+  <button id="btnRecognize" disabled>🔍 開始識別</button>
+  <button id="btnReOcr" class="gray" disabled>🔄 全部重新識別</button>
+  <button id="btnClear" class="red" disabled>🗑 清空</button>
+  <button id="btnCopy" class="green" disabled>📋 複製結果</button>
+  <button id="btnCopyValid" class="green" disabled>📋 只複製有效行</button>
+  <button id="btnDownload" class="green" disabled>💾 下載 TXT</button>
+  <button id="btnShowOutput" class="gray" disabled>👁 顯示/隱藏結果</button>
 </div>
 
+<div id="progress">
+  <div id="progressText">準備中...</div>
+  <div id="progressDetail"></div>
+  <div id="progressBar"><div id="progressBarInner"></div></div>
+</div>
+
+<div id="stats"></div>
+
+<div id="tableWrap">
+  <div class="empty" id="emptyState">尚未上傳任何圖片</div>
+  <table id="results" style="display:none">
+    <thead>
+      <tr>
+        <th style="width:28px">#</th>
+        <th style="width:60px">圖</th>
+        <th style="width:60px">狀態</th>
+        <th style="width:60px">比分</th>
+        <th style="width:44px">主%</th>
+        <th style="width:44px">和%</th>
+        <th style="width:44px">客%</th>
+        <th style="width:50px">主賠</th>
+        <th style="width:50px">和賠</th>
+        <th style="width:50px">客賠</th>
+        <th style="width:54px">結果</th>
+        <th style="width:40px">驗證</th>
+        <th>OCR 原文（點擊展開）</th>
+        <th style="width:30px"></th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<pre id="output"></pre>
+
+<div class="legend">
+  <b>輸出格式（製表符分隔）：</b><br>
+  <code>23	16	61	800	525	128	2:6	A</code><br>
+  依序為：主%　和%　客%　主賠　和賠　客賠　比分　結果<br>
+  <b>無效的行：</b>輸出為「<code>失敗</code>」<br>
+  <b>結果代碼：</b><code>H</code> 主勝　<code>D</code> 和局　<code>A</code> 客勝　<code>skip</code> 不下注
+</div>
+
+<dialog id="previewDlg"><img id="previewImg" alt=""></dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
 <script>
 'use strict';
 
-/* ============ v15 的 34 條規則 ============ */
-function predict(r){
-  var A=r.A, B=r.B, C=r.C, D=r.D, E=r.E, F=r.F;
+/* ============================================================
+   常數
+   ============================================================ */
+var VALID_RESULTS = ['H','D','A','skip'];
+var MAX_IMG_SIZE = 1800;
 
-  if(B>=32 && Math.abs(A-C)<=6) return 'D';
-  if(A>=60 && C<=11 && D>=140 && D<=190 && F>=400 && F<=480) return 'H';
-  if(Math.abs(A-C)<=3 && E<380 && Math.abs(D-F)<40) return 'D';
-  if(A>=45 && C<=20 && Math.abs(D-F)<70 && D<400) return 'D';
-  if(Math.abs(D-F)<18) return 'D';
-  if(A>=42 && D>=155 && D<205 && D!==F && F>D && Math.abs(A-C)>=50) return 'D';
-  if(A>=42 && D>=155 && D<205 && D!==F) return 'H';
-  if(A>=34 && D>205 && D<=235 && D!==F) return 'D';
-  if(D>=400 && A>=42) return 'D';
-  if(D>=340 && A>=38 && F<250 && D>F){
-    if(F<200) return Math.abs(A-C)<=5 ? 'D' : 'A';
-    return 'D';
-  }
-  if(E<=315 && B>=27 && Math.abs(A-C)<=25 && D>=250 && D<=350 && D<E) return 'D';
-  if(C>A && F>=490 && F<=560 && D<200) return 'D';
-  if(C>A && F>D && F<550 && E>320) return 'H';
-  if(C>A && F>=184 && F<=216 && C>=40) return 'A';
-  if(C>A && F>D && F<300 && C<45 && D<250) return 'D';
+/* ============================================================
+   全域狀態
+   ============================================================ */
+var state = {
+  rows: [],
+  worker: null,
+  workerReady: false,
+  busy: false
+};
 
-  if(D>F){
-    if(F<=150 && C>=65) return 'A';
-    if(D>1500){
-      if(C>=50) return 'A';
-      if(A>C) return 'D';
-      return 'skip';
-    }
-    if(A>=33 && D>=350) return 'D';
-    return 'H';
+/* ============================================================
+   DOM 輔助
+   ============================================================ */
+var $ = function(id){ return document.getElementById(id); };
+var dropzone = $('dropzone');
+var fileInput = $('fileInput');
+
+/* ============================================================
+   上傳
+   ============================================================ */
+dropzone.addEventListener('click', function(){ fileInput.click(); });
+dropzone.addEventListener('dragover', function(e){ e.preventDefault(); dropzone.classList.add('hover'); });
+dropzone.addEventListener('dragleave', function(){ dropzone.classList.remove('hover'); });
+dropzone.addEventListener('drop', function(e){
+  e.preventDefault(); dropzone.classList.remove('hover');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', function(e){
+  handleFiles(e.target.files);
+  fileInput.value = '';
+});
+
+function handleFiles(files){
+  var arr = Array.prototype.slice.call(files).filter(function(f){
+    return f.type && f.type.indexOf('image/') === 0;
+  });
+  if(arr.length === 0){ alert('沒有有效的圖片檔案'); return; }
+
+  for(var i = 0; i < arr.length; i++){
+    var f = arr[i];
+    var id = 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    state.rows.push({
+      id: id,
+      file: f,
+      imageURL: URL.createObjectURL(f),
+      ocrText: '',
+      status: 'wait',
+      statusText: '待識別',
+      values: {
+        scoreA: '', scoreB: '',
+        homePct: '', drawPct: '', awayPct: '',
+        homeOdd: '', drawOdd: '', awayOdd: '',
+        result: 'H'
+      }
+    });
   }
-  if(F>D){
-    if(A>=50 && (F-D)>=400) return 'H';
-    if(F>=700){
-      if(A>=80) return 'D';
-      if(C>A) return 'D';
-      if(A<45) return 'D';
-      return 'skip';
-    }
-    if(E>=470 && F>=500) return 'D';
-    if(A>=47 && D<=140) return 'H';
-    return 'A';
-  }
-  if(A>C) return 'H';
-  if(C>A) return 'A';
-  return 'skip';
+  renderTable();
+  updateButtons();
+  updateStats();
 }
 
-/* ============ 解析 ============ */
-function parseData(text){
-  var rows = [];
-  var lines = text.split('\n');
-  for(var i = 0; i < lines.length; i++){
-    var p = lines[i].trim().split(/\s+/);
-    if(p.length < 8) continue;
-    var v = p.slice(0,6).map(Number);
-    var r = p[7];
-    if(v.some(isNaN) || ['H','D','A'].indexOf(r) === -1) continue;
-    rows.push({A:v[0],B:v[1],C:v[2],D:v[3],E:v[4],F:v[5],result:r});
+/* ============================================================
+   驗證
+   ============================================================ */
+function validateRow(v){
+  var errs = [];
+
+  /* A, B, C：必須 1~2 位數字 */
+  var abcNames = ['主%', '和%', '客%'];
+  var abcFields = ['homePct', 'drawPct', 'awayPct'];
+  for(var i = 0; i < 3; i++){
+    var val = v[abcFields[i]];
+    var s = (val === null || val === undefined) ? '' : String(val).trim();
+    if(s === ''){
+      errs.push(abcNames[i] + '缺失');
+    } else if(!/^\d{1,2}$/.test(s)){
+      errs.push(abcNames[i] + '需1-2位');
+    }
   }
-  return rows;
+
+  /* D, E, F：必須 ≥3 位數字 */
+  var defNames = ['主賠', '和賠', '客賠'];
+  var defFields = ['homeOdd', 'drawOdd', 'awayOdd'];
+  for(var i = 0; i < 3; i++){
+    var val = v[defFields[i]];
+    var s = (val === null || val === undefined) ? '' : String(val).trim();
+    if(s === ''){
+      errs.push(defNames[i] + '缺失');
+    } else if(!/^\d{3,}$/.test(s)){
+      errs.push(defNames[i] + '需3位+');
+    }
+  }
+
+  /* G：比分必須存在 */
+  var sa = (v.scoreA === null || v.scoreA === undefined) ? '' : String(v.scoreA).trim();
+  var sb = (v.scoreB === null || v.scoreB === undefined) ? '' : String(v.scoreB).trim();
+  if(sa === '' || sb === ''){
+    errs.push('比分缺失');
+  } else if(!/^\d{1,2}$/.test(sa) || !/^\d{1,2}$/.test(sb)){
+    errs.push('比分格式錯');
+  }
+
+  /* H：必須是 H/D/A/skip */
+  if(VALID_RESULTS.indexOf(v.result) === -1){
+    errs.push('結果無效');
+  }
+
+  return errs;
 }
 
-/* ============ 計算一段的盈利 ============ */
-function calcSegment(rows, name){
-  var total = 0;
-  var betCount = 0;
-  var skipCount = 0;
-  var winCount = 0;
-  var loseCount = 0;
+function isValidRow(v){
+  return validateRow(v).length === 0;
+}
 
-  for(var i = 0; i < rows.length; i++){
-    var r = rows[i];
-    var p = predict(r);
-    if(p === 'skip'){
-      skipCount++;
+/* ============================================================
+   渲染
+   ============================================================ */
+function renderTable(){
+  var tbody = $('tbody');
+  var table = $('results');
+  var empty = $('emptyState');
+
+  if(state.rows.length === 0){
+    table.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  table.style.display = 'table';
+  empty.style.display = 'none';
+
+  tbody.innerHTML = '';
+  for(var i = 0; i < state.rows.length; i++){
+    var row = state.rows[i];
+    var tr = document.createElement('tr');
+    tr.dataset.id = row.id;
+
+    var statusClass = 'status-' + (row.status === 'processing' ? 'processing' : row.status);
+
+    var scoreVal = (row.values.scoreA !== '' && row.values.scoreB !== '')
+      ? row.values.scoreA + ':' + row.values.scoreB
+      : '';
+
+    var resultOpts = '';
+    VALID_RESULTS.forEach(function(r){
+      resultOpts += '<option value="' + r + '"' + (row.values.result === r ? ' selected' : '') + '>' + r + '</option>';
+    });
+
+    var errs = validateRow(row.values);
+    var validHtml;
+    if(row.status === 'wait' && !hasAnyValue(row.values)){
+      validHtml = '<span class="valid-wait">–</span>';
+    } else if(errs.length === 0){
+      validHtml = '<span class="valid-ok" title="通過驗證">✓</span>';
+    } else {
+      validHtml = '<span class="valid-err" title="' + escapeHtml(errs.join('、')) + '">✗</span>';
+    }
+
+    tr.innerHTML =
+      '<td class="row-num">' + (i+1) + '</td>' +
+      '<td><img src="' + row.imageURL + '" loading="lazy" data-img="' + row.imageURL + '"></td>' +
+      '<td><span class="status ' + statusClass + '">' + row.statusText + '</span></td>' +
+      '<td><input type="text" data-field="score" value="' + scoreVal + '" placeholder="2:1"></td>' +
+      '<td><input type="number" data-field="homePct" value="' + row.values.homePct + '" placeholder="44"></td>' +
+      '<td><input type="number" data-field="drawPct" value="' + row.values.drawPct + '" placeholder="33"></td>' +
+      '<td><input type="number" data-field="awayPct" value="' + row.values.awayPct + '" placeholder="23"></td>' +
+      '<td><input type="number" data-field="homeOdd" value="' + row.values.homeOdd + '" placeholder="215"></td>' +
+      '<td><input type="number" data-field="drawOdd" value="' + row.values.drawOdd + '" placeholder="290"></td>' +
+      '<td><input type="number" data-field="awayOdd" value="' + row.values.awayOdd + '" placeholder="320"></td>' +
+      '<td><select data-field="result">' + resultOpts + '</select></td>' +
+      '<td class="valid-cell">' + validHtml + '</td>' +
+      '<td><div class="ocr-text" data-ocr="1">' + escapeHtml(row.ocrText || '') + '</div></td>' +
+      '<td><button class="red" style="padding:3px 7px;font-size:11px" data-del="' + row.id + '">✕</button></td>';
+
+    tbody.appendChild(tr);
+    applyCellHighlight(tr, row.values);
+  }
+
+  /* 綁定事件 */
+  tbody.querySelectorAll('input, select').forEach(function(el){
+    el.addEventListener('input', onInputChange);
+    el.addEventListener('change', onInputChange);
+  });
+  tbody.querySelectorAll('img[data-img]').forEach(function(img){
+    img.addEventListener('click', function(){ previewImage(this.dataset.img); });
+  });
+  tbody.querySelectorAll('.ocr-text').forEach(function(el){
+    el.addEventListener('click', function(){ this.classList.toggle('expanded'); });
+  });
+  tbody.querySelectorAll('button[data-del]').forEach(function(btn){
+    btn.addEventListener('click', function(){ removeRow(this.dataset.del); });
+  });
+}
+
+function hasAnyValue(v){
+  return !!(v.homePct || v.drawPct || v.awayPct || v.homeOdd || v.drawOdd || v.awayOdd || v.scoreA !== '' || v.scoreB !== '');
+}
+
+function applyCellHighlight(tr, v){
+  /* A/B/C */
+  var abcMap = [
+    ['homePct', /^\d{1,2}$/],
+    ['drawPct', /^\d{1,2}$/],
+    ['awayPct', /^\d{1,2}$/]
+  ];
+  for(var i = 0; i < abcMap.length; i++){
+    var inp = tr.querySelector('input[data-field="' + abcMap[i][0] + '"]');
+    if(!inp) continue;
+    var s = String(inp.value || '').trim();
+    var bad = (s !== '') && !abcMap[i][1].test(s);
+    if(bad) inp.classList.add('cell-err');
+    else inp.classList.remove('cell-err');
+  }
+  /* D/E/F */
+  var defMap = [
+    ['homeOdd', /^\d{3,}$/],
+    ['drawOdd', /^\d{3,}$/],
+    ['awayOdd', /^\d{3,}$/]
+  ];
+  for(var i = 0; i < defMap.length; i++){
+    var inp = tr.querySelector('input[data-field="' + defMap[i][0] + '"]');
+    if(!inp) continue;
+    var s = String(inp.value || '').trim();
+    var bad = (s !== '') && !defMap[i][1].test(s);
+    if(bad) inp.classList.add('cell-err');
+    else inp.classList.remove('cell-err');
+  }
+  /* score */
+  var scoreInp = tr.querySelector('input[data-field="score"]');
+  if(scoreInp){
+    var sv = String(scoreInp.value || '').trim();
+    var scoreBad = (sv !== '') && !/^\d{1,2}\s*[-:.]\s*\d{1,2}$/.test(sv);
+    if(scoreBad) scoreInp.classList.add('cell-err');
+    else scoreInp.classList.remove('cell-err');
+  }
+  /* result */
+  var sel = tr.querySelector('select[data-field="result"]');
+  if(sel){
+    if(VALID_RESULTS.indexOf(sel.value) === -1) sel.classList.add('cell-err');
+    else sel.classList.remove('cell-err');
+  }
+}
+
+function onInputChange(e){
+  var tr = e.target.closest('tr');
+  if(!tr) return;
+  var row = findRow(tr.dataset.id);
+  if(!row) return;
+  var field = e.target.dataset.field;
+
+  if(field === 'score'){
+    var v = e.target.value;
+    var m = v.match(/(\d{1,2})\s*[-:.]\s*(\d{1,2})/);
+    if(m){
+      row.values.scoreA = parseInt(m[1], 10);
+      row.values.scoreB = parseInt(m[2], 10);
+      row.values.result = m[1] > m[2] ? 'H' : m[1] < m[2] ? 'A' : 'D';
+      var sel = tr.querySelector('select[data-field="result"]');
+      if(sel) sel.value = row.values.result;
+    } else {
+      row.values.scoreA = '';
+      row.values.scoreB = '';
+    }
+  } else if(field === 'result'){
+    row.values.result = e.target.value;
+  } else {
+    row.values[field] = e.target.value;
+  }
+
+  /* 更新驗證狀態 */
+  refreshValidation(tr, row);
+  updateStats();
+}
+
+function refreshValidation(tr, row){
+  applyCellHighlight(tr, row.values);
+  var errs = validateRow(row.values);
+  var cell = tr.querySelector('.valid-cell');
+  if(!cell) return;
+  if(!hasAnyValue(row.values) && row.status === 'wait'){
+    cell.innerHTML = '<span class="valid-wait">–</span>';
+  } else if(errs.length === 0){
+    cell.innerHTML = '<span class="valid-ok" title="通過驗證">✓</span>';
+  } else {
+    cell.innerHTML = '<span class="valid-err" title="' + escapeHtml(errs.join('、')) + '">✗</span>';
+  }
+}
+
+function findRow(id){
+  for(var i = 0; i < state.rows.length; i++){
+    if(state.rows[i].id === id) return state.rows[i];
+  }
+  return null;
+}
+
+function removeRow(id){
+  for(var i = 0; i < state.rows.length; i++){
+    if(state.rows[i].id === id){
+      URL.revokeObjectURL(state.rows[i].imageURL);
+      state.rows.splice(i, 1);
+      break;
+    }
+  }
+  renderTable();
+  updateButtons();
+  updateStats();
+}
+
+function previewImage(url){
+  $('previewImg').src = url;
+  $('previewDlg').showModal();
+}
+$('previewDlg').addEventListener('click', function(){ this.close(); });
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+function updateButtons(){
+  var has = state.rows.length > 0;
+  var busy = state.busy;
+  $('btnRecognize').disabled = !has || busy;
+  $('btnReOcr').disabled = !has || busy;
+  $('btnClear').disabled = !has || busy;
+  $('btnCopy').disabled = !has;
+  $('btnCopyValid').disabled = !has;
+  $('btnDownload').disabled = !has;
+  $('btnShowOutput').disabled = !has;
+}
+
+function updateStats(){
+  var total = state.rows.length;
+  if(total === 0){ $('stats').style.display = 'none'; return; }
+  var valid = 0, wait = 0, proc = 0, err = 0;
+  for(var i = 0; i < state.rows.length; i++){
+    var r = state.rows[i];
+    if(r.status === 'wait') wait++;
+    else if(r.status === 'processing') proc++;
+    else if(r.status === 'err') err++;
+    if(isValidRow(r.values)) valid++;
+  }
+  var s = '📊 共 ' + total + ' 筆｜✅ 有效 ' + valid + '｜❌ 無效 ' + (total - valid);
+  if(wait > 0) s += '｜⏳ 待識別 ' + wait;
+  if(proc > 0) s += '｜🔄 識別中 ' + proc;
+  if(err > 0) s += '｜⚠ OCR失敗 ' + err;
+  $('stats').textContent = s;
+  $('stats').style.display = 'block';
+}
+
+/* ============================================================
+   OCR
+   ============================================================ */
+async function ensureWorker(){
+  if(state.worker && state.workerReady) return state.worker;
+
+  var progText = $('progressText');
+  var progDetail = $('progressDetail');
+  var prog = $('progress');
+  prog.style.display = 'block';
+
+  progText.textContent = '⚙️ 初始化 OCR 引擎...';
+  progDetail.textContent = '第一次使用需下載語言包，請稍候';
+
+  state.worker = await Tesseract.createWorker('eng', 1, {
+    logger: function(m){
+      if(m.status === 'loading tesseract core'){
+        progDetail.textContent = '載入核心引擎...';
+      } else if(m.status === 'initializing tesseract'){
+        progDetail.textContent = '初始化引擎...';
+      } else if(m.status === 'loading language traineddata'){
+        progDetail.textContent = '下載語言包 ' + Math.round((m.progress || 0) * 100) + '%';
+      } else if(m.status === 'initializing api'){
+        progDetail.textContent = '初始化 API...';
+      }
+    }
+  });
+
+  try {
+    await state.worker.setParameters({
+      preserve_interword_spaces: '1'
+    });
+  } catch(e){}
+
+  state.workerReady = true;
+  progDetail.textContent = '引擎就緒';
+  return state.worker;
+}
+
+async function recognizeAll(forceAll){
+  if(state.busy) return;
+  state.busy = true;
+  updateButtons();
+
+  var prog = $('progress');
+  var progText = $('progressText');
+  var progDetail = $('progressDetail');
+  var progBar = $('progressBarInner');
+  prog.style.display = 'block';
+
+  try {
+    var worker = await ensureWorker();
+
+    var targets;
+    if(forceAll){
+      targets = state.rows.slice();
+    } else {
+      targets = state.rows.filter(function(r){
+        return r.status === 'wait' || r.status === 'err';
+      });
+    }
+
+    if(targets.length === 0){
+      progText.textContent = '沒有需要識別的圖片';
+      progDetail.textContent = '提示：所有圖片都已識別，用「🔄 全部重新識別」可強制重跑';
+      setTimeout(function(){ prog.style.display = 'none'; }, 2000);
+      state.busy = false;
+      updateButtons();
+      return;
+    }
+
+    var t0 = Date.now();
+    for(var i = 0; i < targets.length; i++){
+      var row = targets[i];
+      row.status = 'processing';
+      row.statusText = '識別中...';
+      renderTable();
+      updateStats();
+
+      progText.textContent = '🔍 識別中 ' + (i+1) + ' / ' + targets.length;
+      var elapsed = (Date.now() - t0) / 1000;
+      var eta = i > 0 ? (elapsed / i * (targets.length - i)) : 0;
+      progDetail.textContent = row.file.name + '　·　' +
+        '已用 ' + elapsed.toFixed(1) + 's' +
+        (i > 0 ? '　剩餘約 ' + eta.toFixed(0) + 's' : '');
+      progBar.style.width = (i / targets.length * 100) + '%';
+
+      try {
+        var imgFile = await preprocessImage(row.file);
+        var result = await worker.recognize(imgFile);
+        row.ocrText = result.data.text || '';
+        applyHeuristic(row);
+        row.status = 'ok';
+        row.statusText = '✓ 完成';
+      } catch(err){
+        console.error(err);
+        row.status = 'err';
+        row.statusText = '✗ 失敗';
+        row.ocrText = '（識別失敗：' + (err.message || err) + '）';
+      }
+
+      renderTable();
+      updateStats();
+    }
+
+    progBar.style.width = '100%';
+    progText.textContent = '✅ 全部完成（' + targets.length + ' 張）';
+    progDetail.textContent = '總耗時 ' + ((Date.now()-t0)/1000).toFixed(1) + 's';
+    setTimeout(function(){ prog.style.display = 'none'; }, 2500);
+
+  } catch(err){
+    console.error(err);
+    progText.textContent = '❌ 初始化失敗';
+    progDetail.textContent = String(err.message || err);
+  }
+
+  state.busy = false;
+  updateButtons();
+  updateStats();
+}
+
+function preprocessImage(file){
+  return new Promise(function(resolve){
+    if(file.size < 500 * 1024){
+      resolve(file);
+      return;
+    }
+    var img = new Image();
+    img.onload = function(){
+      var w = img.width, h = img.height;
+      var scale = Math.min(MAX_IMG_SIZE / w, MAX_IMG_SIZE / h, 1);
+      if(scale >= 1 && file.size < 2 * 1024 * 1024){
+        resolve(file);
+        return;
+      }
+      var nw = Math.round(w * scale), nh = Math.round(h * scale);
+      var c = document.createElement('canvas');
+      c.width = nw; c.height = nh;
+      var ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, nw, nh);
+      c.toBlob(function(blob){
+        resolve(blob || file);
+      }, 'image/jpeg', 0.9);
+    };
+    img.onerror = function(){ resolve(file); };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+/* ============================================================
+   啟發式提取
+   ============================================================ */
+function applyHeuristic(row){
+  var t = (row.ocrText || '').replace(/[\u00A0\u3000]/g, ' ').replace(/\s+/g, ' ').trim();
+
+  /* 1. 比分：找靠上的 X-Y 或 X:Y */
+  var scoreCandidates = [];
+  var scoreRe = /(?:^|\s)(\d{1,2})\s*[-:]\s*(\d{1,2})(?=\s|$)/g;
+  var m;
+  while((m = scoreRe.exec(t)) !== null){
+    var a = parseInt(m[1], 10), b = parseInt(m[2], 10);
+    if(a >= 0 && a <= 15 && b >= 0 && b <= 15){
+      scoreCandidates.push({a:a, b:b, pos:m.index});
+    }
+  }
+  if(scoreCandidates.length > 0){
+    scoreCandidates.sort(function(x, y){ return x.pos - y.pos; });
+    var s = scoreCandidates[0];
+    row.values.scoreA = s.a;
+    row.values.scoreB = s.b;
+    row.values.result = s.a > s.b ? 'H' : s.a < s.b ? 'A' : 'D';
+  }
+
+  /* 2. 百分比 */
+  var pctList = [];
+  var pctRe = /(\d{1,3})\s*%/g;
+  while((m = pctRe.exec(t)) !== null){
+    var pv = parseInt(m[1], 10);
+    if(pv >= 0 && pv <= 100){
+      pctList.push({v:pv, pos:m.index});
+    }
+  }
+  var pctTriple = findTripleSum100(pctList);
+  if(pctTriple){
+    row.values.homePct = pctTriple[0].v;
+    row.values.drawPct = pctTriple[1].v;
+    row.values.awayPct = pctTriple[2].v;
+  }
+
+  /* 3. 賠率 */
+  var oddList = [];
+  /* 3.1 帶小數點 */
+  var oddRe1 = /(\d)[.,](\d{2})/g;
+  while((m = oddRe1.exec(t)) !== null){
+    var v1 = parseInt(m[1], 10) * 100 + parseInt(m[2], 10);
+    if(v1 >= 100 && v1 <= 1500){
+      oddList.push({v:v1, pos:m.index, src:'dec'});
+    }
+  }
+  /* 3.2 三位整數（Tesseract 漏點） */
+  var oddRe2 = /(?:^|\s)(\d{3,4})(?:\s|$)/g;
+  while((m = oddRe2.exec(t)) !== null){
+    var v2 = parseInt(m[1], 10);
+    if(v2 >= 100 && v2 <= 1500){
+      oddList.push({v:v2, pos:m.index, src:'int'});
+    }
+  }
+
+  oddList.sort(function(a, b){ return a.pos - b.pos; });
+  var oddClean = [];
+  for(var i = 0; i < oddList.length; i++){
+    var cur = oddList[i];
+    var dup = false;
+    for(var j = 0; j < oddClean.length; j++){
+      if(Math.abs(oddClean[j].pos - cur.pos) <= 3){
+        if(cur.src === 'dec' && oddClean[j].src === 'int'){
+          oddClean[j] = cur;
+        }
+        dup = true;
+        break;
+      }
+    }
+    if(!dup) oddClean.push(cur);
+  }
+
+  var oddTriple = findOddTriple(oddClean, pctTriple);
+  if(oddTriple){
+    row.values.homeOdd = oddTriple[0].v;
+    row.values.drawOdd = oddTriple[1].v;
+    row.values.awayOdd = oddTriple[2].v;
+  }
+}
+
+function findTripleSum100(pcts){
+  if(pcts.length < 3) return null;
+  var best = null, bestScore = -Infinity;
+  for(var i = 0; i <= pcts.length - 3; i++){
+    for(var step = 1; step <= 3; step++){
+      if(i + 2 * step >= pcts.length) continue;
+      var trio = [pcts[i], pcts[i+step], pcts[i+2*step]];
+      var sum = trio[0].v + trio[1].v + trio[2].v;
+      if(sum < 88 || sum > 112) continue;
+      var sumDiff = Math.abs(100 - sum);
+      var posWeight = trio[0].pos / 5000;
+      var sc = -sumDiff + posWeight;
+      if(sc > bestScore){
+        bestScore = sc;
+        best = trio;
+      }
+    }
+  }
+  return best;
+}
+
+function findOddTriple(odds, pctTriple){
+  if(odds.length < 3) return null;
+
+  if(pctTriple){
+    var lastPctPos = pctTriple[2].pos;
+    var after = odds.filter(function(o){ return o.pos > lastPctPos; });
+    if(after.length >= 3){
+      var bestA = null, bestSpan = Infinity;
+      for(var i = 0; i <= after.length - 3; i++){
+        var span = after[i+2].pos - after[i].pos;
+        if(span < bestSpan){
+          bestSpan = span;
+          bestA = [after[i], after[i+1], after[i+2]];
+        }
+      }
+      if(bestA){
+        bestA.sort(function(a, b){ return a.pos - b.pos; });
+        return bestA;
+      }
+    }
+  }
+
+  var last3 = odds.slice(-3);
+  last3.sort(function(a, b){ return a.pos - b.pos; });
+  return last3;
+}
+
+/* ============================================================
+   輸出
+   ============================================================ */
+function buildOutput(onlyValid){
+  var lines = [];
+  for(var i = 0; i < state.rows.length; i++){
+    var v = state.rows[i].values;
+    if(!isValidRow(v)){
+      if(!onlyValid) lines.push('失敗');
       continue;
     }
-    betCount++;
-    if(p === r.result){
-      winCount++;
-      if(p === 'H') total += r.D - 100;
-      else if(p === 'D') total += r.E - 100;
-      else if(p === 'A') total += r.F - 100;
-    } else {
-      loseCount++;
-      total -= 100;
-    }
+    var parts = [
+      String(v.homePct).trim(),
+      String(v.drawPct).trim(),
+      String(v.awayPct).trim(),
+      String(v.homeOdd).trim(),
+      String(v.drawOdd).trim(),
+      String(v.awayOdd).trim(),
+      v.scoreA + ':' + v.scoreB,
+      v.result
+    ];
+    lines.push(parts.join('\t'));
   }
-
-  return {
-    name: name,
-    total: total,
-    games: rows.length,
-    bets: betCount,
-    skips: skipCount,
-    wins: winCount,
-    loses: loseCount,
-    perGame: rows.length > 0 ? total / rows.length : 0,
-    perBet: betCount > 0 ? total / betCount : 0,
-    hitRate: betCount > 0 ? (winCount / betCount * 100) : 0
-  };
+  return lines.join('\n');
 }
 
-/* ============ 主流程 ============ */
-function run(){
-  var logEl = document.getElementById('log');
-  var resultsEl = document.getElementById('results');
-  logEl.textContent = '';
-  resultsEl.style.display = 'none';
-
-  var text = document.getElementById('input').value;
-  if(!text.trim()){
-    logEl.textContent = '⚠️ 請先貼上資料';
+/* 複製 */
+function doCopy(onlyValid){
+  var txt = buildOutput(onlyValid);
+  if(txt === ''){
+    alert(onlyValid ? '沒有有效行可複製' : '沒有內容可複製');
     return;
   }
-
-  var rows = parseData(text);
-  if(rows.length === 0){
-    logEl.textContent = '❌ 沒有有效資料';
-    return;
-  }
-
-  logEl.textContent = '解析資料...\n';
-  logEl.textContent += '  總行數：' + rows.length + '\n';
-
-  // 全部
-  var all = calcSegment(rows, '全部');
-  logEl.textContent += '\n計算 v15 在全部資料的表現...\n';
-  logEl.textContent += '  總盈利：' + all.total + '\n';
-  logEl.textContent += '  每場：' + all.perGame.toFixed(2) + '\n';
-  logEl.textContent += '  命中率：' + all.hitRate.toFixed(1) + '%\n';
-
-  // 前 60% / 後 40%（按原始順序，不打亂）
-  var cutPoint = Math.floor(rows.length * 0.6);
-  var frontRows = rows.slice(0, cutPoint);
-  var backRows = rows.slice(cutPoint);
-
-  var front = calcSegment(frontRows, '前 60%');
-  var back = calcSegment(backRows, '後 40%');
-
-  logEl.textContent += '\n前 60% (' + frontRows.length + ' 場)：' + front.total + '（每場 ' + front.perGame.toFixed(2) + '）\n';
-  logEl.textContent += '後 40% (' + backRows.length + ' 場)：' + back.total + '（每場 ' + back.perGame.toFixed(2) + '）\n';
-
-  // 顯示
-  document.getElementById('allTotal').textContent = all.total;
-  document.getElementById('allPer').textContent = all.perGame.toFixed(2);
-  document.getElementById('allGames').textContent = all.games;
-  document.getElementById('allSkip').textContent = all.skips;
-
-  document.getElementById('frontTotal').textContent = front.total;
-  document.getElementById('frontPer').textContent = front.perGame.toFixed(2);
-  document.getElementById('backTotal').textContent = back.total;
-  document.getElementById('backPer').textContent = back.perGame.toFixed(2);
-
-  // 著色
-  function colorize(id, val){
-    var el = document.getElementById(id);
-    el.className = 'num ' + (val >= 0 ? 'profit-pos' : 'profit-neg');
-  }
-  colorize('allTotal', all.total);
-  colorize('allPer', all.perGame);
-  colorize('frontTotal', front.total);
-  colorize('frontPer', front.perGame);
-  colorize('backTotal', back.total);
-  colorize('backPer', back.perGame);
-
-  // 明細表
-  var detail = '<thead><tr><th>區段</th><th>場數</th><th>下注</th><th>Skip</th><th>贏</th><th>輸</th><th>命中率</th><th>總盈利</th><th>每場</th><th>每注</th></tr></thead><tbody>';
-  [all, front, back].forEach(function(s){
-    detail += '<tr>' +
-      '<td>' + s.name + '</td>' +
-      '<td>' + s.games + '</td>' +
-      '<td>' + s.bets + '</td>' +
-      '<td>' + s.skips + '</td>' +
-      '<td>' + s.wins + '</td>' +
-      '<td>' + s.loses + '</td>' +
-      '<td>' + s.hitRate.toFixed(1) + '%</td>' +
-      '<td class="' + (s.total >= 0 ? 'profit-pos' : 'profit-neg') + '">' + s.total + '</td>' +
-      '<td class="' + (s.perGame >= 0 ? 'profit-pos' : 'profit-neg') + '">' + s.perGame.toFixed(2) + '</td>' +
-      '<td class="' + (s.perBet >= 0 ? 'profit-pos' : 'profit-neg') + '">' + s.perBet.toFixed(2) + '</td>' +
-      '</tr>';
-  });
-  detail += '</tbody>';
-  document.getElementById('detailTable').innerHTML = detail;
-
-  // 判定
-  var verdict = '';
-  var cls = 'verdict';
-  var frontPer = front.perGame;
-  var backPer = back.perGame;
-
-  if(all.total > 0 && back.total > 0 && Math.abs(backPer) >= Math.abs(frontPer) * 0.3){
-    verdict = '<strong>✅ v15 沒有嚴重過擬合</strong><br>';
-    verdict += '全部賺 ' + all.total + '，後段還賺 ' + back.total + '（每場 ' + backPer.toFixed(2) + '）。<br>';
-    verdict += '→ v15 是真有訊號，可以繼續用。';
-    cls += ' verdict-ok';
-  } else if(all.total > 0 && back.total < 0){
-    verdict = '<strong>⚠️ v15 明顯過擬合</strong><br>';
-    verdict += '全部賺 ' + all.total + '，但後段虧 ' + back.total + '（每場 ' + backPer.toFixed(2) + '）。<br>';
-    verdict += '→ v15 只對「前段資料」有效，真實能力被高估。<br>';
-    verdict += '→ v39 演化結果虧損，是資料本身沒有可預測信號。';
-    cls += ' verdict-warn';
-  } else if(all.total < 0){
-    verdict = '<strong>❌ v15 虧損</strong><br>';
-    verdict += '全部虧 ' + all.total + '（每場 ' + all.perGame.toFixed(2) + '）。<br>';
-    verdict += '→ 這份資料用 v15 無法賺錢。';
-    cls += ' verdict-bad';
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){
+      var lines = txt.split('\n').length;
+      flashBtn(onlyValid ? 'btnCopyValid' : 'btnCopy', '✅ 已複製 ' + lines + ' 行');
+    }).catch(function(){
+      fallbackCopy(txt);
+      flashBtn(onlyValid ? 'btnCopyValid' : 'btnCopy', '✅ 已複製');
+    });
   } else {
-    verdict = '<strong>⚠️ 無法確定</strong><br>';
-    verdict += '結果異常，請檢查資料。';
-    cls += ' verdict-warn';
+    fallbackCopy(txt);
+    flashBtn(onlyValid ? 'btnCopyValid' : 'btnCopy', '✅ 已複製');
   }
-
-  document.getElementById('verdict').className = cls;
-  document.getElementById('verdict').innerHTML = verdict;
-  resultsEl.style.display = 'block';
-
-  logEl.textContent += '\n' + verdict.replace(/<[^>]+>/g, '').replace(/<br>/g, '\n');
 }
+
+$('btnCopy').addEventListener('click', function(){ doCopy(false); });
+$('btnCopyValid').addEventListener('click', function(){ doCopy(true); });
+
+function fallbackCopy(text){
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch(e){}
+  document.body.removeChild(ta);
+}
+
+function flashBtn(id, msg){
+  var b = $(id);
+  var orig = b.textContent;
+  b.textContent = msg;
+  b.disabled = true;
+  setTimeout(function(){ b.textContent = orig; b.disabled = false; }, 1500);
+}
+
+/* 下載 */
+$('btnDownload').addEventListener('click', function(){
+  var txt = buildOutput(false);
+  var blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'odds_' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+});
+
+/* 顯示結果 */
+$('btnShowOutput').addEventListener('click', function(){
+  var out = $('output');
+  var txt = buildOutput(false);
+  /* 把「失敗」上色 */
+  var html = escapeHtml(txt).replace(/^失敗$/gm, '<span class="fail-line">失敗</span>');
+  out.innerHTML = html;
+  out.classList.toggle('show');
+});
+
+/* ============================================================
+   按鈕
+   ============================================================ */
+$('btnRecognize').addEventListener('click', function(){ recognizeAll(false); });
+$('btnReOcr').addEventListener('click', function(){
+  if(!confirm('重新識別全部 ' + state.rows.length + ' 張圖片？（會覆蓋現有結果）')) return;
+  recognizeAll(true);
+});
+$('btnClear').addEventListener('click', function(){
+  if(!confirm('清空全部 ' + state.rows.length + ' 張圖片？')) return;
+  for(var i = 0; i < state.rows.length; i++){
+    URL.revokeObjectURL(state.rows[i].imageURL);
+  }
+  state.rows = [];
+  $('output').classList.remove('show');
+  renderTable();
+  updateButtons();
+  updateStats();
+});
+
+/* ============================================================
+   初始化
+   ============================================================ */
+updateButtons();
+updateStats();
 </script>
 </body>
 </html>
