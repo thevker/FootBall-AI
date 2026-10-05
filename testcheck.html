@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>賠率截圖批量識別 v1.13</title>
+<title>賠率截圖批量識別 v1.14</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:16px;background:#f0f2f5;color:#333}
@@ -81,16 +81,16 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
 <body>
 
 <h1>📷 賠率截圖批量識別</h1>
-<div class="version">v1.13 — 修復上傳 + 只用中文錨點</div>
+<div class="version">v1.14 — 中文錨點優先「猜」字</div>
 
 <div id="loadStatus">⏳ OCR 引擎載入中...</div>
 
 <div class="notice">💡 第一次使用需下載<b>中文+英文</b>語言包（約 30MB），約 20~60 秒</div>
 
 <div class="rule-box">
-  <b>🎯 v1.13 識別邏輯：</b><br>
+  <b>🎯 v1.14 識別邏輯：</b><br>
   ① <b>比分</b>：優先找含 <code>-</code> 的；排除時間格式 <code>X:0Y</code><br>
-  ② <b>唯一錨點：「猜誰會贏」</b>（中文 OCR，模糊匹配「猜」或「贏/赢/羸」）<br>
+  ② <b>中文錨點</b>：優先「猜」→ 次「贏/赢/羸」→ 再次「誰/谁」<br>
   ③ <b>錨點下方第一組 3 個 1-2 位數</b> = A/B/C（總和 97~103）<br>
   ④ <b>再下方 3 個 ≥100 的數</b> = D/E/F<br>
   <b>✅ 驗證：</b>A/B/C 需 1-2 位、D/E/F 需 3 位+、比分需存在、結果需 H/D/A/skip、<span class="highlight">A+B+C 必須 = 100</span>
@@ -164,65 +164,33 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
 <script>
 'use strict';
 
-/* ============================================================
-   第一部分：立即綁定 DOM 事件（不依賴 Tesseract）
-   ============================================================ */
 var $ = function(id){ return document.getElementById(id); };
 var dropzone = $('dropzone'), fileInput = $('fileInput');
 
-/* 用 mousedown + click 雙保險 */
 function triggerFileInput(e){
   if(e) { e.preventDefault(); e.stopPropagation(); }
-  console.log('[triggerFileInput] 觸發');
-  try {
-    fileInput.click();
-  } catch(err){
-    console.error('fileInput.click 失敗:', err);
-    alert('無法開啟檔案選擇器：' + err.message);
-  }
+  try { fileInput.click(); } catch(err){ console.error(err); }
 }
-
 dropzone.addEventListener('click', triggerFileInput);
-dropzone.addEventListener('mousedown', function(e){
-  /* 有些瀏覽器 mousedown 就能觸發 */
-  if(e.button !== 0) return;
-});
-
-/* hover 效果 */
 dropzone.addEventListener('dragover', function(e){ e.preventDefault(); dropzone.classList.add('hover'); });
 dropzone.addEventListener('dragenter', function(e){ e.preventDefault(); dropzone.classList.add('hover'); });
 dropzone.addEventListener('dragleave', function(e){ e.preventDefault(); dropzone.classList.remove('hover'); });
 dropzone.addEventListener('drop', function(e){
-  e.preventDefault();
-  e.stopPropagation();
+  e.preventDefault(); e.stopPropagation();
   dropzone.classList.remove('hover');
-  console.log('[drop] 收到', e.dataTransfer.files.length, '個檔案');
   handleFiles(e.dataTransfer.files);
 });
-
 fileInput.addEventListener('change', function(e){
-  console.log('[fileInput change]', e.target.files.length, '個檔案');
   handleFiles(e.target.files);
   fileInput.value = '';
 });
 
-console.log('[v1.13] DOM 事件綁定完成');
-
-/* ============================================================
-   第二部分：全域狀態（不依賴 Tesseract）
-   ============================================================ */
 var VALID_RESULTS = ['H','D','A','skip'];
 var state = { rows: [], worker: null, workerReady: false, busy: false, debugIdx: 0, previewIdx: 0 };
 
 function handleFiles(files){
-  var arr = Array.prototype.slice.call(files).filter(function(f){
-    return f.type && f.type.indexOf('image/') === 0;
-  });
-  if(arr.length === 0){
-    alert('沒有有效的圖片檔案（' + files.length + ' 個檔案被過濾掉）');
-    return;
-  }
-  console.log('[handleFiles] 接受', arr.length, '張圖');
+  var arr = Array.prototype.slice.call(files).filter(function(f){ return f.type && f.type.indexOf('image/') === 0; });
+  if(arr.length === 0){ alert('沒有有效的圖片檔案'); return; }
   for(var i = 0; i < arr.length; i++){
     var f = arr[i];
     state.rows.push({
@@ -236,9 +204,6 @@ function handleFiles(files){
   renderTable(); updateButtons(); updateStats();
 }
 
-/* ============================================================
-   第三部分：所有 UI 函式
-   ============================================================ */
 function validateRow(v){
   var errs = [];
   var abc = ['homePct','drawPct','awayPct'], abcN = ['主%','和%','客%'];
@@ -458,54 +423,41 @@ function updateStats(){
   $('stats').style.display = 'block';
 }
 
-/* ============================================================
-   第四部分：OCR 引擎動態載入 + 識別
-   ============================================================ */
 var tesseractLoading = false, tesseractLoaded = false;
 
 function loadTesseractScript(cb){
   if(tesseractLoaded){ cb(true); return; }
   if(tesseractLoading){ setTimeout(function(){ loadTesseractScript(cb); }, 100); return; }
   tesseractLoading = true;
-  console.log('[loadTesseractScript] 開始載入');
   var s = document.createElement('script');
   s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js';
   s.onload = function(){
-    console.log('[loadTesseractScript] 載入完成');
-    tesseractLoaded = true;
-    tesseractLoading = false;
+    tesseractLoaded = true; tesseractLoading = false;
     $('loadStatus').textContent = '✅ OCR 引擎已就緒';
     $('loadStatus').className = 'ok';
     cb(true);
   };
   s.onerror = function(){
-    console.error('[loadTesseractScript] 載入失敗');
     tesseractLoading = false;
-    $('loadStatus').textContent = '❌ OCR 引擎載入失敗，請檢查網路';
+    $('loadStatus').textContent = '❌ OCR 引擎載入失敗';
     $('loadStatus').className = 'err';
     cb(false);
   };
   document.head.appendChild(s);
 }
 
-/* 頁面載入後就開始下載 Tesseract（不阻塞 UI） */
 setTimeout(function(){ loadTesseractScript(function(){}); }, 100);
 
 async function ensureWorker(){
   if(state.worker && state.workerReady) return state.worker;
-
   if(!tesseractLoaded){
-    var loaded = await new Promise(function(resolve){
-      loadTesseractScript(resolve);
-    });
+    var loaded = await new Promise(function(resolve){ loadTesseractScript(resolve); });
     if(!loaded) throw new Error('OCR 引擎載入失敗');
   }
-
   var progText = $('progressText'), progDetail = $('progressDetail');
   $('progress').style.display = 'block';
   progText.textContent = '⚙️ 初始化 OCR 引擎...';
   progDetail.textContent = '下載中文+英文語言包，第一次會比較久';
-
   state.worker = await Tesseract.createWorker(['chi_sim', 'eng'], 1, {
     logger: function(m){
       if(m.status === 'loading tesseract core') progDetail.textContent = '載入核心引擎...';
@@ -527,7 +479,6 @@ async function ensureWorker(){
 async function recognizeAll(forceAll){
   if(state.busy) return;
   if(state.rows.length === 0){ alert('尚未上傳圖片'); return; }
-
   state.busy = true; updateButtons();
   var progText = $('progressText'), progDetail = $('progressDetail'), progBar = $('progressBarInner');
   $('progress').style.display = 'block';
@@ -622,9 +573,6 @@ function preprocessImage(file){
   });
 }
 
-/* ============================================================
-   第五部分：提取邏輯（v1.13 只用中文錨點）
-   ============================================================ */
 function applyHeuristic(row){
   var W = row.ocrWidth || 1;
   var H = row.ocrHeight || 1;
@@ -633,7 +581,6 @@ function applyHeuristic(row){
   debug.push('尺寸：' + W + ' x ' + H + '，Word 數：' + words.length);
   debug.push('');
 
-  /* ---- 1. 比分 ---- */
   var score = findScore(words, H);
   if(score){
     row.values.scoreA = score.a;
@@ -642,14 +589,13 @@ function applyHeuristic(row){
     debug.push('[比分] ' + score.a + '-' + score.b + '  y=' + Math.round(score.cy) + '  src=' + score.src);
   } else debug.push('[比分] 未找到');
 
-  /* ---- 2. ⭐ 只用中文錨點 ---- */
+  /* ⭐ v1.14：優先「猜」字 */
   var anchorInfo = findChineseAnchor(words);
   var anchorY = anchorInfo ? anchorInfo.y : null;
   if(anchorInfo){
-    debug.push('[中文錨點] ✓ y=' + Math.round(anchorY) + '  文字="' + anchorInfo.text + '"');
+    debug.push('[中文錨點] ✓ y=' + Math.round(anchorY) + '  文字="' + anchorInfo.text + '"  匹配=' + anchorInfo.type);
   } else {
-    debug.push('[中文錨點] ✗ 未找到「猜誰會贏」（不做 fallback）');
-    /* 找不到錨點 → 留空，不猜 */
+    debug.push('[中文錨點] ✗ 未找到任何中文錨點');
     row.confidence = 'low';
     debug.push('');
     debug.push('--- 所有 OCR 詞（按 y 排序，前 150） ---');
@@ -662,13 +608,11 @@ function applyHeuristic(row){
     return;
   }
 
-  /* ---- 3. 取錨點下方的所有數字 token ---- */
   var numbers = [];
   for(var i = 0; i < words.length; i++){
     var w = words[i];
     var t = w.text.trim();
     if(Math.abs(w.cy - anchorY) < 5) continue;
-
     var m1 = t.match(/^(\d{1,2})[.,](\d{2})$/);
     if(m1){
       var v1 = parseInt(m1[1], 10) * 100 + parseInt(m1[2], 10);
@@ -696,7 +640,6 @@ function applyHeuristic(row){
     return n.raw + '(y=' + Math.round(n.cy) + ',x=' + Math.round(n.cx) + ')';
   }).join(', '));
 
-  /* ---- 4. 按 y 分行 ---- */
   var groups = [];
   var curGroup = null;
   var yThreshold = Math.max(25, H * 0.02);
@@ -717,7 +660,6 @@ function applyHeuristic(row){
     return 'L' + (i+1) + ':' + g.items.map(function(it){ return it.raw; }).join(' ');
   }).join(' | '));
 
-  /* ---- 5. 找第一組 3 個 pct 型且總和 97~103 ---- */
   var pctTriple = null, pctGroupIdx = -1;
   for(var gi = 0; gi < groups.length; gi++){
     var items = groups[gi].items;
@@ -744,7 +686,6 @@ function applyHeuristic(row){
     debug.push('[百分比] 未找到');
   }
 
-  /* ---- 6. 找下一組 3 個 odd 型 ---- */
   if(pctTriple){
     var oddTriple = null;
     for(var gi = pctGroupIdx + 1; gi < groups.length; gi++){
@@ -767,7 +708,6 @@ function applyHeuristic(row){
       }
       if(afterPct.length === 3) oddTriple = afterPct;
     }
-
     if(oddTriple){
       row.values.homeOdd = oddTriple[0].v;
       row.values.drawOdd = oddTriple[1].v;
@@ -797,31 +737,32 @@ function applyHeuristic(row){
   row.debugInfo = debug.join('\n');
 }
 
-/* ⭐ v1.13：中文錨點「猜誰會贏」 */
+/* ⭐ v1.14 核心修改：優先「猜」字 */
 function findChineseAnchor(words){
-  var best = null;
+  var guess = null, win = null, who = null;
   for(var i = 0; i < words.length; i++){
     var w = words[i];
     var t = w.text;
-
-    /* 匹配條件（任一成立）：
-       1. 含「猜」
-       2. 含「贏」/「赢」/「羸」
-       3. 含「誰」+「贏」
-    */
-    var match = false;
-    if(/猜/.test(t)) match = true;
-    else if(/[贏赢羸]/.test(t)) match = true;
-    else if(/[誰谁]/.test(t) && /[贏赢羸]/.test(t)) match = true;
-
-    if(match){
-      /* 取最下面的（「猜誰會贏」通常在頁面中下部） */
-      if(!best || w.cy > best.y){
-        best = { y: w.cy, text: t, type: 'chinese' };
+    /* 優先 1：含「猜」 */
+    if(/猜/.test(t)){
+      if(!guess || w.cy > guess.y){
+        guess = { y: w.cy, text: t, type: '「猜」' };
+      }
+    }
+    /* 優先 2：含「贏/赢/羸」 */
+    if(/[贏赢羸]/.test(t)){
+      if(!win || w.cy > win.y){
+        win = { y: w.cy, text: t, type: '「贏」' };
+      }
+    }
+    /* 優先 3：含「誰/谁」 */
+    if(/[誰谁]/.test(t)){
+      if(!who || w.cy > who.y){
+        who = { y: w.cy, text: t, type: '「誰」' };
       }
     }
   }
-  return best;
+  return guess || win || who || null;
 }
 
 function findScore(words, H){
@@ -883,9 +824,6 @@ function groupRows(words, yThreshold){
   return rows;
 }
 
-/* ============================================================
-   第六部分：輸出
-   ============================================================ */
 function buildOutput(onlyValid){
   var lines = [];
   for(var i = 0; i < state.rows.length; i++){
@@ -966,7 +904,6 @@ $('btnClear').addEventListener('click', function(){
   renderTable(); updateButtons(); updateStats();
 });
 
-/* 初始化 */
 updateButtons(); updateStats();
 </script>
 </body>
