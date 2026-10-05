@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>賠率截圖批量識別 v1.11</title>
+<title>賠率截圖批量識別 v1.12</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:16px;background:#f0f2f5;color:#333}
@@ -62,6 +62,8 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
 .legend{font-size:11px;color:#666;background:#fff;padding:8px 12px;border-radius:4px;margin-top:12px;line-height:1.7;border:1px solid #ddd}
 .legend code{background:#eef;padding:1px 5px;border-radius:3px;color:#046;font-size:10px}
 .notice{background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:10px}
+.notice-big{background:#d4edda;border:2px solid #28a745;color:#155724;padding:12px 14px;border-radius:6px;font-size:13px;margin-bottom:12px;line-height:1.8}
+.notice-big b{color:#0a5a1a}
 .rule-box{background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:10px;line-height:1.7}
 .rule-box b{color:#1e3a8a}
 .rule-box .highlight{background:#fef3c7;padding:1px 6px;border-radius:3px;color:#92400e;font-weight:bold}
@@ -78,16 +80,23 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
 <body>
 
 <h1>📷 賠率截圖批量識別</h1>
-<div class="version">v1.11 — 完整重製版（適配 16 張範例圖）</div>
+<div class="version">v1.12 — 中文 OCR + 「猜誰會贏」錨點</div>
 
-<div class="notice">💡 第一次使用 OCR 引擎需下載語言包（約 15MB），請耐心等待 10~30 秒</div>
+<div class="notice-big">
+  <b>⚠️ 重要提醒：</b>你的截圖如果來自<b>網頁</b>（有網址），最準的方法是<b>直接從網頁複製文字</b>，完全不用 OCR。<br>
+  如果是 <b>App</b>（bet365 / 1XBET 官方 App），才需要 OCR。<br>
+  <b>如果是網頁，請告訴我，我幫你做一個直接輸入資料的工具。</b>
+</div>
+
+<div class="notice">💡 第一次使用 OCR 引擎需下載<b>中文+英文</b>語言包（約 30MB），請耐心等待 20~60 秒</div>
 
 <div class="rule-box">
-  <b>🎯 v1.11 識別邏輯：</b><br>
+  <b>🎯 v1.12 識別邏輯：</b><br>
   ① <b>比分</b>：優先找含 <code>-</code> 的；排除時間格式 <code>X:0Y</code><br>
-  ② <b>找「18+」錨點</b>（寬鬆匹配：<code>18+</code>、<code>1843</code>、<code>I8+</code>、<code>18·</code>、<code>18&gt;</code>）<br>
-  ③ <b>18+ 下方第一組 3 個 1-2 位數</b> = A/B/C（總和 97~103）<br>
-  ④ <b>再下方 3 個 ≥100 的數</b> = D/E/F<br>
+  ② <b>主錨點：「猜誰會贏？」</b>（中文 OCR，模糊匹配「猜/贏/赢/誰」）<br>
+  ③ <b>備用錨點：「18+」</b>（若中文錨點找不到）<br>
+  ④ <b>錨點下方第一組 3 個 1-2 位數</b> = A/B/C（總和 97~103）<br>
+  ⑤ <b>再下方 3 個 ≥100 的數</b> = D/E/F<br>
   <b>✅ 驗證：</b>A/B/C 需 1-2 位、D/E/F 需 3 位+、比分需存在、結果需 H/D/A/skip、<span class="highlight">A+B+C 必須 = 100</span>
 </div>
 
@@ -187,7 +196,6 @@ function handleFiles(files){
   renderTable(); updateButtons(); updateStats();
 }
 
-/* 驗證 */
 function validateRow(v){
   var errs = [];
   var abc = ['homePct','drawPct','awayPct'], abcN = ['主%','和%','客%'];
@@ -292,10 +300,10 @@ function applyCellHighlight(tr, v){
   for(var i = 0; i < checks.length; i++){
     var inp = tr.querySelector('input[data-field="' + checks[i][0] + '"]'); if(!inp) continue;
     var s = String(inp.value || '').trim();
-    var bad = (s !== '') && !checks[i][1].test(s);
-    if(bad) inp.classList.add('cell-err'); else inp.classList.remove('cell-err');
+    var bad = (s !== '') && score !checks[i][1].Badtest(s);
+    if(bad) inp.classList.add('cell =-err'); else inp.classList.remove (('cell-err');
   }
-  var hInp = tr.querySelector('input[data-field="homePct"]');
+sv  var hInp = tr.querySelector('input[data-field="homePct"]');
   var dInp = tr.querySelector('input[data-field="drawPct"]');
   var aInp = tr.querySelector('input[data-field="awayPct"]');
   if(hInp && dInp && aInp){
@@ -314,7 +322,7 @@ function applyCellHighlight(tr, v){
   var scoreInp = tr.querySelector('input[data-field="score"]');
   if(scoreInp){
     var sv = String(scoreInp.value || '').trim();
-    var scoreBad = (sv !== '') && !/^\d{1,2}\s*[-:.]\s*\d{1,2}$/.test(sv);
+    var !== '') && !/^\d{1,2}\s*[-:.]\s*\d{1,2}$/.test(sv);
     if(scoreBad) scoreInp.classList.add('cell-err'); else scoreInp.classList.remove('cell-err');
   }
 }
@@ -403,13 +411,16 @@ function updateStats(){
   $('stats').style.display = 'block';
 }
 
+/* ⭐ v1.12：中文+英文 OCR */
 async function ensureWorker(){
   if(state.worker && state.workerReady) return state.worker;
   var progText = $('progressText'), progDetail = $('progressDetail');
   $('progress').style.display = 'block';
   progText.textContent = '⚙️ 初始化 OCR 引擎...';
-  progDetail.textContent = '第一次使用需下載語言包，請稍候';
-  state.worker = await Tesseract.createWorker('eng', 1, {
+  progDetail.textContent = '下載中文+英文語言包（約 30MB），第一次會比較久';
+
+  /* 使用中文簡體 + 英文 */
+  state.worker = await Tesseract.createWorker(['chi_sim', 'eng'], 1, {
     logger: function(m){
       if(m.status === 'loading tesseract core') progDetail.textContent = '載入核心引擎...';
       else if(m.status === 'initializing tesseract') progDetail.textContent = '初始化引擎...';
@@ -417,7 +428,12 @@ async function ensureWorker(){
       else if(m.status === 'initializing api') progDetail.textContent = '初始化 API...';
     }
   });
-  try { await state.worker.setParameters({ preserve_interword_spaces: '1' }); } catch(e){}
+  try {
+    await state.worker.setParameters({
+      preserve_interword_spaces: '1',
+      tessedit_pageseg_mode: '6'  /* 假設為單一文字區塊 */
+    });
+  } catch(e){}
   state.workerReady = true; progDetail.textContent = '引擎就緒';
   return state.worker;
 }
@@ -519,7 +535,7 @@ function preprocessImage(file){
 }
 
 /* ============================================================
-   ⭐ v1.11 提取邏輯：以「18+」為錨點
+   ⭐ v1.12 提取邏輯：中文錨點優先
    ============================================================ */
 function applyHeuristic(row){
   var W = row.ocrWidth || 1;
@@ -538,22 +554,22 @@ function applyHeuristic(row){
     debug.push('[比分] ' + score.a + '-' + score.b + '  y=' + Math.round(score.cy) + '  src=' + score.src);
   } else debug.push('[比分] 未找到');
 
-  /* ---- 2. 找「18+」錨點（寬鬆匹配） ---- */
-  var anchorInfo = find18Plus(words);
+  /* ---- 2. 找錨點：「猜誰會贏」優先，18+ 備用 ---- */
+  var anchorInfo = findChineseAnchor(words) || find18Plus(words);
   var anchorY = anchorInfo ? anchorInfo.y : null;
   if(anchorInfo){
-    debug.push('[18+ 錨點] y=' + Math.round(anchorY) + '  文字="' + anchorInfo.text + '"  匹配=' + anchorInfo.matchType);
+    debug.push('[錨點] ' + anchorInfo.type + '  y=' + Math.round(anchorY) + '  文字="' + anchorInfo.text + '"');
   } else {
-    debug.push('[18+ 錨點] ⚠ 未找到，改用全部資料');
+    debug.push('[錨點] ⚠ 未找到（中文和 18+ 都沒有），改用全部資料');
   }
 
-  /* ---- 3. 取 18+ 下方的所有數字 token ---- */
+  /* ---- 3. 取錨點下方的所有數字 token ---- */
   var numbers = [];
   for(var i = 0; i < words.length; i++){
     var w = words[i];
     var t = w.text.trim();
 
-    /* 排除 18+ 自己 */
+    /* 排除錨點本身 */
     if(anchorInfo && Math.abs(w.cy - anchorY) < 5) continue;
 
     /* X.XX 或 X,XX */
@@ -575,20 +591,18 @@ function applyHeuristic(row){
     }
   }
 
-  /* 篩選：18+ 下方 */
   var below = numbers;
   if(anchorY !== null){
     below = numbers.filter(function(n){ return n.cy > anchorY + 5; });
   }
 
-  /* 排序 */
   below.sort(function(a, b){
     if(Math.abs(a.cy - b.cy) > 25) return a.cy - b.cy;
     return a.cx - b.cx;
   });
 
-  debug.push('[18+下方數字] ' + below.map(function(n){
-     return n.raw + '(y=' + Math.round(n.cy) + ',x=' + Math.round(n.cx) + ')';
+  debug.push('[下方數字] ' + below.map(function(n){
+    return n.raw + '(y=' + Math.round(n.cy) + ',x=' + Math.round(n.cx) + ')';
   }).join(', '));
 
   /* ---- 4. 按 y 分行 ---- */
@@ -612,7 +626,7 @@ function applyHeuristic(row){
     return 'L' + (i+1) + ':' + g.items.map(function(it){ return it.raw; }).join(' ');
   }).join(' | '));
 
-  /* ---- 5. 找第一組有 3 個「pct 型」（1-99）且總和 97~103 ---- */
+  /* ---- 5. 找第一組 3 個 pct 型且總和 97~103 ---- */
   var pctTriple = null, pctGroupIdx = -1;
   for(var gi = 0; gi < groups.length; gi++){
     var items = groups[gi].items;
@@ -639,7 +653,7 @@ function applyHeuristic(row){
     debug.push('[百分比] 未找到');
   }
 
-  /* ---- 6. 找下一組有 3 個 odd 型（>=100） ---- */
+  /* ---- 6. 找下一組 3 個 odd 型 ---- */
   if(pctTriple){
     var oddTriple = null;
     for(var gi = pctGroupIdx + 1; gi < groups.length; gi++){
@@ -651,7 +665,6 @@ function applyHeuristic(row){
       oddTriple = t;
       break;
     }
-    /* 退路：百分比下方所有 ≥100 的數字 */
     if(!oddTriple){
       var afterPct = [];
       for(var i = 0; i < below.length; i++){
@@ -670,11 +683,10 @@ function applyHeuristic(row){
       row.values.awayOdd = oddTriple[2].v;
       debug.push('[賠率] ' + oddTriple[0].v + ' / ' + oddTriple[1].v + ' / ' + oddTriple[2].v);
     } else {
-      debug.push('[賠率] 未找到（可能被鎖住）');
+      debug.push('[賠率] 未找到');
     }
   }
 
-  /* 信心度 */
   var filled = 0;
   ['homePct','drawPct','awayPct','homeOdd','drawOdd','awayOdd'].forEach(function(k){
     if(row.values[k] !== '') filled++;
@@ -685,41 +697,55 @@ function applyHeuristic(row){
   else row.confidence = 'low';
 
   debug.push('');
-  debug.push('--- 所有 OCR 詞（按 y 排序，前 120） ---');
+  debug.push('--- 所有 OCR 詞（按 y 排序，前 150） ---');
   var sorted = words.slice().sort(function(a,b){ return a.cy - b.cy; });
-  for(var i = 0; i < Math.min(120, sorted.length); i++){
+  for(var i = 0; i < Math.min(150, sorted.length); i++){
     var w = sorted[i];
     debug.push('y=' + String(Math.round(w.cy)).padStart(5) + '  x=' + String(Math.round(w.cx)).padStart(5) + '  "' + w.text + '"');
   }
   row.debugInfo = debug.join('\n');
 }
 
-/* ⭐ v1.11：寬鬆匹配 18+ */
-function find18Plus(words){
+/* ⭐ 中文錨點：找「猜誰會贏」 */
+function findChineseAnchor(words){
   var best = null;
   for(var i = 0; i < words.length; i++){
     var w = words[i];
-    var t = w.text.trim();
-    var matchType = null;
+    var t = w.text;
+    /* 模糊匹配：含「猜」或含「贏/赢/羸」 */
+    var match = false;
+    if(/猜/.test(t)) match = true;
+    else if(/[贏赢羸]/.test(t)) match = true;
+    else if(/猜誰會贏/.test(t)) match = true;
 
-    /* 強匹配：含18 且有 + 或 * 或 ° 或 > 或 · 或 − */
-    if(/18\s*[\+\*\°\>\·\−\-]/.test(t)) matchType = 'strong';
-    /* 純 "18+" 單詞 */
-    else if(/^18\+?$/.test(t)) matchType = 'exact';
-    /* 弱匹配：短 token（≤6 字）含 "18" */
-    else if(t.length <= 6 && /18/.test(t)) matchType = 'loose';
-
-    if(matchType){
-      /* 取最下面的（通常 18+ 在頁面底部） */
+    if(match){
       if(!best || w.cy > best.y){
-        best = { y: w.cy, text: t, matchType: matchType };
+        best = { y: w.cy, text: t, type: '「猜誰會贏」', matchType: 'chinese' };
       }
     }
   }
   return best;
 }
 
-/* 找比分 */
+/* ⭐ 18+ 備用錨點 */
+function find18Plus(words){
+  var best = null;
+  for(var i = 0; i < words.length; i++){
+    var w = words[i];
+    var t = w.text.trim();
+    var matchType = null;
+    if(/18\s*[\+\*\°\>\·\−\-]/.test(t)) matchType = 'strong';
+    else if(/^18\+?$/.test(t)) matchType = 'exact';
+    else if(t.length <= 6 && /18/.test(t)) matchType = 'loose';
+    if(matchType){
+      if(!best || w.cy > best.y){
+        best = { y: w.cy, text: t, type: '18+', matchType: matchType };
+      }
+    }
+  }
+  return best;
+}
+
 function findScore(words, H){
   var dashCands = [], colonCands = [];
   for(var i = 0; i < words.length; i++){
