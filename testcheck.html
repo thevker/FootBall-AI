@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>賠率截圖批量識別 v1.07</title>
+<title>賠率截圖批量識別 v1.08</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:16px;background:#f0f2f5;color:#333}
@@ -64,6 +64,7 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
 .notice{background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:10px}
 .rule-box{background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:10px;line-height:1.7}
 .rule-box b{color:#1e3a8a}
+.rule-box .highlight{background:#fef3c7;padding:1px 6px;border-radius:3px;color:#92400e;font-weight:bold}
 @media(max-width:700px){
   body{padding:10px}
   th,td{padding:3px 2px}
@@ -77,15 +78,22 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
 <body>
 
 <h1>📷 賠率截圖批量識別</h1>
-<div class="version">v1.07 — 修正比分時間誤判 + 允許純數字補位</div>
+<div class="version">v1.08 — 新增 A+B+C 必須 = 100 驗證</div>
 
 <div class="notice">💡 第一次使用 OCR 引擎需下載語言包（約 15MB），請耐心等待 10~30 秒</div>
 
 <div class="rule-box">
-  <b>🎯 v1.07 修正：</b><br>
-  ① <b>比分</b>：優先找含 <code>-</code> 的；排除時間格式 <code>X:0Y</code>（如 2:02）<br>
-  ② <b>A/B/C</b>：找 <code>%</code> 數字 + 允許純 2 位數字補位（OCR 漏讀 % 時）<br>
-  ③ <b>D/E/F</b>：A/B/C <b>正下方 5~400px</b> 內
+  <b>🎯 v1.08 識別邏輯：</b><br>
+  ① <b>比分</b>：優先找含 <code>-</code> 的；排除時間格式 <code>X:0Y</code><br>
+  ② <b>A/B/C</b>：找 <code>%</code> 數字 + 允許純 2 位數字補位<br>
+  ③ <b>D/E/F</b>：A/B/C <b>正下方 5~400px</b> 內<br>
+  <b>✅ 驗證規則：</b><br>
+  • A/B/C 必須 1-2 位數字<br>
+  • D/E/F 必須 3 位以上<br>
+  • 比分必須存在<br>
+  • 結果必須是 H/D/A/skip<br>
+  • <span class="highlight">A + B + C 必須恰好等於 100</span> ← 🆕 v1.08<br>
+  • 任一項不符 → 該行輸出為「<b>失敗</b>」
 </div>
 
 <div id="dropzone">
@@ -183,24 +191,45 @@ function handleFiles(files){
   renderTable(); updateButtons(); updateStats();
 }
 
+/* ============================================================
+   ⭐ 驗證（v1.08 新增：A+B+C = 100）
+   ============================================================ */
 function validateRow(v){
   var errs = [];
+
+  /* A/B/C：1-2 位數字 */
   var abc = ['homePct','drawPct','awayPct'], abcN = ['主%','和%','客%'];
+  var abcValid = true;
   for(var i=0;i<3;i++){
     var s = String(v[abc[i]]||'').trim();
-    if(s === '') errs.push(abcN[i] + '缺失');
-    else if(!/^\d{1,2}$/.test(s)) errs.push(abcN[i] + '需1-2位');
+    if(s === ''){ errs.push(abcN[i] + '缺失'); abcValid = false; }
+    else if(!/^\d{1,2}$/.test(s)){ errs.push(abcN[i] + '需1-2位'); abcValid = false; }
   }
+
+  /* 🆕 A+B+C 必須恰好 = 100 */
+  if(abcValid){
+    var sum = parseInt(v.homePct, 10) + parseInt(v.drawPct, 10) + parseInt(v.awayPct, 10);
+    if(sum !== 100){
+      errs.push('A+B+C=' + sum + '（需=100）');
+    }
+  }
+
+  /* D/E/F：3 位以上 */
   var def = ['homeOdd','drawOdd','awayOdd'], defN = ['主賠','和賠','客賠'];
   for(var i=0;i<3;i++){
     var s = String(v[def[i]]||'').trim();
     if(s === '') errs.push(defN[i] + '缺失');
     else if(!/^\d{3,}$/.test(s)) errs.push(defN[i] + '需3位+');
   }
+
+  /* 比分 */
   var sa = String(v.scoreA||'').trim(), sb = String(v.scoreB||'').trim();
   if(sa === '' || sb === '') errs.push('比分缺失');
   else if(!/^\d{1,2}$/.test(sa) || !/^\d{1,2}$/.test(sb)) errs.push('比分格式錯');
+
+  /* 結果 */
   if(VALID_RESULTS.indexOf(v.result) === -1) errs.push('結果無效');
+
   return errs;
 }
 function isValidRow(v){ return validateRow(v).length === 0; }
@@ -274,6 +303,7 @@ function renderTable(){
 function hasAnyValue(v){
   return !!(v.homePct || v.drawPct || v.awayPct || v.homeOdd || v.drawOdd || v.awayOdd || v.scoreA !== '' || v.scoreB !== '');
 }
+
 function applyCellHighlight(tr, v){
   var checks = [
     ['homePct', /^\d{1,2}$/], ['drawPct', /^\d{1,2}$/], ['awayPct', /^\d{1,2}$/],
@@ -285,6 +315,23 @@ function applyCellHighlight(tr, v){
     var bad = (s !== '') && !checks[i][1].test(s);
     if(bad) inp.classList.add('cell-err'); else inp.classList.remove('cell-err');
   }
+  /* 🆕 A/B/C 總和檢查：若總和≠100，三個欄位都標紅 */
+  var hInp = tr.querySelector('input[data-field="homePct"]');
+  var dInp = tr.querySelector('input[data-field="drawPct"]');
+  var aInp = tr.querySelector('input[data-field="awayPct"]');
+  if(hInp && dInp && aInp){
+    var hv = String(hInp.value || '').trim();
+    var dv = String(dInp.value || '').trim();
+    var av = String(aInp.value || '').trim();
+    if(/^\d{1,2}$/.test(hv) && /^\d{1,2}$/.test(dv) && /^\d{1,2}$/.test(av)){
+      var sum = parseInt(hv,10) + parseInt(dv,10) + parseInt(av,10);
+      if(sum !== 100){
+        hInp.classList.add('cell-err');
+        dInp.classList.add('cell-err');
+        aInp.classList.add('cell-err');
+      }
+    }
+  }
   var scoreInp = tr.querySelector('input[data-field="score"]');
   if(scoreInp){
     var sv = String(scoreInp.value || '').trim();
@@ -292,6 +339,7 @@ function applyCellHighlight(tr, v){
     if(scoreBad) scoreInp.classList.add('cell-err'); else scoreInp.classList.remove('cell-err');
   }
 }
+
 function onInputChange(e){
   var tr = e.target.closest('tr'); if(!tr) return;
   var row = findRow(tr.dataset.id); if(!row) return;
@@ -310,6 +358,7 @@ function onInputChange(e){
   else { row.values[field] = e.target.value; }
   refreshValidation(tr, row); updateStats();
 }
+
 function refreshValidation(tr, row){
   applyCellHighlight(tr, row.values);
   var errs = validateRow(row.values);
@@ -318,6 +367,7 @@ function refreshValidation(tr, row){
   else if(errs.length === 0) cell.innerHTML = '<span class="valid-ok" title="通過驗證">✓</span>';
   else cell.innerHTML = '<span class="valid-err" title="' + escapeHtml(errs.join('、')) + '">✗</span>';
 }
+
 function findRow(id){ for(var i = 0; i < state.rows.length; i++) if(state.rows[i].id === id) return state.rows[i]; return null; }
 function removeRow(id){
   for(var i = 0; i < state.rows.length; i++){
@@ -343,10 +393,11 @@ function updateButtons(){
   $('btnDebug').disabled = !has;
   $('btnPreview').disabled = !has;
 }
+
 function updateStats(){
   var total = state.rows.length;
   if(total === 0){ $('stats').style.display = 'none'; return; }
-  var valid = 0, wait = 0, proc = 0, err = 0, high = 0, mid = 0, low = 0;
+  var valid = 0, wait = 0, proc = 0, err = 0, high = 0, mid = 0, low = 0, sumFail = 0;
   for(var i = 0; i < state.rows.length; i++){
     var r = state.rows[i];
     if(r.status === 'wait') wait++;
@@ -356,8 +407,16 @@ function updateStats(){
     if(r.confidence === 'high') high++;
     else if(r.confidence === 'mid') mid++;
     else if(r.confidence === 'low') low++;
+    /* 統計總和錯誤 */
+    var v = r.values;
+    var hv = String(v.homePct||'').trim(), dv = String(v.drawPct||'').trim(), av = String(v.awayPct||'').trim();
+    if(/^\d{1,2}$/.test(hv) && /^\d{1,2}$/.test(dv) && /^\d{1,2}$/.test(av)){
+      var sum = parseInt(hv,10) + parseInt(dv,10) + parseInt(av,10);
+      if(sum !== 100) sumFail++;
+    }
   }
   var s = '📊 共 ' + total + ' 筆｜✅ 有效 ' + valid + '｜❌ 無效 ' + (total - valid);
+  if(sumFail > 0) s += '｜⚠ 總和≠100 ' + sumFail;
   if(high + mid + low > 0) s += '｜信心 高 ' + high + ' / 中 ' + mid + ' / 低 ' + low;
   if(wait > 0) s += '｜⏳ 待識別 ' + wait;
   if(proc > 0) s += '｜🔄 識別中 ' + proc;
@@ -482,7 +541,7 @@ function preprocessImage(file){
 }
 
 /* ============================================================
-   ⭐ 提取邏輯 v1.07
+   提取邏輯
    ============================================================ */
 function applyHeuristic(row){
   var W = row.ocrWidth || 1;
@@ -492,7 +551,6 @@ function applyHeuristic(row){
   debug.push('尺寸：' + W + ' x ' + H + '，Word 數：' + words.length);
   debug.push('');
 
-  /* ---- 1. 比分 ---- */
   var score = findScore(words, H);
   if(score){
     row.values.scoreA = score.a;
@@ -501,17 +559,16 @@ function applyHeuristic(row){
     debug.push('[比分] ' + score.a + '-' + score.b + '  y=' + Math.round(score.cy) + '  src=' + score.src);
   } else debug.push('[比分] 未找到');
 
-  /* ---- 2. 百分比 ---- */
   var pct = findPct(words, W, H);
   if(pct){
     row.values.homePct = pct[0].v;
     row.values.drawPct = pct[1].v;
     row.values.awayPct = pct[2].v;
+    var sum = pct[0].v + pct[1].v + pct[2].v;
     debug.push('[百分比] ' + pct[0].v + ' / ' + pct[1].v + ' / ' + pct[2].v +
-      '  y=' + Math.round(pct[0].cy) + '~' + Math.round(pct[2].cy));
+      '  （總和=' + sum + (sum===100?' ✓':' ⚠ 非100') + '）');
   } else debug.push('[百分比] 未找到');
 
-  /* ---- 3. 賠率 ---- */
   if(pct){
     var odds = findOdds(words, W, H, pct);
     if(odds){
@@ -541,36 +598,24 @@ function applyHeuristic(row){
   row.debugInfo = debug.join('\n');
 }
 
-/* ⭐ 比分：優先含 - 的，排除時間格式 X:0Y */
 function findScore(words, H){
-  var dashCands = [];
-  var colonCands = [];
-
+  var dashCands = [], colonCands = [];
   for(var i = 0; i < words.length; i++){
     var w = words[i];
-    /* 含 - */
     var mDash = w.text.match(/^(\d{1,2})\s*-\s*(\d{1,2})$/);
     if(mDash){
       var a = parseInt(mDash[1], 10), b = parseInt(mDash[2], 10);
-      if(a <= 15 && b <= 15){
-        dashCands.push({ a:a, b:b, cy:w.cy, cx:w.cx, src:'dash' });
-      }
+      if(a <= 15 && b <= 15) dashCands.push({ a:a, b:b, cy:w.cy, cx:w.cx, src:'dash' });
     }
-    /* 含 : */
     var mColon = w.text.match(/^(\d{1,2})\s*:\s*(\d{1,2})$/);
     if(mColon){
       var a2 = parseInt(mColon[1], 10), b2 = parseInt(mColon[2], 10);
       if(a2 <= 15 && b2 <= 15){
-        /* 排除時間格式 X:0Y（如 2:02、12:05） */
         var isTimeFormat = (mColon[2].length === 2 && mColon[2][0] === '0');
-        if(!isTimeFormat){
-          colonCands.push({ a:a2, b:b2, cy:w.cy, cx:w.cx, src:'colon' });
-        }
+        if(!isTimeFormat) colonCands.push({ a:a2, b:b2, cy:w.cy, cx:w.cx, src:'colon' });
       }
     }
   }
-
-  /* 若都沒找到，找 "-" 單獨詞 */
   if(dashCands.length === 0 && colonCands.length === 0){
     for(var i = 0; i < words.length; i++){
       var dash = words[i];
@@ -582,70 +627,45 @@ function findScore(words, H){
         var wj = words[j];
         if(!/^\d{1,2}$/.test(wj.text)) continue;
         if(Math.abs(wj.cy - dash.cy) > 60) continue;
-        if(wj.cx < dash.cx && dash.cx - wj.cx < 150){
-          if(!left || dash.cx - wj.cx < dash.cx - left.cx) left = wj;
-        }
-        if(wj.cx > dash.cx && wj.cx - dash.cx < 150){
-          if(!right || wj.cx - dash.cx < right.cx - dash.cx) right = wj;
-        }
+        if(wj.cx < dash.cx && dash.cx - wj.cx < 150){ if(!left || dash.cx - wj.cx < dash.cx - left.cx) left = wj; }
+        if(wj.cx > dash.cx && wj.cx - dash.cx < 150){ if(!right || wj.cx - dash.cx < right.cx - dash.cx) right = wj; }
       }
       if(left && right){
         dashCands.push({ a:parseInt(left.text,10), b:parseInt(right.text,10), cy:dash.cy, cx:dash.cx, src:'triple' });
       }
     }
   }
-
-  /* 優先 - 的，取最靠上 */
-  if(dashCands.length > 0){
-    dashCands.sort(function(x, y){ return x.cy - y.cy; });
-    return dashCands[0];
-  }
-  if(colonCands.length > 0){
-    colonCands.sort(function(x, y){ return x.cy - y.cy; });
-    return colonCands[0];
-  }
+  if(dashCands.length > 0){ dashCands.sort(function(x, y){ return x.cy - y.cy; }); return dashCands[0]; }
+  if(colonCands.length > 0){ colonCands.sort(function(x, y){ return x.cy - y.cy; }); return colonCands[0]; }
   return null;
 }
 
-/* ⭐ 百分比：含 % 優先 + 純 2 位數字補位 */
 function findPct(words, W, H){
-  var pctWith = [];   /* 含 % 的 */
-  var numOnly = [];   /* 純 2 位數字 */
-
+  var pctWith = [], numOnly = [];
   for(var i = 0; i < words.length; i++){
     var w = words[i];
-    /* 含 %： "44%" 或 "44 %" */
     var m = w.text.match(/^(\d{1,3})\s*%$/);
     if(m){
       var v = parseInt(m[1], 10);
-      if(v >= 1 && v <= 99){
-        pctWith.push({ v:v, cy:w.cy, cx:w.cx, hasPct: true });
-      }
+      if(v >= 1 && v <= 99) pctWith.push({ v:v, cy:w.cy, cx:w.cx, hasPct: true });
       continue;
     }
-    /* 純 2 位數字 */
     if(/^\d{2}$/.test(w.text)){
       var v2 = parseInt(w.text, 10);
-      if(v2 >= 10 && v2 <= 80){
-        numOnly.push({ v:v2, cy:w.cy, cx:w.cx, hasPct: false });
-      }
+      if(v2 >= 10 && v2 <= 80) numOnly.push({ v:v2, cy:w.cy, cx:w.cx, hasPct: false });
     }
   }
-
-  /* 若 "44" 和 "%" 是分開的詞，補上配對 */
   for(var i = 0; i < words.length; i++){
     var w1 = words[i];
     if(w1.text.indexOf('%') !== -1) continue;
     if(!/^\d{1,3}$/.test(w1.text)) continue;
     var v1 = parseInt(w1.text, 10);
     if(v1 < 1 || v1 > 99) continue;
-    /* 檢查是否已在 pctWith（可能被當作純數字） */
     var alreadyHas = false;
     for(var k = 0; k < pctWith.length; k++){
       if(Math.abs(pctWith[k].cy - w1.cy) < 20 && Math.abs(pctWith[k].cx - w1.cx) < 30){ alreadyHas = true; break; }
     }
     if(alreadyHas) continue;
-    /* 找右側 80px 內的 % */
     for(var j = 0; j < words.length; j++){
       if(j === i) continue;
       var w2 = words[j];
@@ -657,54 +677,41 @@ function findPct(words, W, H){
     }
   }
 
-  /* 組合：pctWith + numOnly，找 3 個總和 97~103、y 相近、至少 1 個含 % */
   var all = pctWith.concat(numOnly);
   var best = null, bestScore = -Infinity;
-
   for(var i = 0; i < all.length - 2; i++){
     for(var j = i + 1; j < all.length - 1; j++){
       for(var k = j + 1; k < all.length; k++){
         var trio = [all[i], all[j], all[k]];
         var sum = trio[0].v + trio[1].v + trio[2].v;
         if(sum < 97 || sum > 103) continue;
-        /* 至少一個含 % */
         var pctCount = 0;
         for(var t = 0; t < 3; t++) if(trio[t].hasPct) pctCount++;
         if(pctCount === 0) continue;
-        /* y 相近 */
         var ys = [trio[0].cy, trio[1].cy, trio[2].cy];
         var ySpread = Math.max.apply(null, ys) - Math.min.apply(null, ys);
         if(ySpread > Math.max(80, H * 0.05)) continue;
-        /* 評分：越多 % 越好、y 越靠中下越好、spread 越小越好 */
         var avgY = (ys[0]+ys[1]+ys[2])/3;
         var yPct = avgY / H;
         var score = pctCount * 100 - ySpread;
         if(yPct > 0.4 && yPct < 0.9) score += 50;
         else if(yPct > 0.3 && yPct < 0.95) score += 20;
-        if(score > bestScore){
-          bestScore = score;
-          best = trio.slice();
-        }
+        /* 若恰好 = 100 加額外分 */
+        if(sum === 100) score += 200;
+        if(score > bestScore){ bestScore = score; best = trio.slice(); }
       }
     }
   }
-
-  if(best){
-    best.sort(function(a, b){ return a.cx - b.cx; });
-    return best;
-  }
+  if(best){ best.sort(function(a, b){ return a.cx - b.cx; }); return best; }
   return null;
 }
 
-/* ⭐ 賠率：百分比下方 5~400px，按左中右分組 */
 function findOdds(words, W, H, pct){
   var anchorY = (pct[0].cy + pct[1].cy + pct[2].cy) / 3;
   var cands = [];
-
   for(var i = 0; i < words.length; i++){
     var w = words[i];
     if(w.text.indexOf('%') !== -1) continue;
-    /* X.XX 或 X,XX */
     var m1 = w.text.match(/^(\d{1,2})[.,](\d{2})$/);
     if(m1){
       var v = parseInt(m1[1], 10) * 100 + parseInt(m1[2], 10);
@@ -713,7 +720,6 @@ function findOdds(words, W, H, pct){
       }
       continue;
     }
-    /* 3 位整數 */
     var m2 = w.text.match(/^(\d{3})$/);
     if(m2){
       var v2 = parseInt(m2[1], 10);
@@ -722,15 +728,10 @@ function findOdds(words, W, H, pct){
       }
     }
   }
-
   if(cands.length < 3) return null;
-
-  /* 分左中右 */
   var lefts  = cands.filter(function(c){ return c.cx < W * 0.4; });
   var mids   = cands.filter(function(c){ return c.cx >= W * 0.4 && c.cx < W * 0.65; });
   var rights = cands.filter(function(c){ return c.cx >= W * 0.65; });
-
-  /* 優先 dec 格式 */
   function pickBest(arr){
     if(arr.length === 0) return null;
     var decs = arr.filter(function(c){ return c.src === 'dec'; });
@@ -738,12 +739,9 @@ function findOdds(words, W, H, pct){
     pool.sort(function(a, b){ return a.cy - b.cy; });
     return pool[0];
   }
-
   if(lefts.length && mids.length && rights.length){
     return [pickBest(lefts), pickBest(mids), pickBest(rights)];
   }
-
-  /* 沒有分三組：取靠 anchorY 最近的 3 個 */
   cands.sort(function(a, b){ return (a.cy - anchorY) - (b.cy - anchorY); });
   var three = cands.slice(0, 3);
   three.sort(function(a, b){ return a.cx - b.cx; });
