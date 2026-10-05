@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>賠率截圖批量識別 v1.06</title>
+<title>賠率截圖批量識別 v1.07</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:16px;background:#f0f2f5;color:#333}
@@ -77,17 +77,15 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
 <body>
 
 <h1>📷 賠率截圖批量識別</h1>
-<div class="version">v1.06 — 黑白化 + 找錨點</div>
+<div class="version">v1.07 — 修正比分時間誤判 + 允許純數字補位</div>
 
 <div class="notice">💡 第一次使用 OCR 引擎需下載語言包（約 15MB），請耐心等待 10~30 秒</div>
 
 <div class="rule-box">
-  <b>🎯 v1.06 邏輯：</b><br>
-  ① <b>黑白化</b>：圖片轉灰階 + 自動反色（深色背景 → 白底黑字）<br>
-  ② <b>比分</b>：第一個出現 <code>X-Y</code> 或 <code>X:Y</code> 的 → 比分<br>
-  ③ <b>A/B/C</b>：三個含 <code>%</code> 的數字，總和 97~103<br>
-  ④ <b>D/E/F</b>：A/B/C <b>正下方</b>的三個賠率<br>
-  ⑤ <b>H</b>：依比分自動判斷
+  <b>🎯 v1.07 修正：</b><br>
+  ① <b>比分</b>：優先找含 <code>-</code> 的；排除時間格式 <code>X:0Y</code>（如 2:02）<br>
+  ② <b>A/B/C</b>：找 <code>%</code> 數字 + 允許純 2 位數字補位（OCR 漏讀 % 時）<br>
+  ③ <b>D/E/F</b>：A/B/C <b>正下方 5~400px</b> 內
 </div>
 
 <div id="dropzone">
@@ -147,7 +145,6 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
 
 <div class="legend">
   <b>輸出格式：</b> <code>44	33	23	215	290	320	2:1	H</code><br>
-  依序：主%　和%　客%　主賠　和賠　客賠　比分　結果<br>
   <b>無效的行：</b>輸出為「<code>失敗</code>」
 </div>
 
@@ -161,18 +158,13 @@ dialog img{max-width:90vw;max-height:90vh;display:block}
 
 var VALID_RESULTS = ['H','D','A','skip'];
 var state = { rows: [], worker: null, workerReady: false, busy: false, debugIdx: 0, previewIdx: 0 };
-
 var $ = function(id){ return document.getElementById(id); };
 var dropzone = $('dropzone'), fileInput = $('fileInput');
 
-/* 上傳 */
 dropzone.addEventListener('click', function(){ fileInput.click(); });
 dropzone.addEventListener('dragover', function(e){ e.preventDefault(); dropzone.classList.add('hover'); });
 dropzone.addEventListener('dragleave', function(){ dropzone.classList.remove('hover'); });
-dropzone.addEventListener('drop', function(e){
-  e.preventDefault(); dropzone.classList.remove('hover');
-  handleFiles(e.dataTransfer.files);
-});
+dropzone.addEventListener('drop', function(e){ e.preventDefault(); dropzone.classList.remove('hover'); handleFiles(e.dataTransfer.files); });
 fileInput.addEventListener('change', function(e){ handleFiles(e.target.files); fileInput.value = ''; });
 
 function handleFiles(files){
@@ -182,11 +174,8 @@ function handleFiles(files){
     var f = arr[i];
     state.rows.push({
       id: 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-      file: f,
-      imageURL: URL.createObjectURL(f),
-      processedDataURL: '',
-      ocrText: '', ocrWords: [], ocrWidth: 0, ocrHeight: 0,
-      debugInfo: '',
+      file: f, imageURL: URL.createObjectURL(f), processedDataURL: '',
+      ocrText: '', ocrWords: [], ocrWidth: 0, ocrHeight: 0, debugInfo: '',
       status: 'wait', statusText: '待識別', confidence: 'wait',
       values: { scoreA:'', scoreB:'', homePct:'', drawPct:'', awayPct:'', homeOdd:'', drawOdd:'', awayOdd:'', result:'H' }
     });
@@ -194,7 +183,6 @@ function handleFiles(files){
   renderTable(); updateButtons(); updateStats();
 }
 
-/* 驗證 */
 function validateRow(v){
   var errs = [];
   var abc = ['homePct','drawPct','awayPct'], abcN = ['主%','和%','客%'];
@@ -217,17 +205,14 @@ function validateRow(v){
 }
 function isValidRow(v){ return validateRow(v).length === 0; }
 
-/* 渲染 */
 function renderTable(){
   var tbody = $('tbody'), table = $('results'), empty = $('emptyState');
   if(state.rows.length === 0){ table.style.display='none'; empty.style.display='block'; return; }
   table.style.display = 'table'; empty.style.display = 'none';
   tbody.innerHTML = '';
-
   for(var i = 0; i < state.rows.length; i++){
     var row = state.rows[i];
-    var tr = document.createElement('tr');
-    tr.dataset.id = row.id;
+    var tr = document.createElement('tr'); tr.dataset.id = row.id;
     var statusClass = 'status-' + (row.status === 'processing' ? 'processing' : row.status);
     var scoreVal = (row.values.scoreA !== '' && row.values.scoreB !== '') ? row.values.scoreA + ':' + row.values.scoreB : '';
     var resultOpts = '';
@@ -242,7 +227,6 @@ function renderTable(){
     else if(row.confidence === 'mid') confHtml = '<span class="status conf-mid">中</span>';
     else if(row.confidence === 'low') confHtml = '<span class="status conf-low">低</span>';
     else confHtml = '<span class="status status-wait">–</span>';
-
     var ocrDisplay = '';
     if(row.ocrWords && row.ocrWords.length > 0){
       var rows = groupRows(row.ocrWords, Math.max(20, (row.ocrHeight || 1000) * 0.015));
@@ -253,7 +237,6 @@ function renderTable(){
       }
       ocrDisplay = lines.join('\n');
     } else if(row.ocrText) ocrDisplay = row.ocrText;
-
     tr.innerHTML =
       '<td class="row-num">' + (i+1) + '</td>' +
       '<td><img src="' + row.imageURL + '" loading="lazy" data-img="' + row.imageURL + '"></td>' +
@@ -273,7 +256,6 @@ function renderTable(){
     tbody.appendChild(tr);
     applyCellHighlight(tr, row.values);
   }
-
   tbody.querySelectorAll('input, select').forEach(function(el){
     el.addEventListener('input', onInputChange);
     el.addEventListener('change', onInputChange);
@@ -292,29 +274,24 @@ function renderTable(){
 function hasAnyValue(v){
   return !!(v.homePct || v.drawPct || v.awayPct || v.homeOdd || v.drawOdd || v.awayOdd || v.scoreA !== '' || v.scoreB !== '');
 }
-
 function applyCellHighlight(tr, v){
   var checks = [
     ['homePct', /^\d{1,2}$/], ['drawPct', /^\d{1,2}$/], ['awayPct', /^\d{1,2}$/],
     ['homeOdd', /^\d{3,}$/], ['drawOdd', /^\d{3,}$/], ['awayOdd', /^\d{3,}$/]
   ];
   for(var i = 0; i < checks.length; i++){
-    var inp = tr.querySelector('input[data-field="' + checks[i][0] + '"]');
-    if(!inp) continue;
+    var inp = tr.querySelector('input[data-field="' + checks[i][0] + '"]'); if(!inp) continue;
     var s = String(inp.value || '').trim();
     var bad = (s !== '') && !checks[i][1].test(s);
-    if(bad) inp.classList.add('cell-err');
-    else inp.classList.remove('cell-err');
+    if(bad) inp.classList.add('cell-err'); else inp.classList.remove('cell-err');
   }
   var scoreInp = tr.querySelector('input[data-field="score"]');
   if(scoreInp){
     var sv = String(scoreInp.value || '').trim();
     var scoreBad = (sv !== '') && !/^\d{1,2}\s*[-:.]\s*\d{1,2}$/.test(sv);
-    if(scoreBad) scoreInp.classList.add('cell-err');
-    else scoreInp.classList.remove('cell-err');
+    if(scoreBad) scoreInp.classList.add('cell-err'); else scoreInp.classList.remove('cell-err');
   }
 }
-
 function onInputChange(e){
   var tr = e.target.closest('tr'); if(!tr) return;
   var row = findRow(tr.dataset.id); if(!row) return;
@@ -329,14 +306,10 @@ function onInputChange(e){
       var sel = tr.querySelector('select[data-field="result"]');
       if(sel) sel.value = row.values.result;
     } else { row.values.scoreA = ''; row.values.scoreB = ''; }
-  } else if(field === 'result'){
-    row.values.result = e.target.value;
-  } else {
-    row.values[field] = e.target.value;
-  }
+  } else if(field === 'result'){ row.values.result = e.target.value; }
+  else { row.values[field] = e.target.value; }
   refreshValidation(tr, row); updateStats();
 }
-
 function refreshValidation(tr, row){
   applyCellHighlight(tr, row.values);
   var errs = validateRow(row.values);
@@ -345,11 +318,7 @@ function refreshValidation(tr, row){
   else if(errs.length === 0) cell.innerHTML = '<span class="valid-ok" title="通過驗證">✓</span>';
   else cell.innerHTML = '<span class="valid-err" title="' + escapeHtml(errs.join('、')) + '">✗</span>';
 }
-
-function findRow(id){
-  for(var i = 0; i < state.rows.length; i++) if(state.rows[i].id === id) return state.rows[i];
-  return null;
-}
+function findRow(id){ for(var i = 0; i < state.rows.length; i++) if(state.rows[i].id === id) return state.rows[i]; return null; }
 function removeRow(id){
   for(var i = 0; i < state.rows.length; i++){
     if(state.rows[i].id === id){ URL.revokeObjectURL(state.rows[i].imageURL); state.rows.splice(i, 1); break; }
@@ -360,12 +329,7 @@ function previewImage(url){ $('previewImg').src = url; $('previewDlg').showModal
 $('previewDlg').addEventListener('click', function(){ this.close(); });
 $('debugDlg').addEventListener('click', function(){ this.close(); });
 $('processedDlg').addEventListener('click', function(){ this.close(); });
-
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, function(c){
-    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
-  });
-}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 
 function updateButtons(){
   var has = state.rows.length > 0, busy = state.busy;
@@ -379,7 +343,6 @@ function updateButtons(){
   $('btnDebug').disabled = !has;
   $('btnPreview').disabled = !has;
 }
-
 function updateStats(){
   var total = state.rows.length;
   if(total === 0){ $('stats').style.display = 'none'; return; }
@@ -403,7 +366,6 @@ function updateStats(){
   $('stats').style.display = 'block';
 }
 
-/* OCR */
 async function ensureWorker(){
   if(state.worker && state.workerReady) return state.worker;
   var progText = $('progressText'), progDetail = $('progressDetail');
@@ -418,11 +380,8 @@ async function ensureWorker(){
       else if(m.status === 'initializing api') progDetail.textContent = '初始化 API...';
     }
   });
-  try {
-    await state.worker.setParameters({ preserve_interword_spaces: '1' });
-  } catch(e){}
-  state.workerReady = true;
-  progDetail.textContent = '引擎就緒';
+  try { await state.worker.setParameters({ preserve_interword_spaces: '1' }); } catch(e){}
+  state.workerReady = true; progDetail.textContent = '引擎就緒';
   return state.worker;
 }
 
@@ -431,7 +390,6 @@ async function recognizeAll(forceAll){
   state.busy = true; updateButtons();
   var progText = $('progressText'), progDetail = $('progressDetail'), progBar = $('progressBarInner');
   $('progress').style.display = 'block';
-
   try {
     var worker = await ensureWorker();
     var targets = forceAll ? state.rows.slice() : state.rows.filter(function(r){ return r.status === 'wait' || r.status === 'err'; });
@@ -451,7 +409,6 @@ async function recognizeAll(forceAll){
       var eta = i > 0 ? (elapsed / i * (targets.length - i)) : 0;
       progDetail.textContent = row.file.name + '　·　已用 ' + elapsed.toFixed(1) + 's' + (i > 0 ? '　剩餘約 ' + eta.toFixed(0) + 's' : '');
       progBar.style.width = (i / targets.length * 100) + '%';
-
       try {
         var processed = await preprocessImage(row.file);
         row.processedDataURL = processed.canvas.toDataURL('image/png');
@@ -496,9 +453,6 @@ async function recognizeAll(forceAll){
   state.busy = false; updateButtons(); updateStats();
 }
 
-/* ============================================================
-   ⭐ 預處理：黑白化（灰階 + 自動反色 + 2x 放大）
-   ============================================================ */
 function preprocessImage(file){
   return new Promise(function(resolve){
     var img = new Image();
@@ -506,33 +460,21 @@ function preprocessImage(file){
       var w = img.width, h = img.height;
       var scale = Math.min(2, Math.max(1, 1400 / w));
       var tw = Math.round(w * scale), th = Math.round(h * scale);
-
-      var c = document.createElement('canvas');
-      c.width = tw; c.height = th;
-      var ctx = c.getContext('2d');
-      ctx.drawImage(img, 0, 0, tw, th);
-
-      var id = ctx.getImageData(0, 0, tw, th);
-      var d = id.data, n = tw * th;
-
-      /* 1. 灰度化 */
+      var c = document.createElement('canvas'); c.width = tw; c.height = th;
+      var ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, tw, th);
+      var id = ctx.getImageData(0, 0, tw, th); var d = id.data, n = tw * th;
       var sum = 0;
       for(var i = 0; i < n; i++){
         var gray = (d[i*4] * 0.299 + d[i*4+1] * 0.587 + d[i*4+2] * 0.114) | 0;
         d[i*4] = d[i*4+1] = d[i*4+2] = gray;
         sum += gray;
       }
-
-      /* 2. 自動反色（若平均偏暗，代表黑底白字） */
       var avg = sum / n;
       if(avg < 110){
-        for(var i = 0; i < n; i++){
-          d[i*4] = d[i*4+1] = d[i*4+2] = 255 - d[i*4];
-        }
+        for(var i = 0; i < n; i++) d[i*4] = d[i*4+1] = d[i*4+2] = 255 - d[i*4];
       }
-
       ctx.putImageData(id, 0, 0);
-      resolve({ canvas: c, width: tw, height: th, avg: Math.round(avg) });
+      resolve({ canvas: c, width: tw, height: th });
     };
     img.onerror = function(){ resolve({ canvas: document.createElement('canvas'), width: 0, height: 0 }); };
     img.src = URL.createObjectURL(file);
@@ -540,38 +482,100 @@ function preprocessImage(file){
 }
 
 /* ============================================================
-   ⭐ 提取邏輯（v1.06）
-   1. 比分：第一個含 - 或 : 的數字對
-   2. A/B/C：三個含 % 的數字（總和 97~103）
-   3. D/E/F：A/B/C 正下方
+   ⭐ 提取邏輯 v1.07
    ============================================================ */
 function applyHeuristic(row){
   var W = row.ocrWidth || 1;
   var H = row.ocrHeight || 1;
   var words = row.ocrWords || [];
   var debug = [];
-  debug.push('預處理後尺寸：' + W + ' x ' + H);
-  debug.push('Word 總數：' + words.length);
+  debug.push('尺寸：' + W + ' x ' + H + '，Word 數：' + words.length);
   debug.push('');
 
-  /* ---- 1. 比分：找 - 或 : 的數字對 ---- */
-  var scoreCands = [];
+  /* ---- 1. 比分 ---- */
+  var score = findScore(words, H);
+  if(score){
+    row.values.scoreA = score.a;
+    row.values.scoreB = score.b;
+    row.values.result = score.a > score.b ? 'H' : score.a < score.b ? 'A' : 'D';
+    debug.push('[比分] ' + score.a + '-' + score.b + '  y=' + Math.round(score.cy) + '  src=' + score.src);
+  } else debug.push('[比分] 未找到');
+
+  /* ---- 2. 百分比 ---- */
+  var pct = findPct(words, W, H);
+  if(pct){
+    row.values.homePct = pct[0].v;
+    row.values.drawPct = pct[1].v;
+    row.values.awayPct = pct[2].v;
+    debug.push('[百分比] ' + pct[0].v + ' / ' + pct[1].v + ' / ' + pct[2].v +
+      '  y=' + Math.round(pct[0].cy) + '~' + Math.round(pct[2].cy));
+  } else debug.push('[百分比] 未找到');
+
+  /* ---- 3. 賠率 ---- */
+  if(pct){
+    var odds = findOdds(words, W, H, pct);
+    if(odds){
+      row.values.homeOdd = odds[0].v;
+      row.values.drawOdd = odds[1].v;
+      row.values.awayOdd = odds[2].v;
+      debug.push('[賠率] ' + odds[0].v + ' / ' + odds[1].v + ' / ' + odds[2].v);
+    } else debug.push('[賠率] 未找到');
+  }
+
+  var filled = 0;
+  ['homePct','drawPct','awayPct','homeOdd','drawOdd','awayOdd'].forEach(function(k){
+    if(row.values[k] !== '') filled++;
+  });
+  if(row.values.scoreA !== '') filled++;
+  if(filled >= 7) row.confidence = 'high';
+  else if(filled >= 5) row.confidence = 'mid';
+  else row.confidence = 'low';
+
+  debug.push('');
+  debug.push('--- OCR 詞（按 y 排序，前 100） ---');
+  var sorted = words.slice().sort(function(a,b){ return a.cy - b.cy; });
+  for(var i = 0; i < Math.min(100, sorted.length); i++){
+    var w = sorted[i];
+    debug.push('y=' + String(Math.round(w.cy)).padStart(5) + '  x=' + String(Math.round(w.cx)).padStart(5) + '  "' + w.text + '"');
+  }
+  row.debugInfo = debug.join('\n');
+}
+
+/* ⭐ 比分：優先含 - 的，排除時間格式 X:0Y */
+function findScore(words, H){
+  var dashCands = [];
+  var colonCands = [];
+
   for(var i = 0; i < words.length; i++){
     var w = words[i];
-    var m = w.text.match(/^(\d{1,2})\s*[-:]\s*(\d{1,2})$/);
-    if(m){
-      var a = parseInt(m[1], 10), b = parseInt(m[2], 10);
+    /* 含 - */
+    var mDash = w.text.match(/^(\d{1,2})\s*-\s*(\d{1,2})$/);
+    if(mDash){
+      var a = parseInt(mDash[1], 10), b = parseInt(mDash[2], 10);
       if(a <= 15 && b <= 15){
-        scoreCands.push({ a:a, b:b, cy:w.cy, cx:w.cx, src:'single' });
+        dashCands.push({ a:a, b:b, cy:w.cy, cx:w.cx, src:'dash' });
+      }
+    }
+    /* 含 : */
+    var mColon = w.text.match(/^(\d{1,2})\s*:\s*(\d{1,2})$/);
+    if(mColon){
+      var a2 = parseInt(mColon[1], 10), b2 = parseInt(mColon[2], 10);
+      if(a2 <= 15 && b2 <= 15){
+        /* 排除時間格式 X:0Y（如 2:02、12:05） */
+        var isTimeFormat = (mColon[2].length === 2 && mColon[2][0] === '0');
+        if(!isTimeFormat){
+          colonCands.push({ a:a2, b:b2, cy:w.cy, cx:w.cx, src:'colon' });
+        }
       }
     }
   }
-  /* 若沒找到，找 "-" 單獨詞 */
-  if(scoreCands.length === 0){
+
+  /* 若都沒找到，找 "-" 單獨詞 */
+  if(dashCands.length === 0 && colonCands.length === 0){
     for(var i = 0; i < words.length; i++){
       var dash = words[i];
       var dt = dash.text.replace(/\s/g, '');
-      if(dt !== '-' && dt !== ':' && dt !== '—' && dt !== '–') continue;
+      if(dt !== '-' && dt !== '—' && dt !== '–') continue;
       var left = null, right = null;
       for(var j = 0; j < words.length; j++){
         if(j === i) continue;
@@ -586,160 +590,166 @@ function applyHeuristic(row){
         }
       }
       if(left && right){
-        scoreCands.push({ a:parseInt(left.text,10), b:parseInt(right.text,10), cy:dash.cy, cx:dash.cx, src:'triple' });
+        dashCands.push({ a:parseInt(left.text,10), b:parseInt(right.text,10), cy:dash.cy, cx:dash.cx, src:'triple' });
       }
     }
   }
-  scoreCands.sort(function(x, y){ return x.cy - y.cy; });
-  if(scoreCands.length > 0){
-    var sc = scoreCands[0];
-    row.values.scoreA = sc.a;
-    row.values.scoreB = sc.b;
-    row.values.result = sc.a > sc.b ? 'H' : sc.a < sc.b ? 'A' : 'D';
-    debug.push('[比分] ' + sc.a + '-' + sc.b + '  y=' + Math.round(sc.cy) + '  src=' + sc.src);
-  } else {
-    debug.push('[比分] 未找到');
-  }
 
-  /* ---- 2. 百分比：含 % 的數字 ---- */
-  var pctCands = [];
-  /* 2a. "42%" 型 */
+  /* 優先 - 的，取最靠上 */
+  if(dashCands.length > 0){
+    dashCands.sort(function(x, y){ return x.cy - y.cy; });
+    return dashCands[0];
+  }
+  if(colonCands.length > 0){
+    colonCands.sort(function(x, y){ return x.cy - y.cy; });
+    return colonCands[0];
+  }
+  return null;
+}
+
+/* ⭐ 百分比：含 % 優先 + 純 2 位數字補位 */
+function findPct(words, W, H){
+  var pctWith = [];   /* 含 % 的 */
+  var numOnly = [];   /* 純 2 位數字 */
+
   for(var i = 0; i < words.length; i++){
     var w = words[i];
+    /* 含 %： "44%" 或 "44 %" */
     var m = w.text.match(/^(\d{1,3})\s*%$/);
     if(m){
       var v = parseInt(m[1], 10);
-      if(v >= 1 && v <= 99) pctCands.push({ v:v, cy:w.cy, cx:w.cx, src:'pct' });
+      if(v >= 1 && v <= 99){
+        pctWith.push({ v:v, cy:w.cy, cx:w.cx, hasPct: true });
+      }
+      continue;
     }
-  }
-  /* 2b. "42" 和 "%" 相鄰 */
-  if(pctCands.length < 3){
-    for(var i = 0; i < words.length; i++){
-      var w1 = words[i];
-      if(w1.text.indexOf('%') !== -1) continue;
-      if(!/^\d{1,3}$/.test(w1.text)) continue;
-      var v1 = parseInt(w1.text, 10);
-      if(v1 < 1 || v1 > 99) continue;
-      var found = false;
-      for(var j = 0; j < words.length; j++){
-        if(j === i) continue;
-        var w2 = words[j];
-        if(w2.text.trim() !== '%') continue;
-        if(w2.cx > w1.cx && w2.cx - w1.cx < 80 && Math.abs(w2.cy - w1.cy) < 40){
-          pctCands.push({ v:v1, cy:(w1.cy+w2.cy)/2, cx:w1.cx, src:'pair' });
-          found = true; break;
-        }
+    /* 純 2 位數字 */
+    if(/^\d{2}$/.test(w.text)){
+      var v2 = parseInt(w.text, 10);
+      if(v2 >= 10 && v2 <= 80){
+        numOnly.push({ v:v2, cy:w.cy, cx:w.cx, hasPct: false });
       }
     }
   }
 
-  debug.push('[%候選] ' + (pctCands.map(function(p){ return p.v + '(y=' + Math.round(p.cy) + ')'; }).join(', ') || '無'));
+  /* 若 "44" 和 "%" 是分開的詞，補上配對 */
+  for(var i = 0; i < words.length; i++){
+    var w1 = words[i];
+    if(w1.text.indexOf('%') !== -1) continue;
+    if(!/^\d{1,3}$/.test(w1.text)) continue;
+    var v1 = parseInt(w1.text, 10);
+    if(v1 < 1 || v1 > 99) continue;
+    /* 檢查是否已在 pctWith（可能被當作純數字） */
+    var alreadyHas = false;
+    for(var k = 0; k < pctWith.length; k++){
+      if(Math.abs(pctWith[k].cy - w1.cy) < 20 && Math.abs(pctWith[k].cx - w1.cx) < 30){ alreadyHas = true; break; }
+    }
+    if(alreadyHas) continue;
+    /* 找右側 80px 內的 % */
+    for(var j = 0; j < words.length; j++){
+      if(j === i) continue;
+      var w2 = words[j];
+      if(w2.text.trim() !== '%') continue;
+      if(w2.cx > w1.cx && w2.cx - w1.cx < 80 && Math.abs(w2.cy - w1.cy) < 40){
+        pctWith.push({ v:v1, cy:(w1.cy+w2.cy)/2, cx:w1.cx, hasPct: true });
+        break;
+      }
+    }
+  }
 
-  /* 找 3 個總和 97~103 */
-  var pctTriple = null, bestScore = -Infinity;
-  for(var i = 0; i < pctCands.length - 2; i++){
-    for(var j = i+1; j < pctCands.length - 1; j++){
-      for(var k = j+1; k < pctCands.length; k++){
-        var sum = pctCands[i].v + pctCands[j].v + pctCands[k].v;
+  /* 組合：pctWith + numOnly，找 3 個總和 97~103、y 相近、至少 1 個含 % */
+  var all = pctWith.concat(numOnly);
+  var best = null, bestScore = -Infinity;
+
+  for(var i = 0; i < all.length - 2; i++){
+    for(var j = i + 1; j < all.length - 1; j++){
+      for(var k = j + 1; k < all.length; k++){
+        var trio = [all[i], all[j], all[k]];
+        var sum = trio[0].v + trio[1].v + trio[2].v;
         if(sum < 97 || sum > 103) continue;
-        var ys = [pctCands[i].cy, pctCands[j].cy, pctCands[k].cy];
-        var spread = Math.max.apply(null, ys) - Math.min.apply(null, ys);
-        if(spread > Math.max(80, H * 0.06)) continue;
-        /* 位置：偏中下較好 */
+        /* 至少一個含 % */
+        var pctCount = 0;
+        for(var t = 0; t < 3; t++) if(trio[t].hasPct) pctCount++;
+        if(pctCount === 0) continue;
+        /* y 相近 */
+        var ys = [trio[0].cy, trio[1].cy, trio[2].cy];
+        var ySpread = Math.max.apply(null, ys) - Math.min.apply(null, ys);
+        if(ySpread > Math.max(80, H * 0.05)) continue;
+        /* 評分：越多 % 越好、y 越靠中下越好、spread 越小越好 */
         var avgY = (ys[0]+ys[1]+ys[2])/3;
         var yPct = avgY / H;
-        var score = 100 - spread;
-        if(yPct > 0.35 && yPct < 0.9) score += 50;
-        if(score > bestScore){ bestScore = score; pctTriple = [pctCands[i], pctCands[j], pctCands[k]]; }
-      }
-    }
-  }
-  if(pctTriple){
-    pctTriple.sort(function(a, b){ return a.cx - b.cx; });
-    row.values.homePct = pctTriple[0].v;
-    row.values.drawPct = pctTriple[1].v;
-    row.values.awayPct = pctTriple[2].v;
-    debug.push('[百分比] ' + pctTriple[0].v + ' / ' + pctTriple[1].v + ' / ' + pctTriple[2].v + '  y=' + Math.round(pctTriple[0].cy) + '~' + Math.round(pctTriple[2].cy));
-  } else {
-    debug.push('[百分比] 未找到');
-  }
-
-  /* ---- 3. 賠率：百分比下方 5~400px 內 ---- */
-  var odds = [];
-  if(pctTriple){
-    var anchorY = (pctTriple[0].cy + pctTriple[1].cy + pctTriple[2].cy) / 3;
-    for(var i = 0; i < words.length; i++){
-      var w = words[i];
-      if(w.text.indexOf('%') !== -1) continue;
-      /* X.XX */
-      var m1 = w.text.match(/^(\d{1,2})[.,](\d{2})$/);
-      if(m1){
-        var v = parseInt(m1[1], 10) * 100 + parseInt(m1[2], 10);
-        if(v >= 100 && v <= 2000 && w.cy > anchorY + 5 && w.cy - anchorY < 400){
-          odds.push({ v:v, cx:w.cx, cy:w.cy, src:'dec' });
-        }
-        continue;
-      }
-      /* 3 位整數 */
-      var m2 = w.text.match(/^(\d{3})$/);
-      if(m2){
-        var v = parseInt(m2[1], 10);
-        if(v >= 100 && v <= 999 && w.cy > anchorY + 5 && w.cy - anchorY < 400){
-          odds.push({ v:v, cx:w.cx, cy:w.cy, src:'int' });
+        var score = pctCount * 100 - ySpread;
+        if(yPct > 0.4 && yPct < 0.9) score += 50;
+        else if(yPct > 0.3 && yPct < 0.95) score += 20;
+        if(score > bestScore){
+          bestScore = score;
+          best = trio.slice();
         }
       }
     }
   }
 
-  debug.push('[賠率候選] ' + (odds.map(function(o){ return o.v + '(x=' + Math.round(o.cx) + ',y=' + Math.round(o.cy) + ')'; }).join(', ') || '無'));
-
-  if(odds.length >= 3){
-    var lefts  = odds.filter(function(o){ return o.cx < W * 0.4; });
-    var mids   = odds.filter(function(o){ return o.cx >= W * 0.4 && o.cx < W * 0.65; });
-    var rights = odds.filter(function(o){ return o.cx >= W * 0.65; });
-    if(lefts.length && mids.length && rights.length){
-      lefts.sort(function(a,b){ return a.cy - b.cy; });
-      mids.sort(function(a,b){ return a.cy - b.cy; });
-      rights.sort(function(a,b){ return a.cy - b.cy; });
-      row.values.homeOdd = lefts[0].v;
-      row.values.drawOdd = mids[0].v;
-      row.values.awayOdd = rights[0].v;
-      debug.push('[賠率] 分左中右 → ' + lefts[0].v + ' / ' + mids[0].v + ' / ' + rights[0].v);
-    } else {
-      odds.sort(function(a,b){ return a.cy - b.cy; });
-      var three = odds.slice(0, 3);
-      three.sort(function(a,b){ return a.cx - b.cx; });
-      row.values.homeOdd = three[0].v;
-      row.values.drawOdd = three[1].v;
-      row.values.awayOdd = three[2].v;
-      debug.push('[賠率] 無分三組，取最靠前 3 個：' + three.map(function(o){ return o.v; }).join(' / '));
-    }
-  } else {
-    debug.push('[賠率] 不足 3 個');
+  if(best){
+    best.sort(function(a, b){ return a.cx - b.cx; });
+    return best;
   }
-
-  /* 信心度 */
-  var filled = 0;
-  ['homePct','drawPct','awayPct','homeOdd','drawOdd','awayOdd'].forEach(function(k){
-    if(row.values[k] !== '') filled++;
-  });
-  if(row.values.scoreA !== '') filled++;
-  if(filled >= 7) row.confidence = 'high';
-  else if(filled >= 5) row.confidence = 'mid';
-  else row.confidence = 'low';
-
-  /* Debug */
-  debug.push('');
-  debug.push('--- 所有 OCR 詞（按 y 排序，前 100 個） ---');
-  var sorted = words.slice().sort(function(a,b){ return a.cy - b.cy; });
-  for(var i = 0; i < Math.min(100, sorted.length); i++){
-    var w = sorted[i];
-    debug.push('y=' + String(Math.round(w.cy)).padStart(5) + '  x=' + String(Math.round(w.cx)).padStart(5) + '  "' + w.text + '"');
-  }
-  row.debugInfo = debug.join('\n');
+  return null;
 }
 
-/* 行分組 */
+/* ⭐ 賠率：百分比下方 5~400px，按左中右分組 */
+function findOdds(words, W, H, pct){
+  var anchorY = (pct[0].cy + pct[1].cy + pct[2].cy) / 3;
+  var cands = [];
+
+  for(var i = 0; i < words.length; i++){
+    var w = words[i];
+    if(w.text.indexOf('%') !== -1) continue;
+    /* X.XX 或 X,XX */
+    var m1 = w.text.match(/^(\d{1,2})[.,](\d{2})$/);
+    if(m1){
+      var v = parseInt(m1[1], 10) * 100 + parseInt(m1[2], 10);
+      if(v >= 100 && v <= 2000 && w.cy > anchorY + 5 && w.cy - anchorY < 400){
+        cands.push({ v:v, cx:w.cx, cy:w.cy, src:'dec' });
+      }
+      continue;
+    }
+    /* 3 位整數 */
+    var m2 = w.text.match(/^(\d{3})$/);
+    if(m2){
+      var v2 = parseInt(m2[1], 10);
+      if(v2 >= 100 && v2 <= 999 && w.cy > anchorY + 5 && w.cy - anchorY < 400){
+        cands.push({ v:v2, cx:w.cx, cy:w.cy, src:'int' });
+      }
+    }
+  }
+
+  if(cands.length < 3) return null;
+
+  /* 分左中右 */
+  var lefts  = cands.filter(function(c){ return c.cx < W * 0.4; });
+  var mids   = cands.filter(function(c){ return c.cx >= W * 0.4 && c.cx < W * 0.65; });
+  var rights = cands.filter(function(c){ return c.cx >= W * 0.65; });
+
+  /* 優先 dec 格式 */
+  function pickBest(arr){
+    if(arr.length === 0) return null;
+    var decs = arr.filter(function(c){ return c.src === 'dec'; });
+    var pool = decs.length > 0 ? decs : arr;
+    pool.sort(function(a, b){ return a.cy - b.cy; });
+    return pool[0];
+  }
+
+  if(lefts.length && mids.length && rights.length){
+    return [pickBest(lefts), pickBest(mids), pickBest(rights)];
+  }
+
+  /* 沒有分三組：取靠 anchorY 最近的 3 個 */
+  cands.sort(function(a, b){ return (a.cy - anchorY) - (b.cy - anchorY); });
+  var three = cands.slice(0, 3);
+  three.sort(function(a, b){ return a.cx - b.cx; });
+  return three;
+}
+
 function groupRows(words, yThreshold){
   if(!words || words.length === 0) return [];
   var sorted = words.slice().sort(function(a, b){ return a.cy - b.cy; });
@@ -750,16 +760,13 @@ function groupRows(words, yThreshold){
     else if(Math.abs(w.cy - cur.y) <= yThreshold){
       cur.words.push(w);
       cur.y = (cur.y * (cur.words.length - 1) + w.cy) / cur.words.length;
-    } else {
-      rows.push(cur); cur = { words: [w], y: w.cy };
-    }
+    } else { rows.push(cur); cur = { words: [w], y: w.cy }; }
   }
   if(cur) rows.push(cur);
   for(var i = 0; i < rows.length; i++) rows[i].words.sort(function(a, b){ return a.x0 - b.x0; });
   return rows;
 }
 
-/* 輸出 */
 function buildOutput(onlyValid){
   var lines = [];
   for(var i = 0; i < state.rows.length; i++){
@@ -773,7 +780,6 @@ function buildOutput(onlyValid){
   }
   return lines.join('\n');
 }
-
 function doCopy(onlyValid){
   var txt = buildOutput(onlyValid);
   if(txt === ''){ alert(onlyValid ? '沒有有效行' : '沒有內容'); return; }
@@ -785,10 +791,9 @@ function doCopy(onlyValid){
 }
 $('btnCopy').addEventListener('click', function(){ doCopy(false); });
 $('btnCopyValid').addEventListener('click', function(){ doCopy(true); });
-
 function fallbackCopy(text){
-  var ta = document.createElement('textarea');
-  ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  var ta = document.createElement('textarea'); ta.value = text;
+  ta.style.position = 'fixed'; ta.style.left = '-9999px';
   document.body.appendChild(ta); ta.select();
   try { document.execCommand('copy'); } catch(e){}
   document.body.removeChild(ta);
@@ -802,15 +807,13 @@ $('btnDownload').addEventListener('click', function(){
   var txt = buildOutput(false);
   var blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
   var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
+  var a = document.createElement('a'); a.href = url;
   a.download = 'odds_' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.txt';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
 });
 $('btnShowOutput').addEventListener('click', function(){
-  var out = $('output');
-  var txt = buildOutput(false);
+  var out = $('output'); var txt = buildOutput(false);
   out.innerHTML = escapeHtml(txt).replace(/^失敗$/gm, '<span class="fail-line">失敗</span>');
   out.classList.toggle('show');
 });
