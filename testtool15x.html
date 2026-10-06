@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>V15-X 終極版 v5.3</title>
+<title>V15-X 終極版 v5.4</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -34,7 +34,6 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 .stat-bar{background:#1a1f2e;border:1px solid #2a3441;border-radius:8px;padding:10px 16px;margin:10px 0;font-size:13px;display:flex;gap:18px;flex-wrap:wrap;align-items:center}
 .stat-bar b{color:#60a5fa}
 .stat-bar .h{color:#10b981}.stat-bar .d{color:#f59e0b}.stat-bar .a{color:#ef4444}
-
 .backtest{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
 @media(max-width:900px){.backtest{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.backtest{grid-template-columns:1fr}}
@@ -57,10 +56,8 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 .bt-card.D .pct-bar > div{background:#f59e0b}
 .bt-card.A .pct-bar > div{background:#ef4444}
 .bt-card.all .pct-bar > div{background:#60a5fa}
-
 .warn-box{background:rgba(245,158,11,.1);border:1px solid #f59e0b;color:#fbbf24;padding:10px 14px;border-radius:6px;font-size:12px;margin-top:12px;line-height:1.7}
 .warn-box b{color:#fcd34d}
-
 table{width:100%;border-collapse:collapse;font-size:12px}
 th,td{padding:7px 8px;text-align:center;border-bottom:1px solid #2a3441;white-space:nowrap}
 th{background:#232a3a;color:#94a3b8;font-size:11px;font-weight:600}
@@ -160,8 +157,8 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
 <body>
 
 <div class="header">
-  <h1>📊 V15-X 終極版 <span class="version">v5.3</span></h1>
-  <div class="sub">D 類獨立門檻 · Lift 排序 · 回測統計</div>
+  <h1>📊 V15-X 終極版 <span class="version">v5.4</span></h1>
+  <div class="sub">三榜獨立評估 · D 榜修復 · Lift 排序 · 回測統計</div>
 </div>
 
 <div class="tabs">
@@ -272,7 +269,7 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
     <h2>📚 支援的條件類型（12 類）</h2>
     <div class="type-grid" id="typeGrid"></div>
     <div class="legend">
-      <b>組合策略：</b>單條件全評估 → 從合格 Top 100 做雙條件 → 從 Top 20 做三條件。
+      <b>組合策略：</b>單條件全評估（H/D/A 各一次） → 雙條件 → 三條件。
     </div>
   </div>
 </div>
@@ -282,11 +279,11 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
 <script>
 'use strict';
 
-/* ===== v5.3 固定參數 ===== */
-var MIN_SAMPLE_DEFAULT = 5;   /* H/A 類 */
-var MIN_PURITY_DEFAULT = 55;  /* H/A 類 */
-var MIN_SAMPLE_D = 4;         /* D 類特殊 */
-var MIN_PURITY_D = 45;        /* D 類特殊 */
+/* ===== v5.4 固定參數 ===== */
+var MIN_SAMPLE_DEFAULT = 5;   /* H/A */
+var MIN_PURITY_DEFAULT = 55;
+var MIN_SAMPLE_D = 4;         /* D 特殊 */
+var MIN_PURITY_D = 42;
 var TOP_N = 10;
 var FORMULA_MAX_RULES = 30;
 var FORMULA_PER_CLASS = 8;
@@ -294,7 +291,8 @@ var DOUBLE_FROM_TOP = 100;
 var TRIPLE_FROM_TOP = 20;
 
 var DATA = [];
-var ALL_RULES = [];
+var ALL_RULES = [];      /* 所有合格規則（不重複） */
+var RULES_BY_CLASS = { H:[], D:[], A:[] };
 var TOP_RULES = [];
 var BASE_RATE = { H:0.33, D:0.33, A:0.33 };
 
@@ -348,7 +346,7 @@ function escapeHtml(s){
   });
 }
 
-/* ===== 回測統計 ===== */
+/* ===== 回測 ===== */
 function runBacktest(rows, rules){
   var stats = {
     all: { bets:0, hits:0, skip:0 },
@@ -375,12 +373,10 @@ function runBacktest(rows, rules){
   }
   return stats;
 }
-
 function pct(hits, bets){
   if(bets === 0) return 0;
   return Math.round(hits / bets * 10000) / 100;
 }
-
 function renderBacktest(stats){
   var allRate = pct(stats.all.hits, stats.all.bets);
   var hRate = pct(stats.H.hits, stats.H.bets);
@@ -403,11 +399,10 @@ function renderBacktest(stats){
   html += card('H', '🟢 主勝（H）', stats.H.bets, stats.H.hits, hRate);
   html += card('D', '🟡 和局（D）', stats.D.bets, stats.D.hits, dRate);
   html += card('A', '🔴 客勝（A）', stats.A.bets, stats.A.hits, aRate);
-
   $('backtestArea').innerHTML = html;
 }
 
-/* ===== 條件生成（12 類型） ===== */
+/* ===== 條件生成 ===== */
 function buildConditions(){
   var conds = [];
 
@@ -618,34 +613,37 @@ function isContradict(c1, c2){
   return false;
 }
 
-/* ⭐ v5.3：分佈門檻 + Lift 排序 */
-function evalBucket(name, b){
-  var max = Math.max(b.H, b.D, b.A);
-  var top = max === b.H ? 'H' : (max === b.D ? 'D' : 'A');
-  var topPct = Math.round(max / b.total * 100);
+/* ⭐ v5.4 核心：對每個條件、每個 class 各評估一次 */
+function evalBucketForClass(name, b, targetClass){
+  var hits = b[targetClass];
+  var total = b.total;
+  var purity = hits / total;
 
-  /* 分佈門檻 */
   var minSample, minPurity;
-  if(top === 'D'){
-    minSample = MIN_SAMPLE_D;   /* 4 */
-    minPurity = MIN_PURITY_D;   /* 45% */
+  if(targetClass === 'D'){
+    minSample = MIN_SAMPLE_D;
+    minPurity = MIN_PURITY_D / 100;
   } else {
-    minSample = MIN_SAMPLE_DEFAULT;  /* 5 */
-    minPurity = MIN_PURITY_DEFAULT;  /* 55% */
+    minSample = MIN_SAMPLE_DEFAULT;
+    minPurity = MIN_PURITY_DEFAULT / 100;
   }
 
-  if(b.total < minSample) return null;
-  if(topPct < minPurity) return null;
+  if(total < minSample) return null;
+  if(purity < minPurity) return null;
 
-  /* ⭐ Lift = 純度 / 基準比率 */
-  var baseRate = BASE_RATE[top] || 0.33;
-  var lift = (topPct / 100) / baseRate;
+  var baseRate = BASE_RATE[targetClass];
+  var lift = purity / baseRate;
   lift = Math.round(lift * 100) / 100;
 
   return {
-    cond:name, total:b.total, H:b.H, D:b.D, A:b.A,
-    top:top, topPct:topPct, lift:lift,
-    score: lift * Math.min(b.total, 30)
+    cond: name,
+    top: targetClass,
+    total: total,
+    H: b.H, D: b.D, A: b.A,
+    hits: hits,
+    topPct: Math.round(purity * 100),
+    lift: lift,
+    score: lift * Math.min(total, 30)
   };
 }
 
@@ -665,7 +663,6 @@ function runAll(){
       var rc = { H:0, D:0, A:0 };
       rows.forEach(function(r){ rc[r.result]++; });
 
-      /* 計算基準比率 */
       BASE_RATE = {
         H: rc.H / rows.length,
         D: rc.D / rows.length,
@@ -679,9 +676,8 @@ function runAll(){
         '<span class="a">🔴 A 客勝 <b>' + rc.A + '</b>（' + (rc.A/rows.length*100).toFixed(1) + '%）</span>' +
         '</div>';
 
-      /* 基準比率顯示 */
       $('baseRateBar').innerHTML = '<div class="base-rate-box">' +
-        '<b>📐 基準比率（用於 Lift 計算）：</b>' +
+        '<b>📐 基準比率（Lift 用）：</b>' +
         '<span class="item"><span class="dot h"></span>H = <b>' + (BASE_RATE.H*100).toFixed(1) + '%</b></span>' +
         '<span class="item"><span class="dot d"></span>D = <b>' + (BASE_RATE.D*100).toFixed(1) + '%</b></span>' +
         '<span class="item"><span class="dot a"></span>A = <b>' + (BASE_RATE.A*100).toFixed(1) + '%</b></span>' +
@@ -696,24 +692,45 @@ function runAll(){
       $('analysisArea').classList.remove('hidden');
 
       var conds = buildConditions();
-      $('loadingSub').textContent = '單條件：' + conds.length + ' 個...';
+      $('loadingSub').textContent = '單條件：' + conds.length + ' 個（每類各評一次）...';
 
-      var allRules = [];
-      var singleRules = [];
+      /* ⭐ 三榜獨立收集 */
+      var singleByClass = { H:[], D:[], A:[] };
+      var condMap = {};   /* 條件名 → 該條件的 bucket 統計（用於組合時） */
 
       for(var i = 0; i < conds.length; i++){
         var c = conds[i], b = makeBucket();
         for(var j = 0; j < rows.length; j++){
           if(c.test(rows[j])) addToBucket(b, rows[j].result);
         }
-        var r = evalBucket(c.name, b);
-        if(r){ r.condObj = c; singleRules.push(r); allRules.push(r); }
+        condMap[c.name] = b;
+
+        /* 對每個 class 評估 */
+        ['H','D','A'].forEach(function(cls){
+          var r = evalBucketForClass(c.name, b, cls);
+          if(r){ r.condObj = c; singleByClass[cls].push(r); }
+        });
       }
 
-      singleRules.sort(function(a, b){ return b.score - a.score; });
+      console.log('[v5.4] 單條件合格數：H=' + singleByClass.H.length + ' D=' + singleByClass.D.length + ' A=' + singleByClass.A.length);
 
+      /* 合併所有單條件（去重，用於組合） */
+      var allSingles = [];
+      var seenSingles = {};
+      ['H','D','A'].forEach(function(cls){
+        singleByClass[cls].forEach(function(r){
+          if(!seenSingles[r.cond]){
+            seenSingles[r.cond] = true;
+            allSingles.push(r);
+          }
+        });
+      });
+      allSingles.sort(function(a, b){ return b.score - a.score; });
+
+      /* 雙條件 */
       $('loadingSub').textContent = '雙條件組合中...';
-      var doubleBase = singleRules.slice(0, DOUBLE_FROM_TOP);
+      var doubleByClass = { H:[], D:[], A:[] };
+      var doubleBase = allSingles.slice(0, DOUBLE_FROM_TOP);
       for(var i = 0; i < doubleBase.length; i++){
         for(var j = i + 1; j < doubleBase.length; j++){
           var c1 = doubleBase[i].condObj, c2 = doubleBase[j].condObj;
@@ -722,13 +739,18 @@ function runAll(){
           for(var k = 0; k < rows.length; k++){
             if(c1.test(rows[k]) && c2.test(rows[k])) addToBucket(b2, rows[k].result);
           }
-          var r2 = evalBucket(c1.name + ' 且 ' + c2.name, b2);
-          if(r2){ r2.condObj = c1; allRules.push(r2); }
+          var condName = c1.name + ' 且 ' + c2.name;
+          ['H','D','A'].forEach(function(cls){
+            var r = evalBucketForClass(condName, b2, cls);
+            if(r){ r.condObj = c1; doubleByClass[cls].push(r); }
+          });
         }
       }
 
+      /* 三條件 */
       $('loadingSub').textContent = '三條件組合中...';
-      var tripleBase = singleRules.slice(0, TRIPLE_FROM_TOP);
+      var tripleByClass = { H:[], D:[], A:[] };
+      var tripleBase = allSingles.slice(0, TRIPLE_FROM_TOP);
       for(var i = 0; i < tripleBase.length; i++){
         for(var j = i + 1; j < tripleBase.length; j++){
           for(var k = j + 1; k < tripleBase.length; k++){
@@ -740,39 +762,70 @@ function runAll(){
                 addToBucket(b3, rows[m].result);
               }
             }
-            var r3 = evalBucket(c1.name + ' 且 ' + c2.name + ' 且 ' + c3.name, b3);
-            if(r3) allRules.push(r3);
+            var condName = c1.name + ' 且 ' + c2.name + ' 且 ' + c3.name;
+            ['H','D','A'].forEach(function(cls){
+              var r = evalBucketForClass(condName, b3, cls);
+              if(r){ r.condObj = c1; tripleByClass[cls].push(r); }
+            });
           }
         }
       }
 
-      var seen = {};
-      ALL_RULES = allRules.filter(function(r){
-        if(seen[r.cond]) return false;
-        seen[r.cond] = true;
-        return true;
+      /* 合併三榜，去重（同一條件同一類只保留最高分的） */
+      function mergeClass(allSingles, doubles, triples, cls){
+        var combined = [];
+        var seen = {};
+        [allSingles, doubles, triples].forEach(function(arr){
+          arr.forEach(function(r){
+            if(r.top !== cls) return;
+            var key = r.cond;
+            if(seen[key]) return;
+            seen[key] = true;
+            combined.push(r);
+          });
+        });
+        combined.sort(function(a, b){ return b.score - a.score; });
+        return combined;
+      }
+
+      RULES_BY_CLASS.H = mergeClass(singleByClass.H, doubleByClass.H, tripleByClass.H, 'H');
+      RULES_BY_CLASS.D = mergeClass(singleByClass.D, doubleByClass.D, tripleByClass.D, 'D');
+      RULES_BY_CLASS.A = mergeClass(singleByClass.A, doubleByClass.A, tripleByClass.A, 'A');
+
+      console.log('[v5.4] 三榜合併：H=' + RULES_BY_CLASS.H.length + ' D=' + RULES_BY_CLASS.D.length + ' A=' + RULES_BY_CLASS.A.length);
+
+      /* 全部規則去重（給預測用） */
+      var seenAll = {};
+      ALL_RULES = [];
+      ['H','D','A'].forEach(function(cls){
+        RULES_BY_CLASS[cls].forEach(function(r){
+          if(!seenAll[r.cond]){
+            seenAll[r.cond] = true;
+            ALL_RULES.push(r);
+          }
+        });
       });
 
-      TOP_RULES = pickBalancedRules(ALL_RULES, FORMULA_MAX_RULES);
-
-      var listH = ALL_RULES.filter(function(r){ return r.top === 'H'; }).sort(function(a,b){ return b.score - a.score; }).slice(0, TOP_N);
-      var listD = ALL_RULES.filter(function(r){ return r.top === 'D'; }).sort(function(a,b){ return b.score - a.score; }).slice(0, TOP_N);
-      var listA = ALL_RULES.filter(function(r){ return r.top === 'A'; }).sort(function(a,b){ return b.score - a.score; }).slice(0, TOP_N);
+      /* 每個 class 取 Top N */
+      var listH = RULES_BY_CLASS.H.slice(0, TOP_N);
+      var listD = RULES_BY_CLASS.D.slice(0, TOP_N);
+      var listA = RULES_BY_CLASS.A.slice(0, TOP_N);
 
       renderBoard('rules-H', listH);
       renderBoard('rules-D', listD);
       renderBoard('rules-A', listA);
 
-      $('count-H').textContent = listH.length;
-      $('count-D').textContent = listD.length;
-      $('count-A').textContent = listA.length;
+      $('count-H').textContent = listH.length + ' / ' + RULES_BY_CLASS.H.length;
+      $('count-D').textContent = listD.length + ' / ' + RULES_BY_CLASS.D.length;
+      $('count-A').textContent = listA.length + ' / ' + RULES_BY_CLASS.A.length;
+
+      /* TOP_RULES：每類前 8，用於預測和公式 */
+      TOP_RULES = pickBalancedRules(RULES_BY_CLASS, FORMULA_MAX_RULES);
 
       var elapsed = ((Date.now() - tStart) / 1000).toFixed(2);
       $('searchStats').innerHTML =
-        '📊 評估條件：<b>' + conds.length + '</b> 個單條件 · ' +
-        '合格單條件 <b>' + singleRules.length + '</b> 條 · ' +
-        '總規則 <b>' + ALL_RULES.length + '</b> 條 · ' +
-        '耗時 <b>' + elapsed + '</b> 秒 · ' +
+        '📊 評估：<b>' + conds.length + '</b> 個單條件 · 合格：H <b>' + RULES_BY_CLASS.H.length + '</b> / D <b>' + RULES_BY_CLASS.D.length + '</b> / A <b>' + RULES_BY_CLASS.A.length + '</b> 條 · ' +
+        'TOP_RULES <b>' + TOP_RULES.length + '</b> 條 · 耗時 <b>' + elapsed + '</b> 秒 · ' +
         '<span style="color:#60a5fa">按 Lift 排序</span>';
 
       $('loadingSub').textContent = '回測統計中...';
@@ -791,22 +844,11 @@ function runAll(){
   }, 50);
 }
 
-function pickBalancedRules(allRules, limit){
-  var byTop = { H:[], D:[], A:[] };
-  allRules.forEach(function(r){ byTop[r.top].push(r); });
-  Object.keys(byTop).forEach(function(k){
-    byTop[k].sort(function(a, b){ return b.score - a.score; });
-  });
+function pickBalancedRules(byClass, limit){
   var picked = [];
-  ['H','D','A'].forEach(function(k){
-    picked = picked.concat(byTop[k].slice(0, FORMULA_PER_CLASS));
+  ['H','D','A'].forEach(function(cls){
+    picked = picked.concat(byClass[cls].slice(0, FORMULA_PER_CLASS));
   });
-  if(picked.length < limit){
-    var pickedConds = {};
-    picked.forEach(function(r){ pickedConds[r.cond] = true; });
-    var rest = allRules.filter(function(r){ return !pickedConds[r.cond]; }).sort(function(a, b){ return b.score - a.score; });
-    picked = picked.concat(rest.slice(0, limit - picked.length));
-  }
   picked.sort(function(a, b){ return b.score - a.score; });
   return picked.slice(0, limit);
 }
@@ -835,6 +877,7 @@ function renderBoard(containerId, rules){
   el.innerHTML = html;
 }
 
+/* ===== 分布表 ===== */
 function analyzePermutations(rows){
   var keys = ['A≥B≥C', 'A≥C>B', 'B>A≥C', 'B≥C>A', 'C>A≥B', 'C>B>A'];
   var buckets = {};
@@ -902,6 +945,7 @@ function renderNumTable(tableId, analysis){
   $(tableId).innerHTML = html + '</tbody>';
 }
 
+/* ===== 預測 ===== */
 function doPredict(){
   var A = parseFloat($('pred-A').value);
   var B = parseFloat($('pred-B').value);
@@ -1250,14 +1294,10 @@ function renderTypesPage(){
 
 function loadSample(){
   $('input-train').value =
-'44 33 23 H\n42 28 30 D\n23 27 50 A\n48 28 24 H\n30 29 41 A\n' +
-'60 23 17 H\n50 22 28 H\n39 30 31 H\n58 20 22 H\n35 20 45 A\n' +
-'69 19 12 H\n38 20 42 D\n61 22 17 H\n18 20 62 A\n43 29 28 A\n' +
-'17 13 70 H\n68 18 14 H\n48 26 26 H\n58 20 22 H\n30 29 41 A\n' +
-'64 21 15 D\n23 27 50 A\n39 30 31 H\n35 20 45 A\n18 20 62 A\n' +
-'48 28 24 H\n69 19 12 H\n42 28 30 D\n61 22 17 H\n38 20 42 D\n' +
-'50 22 28 H\n44 33 23 H\n17 13 70 H\n30 29 41 A\n60 23 17 H\n' +
-'58 20 22 H\n68 18 14 H\n38 20 42 D';
+'68 22 10 2:0 H\n42 28 30 1:0 H\n58 25 17 2:1 H\n11 18 71 1:4 A\n52 27 21 1:1 D\n' +
+'26 25 49 0:2 A\n8 13 79 1:3 A\n75 16 9 2:0 H\n56 24 20 3:2 H\n33 31 36 0:0 D\n' +
+'32 31 37 0:1 A\n75 16 9 2:0 H\n45 25 30 1:4 A\n42 23 35 1:1 D\n29 24 47 2:1 H\n' +
+'10 14 76 1:5 A\n43 30 27 5:0 H\n66 19 15 5:2 H\n46 26 28 1:2 A\n31 36 33 1:2 A';
   runAll();
 }
 
@@ -1268,6 +1308,7 @@ function clearAll(){
   $('analysisArea').classList.add('hidden');
   $('rulesArea').classList.add('hidden');
   DATA = []; ALL_RULES = []; TOP_RULES = [];
+  RULES_BY_CLASS = { H:[], D:[], A:[] };
 }
 
 renderTypesPage();
