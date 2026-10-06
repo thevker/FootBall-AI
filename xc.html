@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V15-XC-v1.0 混合終極版</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0a0e14;color:#e8e8e8;overflow-x:hidden}
+.header{background:linear-gradient(135deg,#1a1f2e,#0f1419);border-bottom:1px solid #2a3441;padding:16px 24px}
+.header h1{font-size:20px;margin:0 0 4px;color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header .sub{font-size:12px;color:#6b7280}
+.header .version{background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:bold}
+.tabs{display:flex;background:#0f1419;border-bottom:1px solid #2a3441;padding:0 24px;overflow-x:auto}
+.tab-btn{padding:12px 22px;font-size:14px;font-weight:600;background:transparent;color:#6b7280;border:none;border-bottom:3px solid transparent;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tab-btn:hover{color:#94a3b8}
+.tab-btn.active{color:#a78bfa;border-bottom-color:#8b5cf6;background:rgba(139,92,246,.05)}
+.main{padding:20px 24px;max-width:1600px;margin:0 auto;width:100%}
+.panel{display:none;width:100%}
+.panel.active{display:block}
+textarea{width:100%;font-family:'Consolas',monospace;font-size:13px;padding:12px;border:1px solid #2a3441;border-radius:6px;background:#1a1f2e;color:#e8e8e8;resize:vertical;line-height:1.6}
+#input-train{height:150px}
+button{padding:10px 22px;font-size:14px;margin:6px 6px 6px 0;cursor:pointer;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:6px;font-weight:600;transition:all .15s;white-space:nowrap}
+button:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,.3)}
+button.purple{background:linear-gradient(135deg,#8b5cf6,#7c3aed)}
+button.purple:hover{box-shadow:0 4px 12px rgba(139,92,246,.3)}
+button.green{background:linear-gradient(135deg,#10b981,#059669)}
+button.gray{background:#2a3441}
+button.gray:hover{background:#3a4451;box-shadow:none}
+.card{background:#1a1f2e;border:1px solid #2a3441;border-radius:10px;padding:16px;margin-bottom:14px;overflow:hidden}
+.card h2{font-size:15px;margin:0 0 12px;color:#fff;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card h2 .badge{font-size:11px;padding:2px 8px;border-radius:10px;background:#3b82f6;color:#fff;font-weight:500}
+.hidden{display:none!important}
+.stat-bar{background:#1a1f2e;border:1px solid #2a3441;border-radius:8px;padding:10px 16px;margin:10px 0;font-size:13px;display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+.stat-bar b{color:#60a5fa}
+.stat-bar .h{color:#10b981}.stat-bar .d{color:#f59e0b}.stat-bar .a{color:#ef4444}
+
+.priority-box{background:linear-gradient(135deg,#1f1a2e,#0f0a1a);border:1px solid #8b5cf6;border-radius:8px;padding:12px 16px;margin:10px 0;font-size:12px;line-height:1.8}
+.priority-box b{color:#c4b5fd}
+.priority-box .step{display:inline-block;background:#374151;padding:2px 8px;border-radius:10px;margin-right:6px;font-weight:700}
+.priority-box .step.d{background:#f59e0b;color:#1a1f2e}
+.priority-box .step.cold{background:#ef4444;color:#fff}
+.priority-box .step.hot{background:#10b981;color:#fff}
+.priority-box .step.skip{background:#6b7280;color:#fff}
+
+.boards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:12px;width:100%}
+@media(max-width:1100px){.boards{grid-template-columns:1fr}}
+.board{background:#232a3a;border-radius:8px;padding:14px;border-top:3px solid #666;min-width:0;overflow:hidden}
+.board.D{border-top-color:#f59e0b}
+.board.COLD{border-top-color:#ef4444}
+.board.HOT{border-top-color:#10b981}
+.board h3{margin:0 0 12px;font-size:14px;display:flex;align-items:center;gap:8px;color:#fff;flex-wrap:wrap}
+.board h3 .icon{font-size:18px}
+.board h3 .label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.board h3 .count{font-size:11px;color:#94a3b8;font-weight:500;background:#1a1f2e;padding:2px 8px;border-radius:10px;white-space:nowrap}
+
+.rule-list{display:flex;flex-direction:column;gap:8px;padding-right:4px}
+.rule-item{background:#1a1f2e;border-radius:6px;padding:10px 12px;border-left:3px solid #444;min-width:0;transition:all .15s;overflow:hidden;flex-shrink:0}
+.board.D .rule-item.rank-1{background:linear-gradient(135deg,#3a2e1f,#2e221a);border-left-color:#f59e0b;box-shadow:0 0 0 1px rgba(245,158,11,.3)}
+.board.COLD .rule-item.rank-1{background:linear-gradient(135deg,#3a1f1f,#2e1a1a);border-left-color:#ef4444;box-shadow:0 0 0 1px rgba(239,68,68,.3)}
+.board.HOT .rule-item.rank-1{background:linear-gradient(135deg,#1f3a2e,#1a2e22);border-left-color:#10b981;box-shadow:0 0 0 1px rgba(16,185,129,.3)}
+.rule-item .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;flex-wrap:wrap}
+.rule-item .rank{background:#374151;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0;min-width:32px;text-align:center}
+.rule-item.rank-1 .rank{background:#fbbf24;color:#1a1f2e;font-size:11px;padding:3px 9px}
+.rule-item .pct{font-size:15px;font-weight:700;color:#fff;font-family:'Consolas',monospace;flex-shrink:0}
+.rule-item.rank-1 .pct{font-size:16px}
+.rule-item .dir-badge{font-size:10px;padding:2px 7px;border-radius:8px;margin-left:6px;font-weight:700}
+.rule-item .dir-badge.away{color:#f87171;background:rgba(248,113,113,.15)}
+.rule-item .dir-badge.home{color:#4ade80;background:rgba(74,222,128,.15)}
+.rule-item .lift-badge{font-size:10px;color:#60a5fa;background:rgba(96,165,250,.15);padding:2px 6px;border-radius:8px;margin-left:6px;font-weight:700}
+.rule-item .cold-badge{font-size:10px;color:#f472b6;background:rgba(244,114,182,.15);padding:2px 6px;border-radius:8px;margin-left:6px;font-weight:700}
+.rule-item .cond{font-size:12px;color:#e8e8e8;font-family:'Consolas',monospace;margin-bottom:6px;line-height:1.5;word-break:break-word;overflow-wrap:anywhere}
+.rule-item .samples{font-size:10px;color:#94a3b8;display:flex;gap:10px;flex-wrap:wrap}
+.rule-item .samples .cH{color:#10b981;font-weight:600}
+.rule-item .samples .cD{color:#f59e0b;font-weight:600}
+.rule-item .samples .cA{color:#ef4444;font-weight:600}
+.empty-msg{text-align:center;padding:40px 10px;color:#6b7280;font-size:13px;line-height:1.7}
+
+.backtest{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+@media(max-width:900px){.backtest{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.backtest{grid-template-columns:1fr}}
+.bt-card{background:#232a3a;border-radius:8px;padding:14px;border-top:3px solid #3b82f6;min-width:0;overflow:hidden}
+.bt-card.all{border-top-color:#60a5fa}
+.bt-card.D{border-top-color:#f59e0b}
+.bt-card.COLD{border-top-color:#ef4444}
+.bt-card.HOT{border-top-color:#10b981}
+.bt-card .title{font-size:12px;color:#94a3b8;margin-bottom:10px;font-weight:600}
+.bt-card .big{font-size:26px;font-weight:900;font-family:'Consolas',monospace;color:#fff;margin-bottom:4px;line-height:1.1}
+.bt-card.D .big{color:#f59e0b}
+.bt-card.COLD .big{color:#ef4444}
+.bt-card.HOT .big{color:#10b981}
+.bt-card .row{display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;padding:3px 0;border-bottom:1px dashed #2a3441}
+.bt-card .row:last-child{border-bottom:none}
+.bt-card .row b{color:#fff;font-family:'Consolas',monospace}
+.bt-card .pct-bar{height:6px;background:#0f1419;border-radius:3px;margin-top:8px;overflow:hidden}
+.bt-card .pct-bar > div{height:100%;border-radius:3px;transition:width .3s}
+.bt-card.D .pct-bar > div{background:#f59e0b}
+.bt-card.COLD .pct-bar > div{background:#ef4444}
+.bt-card.HOT .pct-bar > div{background:#10b981}
+.bt-card.all .pct-bar > div{background:#60a5fa}
+
+#sheetFormula{width:100%;font-family:'Consolas',monospace;font-size:11px;padding:12px;border:1px solid #2a3441;border-radius:6px;background:#0f1419;color:#60a5fa;min-height:140px;resize:vertical;line-height:1.6;white-space:pre-wrap;word-break:break-all}
+.copy-status{font-size:12px;color:#10b981;margin-left:10px;font-weight:600}
+.legend{font-size:11px;color:#6b7280;margin-top:10px;line-height:1.7}
+.rules-preview{background:#0f1419;border:1px solid #2a3441;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:12px;font-family:'Consolas',monospace;line-height:1.8;max-height:300px;overflow-y:auto}
+.rules-preview .r-D{color:#f59e0b}
+.rules-preview .r-H{color:#10b981}
+.rules-preview .r-A{color:#ef4444}
+.rules-preview .phase{color:#c4b5fd;font-weight:bold;font-size:13px;display:block;margin-top:8px}
+
+.predict-input{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+@media(max-width:600px){.predict-input{grid-template-columns:1fr}}
+.predict-input .field{background:#232a3a;border-radius:8px;padding:14px;text-align:center;min-width:0}
+.predict-input .field label{display:block;font-size:11px;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+.predict-input .field input{width:100%;font-size:26px;font-family:'Consolas',monospace;font-weight:700;background:#1a1f2e;border:1px solid #374151;color:#fff;border-radius:6px;padding:12px;text-align:center}
+.predict-input .field input:focus{outline:2px solid #8b5cf6;border-color:#8b5cf6}
+.predict-result{background:linear-gradient(135deg,#232a3a,#1a1f2e);border-radius:12px;padding:28px;text-align:center;margin:14px 0}
+.predict-result .label{font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px}
+.predict-result .phase-badge{display:inline-block;font-size:12px;padding:3px 12px;border-radius:12px;font-weight:700;margin-bottom:8px}
+.predict-result .phase-badge.d{background:#f59e0b;color:#1a1f2e}
+.predict-result .phase-badge.cold{background:#ef4444;color:#fff}
+.predict-result .phase-badge.hot{background:#10b981;color:#fff}
+.predict-result .phase-badge.skip{background:#6b7280;color:#fff}
+.predict-result .verdict{font-size:64px;font-weight:900;margin:10px 0;font-family:'Consolas',monospace;line-height:1}
+.predict-result .verdict.D{color:#f59e0b;text-shadow:0 0 30px rgba(245,158,11,.4)}
+.predict-result .verdict.H{color:#10b981;text-shadow:0 0 30px rgba(16,185,129,.4)}
+.predict-result .verdict.A{color:#ef4444;text-shadow:0 0 30px rgba(239,68,68,.4)}
+.predict-result .verdict.skip{color:#6b7280}
+.predict-result .cn{font-size:20px;font-weight:700;color:#fff;margin:8px 0}
+.predict-result .reason{font-size:13px;color:#e8e8e8;margin-top:14px;font-family:'Consolas',monospace;background:#0f1419;padding:10px 14px;border-radius:6px;display:inline-block;max-width:100%;word-break:break-word}
+.predict-result .stats{font-size:11px;color:#94a3b8;margin-top:10px}
+
+.multi-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:14px}
+.multi-card{background:#232a3a;border-radius:8px;padding:12px;border-left:3px solid #444;min-width:0;overflow:hidden}
+.multi-card.D{border-left-color:#f59e0b}
+.multi-card.H{border-left-color:#10b981}
+.multi-card.A{border-left-color:#ef4444}
+.multi-card .label{font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
+.multi-card .cond{font-size:11px;color:#94a3b8;margin-top:6px;font-family:'Consolas',monospace;word-break:break-word;overflow-wrap:anywhere}
+.multi-card .stats-row{font-size:10px;color:#6b7280;margin-top:6px}
+
+.loading-overlay{position:fixed;inset:0;background:rgba(10,14,20,.9);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px}
+.loading-overlay .spinner{width:48px;height:48px;border:4px solid #374151;border-top-color:#8b5cf6;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay .text{color:#fff;font-size:14px;font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎯 V15-XC-v1.0 <span class="version">混合終極版</span></h1>
+  <div class="sub">優先級：和局 → 冷門 → 熱門 → skip</div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="train" onclick="switchTab('train')">🎯 訓練</button>
+  <button class="tab-btn" data-tab="predict" onclick="switchTab('predict')">🔮 預測</button>
+  <button class="tab-btn" data-tab="export" onclick="switchTab('export')">📤 匯出公式</button>
+</div>
+
+<div class="main">
+
+<!-- ========== 訓練 ========== -->
+<div class="panel active" id="panel-train">
+  <div class="card">
+    <h2>📥 貼上歷史資料 <span class="badge">每行：A B C 結果</span></h2>
+    <textarea id="input-train" placeholder="52 27 21 1:1 D
+26 25 49 0:2 A
+75 16 9 2:0 H
+11 18 71 1:4 A"></textarea>
+    <div style="margin-top:10px">
+      <button class="purple" onclick="runAll()">🚀 一鍵分析（三榜）</button>
+      <button class="gray" onclick="loadSample()">📋 載入範例</button>
+      <button class="gray" onclick="clearAll()">🗑 清空</button>
+    </div>
+  </div>
+
+  <div class="priority-box">
+    <b>🎯 預測優先級：</b><br>
+    <span class="step d">① 和局</span> 先找 D 規則<br>
+    <span class="step cold">② 冷門</span> 弱方贏（主爆冷 H / 客爆冷 A）<br>
+    <span class="step hot">③ 熱門</span> 強方贏（主隊強 H / 客隊強 A）<br>
+    <span class="step skip">④ skip</span> 都不匹配
+  </div>
+
+  <div id="statBar"></div>
+  <div id="baseRateBar"></div>
+
+  <div id="rulesArea" class="hidden">
+    <div class="card">
+      <h2>🏆 三榜
+        <span class="badge" style="background:#f59e0b">🟡 和局</span>
+        <span class="badge" style="background:#ef4444">🔥 冷門</span>
+        <span class="badge" style="background:#10b981">🟢 熱門</span>
+      </h2>
+      <div class="boards">
+        <div class="board D">
+          <h3><span class="icon">🟡</span><span class="label">和局（D）</span><span class="count" id="count-D">0</span></h3>
+          <div class="rule-list" id="rules-D"></div>
+        </div>
+        <div class="board COLD">
+          <h3><span class="icon">🔥</span><span class="label">冷門（弱方贏）</span><span class="count" id="count-COLD">0</span></h3>
+          <div class="rule-list" id="rules-COLD"></div>
+        </div>
+        <div class="board HOT">
+          <h3><span class="icon">🟢</span><span class="label">熱門（強方贏）</span><span class="count" id="count-HOT">0</span></h3>
+          <div class="rule-list" id="rules-HOT"></div>
+        </div>
+      </div>
+      <div class="legend" id="searchStats"></div>
+    </div>
+
+    <div class="card">
+      <h2>📊 回測統計 <span class="badge">按優先級模擬</span></h2>
+      <div class="backtest" id="backtestArea"></div>
+      <div class="legend" style="margin-top:12px;color:#fbbf24">
+        ⚠️ in-sample 統計，命中率天生偏高。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 預測 ========== -->
+<div class="panel" id="panel-predict">
+  <div class="card">
+    <h2>🔮 即時預測</h2>
+    <p style="font-size:12px;color:#94a3b8;margin:0 0 12px">
+      輸入 A / B / C，系統按「和局 → 冷門 → 熱門 → skip」順序判斷。
+    </p>
+    <div class="predict-input">
+      <div class="field"><label>A · 主勝率%</label><input type="number" id="pred-A" placeholder="52" min="0" max="100"></div>
+      <div class="field"><label>B · 和率%</label><input type="number" id="pred-B" placeholder="27" min="0" max="100"></div>
+      <div class="field"><label>C · 客勝率%</label><input type="number" id="pred-C" placeholder="21" min="0" max="100"></div>
+    </div>
+    <button class="purple" onclick="doPredict()">🎯 預測結果</button>
+    <button class="gray" onclick="clearPredict()">🗑 清空</button>
+  </div>
+  <div id="predictArea" class="hidden">
+    <div class="predict-result" id="predictResult"></div>
+    <div id="predictDetail"></div>
+  </div>
+</div>
+
+<!-- ========== 匯出 ========== -->
+<div class="panel" id="panel-export">
+  <div class="card">
+    <h2>📤 Google Sheets 公式 <span class="badge">按優先級排列</span></h2>
+    <p style="font-size:12px;color:#94a3b8;margin:0 0 12px;line-height:1.7">
+      A 欄 = 主勝率、B 欄 = 和率、C 欄 = 客勝率（從第 2 列）→ 貼到 D2。<br>
+      公式順序：<b style="color:#f59e0b">和局</b> → <b style="color:#ef4444">冷門</b> → <b style="color:#10b981">熱門</b> → skip
+    </p>
+    <div>
+      <button class="green" onclick="generateSheetFormula()">🔧 生成公式</button>
+      <button onclick="copySheetFormula()">📋 複製公式</button>
+      <span id="copyStatus" class="copy-status"></span>
+    </div>
+    <textarea id="sheetFormula" placeholder="按「🔧 生成公式」自動產生..." readonly></textarea>
+    <div class="legend" id="formulaInfo"></div>
+    <div id="rulesPreview" class="rules-preview" style="display:none"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+'use strict';
+
+var MIN_SAMPLE_D = 4;
+var MIN_PURITY_D = 30;
+var MIN_SAMPLE_COLD = 4;
+var MIN_PURITY_COLD = 40;
+var MIN_SAMPLE_HOT = 5;
+var MIN_PURITY_HOT = 55;
+var TOP_N = 10;
+var FORMULA_MAX_PER_CLASS = 10;
+
+var DATA = [];
+var ALL_RULES_D = [];
+var ALL_RULES_COLD = [];
+var ALL_RULES_HOT = [];
+var BASE_RATE = { H:0.33, D:0.33, A:0.33 };
+
+function $(id){ return document.getElementById(id); }
+
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelector('.tab-btn[data-tab="' + name + '"]').classList.add('active');
+  $('panel-' + name).classList.add('active');
+}
+
+function parseData(text){
+  var rows = [], lines = text.split('\n');
+  for(var i = 0; i < lines.length; i++){
+    var line = lines[i].trim();
+    if(!line) continue;
+    var p = line.split(/\s+/);
+    if(p.length < 4) continue;
+    var last = p[p.length - 1].toUpperCase();
+    if(['H','D','A'].indexOf(last) === -1) continue;
+    var A = parseInt(p[0], 10), B = parseInt(p[1], 10), C = parseInt(p[2], 10);
+    if(isNaN(A) || isNaN(B) || isNaN(C)) continue;
+    rows.push({ A:A, B:B, C:C, result:last });
+  }
+  return rows;
+}
+
+function makeBucket(){ return { H:0, D:0, A:0, total:0 }; }
+function addToBucket(b, r){ b[r]++; b.total++; }
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+/* ===== 條件生成 ===== */
+function buildConditions(){
+  var conds = [];
+
+  ['A','B','C'].forEach(function(f){
+    [20,25,30,35,40,45,50,55,60,65,70].forEach(function(t){
+      conds.push({ name:f + ' ≥ ' + t, test:(function(f2,t2){ return function(r){ return r[f2] >= t2; }; })(f,t), dim:f });
+      conds.push({ name:f + ' < ' + t, test:(function(f2,t2){ return function(r){ return r[f2] < t2; }; })(f,t), dim:f });
+    });
+  });
+
+  [
+    ['A-C', function(r){ return r.A - r.C; }, [-40,-30,-20,-15,-10,10,15,20,30,40]],
+    ['A-B', function(r){ return r.A - r.B; }, [-30,-20,-15,-10,10,15,20,30,40]],
+    ['B-C', function(r){ return r.B - r.C; }, [-25,-20,-15,-10,5,10,15,20]],
+    ['C-A', function(r){ return r.C - r.A; }, [10,15,20,25,30,40]],
+    ['C-B', function(r){ return r.C - r.B; }, [10,15,20,25]]
+  ].forEach(function(d){
+    d[2].forEach(function(t){
+      var fn = d[1];
+      if(t > 0){
+        conds.push({ name:d[0] + ' ≥ ' + t, test:(function(g,t2){ return function(r){ return g(r) >= t2; }; })(fn,t), dim:d[0] });
+      } else {
+        conds.push({ name:d[0] + ' ≤ ' + t, test:(function(g,t2){ return function(r){ return g(r) <= t2; }; })(fn,t), dim:d[0] });
+      }
+    });
+  });
+
+  [['A-C',[3,5,8,10,12,15,20]], ['A-B',[5,8,10,15,20]], ['B-C',[3,5,8,10,12,15]]].forEach(function(d){
+    d[1].forEach(function(t){
+      conds.push({
+        name:'|' + d[0] + '| ≤ ' + t,
+        test:(function(f1,f2,t2){ return function(r){ return Math.abs(r[f1] - r[f2]) <= t2; }; })(d[0].split('-')[0], d[0].split('-')[1], t),
+        dim:'|' + d[0] + '|'
+      });
+    });
+  });
+
+  [
+    ['A/B', function(r){ return r.B > 0 ? r.A / r.B : 0; }, [1, 1.2, 1.5, 2]],
+    ['A/C', function(r){ return r.C > 0 ? r.A / r.C : 0; }, [1, 1.2, 1.5, 2]],
+    ['C/A', function(r){ return r.A > 0 ? r.C / r.A : 0; }, [1, 1.2, 1.5, 2]]
+  ].forEach(function(d){
+    d[2].forEach(function(t){
+      conds.push({ name:d[0] + ' ≥ ' + t, test:(function(g,t2){ return function(r){ return g(r) >= t2; }; })(d[1],t), dim:d[0] });
+    });
+  });
+
+  [
+    ['A+B', function(r){ return r.A + r.B; }, [55, 60, 65, 70, 75, 80]],
+    ['B+C', function(r){ return r.B + r.C; }, [40, 45, 50, 55, 60, 65]],
+    ['A+C', function(r){ return r.A + r.C; }, [50, 55, 60, 65, 70, 75]]
+  ].forEach(function(d){
+    d[2].forEach(function(t){
+      conds.push({ name:d[0] + ' ≥ ' + t, test:(function(g,t2){ return function(r){ return g(r) >= t2; }; })(d[1],t), dim:d[0] });
+      conds.push({ name:d[0] + ' < ' + t, test:(function(g,t2){ return function(r){ return g(r) < t2; }; })(d[1],t), dim:d[0] });
+    });
+  });
+
+  [10, 15, 20, 25, 30, 40].forEach(function(t){
+    conds.push({ name:'max − min ≥ ' + t, test:(function(t2){ return function(r){ return Math.max(r.A,r.B,r.C) - Math.min(r.A,r.B,r.C) >= t2; }; })(t), dim:'range' });
+    conds.push({ name:'max − min ≤ ' + t, test:(function(t2){ return function(r){ return Math.max(r.A,r.B,r.C) - Math.min(r.A,r.B,r.C) <= t2; }; })(t), dim:'range' });
+  });
+
+  ['A','B','C'].forEach(function(f){
+    var others = ['A','B','C'].filter(function(x){ return x !== f; });
+    var o1 = others[0], o2 = others[1];
+    conds.push({ name:f + ' 第 1', test:(function(f2,o12,o22){ return function(r){ return r[f2] >= r[o12] && r[f2] >= r[o22]; }; })(f,o1,o2), dim:'rank-' + f });
+    conds.push({ name:f + ' 第 3', test:(function(f2,o12,o22){ return function(r){ return r[f2] < r[o12] && r[f2] < r[o22]; }; })(f,o1,o2), dim:'rank-' + f });
+    conds.push({ name:f + ' 第 2', test:(function(f2,o12,o22){
+      return function(r){
+        var isMin = r[f2] < r[o12] && r[f2] < r[o22];
+        var isMax = r[f2] >= r[o12] && r[f2] >= r[o22];
+        return !isMin && !isMax;
+      };
+    })(f,o1,o2), dim:'rank-' + f });
+  });
+
+  [
+    ['A > B > C', function(r){ return r.A > r.B && r.B > r.C; }],
+    ['A > C > B', function(r){ return r.A > r.C && r.C > r.B; }],
+    ['B > A > C', function(r){ return r.B > r.A && r.A > r.C; }],
+    ['B > C > A', function(r){ return r.B > r.C && r.C > r.A; }],
+    ['C > A > B', function(r){ return r.C > r.A && r.A > r.B; }],
+    ['C > B > A', function(r){ return r.C > r.B && r.B > r.A; }]
+  ].forEach(function(d){ conds.push({ name:d[0], test:d[1], dim:'order' }); });
+
+  return conds;
+}
+
+function isContradict(c1, c2){
+  var n1 = c1.name, n2 = c2.name;
+  if(c1.dim === c2.dim){
+    var a1 = n1.match(/^([ABC]) (≥|<) (\d+)/);
+    var a2 = n2.match(/^([ABC]) (≥|<) (\d+)/);
+    if(a1 && a2 && a1[1] === a2[1]){
+      var d1 = (a1[2] === '≥') ? 'up' : 'dn';
+      var d2 = (a2[2] === '≥') ? 'up' : 'dn';
+      if(d1 !== d2){
+        var t1 = +a1[3], t2 = +a2[3];
+        if(d1 === 'up' && t1 >= t2) return true;
+        if(d1 === 'dn' && t1 <= t2) return true;
+      }
+    }
+  }
+  var maxN = ['A 第 1', 'B 第 1', 'C 第 1'];
+  if(maxN.indexOf(n1) !== -1 && maxN.indexOf(n2) !== -1) return true;
+  var minN = ['A 第 3', 'B 第 3', 'C 第 3'];
+  if(minN.indexOf(n1) !== -1 && minN.indexOf(n2) !== -1) return true;
+  if(n1.indexOf(' > ') !== -1 && n2.indexOf(' > ') !== -1){
+    var p1 = n1.split(' > ').map(function(x){ return x.trim(); }).join('>');
+    var p2 = n2.split(' > ').map(function(x){ return x.trim(); }).join('>');
+    if(p1 === p2.split('>').reverse().join('>')) return true;
+  }
+  return false;
+}
+
+/* ===== 和局規則 ===== */
+function evalD(name, b){
+  if(b.total < MIN_SAMPLE_D) return null;
+  var purity = b.D / b.total;
+  if(purity < MIN_PURITY_D / 100) return null;
+  return {
+    cond:name, top:'D', total:b.total,
+    H:b.H, D:b.D, A:b.A, hits:b.D,
+    topPct: Math.round(purity * 100),
+    lift: Math.round((purity / BASE_RATE.D) * 100) / 100,
+    score: Math.round(purity * 100) * Math.min(b.total, 30)
+  };
+}
+
+/* ===== 冷門規則：弱方贏 ===== */
+function evalCold(name, testFn, rows){
+  var result = [];
+  var awayB = 0, awayH = 0, awayDiff = 0;
+  var homeB = 0, homeH = 0, homeDiff = 0;
+
+  for(var i = 0; i < rows.length; i++){
+    var r = rows[i];
+    if(!testFn(r)) continue;
+    if(r.A > r.C){
+      awayB++;
+      if(r.result === 'A'){ awayH++; awayDiff += (r.A - r.C); }
+    } else if(r.A < r.C){
+      homeB++;
+      if(r.result === 'H'){ homeH++; homeDiff += (r.C - r.A); }
+    }
+  }
+
+  if(awayB >= MIN_SAMPLE_COLD && awayH / awayB >= MIN_PURITY_COLD / 100){
+    var pA = awayH / awayB;
+    result.push({
+      cond:name + ' 且 A > C', top:'A',
+      direction:'away', dirLabel:'客隊爆冷',
+      total:awayB, hits:awayH, topPct: Math.round(pA * 100),
+      coldScore: awayH > 0 ? Math.round(awayDiff / awayH * 10) / 10 : 0,
+      score: Math.round(pA * 100) * Math.min(awayB, 30)
+    });
+  }
+  if(homeB >= MIN_SAMPLE_COLD && homeH / homeB >= MIN_PURITY_COLD / 100){
+    var pH = homeH / homeB;
+    result.push({
+      cond:name + ' 且 A < C', top:'H',
+      direction:'home', dirLabel:'主隊爆冷',
+      total:homeB, hits:homeH, topPct: Math.round(pH * 100),
+      coldScore: homeH > 0 ? Math.round(homeDiff / homeH * 10) / 10 : 0,
+      score: Math.round(pH * 100) * Math.min(homeB, 30)
+    });
+  }
+  return result;
+}
+
+/* ===== 熱門規則：強方贏 ===== */
+function evalHot(name, testFn, rows){
+  var result = [];
+  var homeB = 0, homeH = 0;
+  var awayB = 0, awayH = 0;
+
+  for(var i = 0; i < rows.length; i++){
+    var r = rows[i];
+    if(!testFn(r)) continue;
+    if(r.A > r.C){
+      homeB++;
+      if(r.result === 'H') homeH++;
+    } else if(r.C > r.A){
+      awayB++;
+      if(r.result === 'A') awayH++;
+    }
+  }
+
+  if(homeB >= MIN_SAMPLE_HOT && homeH / homeB >= MIN_PURITY_HOT / 100){
+    var pH = homeH / homeB;
+    result.push({
+      cond:name + ' 且 A > C', top:'H',
+      direction:'home-hot', dirLabel:'主隊強贏',
+      total:homeB, hits:homeH, topPct: Math.round(pH * 100),
+      score: Math.round(pH * 100) * Math.min(homeB, 30)
+    });
+  }
+  if(awayB >= MIN_SAMPLE_HOT && awayH / awayB >= MIN_PURITY_HOT / 100){
+    var pA = awayH / awayB;
+    result.push({
+      cond:name + ' 且 C > A', top:'A',
+      direction:'away-hot', dirLabel:'客隊強贏',
+      total:awayB, hits:awayH, topPct: Math.round(pA * 100),
+      score: Math.round(pA * 100) * Math.min(awayB, 30)
+    });
+  }
+  return result;
+}
+
+/* ===== 主流程 ===== */
+function runAll(){
+  var rows = parseData($('input-train').value);
+  DATA = rows;
+  if(rows.length === 0){ alert('沒有有效資料'); return; }
+
+  var overlay = document.createElement('div');
+  overlay.className = 'loading-overlay';
+  overlay.innerHTML = '<div class="spinner"></div><div class="text">分析中...</div>';
+  document.body.appendChild(overlay);
+
+  setTimeout(function(){
+    try {
+      var tStart = Date.now();
+      var rc = { H:0, D:0, A:0 };
+      rows.forEach(function(r){ rc[r.result]++; });
+      BASE_RATE = { H: rc.H/rows.length, D: rc.D/rows.length, A: rc.A/rows.length };
+
+      var awayUpsets = 0, homeUpsets = 0;
+      rows.forEach(function(r){
+        if(r.A > r.C && r.result === 'A') awayUpsets++;
+        if(r.A < r.C && r.result === 'H') homeUpsets++;
+      });
+
+      $('statBar').innerHTML = '<div class="stat-bar">' +
+        '<span>📊 共 <b>' + rows.length + '</b> 筆</span>' +
+        '<span class="d">🟡 D 和局 <b>' + rc.D + '</b>（' + (rc.D/rows.length*100).toFixed(1) + '%）</span>' +
+        '<span class="a">🔥 客爆冷 <b>' + awayUpsets + '</b></span>' +
+        '<span class="h">🔥 主爆冷 <b>' + homeUpsets + '</b></span>' +
+        '</div>';
+
+      $('baseRateBar').innerHTML = '<div style="background:#1a1f2e;border:1px solid #2a3441;border-radius:8px;padding:12px 16px;margin:10px 0;font-size:13px">' +
+        '<b style="color:#60a5fa">📐 基準比率：</b> ' +
+        'D = <b style="color:#60a5fa;font-family:monospace">' + (BASE_RATE.D*100).toFixed(1) + '%</b> ｜ ' +
+        'H = <b style="color:#60a5fa;font-family:monospace">' + (BASE_RATE.H*100).toFixed(1) + '%</b> ｜ ' +
+        'A = <b style="color:#60a5fa;font-family:monospace">' + (BASE_RATE.A*100).toFixed(1) + '%</b>' +
+        '</div>';
+
+      var conds = buildConditions();
+
+      var singleD = [], singleCold = [], singleHot = [];
+      for(var i = 0; i < conds.length; i++){
+        var c = conds[i], b = makeBucket();
+        for(var j = 0; j < rows.length; j++){
+          if(c.test(rows[j])) addToBucket(b, rows[j].result);
+        }
+        var rD = evalD(c.name, b);
+        if(rD){ rD.condObj = c; singleD.push(rD); }
+        evalCold(c.name, c.test, rows).forEach(function(r){ r.condObj = c; singleCold.push(r); });
+        evalHot(c.name, c.test, rows).forEach(function(r){ r.condObj = c; singleHot.push(r); });
+      }
+
+      var allSingles = [];
+      var seen = {};
+      [singleD, singleCold, singleHot].forEach(function(arr){
+        arr.forEach(function(r){
+          if(!seen[r.cond]){ seen[r.cond] = true; allSingles.push(r); }
+        });
+      });
+      allSingles.sort(function(a, b){ return b.score - a.score; });
+
+      var dblD = [], dblCold = [], dblHot = [];
+      var base60 = allSingles.slice(0, 60);
+      for(var i = 0; i < base60.length; i++){
+        for(var j = i + 1; j < base60.length; j++){
+          var c1 = base60[i].condObj, c2 = base60[j].condObj;
+          if(!c1 || !c2) continue;
+          if(isContradict(c1, c2)) continue;
+          var b2 = makeBucket();
+          for(var k = 0; k < rows.length; k++){
+            if(c1.test(rows[k]) && c2.test(rows[k])) addToBucket(b2, rows[k].result);
+          }
+          var name = c1.name + ' 且 ' + c2.name;
+          var test2 = (function(f1,f2){ return function(r){ return f1(r) && f2(r); }; })(c1.test, c2.test);
+          var rD = evalD(name, b2);
+          if(rD){ rD.condObj = c1; dblD.push(rD); }
+          evalCold(name, test2, rows).forEach(function(r){ r.condObj = c1; dblCold.push(r); });
+          evalHot(name, test2, rows).forEach(function(r){ r.condObj = c1; dblHot.push(r); });
+        }
+      }
+
+      function mergeRules(){
+        var out = [], seen = {};
+        for(var a = 0; a < arguments.length; a++){
+          for(var b = 0; b < arguments[a].length; b++){
+            var r = arguments[a][b];
+            if(seen[r.cond]) continue;
+            seen[r.cond] = true;
+            out.push(r);
+          }
+        }
+        return out;
+      }
+
+      ALL_RULES_D = mergeRules(singleD, dblD);
+      ALL_RULES_D.sort(function(a,b){ return b.score - a.score; });
+      ALL_RULES_COLD = mergeRules(singleCold, dblCold);
+      ALL_RULES_COLD.sort(function(a,b){ return b.score - a.score; });
+      ALL_RULES_HOT = mergeRules(singleHot, dblHot);
+      ALL_RULES_HOT.sort(function(a,b){ return b.score - a.score; });
+
+      renderBoard('rules-D', ALL_RULES_D.slice(0, TOP_N), 'D');
+      renderBoard('rules-COLD', ALL_RULES_COLD.slice(0, TOP_N), 'COLD');
+      renderBoard('rules-HOT', ALL_RULES_HOT.slice(0, TOP_N), 'HOT');
+      $('count-D').textContent = ALL_RULES_D.length;
+      $('count-COLD').textContent = ALL_RULES_COLD.length;
+      $('count-HOT').textContent = ALL_RULES_HOT.length;
+
+      var elapsed = ((Date.now() - tStart) / 1000).toFixed(2);
+      $('searchStats').innerHTML =
+        '📊 評估 <b>' + conds.length + '</b> 個條件 · 合格：D <b>' + ALL_RULES_D.length + '</b> · 冷門 <b>' + ALL_RULES_COLD.length + '</b> · 熱門 <b>' + ALL_RULES_HOT.length + '</b> · 耗時 <b>' + elapsed + '</b> 秒';
+
+      var backtest = runBacktest(rows);
+      renderBacktest(backtest);
+
+      $('rulesArea').classList.remove('hidden');
+      document.body.removeChild(overlay);
+      $('rulesArea').scrollIntoView({behavior:'smooth', block:'start'});
+
+    } catch(e){
+      console.error(e);
+      if(overlay.parentNode) document.body.removeChild(overlay);
+      alert('分析出錯：' + e.message);
+    }
+  }, 50);
+}
+
+function renderBoard(containerId, rules, cls){
+  var el = $(containerId);
+  if(rules.length === 0){
+    el.innerHTML = '<div class="empty-msg">找不到規則</div>';
+    return;
+  }
+  var html = '';
+  for(var i = 0; i < rules.length; i++){
+    var r = rules[i];
+    var medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '#' + (i+1)));
+    var extra = '';
+    if(cls === 'COLD' || cls === 'HOT'){
+      var dirClass = (r.direction.indexOf('away') !== -1) ? 'away' : 'home';
+      extra = '<span class="dir-badge ' + dirClass + '">' + r.dirLabel + '</span>';
+      if(cls === 'COLD') extra += '<span class="cold-badge">冷門度 ' + r.coldScore + '</span>';
+    }
+    var samples = (cls === 'D')
+      ? '<span>共 ' + r.total + '</span><span class="cH">H ' + r.H + '</span><span class="cD">D ' + r.D + '</span><span class="cA">A ' + r.A + '</span>'
+      : '<span>共 ' + r.total + '</span><span>命中 ' + r.hits + '</span>';
+
+    html += '<div class="rule-item' + (i === 0 ? ' rank-1' : '') + '">' +
+      '<div class="head"><span class="rank">' + medal + '</span>' +
+        '<span><span class="pct">' + r.topPct + '%</span>' +
+        (r.lift ? '<span class="lift-badge">Lift ' + r.lift + '</span>' : '') + extra + '</span></div>' +
+      '<div class="cond">' + escapeHtml(r.cond) + ' → 押 ' + r.top + '</div>' +
+      '<div class="samples">' + samples + '</div></div>';
+  }
+  el.innerHTML = html;
+}
+
+/* ⭐ 回測按優先級：D → 冷門 → 熱門 → skip */
+function runBacktest(rows){
+  var stats = {
+    all: { bets:0, hits:0, skip:0 },
+    D:   { bets:0, hits:0 },
+    COLD:{ bets:0, hits:0 },
+    HOT: { bets:0, hits:0 }
+  };
+  for(var i = 0; i < rows.length; i++){
+    var row = rows[i];
+    var pred = predictFor(row);
+    if(pred === 'skip'){ stats.all.skip++; continue; }
+    stats.all.bets++;
+    var cls = (pred === 'D') ? 'D' : (isColdPred(pred, row) ? 'COLD' : 'HOT');
+    stats[cls].bets++;
+    if(pred === row.result){ stats.all.hits++; stats[cls].hits++; }
+  }
+  return stats;
+}
+
+function isColdPred(pred, row){
+  /* 判斷該預測是否來自冷門榜 */
+  if(pred === 'D') return false;
+  /* 檢查是否匹配冷門規則 */
+  for(var i = 0; i < ALL_RULES_D.length; i++){
+    if(matchRule(row, ALL_RULES_D[i].cond)) return false; /* D 榜優先 */
+  }
+  for(var i = 0; i < ALL_RULES_COLD.length; i++){
+    if(matchRule(row, ALL_RULES_COLD[i].cond) && ALL_RULES_COLD[i].top === pred) return true;
+  }
+  return false;
+}
+
+/* ⭐ 預測核心：按優先級 */
+function predictFor(row){
+  /* 1. 和局 */
+  var sortedD = ALL_RULES_D.slice().sort(function(a, b){ return b.score - a.score; });
+  for(var i = 0; i < sortedD.length; i++){
+    if(matchRule(row, sortedD[i].cond)) return 'D';
+  }
+  /* 2. 冷門 */
+  var sortedCold = ALL_RULES_COLD.slice().sort(function(a, b){ return b.score - a.score; });
+  for(var i = 0; i < sortedCold.length; i++){
+    if(matchRule(row, sortedCold[i].cond)) return sortedCold[i].top;
+  }
+  /* 3. 熱門 */
+  var sortedHot = ALL_RULES_HOT.slice().sort(function(a, b){ return b.score - a.score; });
+  for(var i = 0; i < sortedHot.length; i++){
+    if(matchRule(row, sortedHot[i].cond)) return sortedHot[i].top;
+  }
+  return 'skip';
+}
+
+function predictDetail(row){
+  /* 返回預測 + 匹配的規則 + 來自哪個榜 */
+  var sortedD = ALL_RULES_D.slice().sort(function(a, b){ return b.score - a.score; });
+  for(var i = 0; i < sortedD.length; i++){
+    if(matchRule(row, sortedD[i].cond)) return { verdict:'D', cls:'D', rule:sortedD[i] };
+  }
+  var sortedCold = ALL_RULES_COLD.slice().sort(function(a, b){ return b.score - a.score; });
+  for(var i = 0; i < sortedCold.length; i++){
+    if(matchRule(row, sortedCold[i].cond)) return { verdict:sortedCold[i].top, cls:'COLD', rule:sortedCold[i] };
+  }
+  var sortedHot = ALL_RULES_HOT.slice().sort(function(a, b){ return b.score - a.score; });
+  for(var i = 0; i < sortedHot.length; i++){
+    if(matchRule(row, sortedHot[i].cond)) return { verdict:sortedHot[i].top, cls:'HOT', rule:sortedHot[i] };
+  }
+  return { verdict:'skip', cls:'skip', rule:null };
+}
+
+function pct(h, b){ return b === 0 ? 0 : Math.round(h/b*10000)/100; }
+
+function renderBacktest(stats){
+  var aR = pct(stats.all.hits, stats.all.bets);
+  var dR = pct(stats.D.hits, stats.D.bets);
+  var cR = pct(stats.COLD.hits, stats.COLD.bets);
+  var hR = pct(stats.HOT.hits, stats.HOT.bets);
+
+  function card(cls, title, b, h, r){
+    return '<div class="bt-card ' + cls + '">' +
+      '<div class="title">' + title + '</div>' +
+      '<div class="big">' + r.toFixed(2) + '%</div>' +
+      '<div class="row"><span>出手數</span><b>' + b + '</b></div>' +
+      '<div class="row"><span>命中數</span><b>' + h + '</b></div>' +
+      '<div class="row"><span>命中率</span><b>' + r.toFixed(2) + '%</b></div>' +
+      '<div class="pct-bar"><div style="width:' + Math.min(100, r) + '%"></div></div></div>';
+  }
+
+  var html = '';
+  html += card('all', '🎯 全體', stats.all.bets, stats.all.hits, aR);
+  html += card('D', '🟡 和局（優先級①）', stats.D.bets, stats.D.hits, dR);
+  html += card('COLD', '🔥 冷門（優先級②）', stats.COLD.bets, stats.COLD.hits, cR);
+  html += card('HOT', '🟢 熱門（優先級③）', stats.HOT.bets, stats.HOT.hits, hR);
+  $('backtestArea').innerHTML = html;
+}
+
+/* ===== 匹配 ===== */
+function matchRule(row, condStr){
+  var mainCond = condStr.replace(/ 且 A [<>] C$/, '').replace(/ 且 C > A$/, '');
+  var direction = null;
+  if(/ 且 A > C$/.test(condStr)) direction = 'agreater';
+  if(/ 且 A < C$/.test(condStr)) direction = 'aless';
+  if(/ 且 C > A$/.test(condStr)) direction = 'cgreater';
+
+  var parts = mainCond.split(' 且 ');
+  for(var i = 0; i < parts.length; i++){
+    if(!matchSingle(row, parts[i].trim())) return false;
+  }
+  if(direction === 'agreater' && !(row.A > row.C)) return false;
+  if(direction === 'aless' && !(row.A < row.C)) return false;
+  if(direction === 'cgreater' && !(row.C > row.A)) return false;
+  return true;
+}
+
+function matchSingle(row, cond){
+  var A = row.A, B = row.B, C = row.C, m;
+  if((m = cond.match(/^A ≥ (\d+)$/))) return A >= +m[1];
+  if((m = cond.match(/^A < (\d+)$/))) return A < +m[1];
+  if((m = cond.match(/^B ≥ (\d+)$/))) return B >= +m[1];
+  if((m = cond.match(/^B < (\d+)$/))) return B < +m[1];
+  if((m = cond.match(/^C ≥ (\d+)$/))) return C >= +m[1];
+  if((m = cond.match(/^C < (\d+)$/))) return C < +m[1];
+  if((m = cond.match(/^A-C ≥ (-?\d+)$/))) return (A - C) >= +m[1];
+  if((m = cond.match(/^A-C ≤ (-?\d+)$/))) return (A - C) <= +m[1];
+  if((m = cond.match(/^A-B ≥ (-?\d+)$/))) return (A - B) >= +m[1];
+  if((m = cond.match(/^A-B ≤ (-?\d+)$/))) return (A - B) <= +m[1];
+  if((m = cond.match(/^B-C ≥ (-?\d+)$/))) return (B - C) >= +m[1];
+  if((m = cond.match(/^B-C ≤ (-?\d+)$/))) return (B - C) <= +m[1];
+  if((m = cond.match(/^C-A ≥ (-?\d+)$/))) return (C - A) >= +m[1];
+  if((m = cond.match(/^C-B ≥ (-?\d+)$/))) return (C - B) >= +m[1];
+  if((m = cond.match(/^\|A-C\| ≤ (\d+)$/))) return Math.abs(A - C) <= +m[1];
+  if((m = cond.match(/^\|A-B\| ≤ (\d+)$/))) return Math.abs(A - B) <= +m[1];
+  if((m = cond.match(/^\|B-C\| ≤ (\d+)$/))) return Math.abs(B - C) <= +m[1];
+  if((m = cond.match(/^A\/B ≥ ([\d.]+)$/))) return B > 0 && (A / B) >= +m[1];
+  if((m = cond.match(/^A\/C ≥ ([\d.]+)$/))) return C > 0 && (A / C) >= +m[1];
+  if((m = cond.match(/^C\/A ≥ ([\d.]+)$/))) return A > 0 && (C / A) >= +m[1];
+  if((m = cond.match(/^A\+B ≥ (\d+)$/))) return (A + B) >= +m[1];
+  if((m = cond.match(/^A\+B < (\d+)$/))) return (A + B) < +m[1];
+  if((m = cond.match(/^B\+C ≥ (\d+)$/))) return (B + C) >= +m[1];
+  if((m = cond.match(/^B\+C < (\d+)$/))) return (B + C) < +m[1];
+  if((m = cond.match(/^A\+C ≥ (\d+)$/))) return (A + C) >= +m[1];
+  if((m = cond.match(/^A\+C < (\d+)$/))) return (A + C) < +m[1];
+  if(cond === 'A > B > C') return A > B && B > C;
+  if(cond === 'A > C > B') return A > C && C > B;
+  if(cond === 'B > A > C') return B > A && A > C;
+  if(cond === 'B > C > A') return B > C && C > A;
+  if(cond === 'C > A > B') return C > A && A > B;
+  if(cond === 'C > B > A') return C > B && B > A;
+  if(cond === 'A 第 1') return A >= B && A >= C;
+  if(cond === 'B 第 1') return B >= A && B >= C;
+  if(cond === 'C 第 1') return C >= A && C >= B;
+  if(cond === 'A 第 3') return A < B && A < C;
+  if(cond === 'B 第 3') return B < A && B < C;
+  if(cond === 'C 第 3') return C < A && C < B;
+  if(cond === 'A 第 2'){ var miA = A < B && A < C, mxA = A >= B && A >= C; return !miA && !mxA; }
+  if(cond === 'B 第 2'){ var miB = B < A && B < C, mxB = B >= A && B >= C; return !miB && !mxB; }
+  if(cond === 'C 第 2'){ var miC = C < A && C < B, mxC = C >= A && C >= B; return !miC && !mxC; }
+  if((m = cond.match(/^max − min ≥ (\d+)$/))) return (Math.max(A,B,C) - Math.min(A,B,C)) >= +m[1];
+  if((m = cond.match(/^max − min ≤ (\d+)$/))) return (Math.max(A,B,C) - Math.min(A,B,C)) <= +m[1];
+  return false;
+}
+
+/* ===== 預測 UI ===== */
+function doPredict(){
+  var A = parseFloat($('pred-A').value);
+  var B = parseFloat($('pred-B').value);
+  var C = parseFloat($('pred-C').value);
+  if(isNaN(A) || isNaN(B) || isNaN(C)){ alert('請輸入 A、B、C'); return; }
+  if(ALL_RULES_D.length === 0 && ALL_RULES_COLD.length === 0 && ALL_RULES_HOT.length === 0){
+    alert('尚未訓練。請先到「訓練」分頁按「🚀 一鍵分析（三榜）」。');
+    return;
+  }
+
+  var row = { A:A, B:B, C:C };
+  var result = predictDetail(row);
+  var verdict = result.verdict;
+  var cls = result.cls;
+  var matched = result.rule;
+
+  var phaseMap = {
+    'D':    { label:'① 和局', cls:'d' },
+    'COLD': { label:'② 冷門', cls:'cold' },
+    'HOT':  { label:'③ 熱門', cls:'hot' },
+    'skip': { label:'④ 跳過', cls:'skip' }
+  };
+  var phase = phaseMap[cls];
+
+  var cnMap = {
+    'D':'🟡 和局',
+    'H': (cls === 'COLD' ? '🔥 主隊爆冷（押 H）' : (cls === 'HOT' ? '🟢 主隊強贏（押 H）' : '🟢 主勝')),
+    'A': (cls === 'COLD' ? '🔥 客隊爆冷（押 A）' : (cls === 'HOT' ? '🟢 客隊強贏（押 A）' : '🔴 客勝')),
+    'skip':'⚪ 無匹配'
+  };
+
+  var confText = '';
+  if(matched){
+    if(cls === 'D') confText = '純度 ' + matched.topPct + '% · Lift ' + matched.lift + ' · 樣本 ' + matched.total;
+    else if(cls === 'COLD') confText = '純度 ' + matched.topPct + '% · 冷門度 ' + matched.coldScore + ' · 樣本 ' + matched.total;
+    else confText = '純度 ' + matched.topPct + '% · 樣本 ' + matched.total;
+  } else {
+    confText = '三榜都無匹配 → 建議跳過';
+  }
+
+  $('predictResult').innerHTML =
+    '<div class="phase-badge ' + phase.cls + '">' + phase.label + '</div>' +
+    '<div class="label">建議下注</div>' +
+    '<div class="verdict ' + verdict + '">' + (verdict === 'skip' ? 'SKIP' : verdict) + '</div>' +
+    '<div class="cn">' + cnMap[verdict] + '</div>' +
+    '<div class="reason">' + (matched ? escapeHtml(matched.cond) : '（無匹配規則）') + '</div>' +
+    '<div class="stats">' + confText + '</div>';
+
+  var html = '<div class="card"><h2>🔍 各榜匹配的規則（按優先級）</h2>';
+  var matchedAll = [];
+  var sortedD = ALL_RULES_D.slice().sort(function(a, b){ return b.score - a.score; });
+  for(var i = 0; i < sortedD.length; i++){
+    if(matchRule(row, sortedD[i].cond)) matchedAll.push({ rule:sortedD[i], cls:'D', phase:'① D' });
+    if(matchedAll.length >= 4) break;
+  }
+  var sortedCold = ALL_RULES_COLD.slice().sort(function(a, b){ return b.score - a.score; });
+  for(var i = 0; i < sortedCold.length; i++){
+    if(matchRule(row, sortedCold[i].cond)) matchedAll.push({ rule:sortedCold[i], cls:'COLD', phase:'② 冷門' });
+    if(matchedAll.length >= 8) break;
+  }
+  var sortedHot = ALL_RULES_HOT.slice().sort(function(a, b){ return b.score - a.score; });
+  for(var i = 0; i < sortedHot.length; i++){
+    if(matchRule(row, sortedHot[i].cond)) matchedAll.push({ rule:sortedHot[i], cls:'HOT', phase:'③ 熱門' });
+    if(matchedAll.length >= 12) break;
+  }
+
+  if(matchedAll.length === 0){
+    html += '<div class="empty-msg">沒有規則匹配</div>';
+  } else {
+    html += '<div class="multi-results">';
+    for(var i = 0; i < matchedAll.length; i++){
+      var m = matchedAll[i];
+      var r = m.rule;
+      var extra = (m.cls === 'D') ? 'Lift ' + r.lift : (m.cls === 'COLD' ? '冷門度 ' + r.coldScore : '');
+      var bg = (m.cls === 'D' ? '#f59e0b' : (m.cls === 'COLD' ? '#ef4444' : '#10b981'));
+      html += '<div class="multi-card ' + r.top + '">' +
+        '<div class="label"><span>' + m.phase + '</span>' +
+        '<span style="background:' + bg + ';color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">' + r.top + ' ' + r.topPct + '%</span></div>' +
+        '<div class="cond">' + escapeHtml(r.cond) + '</div>' +
+        '<div class="stats-row">共 ' + r.total + '｜' + (r.hits ? '命中 ' + r.hits : 'H ' + r.H + ' / D ' + r.D + ' / A ' + r.A) + (extra ? '｜' + extra : '') + '</div>' +
+      '</div>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+  $('predictDetail').innerHTML = html;
+  $('predictArea').classList.remove('hidden');
+}
+
+function clearPredict(){
+  $('pred-A').value = '';
+  $('pred-B').value = '';
+  $('pred-C').value = '';
+  $('predictArea').classList.add('hidden');
+}
+
+/* ===== Google Sheets 公式 ===== */
+function condToSheetFormula(cond){
+  var m;
+  if((m = cond.match(/^A ≥ (\d+)$/))) return '(A2:A>=' + m[1] + ')';
+  if((m = cond.match(/^A < (\d+)$/))) return '(A2:A<' + m[1] + ')';
+  if((m = cond.match(/^B ≥ (\d+)$/))) return '(B2:B>=' + m[1] + ')';
+  if((m = cond.match(/^B < (\d+)$/))) return '(B2:B<' + m[1] + ')';
+  if((m = cond.match(/^C ≥ (\d+)$/))) return '(C2:C>=' + m[1] + ')';
+  if((m = cond.match(/^C < (\d+)$/))) return '(C2:C<' + m[1] + ')';
+  if((m = cond.match(/^A-C ≥ (-?\d+)$/))) return '((A2:A-C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^A-C ≤ (-?\d+)$/))) return '((A2:A-C2:C)<=' + m[1] + ')';
+  if((m = cond.match(/^A-B ≥ (-?\d+)$/))) return '((A2:A-B2:B)>=' + m[1] + ')';
+  if((m = cond.match(/^A-B ≤ (-?\d+)$/))) return '((A2:A-B2:B)<=' + m[1] + ')';
+  if((m = cond.match(/^B-C ≥ (-?\d+)$/))) return '((B2:B-C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^B-C ≤ (-?\d+)$/))) return '((B2:B-C2:C)<=' + m[1] + ')';
+  if((m = cond.match(/^C-A ≥ (-?\d+)$/))) return '((C2:C-A2:A)>=' + m[1] + ')';
+  if((m = cond.match(/^C-B ≥ (-?\d+)$/))) return '((C2:C-B2:B)>=' + m[1] + ')';
+  if((m = cond.match(/^\|A-C\| ≤ (\d+)$/))) return '(ABS(A2:A-C2:C)<=' + m[1] + ')';
+  if((m = cond.match(/^\|A-B\| ≤ (\d+)$/))) return '(ABS(A2:A-B2:B)<=' + m[1] + ')';
+  if((m = cond.match(/^\|B-C\| ≤ (\d+)$/))) return '(ABS(B2:B-C2:C)<=' + m[1] + ')';
+  if((m = cond.match(/^A\/B ≥ ([\d.]+)$/))) return 'IF(B2:B=0,FALSE,(A2:A/B2:B)>=' + m[1] + ')';
+  if((m = cond.match(/^A\/C ≥ ([\d.]+)$/))) return 'IF(C2:C=0,FALSE,(A2:A/C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^C\/A ≥ ([\d.]+)$/))) return 'IF(A2:A=0,FALSE,(C2:C/A2:A)>=' + m[1] + ')';
+  if((m = cond.match(/^A\+B ≥ (\d+)$/))) return '((A2:A+B2:B)>=' + m[1] + ')';
+  if((m = cond.match(/^A\+B < (\d+)$/))) return '((A2:A+B2:B)<' + m[1] + ')';
+  if((m = cond.match(/^B\+C ≥ (\d+)$/))) return '((B2:B+C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^B\+C < (\d+)$/))) return '((B2:B+C2:C)<' + m[1] + ')';
+  if((m = cond.match(/^A\+C ≥ (\d+)$/))) return '((A2:A+C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^A\+C < (\d+)$/))) return '((A2:A+C2:C)<' + m[1] + ')';
+  if(cond === 'A > B > C') return '(A2:A>B2:B)*(B2:B>C2:C)';
+  if(cond === 'A > C > B') return '(A2:A>C2:C)*(C2:C>B2:B)';
+  if(cond === 'B > A > C') return '(B2:B>A2:A)*(A2:A>C2:C)';
+  if(cond === 'B > C > A') return '(B2:B>C2:C)*(C2:C>A2:A)';
+  if(cond === 'C > A > B') return '(C2:C>A2:A)*(A2:A>B2:B)';
+  if(cond === 'C > B > A') return '(C2:C>B2:B)*(B2:B>A2:A)';
+  if(cond === 'A 第 1') return '(A2:A>=B2:B)*(A2:A>=C2:C)';
+  if(cond === 'B 第 1') return '(B2:B>=A2:A)*(B2:B>=C2:C)';
+  if(cond === 'C 第 1') return '(C2:C>=A2:A)*(C2:C>=B2:B)';
+  if(cond === 'A 第 3') return '(A2:A<B2:B)*(A2:A<C2:C)';
+  if(cond === 'B 第 3') return '(B2:B<A2:A)*(B2:B<C2:C)';
+  if(cond === 'C 第 3') return '(C2:C<A2:A)*(C2:C<B2:B)';
+  if(cond === 'A 第 2') return 'NOT((A2:A>=B2:B)*(A2:A>=C2:C))*NOT((A2:A<B2:B)*(A2:A<C2:C))';
+  if(cond === 'B 第 2') return 'NOT((B2:B>=A2:A)*(B2:B>=C2:C))*NOT((B2:B<A2:A)*(B2:B<C2:C))';
+  if(cond === 'C 第 2') return 'NOT((C2:C>=A2:A)*(C2:C>=B2:B))*NOT((C2:C<A2:A)*(C2:C<B2:B))';
+  if((m = cond.match(/^max − min ≥ (\d+)$/))) return '(MAX(A2:A,B2:B,C2:C)-MIN(A2:A,B2:B,C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^max − min ≤ (\d+)$/))) return '(MAX(A2:A,B2:B,C2:C)-MIN(A2:A,B2:B,C2:C)<=' + m[1] + ')';
+  return null;
+}
+
+function ruleToSheetCondition(rule){
+  var mainCond = rule.cond.replace(/ 且 A [<>] C$/, '').replace(/ 且 C > A$/, '');
+  var parts = mainCond.split(' 且 ');
+  var formulas = [];
+  for(var i = 0; i < parts.length; i++){
+    var f = condToSheetFormula(parts[i].trim());
+    if(!f) return null;
+    formulas.push(f);
+  }
+  if(/ 且 A > C$/.test(rule.cond)) formulas.push('(A2:A>C2:C)');
+  else if(/ 且 A < C$/.test(rule.cond)) formulas.push('(A2:A<C2:C)');
+  else if(/ 且 C > A$/.test(rule.cond)) formulas.push('(C2:C>A2:A)');
+  return formulas.join('*');
+}
+
+function generateSheetFormula(){
+  if(ALL_RULES_D.length === 0 && ALL_RULES_COLD.length === 0 && ALL_RULES_HOT.length === 0){
+    alert('尚未生成規則。請先按「🚀 一鍵分析（三榜）」。');
+    return;
+  }
+
+  /* 按優先級排序：D → Cold → Hot */
+  var ordered = ALL_RULES_D.slice(0, FORMULA_MAX_PER_CLASS)
+    .concat(ALL_RULES_COLD.slice(0, FORMULA_MAX_PER_CLASS))
+    .concat(ALL_RULES_HOT.slice(0, FORMULA_MAX_PER_CLASS));
+
+  var parts = [];
+  var usedCount = 0, skipped = 0;
+  var countD = 0, countCold = 0, countHot = 0;
+
+  for(var i = 0; i < ordered.length; i++){
+    var cond = ruleToSheetCondition(ordered[i]);
+    if(!cond){ skipped++; continue; }
+    parts.push('IF(' + cond + ',"' + ordered[i].top + '",');
+    usedCount++;
+    if(ordered[i].top === 'D') countD++;
+    else if(ordered[i].direction && ordered[i].direction.indexOf('cold') !== -1) countCold++;
+    else if(ordered[i].direction && ordered[i].direction.indexOf('hot') !== -1) countHot++;
+    else {
+      /* 依方向判斷 */
+      if(ordered[i].coldScore !== undefined) countCold++;
+      else countHot++;
+    }
+  }
+
+  if(usedCount === 0){ alert('無法轉換任何規則'); return; }
+
+  var inner = parts.join('') + '"skip"' + ')'.repeat(usedCount);
+  var formula = '=ARRAYFORMULA(IF(A2:A="","",' + inner + '))';
+  $('sheetFormula').value = formula;
+
+  var info = '<b>✅ 已生成公式</b>（按優先級：D → 冷門 → 熱門）<br>';
+  info += '· 使用 <b>' + usedCount + '</b> 條規則：';
+  info += '<span style="color:#f59e0b">D ' + ALL_RULES_D.slice(0, FORMULA_MAX_PER_CLASS).length + '</span> + ';
+  info += '<span style="color:#ef4444">冷門 ' + ALL_RULES_COLD.slice(0, FORMULA_MAX_PER_CLASS).length + '</span> + ';
+  info += '<span style="color:#10b981">熱門 ' + ALL_RULES_HOT.slice(0, FORMULA_MAX_PER_CLASS).length + '</span>';
+  if(skipped > 0) info += '　· 跳過 ' + skipped + ' 條';
+  info += '<br>· 公式長度：<b>' + formula.length + '</b> 字元';
+  $('formulaInfo').innerHTML = info;
+
+  var preview = '<b>📋 公式順序（命中第一條即決定）：</b>';
+  preview += '<span class="phase">① 和局（D 榜 ' + ALL_RULES_D.slice(0, FORMULA_MAX_PER_CLASS).length + ' 條）</span>';
+  for(var i = 0; i < Math.min(FORMULA_MAX_PER_CLASS, ALL_RULES_D.length); i++){
+    var r = ALL_RULES_D[i];
+    preview += '<span class="r-D">#' + (i+1) + ' [D]</span> ' + escapeHtml(r.cond) +
+      ' <span style="color:#6b7280">（' + r.topPct + '% · ' + r.total + ' 筆）</span><br>';
+  }
+  preview += '<span class="phase">② 冷門（' + ALL_RULES_COLD.slice(0, FORMULA_MAX_PER_CLASS).length + ' 條）</span>';
+  for(var i = 0; i < Math.min(FORMULA_MAX_PER_CLASS, ALL_RULES_COLD.length); i++){
+    var r = ALL_RULES_COLD[i];
+    preview += '<span class="r-' + r.top + '">#' + (i+1) + ' [' + r.top + ']</span> ' + escapeHtml(r.cond) +
+      ' <span style="color:#6b7280">（' + r.dirLabel + ' · ' + r.topPct + '% · 冷門度 ' + r.coldScore + '）</span><br>';
+  }
+  preview += '<span class="phase">③ 熱門（' + ALL_RULES_HOT.slice(0, FORMULA_MAX_PER_CLASS).length + ' 條）</span>';
+  for(var i = 0; i < Math.min(FORMULA_MAX_PER_CLASS, ALL_RULES_HOT.length); i++){
+    var r = ALL_RULES_HOT[i];
+    preview += '<span class="r-' + r.top + '">#' + (i+1) + ' [' + r.top + ']</span> ' + escapeHtml(r.cond) +
+      ' <span style="color:#6b7280">（' + r.dirLabel + ' · ' + r.topPct + '%）</span><br>';
+  }
+  preview += '<span class="phase">④ 都不匹配 → skip</span>';
+
+  $('rulesPreview').innerHTML = preview;
+  $('rulesPreview').style.display = 'block';
+}
+
+function copySheetFormula(){
+  var txt = $('sheetFormula').value;
+  if(!txt){ alert('請先按「🔧 生成公式」'); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){
+      $('copyStatus').textContent = '✅ 已複製 ' + txt.length + ' 字元';
+      setTimeout(function(){ $('copyStatus').textContent = ''; }, 3000);
+    }).catch(function(){ fallbackCopy(txt); });
+  } else { fallbackCopy(txt); }
+}
+function fallbackCopy(text){
+  var ta = document.createElement('textarea'); ta.value = text;
+  ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy');
+    $('copyStatus').textContent = '✅ 已複製 ' + text.length + ' 字元';
+    setTimeout(function(){ $('copyStatus').textContent = ''; }, 3000);
+  } catch(e){ alert('複製失敗'); }
+  document.body.removeChild(ta);
+}
+
+function loadSample(){
+  $('input-train').value =
+'68 22 10 2:0 H\n42 28 30 1:0 H\n58 25 17 2:1 H\n11 18 71 1:4 A\n52 27 21 1:1 D\n' +
+'26 25 49 0:2 A\n8 13 79 1:3 A\n75 16 9 2:0 H\n56 24 20 3:2 H\n33 31 36 0:0 D\n' +
+'32 31 37 0:1 A\n75 16 9 2:0 H\n45 25 30 1:4 A\n42 23 35 1:1 D\n29 24 47 2:1 H\n' +
+'10 14 76 1:5 A\n43 30 27 5:0 H\n66 19 15 5:2 H\n46 26 28 1:2 A\n31 36 33 1:2 A';
+  runAll();
+}
+
+function clearAll(){
+  $('input-train').value = '';
+  $('statBar').innerHTML = '';
+  $('baseRateBar').innerHTML = '';
+  $('rulesArea').classList.add('hidden');
+  DATA = []; ALL_RULES_D = []; ALL_RULES_COLD = []; ALL_RULES_HOT = [];
+}
+
+$('input-train').focus();
+</script>
+</body>
+</html>
