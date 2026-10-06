@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V15-C-v2.0 和局 & 冷門</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0a0e14;color:#e8e8e8;overflow-x:hidden}
+.header{background:linear-gradient(135deg,#1a1f2e,#0f1419);border-bottom:1px solid #2a3441;padding:16px 24px}
+.header h1{font-size:20px;margin:0 0 4px;color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header .sub{font-size:12px;color:#6b7280}
+.header .version{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:bold}
+.main{padding:20px 24px;max-width:1600px;margin:0 auto;width:100%}
+textarea{width:100%;font-family:'Consolas',monospace;font-size:13px;padding:12px;border:1px solid #2a3441;border-radius:6px;background:#1a1f2e;color:#e8e8e8;resize:vertical;line-height:1.6}
+#input-train{height:150px}
+button{padding:10px 22px;font-size:14px;margin:6px 6px 6px 0;cursor:pointer;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:6px;font-weight:600;transition:all .15s;white-space:nowrap}
+button:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,.3)}
+button.green{background:linear-gradient(135deg,#10b981,#059669)}
+button.amber{background:linear-gradient(135deg,#f59e0b,#d97706)}
+button.gray{background:#2a3441}
+button.gray:hover{background:#3a4451;box-shadow:none}
+.card{background:#1a1f2e;border:1px solid #2a3441;border-radius:10px;padding:16px;margin-bottom:14px;overflow:hidden}
+.card h2{font-size:15px;margin:0 0 12px;color:#fff;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card h2 .badge{font-size:11px;padding:2px 8px;border-radius:10px;background:#3b82f6;color:#fff;font-weight:500}
+.hidden{display:none!important}
+
+.stat-bar{background:#1a1f2e;border:1px solid #2a3441;border-radius:8px;padding:10px 16px;margin:10px 0;font-size:13px;display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+.stat-bar b{color:#60a5fa}
+.stat-bar .h{color:#10b981}.stat-bar .d{color:#f59e0b}.stat-bar .a{color:#ef4444}
+
+.control-bar{background:#1a1f2e;border:1px solid #2a3441;border-radius:8px;padding:10px 16px;margin:10px 0;display:flex;gap:20px;flex-wrap:wrap;align-items:center;font-size:13px}
+.control-bar label{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.control-bar input[type=checkbox]{width:16px;height:16px;cursor:pointer}
+.control-bar .desc{color:#94a3b8;font-size:11px;margin-left:4px}
+
+.boards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:12px;width:100%}
+@media(max-width:900px){.boards{grid-template-columns:1fr}}
+.board{background:#232a3a;border-radius:8px;padding:14px;border-top:3px solid #666;min-width:0;overflow:hidden}
+.board.D{border-top-color:#f59e0b}
+.board.A{border-top-color:#ef4444}
+.board h3{margin:0 0 12px;font-size:14px;display:flex;align-items:center;gap:8px;color:#fff;flex-wrap:wrap}
+.board h3 .icon{font-size:18px}
+.board h3 .label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.board h3 .count{font-size:11px;color:#94a3b8;font-weight:500;background:#1a1f2e;padding:2px 8px;border-radius:10px;white-space:nowrap}
+
+.rule-list{display:flex;flex-direction:column;gap:8px;max-height:700px;overflow-y:auto;padding-right:4px}
+.rule-list::-webkit-scrollbar{width:6px}
+.rule-list::-webkit-scrollbar-thumb{background:#374151;border-radius:3px}
+.rule-item{background:#1a1f2e;border-radius:6px;padding:10px 12px;border-left:3px solid #444;min-width:0;transition:all .15s;overflow:hidden}
+.board.D .rule-item.rank-1{background:linear-gradient(135deg,#3a2e1f,#2e221a);border-left-color:#f59e0b;box-shadow:0 0 0 1px rgba(245,158,11,.3)}
+.board.A .rule-item.rank-1{background:linear-gradient(135deg,#3a1f1f,#2e1a1a);border-left-color:#ef4444;box-shadow:0 0 0 1px rgba(239,68,68,.3)}
+.rule-item .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;flex-wrap:wrap}
+.rule-item .rank{background:#374151;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0;min-width:32px;text-align:center}
+.rule-item.rank-1 .rank{background:#fbbf24;color:#1a1f2e;font-size:11px;padding:3px 9px}
+.rule-item .pct{font-size:15px;font-weight:700;color:#fff;font-family:'Consolas',monospace;flex-shrink:0}
+.rule-item.rank-1 .pct{font-size:16px}
+.rule-item .lift-badge{font-size:10px;color:#60a5fa;background:rgba(96,165,250,.15);padding:2px 6px;border-radius:8px;margin-left:6px;font-weight:700}
+.rule-item .cold-badge{font-size:10px;color:#f472b6;background:rgba(244,114,182,.15);padding:2px 6px;border-radius:8px;margin-left:6px;font-weight:700}
+.rule-item .cond{font-size:12px;color:#e8e8e8;font-family:'Consolas',monospace;margin-bottom:6px;line-height:1.5;word-break:break-word;overflow-wrap:anywhere}
+.rule-item .samples{font-size:10px;color:#94a3b8;display:flex;gap:10px;flex-wrap:wrap}
+.rule-item .samples .cH{color:#10b981;font-weight:600}
+.rule-item .samples .cD{color:#f59e0b;font-weight:600}
+.rule-item .samples .cA{color:#ef4444;font-weight:600}
+.empty-msg{text-align:center;padding:40px 10px;color:#6b7280;font-size:13px;line-height:1.7}
+
+.backtest{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+@media(max-width:600px){.backtest{grid-template-columns:1fr}}
+.bt-card{background:#232a3a;border-radius:8px;padding:14px;border-top:3px solid #3b82f6;min-width:0;overflow:hidden}
+.bt-card.all{border-top-color:#60a5fa}
+.bt-card.D{border-top-color:#f59e0b}
+.bt-card.A{border-top-color:#ef4444}
+.bt-card .title{font-size:12px;color:#94a3b8;margin-bottom:10px;font-weight:600}
+.bt-card .big{font-size:26px;font-weight:900;font-family:'Consolas',monospace;color:#fff;margin-bottom:4px;line-height:1.1}
+.bt-card.D .big{color:#f59e0b}
+.bt-card.A .big{color:#ef4444}
+.bt-card .row{display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;padding:3px 0;border-bottom:1px dashed #2a3441}
+.bt-card .row:last-child{border-bottom:none}
+.bt-card .row b{color:#fff;font-family:'Consolas',monospace}
+.bt-card .pct-bar{height:6px;background:#0f1419;border-radius:3px;margin-top:8px;overflow:hidden}
+.bt-card .pct-bar > div{height:100%;border-radius:3px;transition:width .3s}
+.bt-card.D .pct-bar > div{background:#f59e0b}
+.bt-card.A .pct-bar > div{background:#ef4444}
+.bt-card.all .pct-bar > div{background:#60a5fa}
+
+#sheetFormula{width:100%;font-family:'Consolas',monospace;font-size:11px;padding:12px;border:1px solid #2a3441;border-radius:6px;background:#0f1419;color:#60a5fa;min-height:140px;resize:vertical;line-height:1.6;white-space:pre-wrap;word-break:break-all}
+.copy-status{font-size:12px;color:#10b981;margin-left:10px;font-weight:600}
+.legend{font-size:11px;color:#6b7280;margin-top:10px;line-height:1.7}
+.rules-preview{background:#0f1419;border:1px solid #2a3441;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:12px;font-family:'Consolas',monospace;line-height:1.8;max-height:250px;overflow-y:auto}
+.rules-preview .r-D{color:#f59e0b}
+.rules-preview .r-A{color:#ef4444}
+
+.base-rate-box{background:#1a1f2e;border:1px solid #2a3441;border-radius:8px;padding:12px 16px;margin:10px 0;display:flex;gap:20px;flex-wrap:wrap;font-size:13px;align-items:center}
+.base-rate-box .item{display:flex;gap:6px;align-items:center}
+.base-rate-box .dot{width:10px;height:10px;border-radius:50%}
+.base-rate-box .dot.h{background:#10b981}
+.base-rate-box .dot.d{background:#f59e0b}
+.base-rate-box .dot.a{background:#ef4444}
+.base-rate-box b{font-family:'Consolas',monospace}
+
+.loading-overlay{position:fixed;inset:0;background:rgba(10,14,20,.9);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px}
+.loading-overlay .spinner{width:48px;height:48px;border:4px solid #374151;border-top-color:#f59e0b;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay .text{color:#fff;font-size:14px;font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎯 V15-C-v2.0 <span class="version">和局 & 冷門</span></h1>
+  <div class="sub">冷門度 = 主勝率平均（越高越冷）· 真冷門過濾</div>
+</div>
+
+<div class="main">
+
+<div class="card">
+  <h2>📥 貼上歷史資料 <span class="badge">每行：A B C 結果</span></h2>
+  <textarea id="input-train" placeholder="52 27 21 1:1 D
+26 25 49 0:2 A
+75 16 9 2:0 H
+11 18 71 1:4 A"></textarea>
+  <div style="margin-top:10px">
+    <button class="amber" onclick="runAll()">🚀 一鍵找機會</button>
+    <button class="gray" onclick="loadSample()">📋 載入範例</button>
+    <button class="gray" onclick="clearAll()">🗑 清空</button>
+  </div>
+</div>
+
+<div id="statBar"></div>
+<div id="baseRateBar"></div>
+
+<div id="rulesArea" class="hidden">
+  <div class="card">
+    <h2>🎯 機會榜 <span class="badge" style="background:#f59e0b">🟡 和局</span> <span class="badge" style="background:#ef4444">🔴 冷門</span></h2>
+
+    <div class="control-bar">
+      <label>
+        <input type="checkbox" id="chkColdOnly" checked onchange="rerenderBoards()">
+        <span>只顯示「主勝率 ≥ 55%」的真冷門</span>
+        <span class="desc">（過濾掉客隊本來就強的場次）</span>
+      </label>
+      <label>
+        <input type="checkbox" id="chkColdSort" checked onchange="rerenderBoards()">
+        <span>冷門榜按「純度 × 冷門度」排序</span>
+      </label>
+    </div>
+
+    <div class="boards">
+      <div class="board D">
+        <h3><span class="icon">🟡</span><span class="label">和局（D）</span><span class="count" id="count-D">0</span></h3>
+        <div class="rule-list" id="rules-D"></div>
+      </div>
+      <div class="board A">
+        <h3><span class="icon">🔴</span><span class="label">冷門（A 客勝）</span><span class="count" id="count-A">0</span></h3>
+        <div class="rule-list" id="rules-A"></div>
+      </div>
+    </div>
+    <div class="legend" id="searchStats"></div>
+  </div>
+
+  <div class="card">
+    <h2>📊 回測統計 <span class="badge">用訓練資料本身模擬</span></h2>
+    <div class="backtest" id="backtestArea"></div>
+    <div class="legend" style="margin-top:12px;color:#fbbf24">
+      ⚠️ in-sample 統計，命中率天生偏高，實際表現需用新資料驗證。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📤 Google Sheets 公式 <span class="badge">只含 D 和 A</span></h2>
+    <div>
+      <button class="green" onclick="generateSheetFormula()">🔧 生成公式</button>
+      <button onclick="copySheetFormula()">📋 複製公式</button>
+      <span id="copyStatus" class="copy-status"></span>
+    </div>
+    <textarea id="sheetFormula" placeholder="按「🔧 生成公式」自動產生..." readonly></textarea>
+    <div class="legend" id="formulaInfo"></div>
+    <div id="rulesPreview" class="rules-preview" style="display:none"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+'use strict';
+
+/* ===== 固定參數 ===== */
+var MIN_SAMPLE_D = 4;
+var MIN_PURITY_D = 30;
+var MIN_SAMPLE_A = 5;
+var MIN_PURITY_A = 40;
+var COLD_THRESHOLD = 55;   /* 主勝率 ≥ 55% 才算真冷門 */
+var TOP_N = 15;
+
+var DATA = [];
+var ALL_RULES_D = [];
+var ALL_RULES_A = [];        /* 原始 A 規則（含所有） */
+var ALL_RULES_A_FILTERED = []; /* 過濾後的真冷門規則 */
+var TOP_RULES = [];
+var BASE_RATE = { H:0.33, D:0.33, A:0.33 };
+
+function $(id){ return document.getElementById(id); }
+
+function parseData(text){
+  var rows = [], lines = text.split('\n');
+  for(var i = 0; i < lines.length; i++){
+    var line = lines[i].trim();
+    if(!line) continue;
+    var p = line.split(/\s+/);
+    if(p.length < 4) continue;
+    var last = p[p.length - 1].toUpperCase();
+    if(['H','D','A'].indexOf(last) === -1) continue;
+    var A = parseInt(p[0], 10), B = parseInt(p[1], 10), C = parseInt(p[2], 10);
+    if(isNaN(A) || isNaN(B) || isNaN(C)) continue;
+    rows.push({ A:A, B:B, C:C, result:last });
+  }
+  return rows;
+}
+
+function makeBucket(){ return { H:0, D:0, A:0, total:0 }; }
+function addToBucket(b, r){ b[r]++; b.total++; }
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+/* ===== 條件生成 ===== */
+function buildConditions(){
+  var conds = [];
+
+  ['A','B','C'].forEach(function(f){
+    [20,25,30,35,40,45,50,55,60,65,70].forEach(function(t){
+      conds.push({ name:f + ' ≥ ' + t, test:(function(f2,t2){ return function(r){ return r[f2] >= t2; }; })(f,t), dim:f });
+      conds.push({ name:f + ' < ' + t, test:(function(f2,t2){ return function(r){ return r[f2] < t2; }; })(f,t), dim:f });
+    });
+  });
+
+  [
+    ['A-C', function(r){ return r.A - r.C; }, [-40,-30,-20,-15,-10,10,15,20,30,40]],
+    ['A-B', function(r){ return r.A - r.B; }, [-30,-20,-15,-10,10,15,20,30,40]],
+    ['B-C', function(r){ return r.B - r.C; }, [-25,-20,-15,-10,5,10,15,20]],
+    ['C-A', function(r){ return r.C - r.A; }, [10,15,20,25,30,40]],
+    ['C-B', function(r){ return r.C - r.B; }, [10,15,20,25]]
+  ].forEach(function(d){
+    d[2].forEach(function(t){
+      var fn = d[1];
+      if(t > 0){
+        conds.push({ name:d[0] + ' ≥ ' + t, test:(function(g,t2){ return function(r){ return g(r) >= t2; }; })(fn,t), dim:d[0] });
+      } else {
+        conds.push({ name:d[0] + ' ≤ ' + t, test:(function(g,t2){ return function(r){ return g(r) <= t2; }; })(fn,t), dim:d[0] });
+      }
+    });
+  });
+
+  [['A-C',[3,5,8,10,12,15,20]], ['A-B',[5,8,10,15,20]], ['B-C',[3,5,8,10,12,15]]].forEach(function(d){
+    d[1].forEach(function(t){
+      conds.push({
+        name:'|' + d[0] + '| ≤ ' + t,
+        test:(function(f1,f2,t2){ return function(r){ return Math.abs(r[f1] - r[f2]) <= t2; }; })(d[0].split('-')[0], d[0].split('-')[1], t),
+        dim:'|' + d[0] + '|'
+      });
+    });
+  });
+
+  [
+    ['A/B', function(r){ return r.B > 0 ? r.A / r.B : 0; }, [1, 1.2, 1.5, 2, 2.5]],
+    ['A/C', function(r){ return r.C > 0 ? r.A / r.C : 0; }, [1, 1.2, 1.5, 2, 2.5]],
+    ['C/A', function(r){ return r.A > 0 ? r.C / r.A : 0; }, [1, 1.2, 1.5, 2, 2.5]],
+    ['C/B', function(r){ return r.B > 0 ? r.C / r.B : 0; }, [1, 1.2, 1.5, 2]]
+  ].forEach(function(d){
+    d[2].forEach(function(t){
+      conds.push({ name:d[0] + ' ≥ ' + t, test:(function(g,t2){ return function(r){ return g(r) >= t2; }; })(d[1],t), dim:d[0] });
+    });
+  });
+
+  [
+    ['A+B', function(r){ return r.A + r.B; }, [55, 60, 65, 70, 75, 80, 85]],
+    ['B+C', function(r){ return r.B + r.C; }, [40, 45, 50, 55, 60, 65, 70]],
+    ['A+C', function(r){ return r.A + r.C; }, [50, 55, 60, 65, 70, 75, 80]]
+  ].forEach(function(d){
+    d[2].forEach(function(t){
+      conds.push({ name:d[0] + ' ≥ ' + t, test:(function(g,t2){ return function(r){ return g(r) >= t2; }; })(d[1],t), dim:d[0] });
+      conds.push({ name:d[0] + ' < ' + t, test:(function(g,t2){ return function(r){ return g(r) < t2; }; })(d[1],t), dim:d[0] });
+    });
+  });
+
+  [10, 15, 20, 25, 30, 40].forEach(function(t){
+    conds.push({
+      name:'max − min ≥ ' + t,
+      test:(function(t2){ return function(r){ return Math.max(r.A,r.B,r.C) - Math.min(r.A,r.B,r.C) >= t2; }; })(t),
+      dim:'range'
+    });
+    conds.push({
+      name:'max − min ≤ ' + t,
+      test:(function(t2){ return function(r){ return Math.max(r.A,r.B,r.C) - Math.min(r.A,r.B,r.C) <= t2; }; })(t),
+      dim:'range'
+    });
+  });
+
+  ['A','B','C'].forEach(function(f){
+    var others = ['A','B','C'].filter(function(x){ return x !== f; });
+    var o1 = others[0], o2 = others[1];
+    conds.push({ name:f + ' 第 1', test:(function(f2,o12,o22){ return function(r){ return r[f2] >= r[o12] && r[f2] >= r[o22]; }; })(f,o1,o2), dim:'rank-' + f });
+    conds.push({ name:f + ' 第 3', test:(function(f2,o12,o22){ return function(r){ return r[f2] < r[o12] && r[f2] < r[o22]; }; })(f,o1,o2), dim:'rank-' + f });
+    conds.push({ name:f + ' 第 2', test:(function(f2,o12,o22){
+      return function(r){
+        var isMin = r[f2] < r[o12] && r[f2] < r[o22];
+        var isMax = r[f2] >= r[o12] && r[f2] >= r[o22];
+        return !isMin && !isMax;
+      };
+    })(f,o1,o2), dim:'rank-' + f });
+  });
+
+  [
+    ['A > B > C', function(r){ return r.A > r.B && r.B > r.C; }],
+    ['A > C > B', function(r){ return r.A > r.C && r.C > r.B; }],
+    ['B > A > C', function(r){ return r.B > r.A && r.A > r.C; }],
+    ['B > C > A', function(r){ return r.B > r.C && r.C > r.A; }],
+    ['C > A > B', function(r){ return r.C > r.A && r.A > r.B; }],
+    ['C > B > A', function(r){ return r.C > r.B && r.B > r.A; }]
+  ].forEach(function(d){
+    conds.push({ name:d[0], test:d[1], dim:'order' });
+  });
+
+  return conds;
+}
+
+function isContradict(c1, c2){
+  var n1 = c1.name, n2 = c2.name;
+  if(c1.dim === c2.dim){
+    var a1 = n1.match(/^([ABC]) (≥|<) (\d+)/);
+    var a2 = n2.match(/^([ABC]) (≥|<) (\d+)/);
+    if(a1 && a2 && a1[1] === a2[1]){
+      var d1 = (a1[2] === '≥') ? 'up' : 'dn';
+      var d2 = (a2[2] === '≥') ? 'up' : 'dn';
+      if(d1 !== d2){
+        var t1 = +a1[3], t2 = +a2[3];
+        if(d1 === 'up' && t1 >= t2) return true;
+        if(d1 === 'dn' && t1 <= t2) return true;
+      }
+    }
+  }
+  var maxN = ['A 第 1', 'B 第 1', 'C 第 1'];
+  if(maxN.indexOf(n1) !== -1 && maxN.indexOf(n2) !== -1) return true;
+  var minN = ['A 第 3', 'B 第 3', 'C 第 3'];
+  if(minN.indexOf(n1) !== -1 && minN.indexOf(n2) !== -1) return true;
+  if(n1.indexOf(' > ') !== -1 && n2.indexOf(' > ') !== -1){
+    var p1 = n1.split(' > ').map(function(x){ return x.trim(); }).join('>');
+    var p2 = n2.split(' > ').map(function(x){ return x.trim(); }).join('>');
+    if(p1 === p2.split('>').reverse().join('>')) return true;
+  }
+  return false;
+}
+
+/* ===== 評估 ===== */
+function evalBucket(name, b, targetClass){
+  var hits = b[targetClass];
+  var total = b.total;
+  var purity = hits / total;
+
+  var minSample = (targetClass === 'D') ? MIN_SAMPLE_D : MIN_SAMPLE_A;
+  var minPurity = ((targetClass === 'D') ? MIN_PURITY_D : MIN_PURITY_A) / 100;
+
+  if(total < minSample) return null;
+  if(purity < minPurity) return null;
+
+  var baseRate = BASE_RATE[targetClass];
+  var lift = Math.round((purity / baseRate) * 100) / 100;
+
+  return {
+    cond: name,
+    top: targetClass,
+    total: total,
+    H: b.H, D: b.D, A: b.A,
+    hits: hits,
+    topPct: Math.round(purity * 100),
+    lift: lift,
+    coldScore: 0,        /* 稍後填 */
+    score: Math.round(purity * 100) * Math.min(total, 30)
+  };
+}
+
+/* ⭐ 計算規則下的 A 場次平均主勝率（冷門度） */
+function calcColdScore(rows, testFn){
+  var sum = 0, count = 0;
+  for(var i = 0; i < rows.length; i++){
+    var r = rows[i];
+    if(r.result === 'A' && testFn(r)){ sum += r.A; count++; }
+  }
+  return count > 0 ? Math.round(sum / count * 10) / 10 : 0;
+}
+
+/* ===== 主流程 ===== */
+function runAll(){
+  var rows = parseData($('input-train').value);
+  DATA = rows;
+  if(rows.length === 0){ alert('沒有有效資料'); return; }
+
+  var overlay = document.createElement('div');
+  overlay.className = 'loading-overlay';
+  overlay.innerHTML = '<div class="spinner"></div><div class="text">分析中...</div>';
+  document.body.appendChild(overlay);
+
+  setTimeout(function(){
+    try {
+      var tStart = Date.now();
+      var rc = { H:0, D:0, A:0 };
+      rows.forEach(function(r){ rc[r.result]++; });
+
+      BASE_RATE = {
+        H: rc.H / rows.length,
+        D: rc.D / rows.length,
+        A: rc.A / rows.length
+      };
+
+      $('statBar').innerHTML = '<div class="stat-bar">' +
+        '<span>📊 共 <b>' + rows.length + '</b> 筆</span>' +
+        '<span class="d">🟡 D 和局 <b>' + rc.D + '</b>（' + (rc.D/rows.length*100).toFixed(1) + '%）</span>' +
+        '<span class="a">🔴 A 客勝 <b>' + rc.A + '</b>（' + (rc.A/rows.length*100).toFixed(1) + '%）</span>' +
+        '<span class="h" style="opacity:.5">（H 主勝 ' + rc.H + ' 已忽略）</span>' +
+        '</div>';
+
+      $('baseRateBar').innerHTML = '<div class="base-rate-box">' +
+        '<b>📐 基準比率：</b>' +
+        '<span class="item"><span class="dot d"></span>D = <b>' + (BASE_RATE.D*100).toFixed(1) + '%</b></span>' +
+        '<span class="item"><span class="dot a"></span>A = <b>' + (BASE_RATE.A*100).toFixed(1) + '%</b></span>' +
+        '<span style="color:#94a3b8;font-size:11px">門檻：D 樣本≥' + MIN_SAMPLE_D + ' 純度≥' + MIN_PURITY_D + '% ｜ A 樣本≥' + MIN_SAMPLE_A + ' 純度≥' + MIN_PURITY_A + '%</span>' +
+        '</div>';
+
+      var conds = buildConditions();
+
+      var singleD = [], singleA = [];
+      for(var i = 0; i < conds.length; i++){
+        var c = conds[i], b = makeBucket();
+        for(var j = 0; j < rows.length; j++){
+          if(c.test(rows[j])) addToBucket(b, rows[j].result);
+        }
+        var rD = evalBucket(c.name, b, 'D');
+        if(rD){ rD.condObj = c; singleD.push(rD); }
+        var rA = evalBucket(c.name, b, 'A');
+        if(rA){
+          rA.condObj = c;
+          rA.coldScore = calcColdScore(rows, c.test);
+          singleA.push(rA);
+        }
+      }
+
+      var allSingles = [];
+      var seen = {};
+      [singleD, singleA].forEach(function(arr){
+        arr.forEach(function(r){
+          if(!seen[r.cond]){ seen[r.cond] = true; allSingles.push(r); }
+        });
+      });
+      allSingles.sort(function(a, b){ return b.score - a.score; });
+
+      var doubleD = [], doubleA = [];
+      var base100 = allSingles.slice(0, 100);
+      for(var i = 0; i < base100.length; i++){
+        for(var j = i + 1; j < base100.length; j++){
+          var c1 = base100[i].condObj, c2 = base100[j].condObj;
+          if(!c1 || !c2) continue;
+          if(isContradict(c1, c2)) continue;
+          var b2 = makeBucket();
+          for(var k = 0; k < rows.length; k++){
+            if(c1.test(rows[k]) && c2.test(rows[k])) addToBucket(b2, rows[k].result);
+          }
+          var name = c1.name + ' 且 ' + c2.name;
+          var test2 = (function(f1,f2){ return function(r){ return f1(r) && f2(r); }; })(c1.test, c2.test);
+
+          var rD = evalBucket(name, b2, 'D');
+          if(rD){ rD.condObj = c1; doubleD.push(rD); }
+          var rA = evalBucket(name, b2, 'A');
+          if(rA){ rA.condObj = c1; rA.coldScore = calcColdScore(rows, test2); doubleA.push(rA); }
+        }
+      }
+
+      var tripleD = [], tripleA = [];
+      var top15 = allSingles.slice(0, 15);
+      for(var i = 0; i < top15.length; i++){
+        for(var j = i + 1; j < top15.length; j++){
+          for(var k = j + 1; k < top15.length; k++){
+            var c1 = top15[i].condObj, c2 = top15[j].condObj, c3 = top15[k].condObj;
+            if(!c1 || !c2 || !c3) continue;
+            if(isContradict(c1, c2) || isContradict(c1, c3) || isContradict(c2, c3)) continue;
+            var b3 = makeBucket();
+            for(var m = 0; m < rows.length; m++){
+              if(c1.test(rows[m]) && c2.test(rows[m]) && c3.test(rows[m])){
+                addToBucket(b3, rows[m].result);
+              }
+            }
+            var name = c1.name + ' 且 ' + c2.name + ' 且 ' + c3.name;
+            var test3 = (function(f1,f2,f3){ return function(r){ return f1(r) && f2(r) && f3(r); }; })(c1.test, c2.test, c3.test);
+
+            var rD = evalBucket(name, b3, 'D');
+            if(rD){ rD.condObj = c1; tripleD.push(rD); }
+            var rA = evalBucket(name, b3, 'A');
+            if(rA){ rA.condObj = c1; rA.coldScore = calcColdScore(rows, test3); tripleA.push(rA); }
+          }
+        }
+      }
+
+      function mergeRules(arr1, arr2, arr3){
+        var combined = [];
+        var seen = {};
+        [arr1, arr2, arr3].forEach(function(arr){
+          arr.forEach(function(r){
+            if(seen[r.cond]) return;
+            seen[r.cond] = true;
+            combined.push(r);
+          });
+        });
+        return combined;
+      }
+
+      ALL_RULES_D = mergeRules(singleD, doubleD, tripleD);
+      ALL_RULES_D.sort(function(a, b){ return b.score - a.score; });
+
+      ALL_RULES_A = mergeRules(singleA, doubleA, tripleA);
+      ALL_RULES_A.sort(function(a, b){ return b.score - a.score; });
+
+      /* 真冷門過濾 */
+      ALL_RULES_A_FILTERED = ALL_RULES_A.filter(function(r){
+        return r.coldScore >= COLD_THRESHOLD;
+      });
+      /* 真冷門榜重新排序：按 純度 × 冷門度 × 樣本 */
+      ALL_RULES_A_FILTERED.sort(function(a, b){
+        var scoreA = a.topPct * a.coldScore * Math.min(a.total, 30) / 100;
+        var scoreB = b.topPct * b.coldScore * Math.min(b.total, 30) / 100;
+        return scoreB - scoreA;
+      });
+
+      var elapsed = ((Date.now() - tStart) / 1000).toFixed(2);
+      $('searchStats').innerHTML =
+        '📊 評估：<b>' + conds.length + '</b> 個條件 · 合格：D <b>' + ALL_RULES_D.length + '</b> 條 · ' +
+        'A <b>' + ALL_RULES_A.length + '</b> 條（其中真冷門 <b style="color:#f472b6">' + ALL_RULES_A_FILTERED.length + '</b> 條）· ' +
+        '耗時 <b>' + elapsed + '</b> 秒';
+
+      rerenderBoards();
+      rerunBacktest();
+
+      $('rulesArea').classList.remove('hidden');
+      document.body.removeChild(overlay);
+      $('rulesArea').scrollIntoView({behavior:'smooth', block:'start'});
+
+    } catch(e){
+      console.error(e);
+      if(overlay.parentNode) document.body.removeChild(overlay);
+      alert('分析出錯：' + e.message);
+    }
+  }, 50);
+}
+
+/* ⭐ 根據勾選框重新渲染兩榜 */
+function rerenderBoards(){
+  var coldOnly = $('chkColdOnly').checked;
+  var coldSort = $('chkColdSort').checked;
+
+  /* 和局榜：永遠按正常排序 */
+  renderBoard('rules-D', ALL_RULES_D.slice(0, TOP_N), 'D');
+  $('count-D').textContent = ALL_RULES_D.length;
+
+  /* 冷門榜：可選過濾、可選排序 */
+  var listA = coldOnly ? ALL_RULES_A_FILTERED.slice() : ALL_RULES_A.slice();
+
+  if(coldSort){
+    listA.sort(function(a, b){
+      var scoreA = a.topPct * a.coldScore * Math.min(a.total, 30) / 100;
+      var scoreB = b.topPct * b.coldScore * Math.min(b.total, 30) / 100;
+      return scoreB - scoreA;
+    });
+  }
+
+  renderBoard('rules-A', listA.slice(0, TOP_N), 'A');
+  $('count-A').textContent = listA.length + (coldOnly ? '（真冷門）' : '');
+
+  /* 更新 TOP_RULES：D 前 10 + A（過濾後）前 10 */
+  var topA = coldOnly ? ALL_RULES_A_FILTERED : ALL_RULES_A;
+  TOP_RULES = ALL_RULES_D.slice(0, 10).concat(topA.slice(0, 10));
+  TOP_RULES.sort(function(a, b){ return b.score - a.score; });
+}
+
+function renderBoard(containerId, rules, cls){
+  var el = $(containerId);
+  if(rules.length === 0){
+    el.innerHTML = '<div class="empty-msg">找不到規則<br><span style="font-size:11px">' +
+      (cls === 'A' ? '試試取消「只顯示真冷門」' : '資料量太少或條件太嚴') +
+      '</span></div>';
+    return;
+  }
+  var html = '';
+  for(var i = 0; i < rules.length; i++){
+    var r = rules[i];
+    var medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '#' + (i+1)));
+    var extraBadge = '';
+    if(cls === 'A'){
+      var coldColor = r.coldScore >= 60 ? '#f472b6' : (r.coldScore >= 50 ? '#a78bfa' : '#94a3b8');
+      extraBadge = '<span class="cold-badge" style="color:' + coldColor + '">冷門度 ' + r.coldScore + '%</span>';
+    }
+    html += '<div class="rule-item' + (i === 0 ? ' rank-1' : '') + '">' +
+      '<div class="head"><span class="rank">' + medal + '</span>' +
+        '<span><span class="pct">' + r.topPct + '%</span>' +
+        '<span class="lift-badge">Lift ' + r.lift + '</span>' + extraBadge + '</span>' +
+      '</div>' +
+      '<div class="cond">' + escapeHtml(r.cond) + '</div>' +
+      '<div class="samples"><span>共 ' + r.total + '</span>' +
+        '<span class="cH">H ' + r.H + '</span>' +
+        '<span class="cD">D ' + r.D + '</span>' +
+        '<span class="cA">A ' + r.A + '</span></div></div>';
+  }
+  el.innerHTML = html;
+}
+
+/* ===== 回測 ===== */
+function runBacktest(rows, rules){
+  var stats = {
+    all: { bets:0, hits:0, skip:0 },
+    D:   { bets:0, hits:0 },
+    A:   { bets:0, hits:0 }
+  };
+  for(var i = 0; i < rows.length; i++){
+    var row = rows[i];
+    var pred = 'skip';
+    for(var j = 0; j < rules.length; j++){
+      if(matchRule(row, rules[j].cond)){
+        pred = rules[j].top;
+        break;
+      }
+    }
+    if(pred === 'skip'){ stats.all.skip++; continue; }
+    stats.all.bets++;
+    stats[pred].bets++;
+    if(pred === row.result){
+      stats.all.hits++;
+      stats[pred].hits++;
+    }
+  }
+  return stats;
+}
+
+function rerunBacktest(){
+  if(TOP_RULES.length === 0) return;
+  var stats = runBacktest(DATA, TOP_RULES);
+  renderBacktest(stats);
+}
+
+function pct(hits, bets){
+  if(bets === 0) return 0;
+  return Math.round(hits / bets * 10000) / 100;
+}
+
+function renderBacktest(stats){
+  var allRate = pct(stats.all.hits, stats.all.bets);
+  var dRate = pct(stats.D.hits, stats.D.bets);
+  var aRate = pct(stats.A.hits, stats.A.bets);
+
+  function card(cls, title, bets, hits, rate){
+    return '<div class="bt-card ' + cls + '">' +
+      '<div class="title">' + title + '</div>' +
+      '<div class="big">' + rate.toFixed(2) + '%</div>' +
+      '<div class="row"><span>出手數</span><b>' + bets + '</b></div>' +
+      '<div class="row"><span>命中數</span><b>' + hits + '</b></div>' +
+      '<div class="row"><span>命中率</span><b>' + rate.toFixed(2) + '%</b></div>' +
+      '<div class="pct-bar"><div style="width:' + Math.min(100, rate) + '%"></div></div>' +
+      '</div>';
+  }
+
+  var html = '';
+  html += card('all', '🎯 全體（ALL）', stats.all.bets, stats.all.hits, allRate);
+  html += card('D', '🟡 和局（D）', stats.D.bets, stats.D.hits, dRate);
+  html += card('A', '🔴 冷門（A）', stats.A.bets, stats.A.hits, aRate);
+  $('backtestArea').innerHTML = html;
+}
+
+/* ===== 匹配 ===== */
+function matchRule(row, condStr){
+  var parts = condStr.split(' 且 ');
+  for(var i = 0; i < parts.length; i++){
+    if(!matchSingle(row, parts[i].trim())) return false;
+  }
+  return true;
+}
+
+function matchSingle(row, cond){
+  var A = row.A, B = row.B, C = row.C, m;
+
+  if((m = cond.match(/^A ≥ (\d+)$/))) return A >= +m[1];
+  if((m = cond.match(/^A < (\d+)$/))) return A < +m[1];
+  if((m = cond.match(/^B ≥ (\d+)$/))) return B >= +m[1];
+  if((m = cond.match(/^B < (\d+)$/))) return B < +m[1];
+  if((m = cond.match(/^C ≥ (\d+)$/))) return C >= +m[1];
+  if((m = cond.match(/^C < (\d+)$/))) return C < +m[1];
+  if((m = cond.match(/^A-C ≥ (-?\d+)$/))) return (A - C) >= +m[1];
+  if((m = cond.match(/^A-C ≤ (-?\d+)$/))) return (A - C) <= +m[1];
+  if((m = cond.match(/^A-B ≥ (-?\d+)$/))) return (A - B) >= +m[1];
+  if((m = cond.match(/^A-B ≤ (-?\d+)$/))) return (A - B) <= +m[1];
+  if((m = cond.match(/^B-C ≥ (-?\d+)$/))) return (B - C) >= +m[1];
+  if((m = cond.match(/^B-C ≤ (-?\d+)$/))) return (B - C) <= +m[1];
+  if((m = cond.match(/^C-A ≥ (-?\d+)$/))) return (C - A) >= +m[1];
+  if((m = cond.match(/^C-B ≥ (-?\d+)$/))) return (C - B) >= +m[1];
+  if((m = cond.match(/^\|A-C\| ≤ (\d+)$/))) return Math.abs(A - C) <= +m[1];
+  if((m = cond.match(/^\|A-B\| ≤ (\d+)$/))) return Math.abs(A - B) <= +m[1];
+  if((m = cond.match(/^\|B-C\| ≤ (\d+)$/))) return Math.abs(B - C) <= +m[1];
+  if((m = cond.match(/^A\/B ≥ ([\d.]+)$/))) return B > 0 && (A / B) >= +m[1];
+  if((m = cond.match(/^A\/C ≥ ([\d.]+)$/))) return C > 0 && (A / C) >= +m[1];
+  if((m = cond.match(/^C\/A ≥ ([\d.]+)$/))) return A > 0 && (C / A) >= +m[1];
+  if((m = cond.match(/^C\/B ≥ ([\d.]+)$/))) return B > 0 && (C / B) >= +m[1];
+  if((m = cond.match(/^A\+B ≥ (\d+)$/))) return (A + B) >= +m[1];
+  if((m = cond.match(/^A\+B < (\d+)$/))) return (A + B) < +m[1];
+  if((m = cond.match(/^B\+C ≥ (\d+)$/))) return (B + C) >= +m[1];
+  if((m = cond.match(/^B\+C < (\d+)$/))) return (B + C) < +m[1];
+  if((m = cond.match(/^A\+C ≥ (\d+)$/))) return (A + C) >= +m[1];
+  if((m = cond.match(/^A\+C < (\d+)$/))) return (A + C) < +m[1];
+  if(cond === 'A > B > C') return A > B && B > C;
+  if(cond === 'A > C > B') return A > C && C > B;
+  if(cond === 'B > A > C') return B > A && A > C;
+  if(cond === 'B > C > A') return B > C && C > A;
+  if(cond === 'C > A > B') return C > A && A > B;
+  if(cond === 'C > B > A') return C > B && B > A;
+  if(cond === 'A 第 1') return A >= B && A >= C;
+  if(cond === 'B 第 1') return B >= A && B >= C;
+  if(cond === 'C 第 1') return C >= A && C >= B;
+  if(cond === 'A 第 3') return A < B && A < C;
+  if(cond === 'B 第 3') return B < A && B < C;
+  if(cond === 'C 第 3') return C < A && C < B;
+  if(cond === 'A 第 2'){ var isMinA = A < B && A < C, isMaxA = A >= B && A >= C; return !isMinA && !isMaxA; }
+  if(cond === 'B 第 2'){ var isMinB = B < A && B < C, isMaxB = B >= A && B >= C; return !isMinB && !isMaxB; }
+  if(cond === 'C 第 2'){ var isMinC = C < A && C < B, isMaxC = C >= A && C >= B; return !isMinC && !isMaxC; }
+  if((m = cond.match(/^max − min ≥ (\d+)$/))) return (Math.max(A,B,C) - Math.min(A,B,C)) >= +m[1];
+  if((m = cond.match(/^max − min ≤ (\d+)$/))) return (Math.max(A,B,C) - Math.min(A,B,C)) <= +m[1];
+  return false;
+}
+
+/* ===== Google Sheets 公式 ===== */
+function condToSheetFormula(cond){
+  var m;
+  if((m = cond.match(/^A ≥ (\d+)$/))) return '(A2:A>=' + m[1] + ')';
+  if((m = cond.match(/^A < (\d+)$/))) return '(A2:A<' + m[1] + ')';
+  if((m = cond.match(/^B ≥ (\d+)$/))) return '(B2:B>=' + m[1] + ')';
+  if((m = cond.match(/^B < (\d+)$/))) return '(B2:B<' + m[1] + ')';
+  if((m = cond.match(/^C ≥ (\d+)$/))) return '(C2:C>=' + m[1] + ')';
+  if((m = cond.match(/^C < (\d+)$/))) return '(C2:C<' + m[1] + ')';
+  if((m = cond.match(/^A-C ≥ (-?\d+)$/))) return '((A2:A-C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^A-C ≤ (-?\d+)$/))) return '((A2:A-C2:C)<=' + m[1] + ')';
+  if((m = cond.match(/^A-B ≥ (-?\d+)$/))) return '((A2:A-B2:B)>=' + m[1] + ')';
+  if((m = cond.match(/^A-B ≤ (-?\d+)$/))) return '((A2:A-B2:B)<=' + m[1] + ')';
+  if((m = cond.match(/^B-C ≥ (-?\d+)$/))) return '((B2:B-C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^B-C ≤ (-?\d+)$/))) return '((B2:B-C2:C)<=' + m[1] + ')';
+  if((m = cond.match(/^C-A ≥ (-?\d+)$/))) return '((C2:C-A2:A)>=' + m[1] + ')';
+  if((m = cond.match(/^C-B ≥ (-?\d+)$/))) return '((C2:C-B2:B)>=' + m[1] + ')';
+  if((m = cond.match(/^\|A-C\| ≤ (\d+)$/))) return '(ABS(A2:A-C2:C)<=' + m[1] + ')';
+  if((m = cond.match(/^\|A-B\| ≤ (\d+)$/))) return '(ABS(A2:A-B2:B)<=' + m[1] + ')';
+  if((m = cond.match(/^\|B-C\| ≤ (\d+)$/))) return '(ABS(B2:B-C2:C)<=' + m[1] + ')';
+  if((m = cond.match(/^A\/B ≥ ([\d.]+)$/))) return 'IF(B2:B=0,FALSE,(A2:A/B2:B)>=' + m[1] + ')';
+  if((m = cond.match(/^A\/C ≥ ([\d.]+)$/))) return 'IF(C2:C=0,FALSE,(A2:A/C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^C\/A ≥ ([\d.]+)$/))) return 'IF(A2:A=0,FALSE,(C2:C/A2:A)>=' + m[1] + ')';
+  if((m = cond.match(/^C\/B ≥ ([\d.]+)$/))) return 'IF(B2:B=0,FALSE,(C2:C/B2:B)>=' + m[1] + ')';
+  if((m = cond.match(/^A\+B ≥ (\d+)$/))) return '((A2:A+B2:B)>=' + m[1] + ')';
+  if((m = cond.match(/^A\+B < (\d+)$/))) return '((A2:A+B2:B)<' + m[1] + ')';
+  if((m = cond.match(/^B\+C ≥ (\d+)$/))) return '((B2:B+C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^B\+C < (\d+)$/))) return '((B2:B+C2:C)<' + m[1] + ')';
+  if((m = cond.match(/^A\+C ≥ (\d+)$/))) return '((A2:A+C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^A\+C < (\d+)$/))) return '((A2:A+C2:C)<' + m[1] + ')';
+  if(cond === 'A > B > C') return '(A2:A>B2:B)*(B2:B>C2:C)';
+  if(cond === 'A > C > B') return '(A2:A>C2:C)*(C2:C>B2:B)';
+  if(cond === 'B > A > C') return '(B2:B>A2:A)*(A2:A>C2:C)';
+  if(cond === 'B > C > A') return '(B2:B>C2:C)*(C2:C>A2:A)';
+  if(cond === 'C > A > B') return '(C2:C>A2:A)*(A2:A>B2:B)';
+  if(cond === 'C > B > A') return '(C2:C>B2:B)*(B2:B>A2:A)';
+  if(cond === 'A 第 1') return '(A2:A>=B2:B)*(A2:A>=C2:C)';
+  if(cond === 'B 第 1') return '(B2:B>=A2:A)*(B2:B>=C2:C)';
+  if(cond === 'C 第 1') return '(C2:C>=A2:A)*(C2:C>=B2:B)';
+  if(cond === 'A 第 3') return '(A2:A<B2:B)*(A2:A<C2:C)';
+  if(cond === 'B 第 3') return '(B2:B<A2:A)*(B2:B<C2:C)';
+  if(cond === 'C 第 3') return '(C2:C<A2:A)*(C2:C<B2:B)';
+  if(cond === 'A 第 2') return 'NOT((A2:A>=B2:B)*(A2:A>=C2:C))*NOT((A2:A<B2:B)*(A2:A<C2:C))';
+  if(cond === 'B 第 2') return 'NOT((B2:B>=A2:A)*(B2:B>=C2:C))*NOT((B2:B<A2:A)*(B2:B<C2:C))';
+  if(cond === 'C 第 2') return 'NOT((C2:C>=A2:A)*(C2:C>=B2:B))*NOT((C2:C<A2:A)*(C2:C<B2:B))';
+  if((m = cond.match(/^max − min ≥ (\d+)$/))) return '(MAX(A2:A,B2:B,C2:C)-MIN(A2:A,B2:B,C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^max − min ≤ (\d+)$/))) return '(MAX(A2:A,B2:B,C2:C)-MIN(A2:A,B2:B,C2:C)<=' + m[1] + ')';
+  return null;
+}
+
+function ruleToSheetCondition(rule){
+  var parts = rule.cond.split(' 且 ');
+  var formulas = [];
+  for(var i = 0; i < parts.length; i++){
+    var f = condToSheetFormula(parts[i].trim());
+    if(!f) return null;
+    formulas.push(f);
+  }
+  return formulas.join('*');
+}
+
+function generateSheetFormula(){
+  if(TOP_RULES.length === 0){
+    alert('尚未生成規則。請先按「🚀 一鍵找機會」。');
+    return;
+  }
+  var parts = [];
+  var usedCount = 0, skipped = 0;
+  var countD = 0, countA = 0;
+
+  for(var i = 0; i < TOP_RULES.length; i++){
+    var cond = ruleToSheetCondition(TOP_RULES[i]);
+    if(!cond){ skipped++; continue; }
+    parts.push('IF(' + cond + ',"' + TOP_RULES[i].top + '",');
+    usedCount++;
+    if(TOP_RULES[i].top === 'D') countD++;
+    else if(TOP_RULES[i].top === 'A') countA++;
+  }
+  if(usedCount === 0){ alert('無法轉換任何規則為公式'); return; }
+
+  var inner = parts.join('') + '"skip"' + ')'.repeat(usedCount);
+  var formula = '=ARRAYFORMULA(IF(A2:A="","",' + inner + '))';
+  $('sheetFormula').value = formula;
+
+  var info = '<b>✅ 已生成公式</b><br>';
+  info += '· 使用 <b>' + usedCount + '</b> 條規則：';
+  info += '<span style="color:#f59e0b">D ' + countD + '</span> / ';
+  info += '<span style="color:#ef4444">A ' + countA + '</span>';
+  if(skipped > 0) info += '　· 跳過 ' + skipped + ' 條';
+  info += '<br>· 公式長度：<b>' + formula.length + '</b> 字元';
+  $('formulaInfo').innerHTML = info;
+
+  var preview = '<b>📋 規則順序：</b><br>';
+  for(var i = 0; i < TOP_RULES.length; i++){
+    var r = TOP_RULES[i];
+    var cold = (r.top === 'A' && r.coldScore) ? ' · 冷門度 ' + r.coldScore + '%' : '';
+    preview += '<span class="r-' + r.top + '">#' + (i+1) + ' [' + r.top + ']</span> ' + escapeHtml(r.cond) +
+      ' <span style="color:#6b7280">（' + r.topPct + '% · ' + r.total + ' 筆' + cold + '）</span><br>';
+  }
+  $('rulesPreview').innerHTML = preview;
+  $('rulesPreview').style.display = 'block';
+}
+
+function copySheetFormula(){
+  var txt = $('sheetFormula').value;
+  if(!txt){ alert('請先按「🔧 生成公式」'); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){
+      $('copyStatus').textContent = '✅ 已複製 ' + txt.length + ' 字元';
+      setTimeout(function(){ $('copyStatus').textContent = ''; }, 3000);
+    }).catch(function(){ fallbackCopy(txt); });
+  } else { fallbackCopy(txt); }
+}
+function fallbackCopy(text){
+  var ta = document.createElement('textarea'); ta.value = text;
+  ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy');
+    $('copyStatus').textContent = '✅ 已複製 ' + text.length + ' 字元';
+    setTimeout(function(){ $('copyStatus').textContent = ''; }, 3000);
+  } catch(e){ alert('複製失敗'); }
+  document.body.removeChild(ta);
+}
+
+function loadSample(){
+  $('input-train').value =
+'68 22 10 2:0 H\n42 28 30 1:0 H\n58 25 17 2:1 H\n11 18 71 1:4 A\n52 27 21 1:1 D\n' +
+'26 25 49 0:2 A\n8 13 79 1:3 A\n75 16 9 2:0 H\n56 24 20 3:2 H\n33 31 36 0:0 D\n' +
+'32 31 37 0:1 A\n75 16 9 2:0 H\n45 25 30 1:4 A\n42 23 35 1:1 D\n29 24 47 2:1 H\n' +
+'10 14 76 1:5 A\n43 30 27 5:0 H\n66 19 15 5:2 H\n46 26 28 1:2 A\n31 36 33 1:2 A';
+  runAll();
+}
+
+function clearAll(){
+  $('input-train').value = '';
+  $('statBar').innerHTML = '';
+  $('baseRateBar').innerHTML = '';
+  $('rulesArea').classList.add('hidden');
+  DATA = []; ALL_RULES_D = []; ALL_RULES_A = []; ALL_RULES_A_FILTERED = []; TOP_RULES = [];
+}
+
+$('input-train').focus();
+</script>
+</body>
+</html>
