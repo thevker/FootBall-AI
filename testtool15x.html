@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>V15-X 勝率分析器</title>
+<title>V15-X 勝率分析器 v2</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:20px;background:#0f1419;color:#e8e8e8;max-width:1400px;margin:0 auto}
@@ -15,8 +15,10 @@ button{padding:10px 22px;font-size:14px;margin:8px 8px 8px 0;cursor:pointer;back
 button:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,.4)}
 button.green{background:linear-gradient(135deg,#10b981,#059669)}
 button.green:hover{box-shadow:0 4px 12px rgba(16,185,129,.4)}
-button.purple{background:linear-gradient(135deg,#8b5cf6,#7c3aed)}
-button.purple:hover{box-shadow:0 4px 12px rgba(139,92,246,.4)}
+button.amber{background:linear-gradient(135deg,#f59e0b,#d97706)}
+button.amber:hover{box-shadow:0 4px 12px rgba(245,158,11,.4)}
+button.red{background:linear-gradient(135deg,#ef4444,#dc2626)}
+button.red:hover{box-shadow:0 4px 12px rgba(239,68,68,.4)}
 button.gray{background:#2a3441}
 button.gray:hover{background:#3a4451;box-shadow:none}
 
@@ -46,21 +48,48 @@ td.name{text-align:left;font-family:system-ui;font-weight:bold;color:#fff}
 .tag-A{background:#ef4444;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:bold}
 .tag-none{background:#374151;color:#9ca3af;padding:2px 8px;border-radius:10px;font-size:11px}
 
-.best{background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:bold;margin-left:6px}
+/* 三欄布局 */
+.boards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:12px}
+@media(max-width:1000px){ .boards{grid-template-columns:1fr} }
 
-.rule-card{background:#232a3a;border-left:3px solid #3b82f6;padding:12px 16px;border-radius:6px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
-.rule-card .cond{font-family:'Consolas',monospace;font-size:13px;color:#fff;flex:1;min-width:200px}
-.rule-card .stat{font-size:12px;color:#94a3b8;text-align:right;white-space:nowrap}
+.board{background:#232a3a;border-radius:8px;padding:14px;border-top:3px solid #666}
+.board.board-H{border-top-color:#10b981}
+.board.board-D{border-top-color:#f59e0b}
+.board.board-A{border-top-color:#ef4444}
+.board h3{margin:0 0 10px;font-size:15px;display:flex;align-items:center;gap:8px;color:#fff}
+.board h3 .icon{font-size:18px}
+.board h3 .count{margin-left:auto;font-size:11px;color:#94a3b8;font-weight:normal}
 
-.empty-msg{text-align:center;padding:40px;color:#666;font-size:14px}
+.rule-item{background:#1a1f2e;border-radius:6px;padding:10px 12px;margin-bottom:8px;border-left:3px solid #444;transition:all .15s;cursor:default}
+.rule-item.rank-1{background:linear-gradient(135deg,#1f3a2e,#1a2e22);border-left-color:#10b981}
+.rule-item:hover{transform:translateX(2px)}
+.board-D .rule-item.rank-1{background:linear-gradient(135deg,#3a2e1f,#2e221a);border-left-color:#f59e0b}
+.board-A .rule-item.rank-1{background:linear-gradient(135deg,#3a1f1f,#2e1a1a);border-left-color:#ef4444}
+
+.rule-item .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
+.rule-item .rank{background:#374151;color:#fff;font-size:10px;font-weight:bold;padding:2px 7px;border-radius:10px;flex-shrink:0}
+.rule-item.rank-1 .rank{background:#fbbf24;color:#1a1f2e}
+.rule-item .pct{font-size:14px;font-weight:bold;color:#fff;font-family:'Consolas',monospace}
+.rule-item .cond{font-size:12px;color:#e8e8e8;font-family:'Consolas',monospace;margin-bottom:5px;line-height:1.5}
+.rule-item .samples{font-size:11px;color:#94a3b8;display:flex;gap:10px;flex-wrap:wrap}
+.rule-item .samples span{white-space:nowrap}
+.rule-item .samples .cH{color:#10b981}
+.rule-item .samples .cD{color:#f59e0b}
+.rule-item .samples .cA{color:#ef4444}
+
+.empty-msg{text-align:center;padding:30px 10px;color:#666;font-size:13px}
 .legend{font-size:12px;color:#888;margin-top:10px;line-height:1.7}
 .legend code{background:#232a3a;padding:2px 6px;border-radius:3px;color:#60a5fa}
+
+.opt-bar{background:#1a1f2e;border:1px solid #2a3441;border-radius:8px;padding:10px 14px;margin:12px 0;display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:13px}
+.opt-bar label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.opt-bar input[type=number]{width:60px;padding:4px 6px;background:#232a3a;border:1px solid #374151;color:#fff;border-radius:4px;font-size:12px}
 </style>
 </head>
 <body>
 
-<h1>📊 V15-X 勝率分析器</h1>
-<div class="sub">只看 A（主勝率）/ B（和率）/ C（客勝率）→ 找出什麼位置最常出現 H / D / A</div>
+<h1>📊 V15-X 勝率分析器 v2</h1>
+<div class="sub">只看 A/B/C（勝率）→ 分別找出「主勝 / 和局 / 客勝」各自的最佳條件</div>
 
 <textarea id="input" placeholder="輸入格式（每行一筆）：
 A B C 結果
@@ -69,19 +98,23 @@ A B C 結果
 44 33 23 H
 42 28 30 D
 23 27 50 A
-48 28 24 H
-30 29 41 A
 
-也可以直接貼：
-44 33 23 2:1 H
-42 28 30 1:1 D
-（比分會被忽略）"></textarea>
+也可以直接貼含比分的：
+44 33 23 2:1 H（比分會被忽略）"></textarea>
 
 <div>
   <button class="green" onclick="analyze()">🚀 開始分析</button>
-  <button class="purple" onclick="showRuleSearch()">🔍 最佳規則搜索</button>
+  <button class="purple" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed)" onclick="showRuleSearch()">🔍 三向規則搜索</button>
   <button class="gray" onclick="loadSample()">📋 載入範例</button>
   <button class="gray" onclick="clearAll()">🗑 清空</button>
+</div>
+
+<div class="opt-bar" id="optBar" style="display:none">
+  <b>🔧 規則搜索參數</b>
+  <label>最少樣本：<input type="number" id="optMinSample" value="5" min="3" max="50" step="1"></label>
+  <label>最低純度（%）：<input type="number" id="optMinPurity" value="60" min="40" max="95" step="5"></label>
+  <label>每榜顯示：<input type="number" id="optTopN" value="5" min="1" max="20" step="1"></label>
+  <button class="gray" style="padding:6px 14px;font-size:12px;margin:0" onclick="showRuleSearch()">🔄 重新搜索</button>
 </div>
 
 <div id="stats"></div>
@@ -91,44 +124,56 @@ A B C 結果
   <h2>📍 區塊 1：A/B/C 的相對位置 <span class="badge">哪個最大？</span></h2>
   <table id="permTable"></table>
   <div class="legend">
-    <b>怎麼看：</b>「A>B>C」代表 <code>A 最大、C 最小</code> 時的結果分布。綠色多 = 常出現 H（主勝），黃色 = D（和局），紅色 = A（客勝）。
+    「A≥B≥C」代表 A 最大、C 最小。綠=主勝、黃=和局、紅=客勝。
   </div>
 </div>
 
-<!-- 區塊 2：A-C 差值分桶 -->
+<!-- 區塊 2：A-C -->
 <div class="section" id="sec-ac">
-  <h2>📈 區塊 2：A − C 差值分析 <span class="badge">主勝率 − 客勝率</span></h2>
+  <h2>📈 區塊 2：A − C（主勝率 − 客勝率）</h2>
   <table id="acTable"></table>
-  <div class="legend">
-    <b>A − C</b> = 主勝率減客勝率。正值大 = 主隊強；負值大 = 客隊強；接近 0 = 雙方接近（可能和局）。
-  </div>
 </div>
 
-<!-- 區塊 3：A-B 差值 -->
+<!-- 區塊 3：A-B -->
 <div class="section" id="sec-ab">
-  <h2>📈 區塊 3：A − B 差值分析 <span class="badge">主勝率 − 和率</span></h2>
+  <h2>📈 區塊 3：A − B（主勝率 − 和率）</h2>
   <table id="abTable"></table>
-  <div class="legend"><b>A − B</b> = 主勝率減和率。正大 = 主隊明顯強於和局。</div>
 </div>
 
-<!-- 區塊 4：B-C 差值 -->
+<!-- 區塊 4：B-C -->
 <div class="section" id="sec-bc">
-  <h2>📈 區塊 4：B − C 差值分析 <span class="badge">和率 − 客勝率</span></h2>
+  <h2>📈 區塊 4：B − C（和率 − 客勝率）</h2>
   <table id="bcTable"></table>
-  <div class="legend"><b>B − C</b> = 和率減客勝率。正大 = 和局可能高於客勝。</div>
 </div>
 
 <!-- 區塊 5：A 絕對值 -->
 <div class="section" id="sec-a">
-  <h2>📈 區塊 5：A（主勝率）絕對值分析</h2>
+  <h2>📈 區塊 5：A（主勝率）絕對值</h2>
   <table id="aTable"></table>
-  <div class="legend"><b>A</b> 本身的數值區間 → 結果分布。</div>
 </div>
 
-<!-- 區塊 6：最佳規則 -->
+<!-- 區塊 6：三向規則 -->
 <div class="section" id="sec-rules">
-  <h2>🏆 區塊 6：最佳規則 <span class="badge">自動搜索</span></h2>
-  <div id="ruleResults"></div>
+  <h2>🏆 區塊 6：三向規則榜 <span class="badge">主勝 / 和局 / 客勝 各找最佳</span></h2>
+  <div class="boards">
+    <div class="board board-H">
+      <h3><span class="icon">🟢</span> 主勝榜（H）<span class="count" id="count-H">0 條</span></h3>
+      <div id="rules-H"></div>
+    </div>
+    <div class="board board-D">
+      <h3><span class="icon">🟡</span> 和局榜（D）<span class="count" id="count-D">0 條</span></h3>
+      <div id="rules-D"></div>
+    </div>
+    <div class="board board-A">
+      <h3><span class="icon">🔴</span> 客勝榜（A）<span class="count" id="count-A">0 條</span></h3>
+      <div id="rules-A"></div>
+    </div>
+  </div>
+  <div class="legend" style="margin-top:14px">
+    <b>怎麼看：</b>每條規則顯示「條件」+「純度」+「樣本數」。<br>
+    <b>純度</b> = 該條件下實際出現該結果的機率。例如「A ≥ 60」→ H 80% 表示：當主勝率≥60 時，80% 的場次主勝。<br>
+    <b>排序</b> = 純度 × min(樣本數, 30)，避免「1 筆 100%」的假最優。
+  </div>
 </div>
 
 <script>
@@ -136,9 +181,7 @@ A B C 結果
 
 var DATA = [];
 
-/* ============================================================
-   解析輸入
-   ============================================================ */
+/* ============ 解析 ============ */
 function parseData(text){
   var rows = [];
   var lines = text.split('\n');
@@ -147,88 +190,58 @@ function parseData(text){
     if(!line) continue;
     var p = line.split(/\s+/);
     if(p.length < 4) continue;
-
     var last = p[p.length - 1].toUpperCase();
     if(['H','D','A'].indexOf(last) === -1) continue;
-
-    var A = parseInt(p[0], 10);
-    var B = parseInt(p[1], 10);
-    var C = parseInt(p[2], 10);
+    var A = parseInt(p[0], 10), B = parseInt(p[1], 10), C = parseInt(p[2], 10);
     if(isNaN(A) || isNaN(B) || isNaN(C)) continue;
-
     rows.push({ A:A, B:B, C:C, result:last });
   }
   return rows;
 }
 
-/* ============================================================
-   統計工具
-   ============================================================ */
-function makeBucket(){
-  return { H:0, D:0, A:0, total:0 };
+/* ============ 統計 ============ */
+function makeBucket(){ return { H:0, D:0, A:0, total:0 }; }
+function addToBucket(b, r){ b[r]++; b.total++; }
+function topResult(b){
+  if(b.total === 0) return null;
+  var max = Math.max(b.H, b.D, b.A);
+  var tag, name;
+  if(max === b.H){ tag='H'; name='H 主勝'; }
+  else if(max === b.D){ tag='D'; name='D 和局'; }
+  else { tag='A'; name='A 客勝'; }
+  return { tag:tag, name:name, pct:(max / b.total * 100).toFixed(0) };
 }
-
-function addToBucket(bucket, result){
-  bucket[result]++;
-  bucket.total++;
-}
-
-function barHtml(bucket){
-  if(bucket.total === 0){
-    return '<div class="bar"><div class="empty" style="width:100%">無資料</div></div>';
-  }
-  var h = bucket.H / bucket.total * 100;
-  var d = bucket.D / bucket.total * 100;
-  var a = bucket.A / bucket.total * 100;
+function barHtml(b){
+  if(b.total === 0) return '<div class="bar"><div class="empty" style="width:100%">無資料</div></div>';
+  var h = b.H / b.total * 100, d = b.D / b.total * 100, a = b.A / b.total * 100;
   var out = '<div class="bar">';
-  if(h > 0) out += '<div class="h" style="width:' + h + '%">' + (h >= 8 ? 'H ' + bucket.H : '') + '</div>';
-  if(d > 0) out += '<div class="d" style="width:' + d + '%">' + (d >= 8 ? 'D ' + bucket.D : '') + '</div>';
-  if(a > 0) out += '<div class="a" style="width:' + a + '%">' + (a >= 8 ? 'A ' + bucket.A : '') + '</div>';
-  out += '</div>';
-  return out;
+  if(h > 0) out += '<div class="h" style="width:' + h + '%">' + (h >= 8 ? 'H ' + b.H : '') + '</div>';
+  if(d > 0) out += '<div class="d" style="width:' + d + '%">' + (d >= 8 ? 'D ' + b.D : '') + '</div>';
+  if(a > 0) out += '<div class="a" style="width:' + a + '%">' + (a >= 8 ? 'A ' + b.A : '') + '</div>';
+  return out + '</div>';
 }
 
-function topResult(bucket){
-  if(bucket.total === 0) return null;
-  var max = Math.max(bucket.H, bucket.D, bucket.A);
-  if(max === bucket.H) return { tag:'H', name:'H 主勝', count:bucket.H, pct:(bucket.H / bucket.total * 100).toFixed(0) };
-  if(max === bucket.D) return { tag:'D', name:'D 和局', count:bucket.D, pct:(bucket.D / bucket.total * 100).toFixed(0) };
-  return { tag:'A', name:'A 客勝', count:bucket.A, pct:(bucket.A / bucket.total * 100).toFixed(0) };
-}
-
-/* ============================================================
-   分析 1：A/B/C 相對位置（6 種排列）
-   ============================================================ */
+/* ============ 分析 ============ */
 function analyzePermutations(rows){
   var keys = ['A≥B≥C', 'A≥C>B', 'B>A≥C', 'B≥C>A', 'C>A≥B', 'C>B>A'];
   var buckets = {};
-  for(var i = 0; i < keys.length; i++) buckets[keys[i]] = makeBucket();
-
+  keys.forEach(function(k){ buckets[k] = makeBucket(); });
   for(var i = 0; i < rows.length; i++){
-    var r = rows[i];
-    var a = r.A, b = r.B, c = r.C;
-    var key;
+    var r = rows[i], a = r.A, b = r.B, c = r.C, key;
     if(a >= b && b >= c) key = 'A≥B≥C';
     else if(a >= c && c > b) key = 'A≥C>B';
     else if(b > a && a >= c) key = 'B>A≥C';
     else if(b >= c && c > a) key = 'B≥C>A';
     else if(c > a && a >= b) key = 'C>A≥B';
     else key = 'C>B>A';
-
     addToBucket(buckets[key], r.result);
   }
   return { keys:keys, buckets:buckets };
 }
 
-/* ============================================================
-   分析 2-5：差值/絕對值分桶
-   ============================================================ */
 function analyzeNumeric(rows, getValue, min, max, step){
   var buckets = {};
-  for(var v = min; v < max; v += step){
-    buckets[v] = makeBucket();
-  }
-
+  for(var v = min; v < max; v += step) buckets[v] = makeBucket();
   for(var i = 0; i < rows.length; i++){
     var val = getValue(rows[i]);
     var key = Math.floor(val / step) * step;
@@ -236,29 +249,14 @@ function analyzeNumeric(rows, getValue, min, max, step){
     if(key >= max) key = max - step;
     if(buckets[key]) addToBucket(buckets[key], rows[i].result);
   }
-
-  var keys = Object.keys(buckets).map(Number).sort(function(a, b){ return a - b; });
-  return { keys:keys, buckets:buckets };
+  return { keys:Object.keys(buckets).map(Number).sort(function(a,b){return a-b;}), buckets:buckets };
 }
 
-/* ============================================================
-   渲染：排列表
-   ============================================================ */
+/* ============ 渲染 ============ */
 function renderPermTable(analysis){
-  var html = '<thead><tr>' +
-    '<th style="text-align:left">A/B/C 排列</th>' +
-    '<th style="width:50px">總數</th>' +
-    '<th style="width:40px">H</th>' +
-    '<th style="width:40px">D</th>' +
-    '<th style="width:40px">A</th>' +
-    '<th>結果分布</th>' +
-    '<th style="width:100px">最常出現</th>' +
-    '</tr></thead><tbody>';
-
+  var html = '<thead><tr><th style="text-align:left">A/B/C 排列</th><th style="width:50px">總數</th><th style="width:40px">H</th><th style="width:40px">D</th><th style="width:40px">A</th><th>結果分布</th><th style="width:110px">最常出現</th></tr></thead><tbody>';
   for(var i = 0; i < analysis.keys.length; i++){
-    var key = analysis.keys[i];
-    var b = analysis.buckets[key];
-    var top = topResult(b);
+    var key = analysis.keys[i], b = analysis.buckets[key], top = topResult(b);
     html += '<tr>' +
       '<td class="name">' + key + '</td>' +
       '<td>' + b.total + '</td>' +
@@ -269,33 +267,17 @@ function renderPermTable(analysis){
       '<td>' + (top ? '<span class="tag-' + top.tag + '">' + top.name + ' ' + top.pct + '%</span>' : '<span class="tag-none">—</span>') + '</td>' +
       '</tr>';
   }
-  html += '</tbody>';
-  document.getElementById('permTable').innerHTML = html;
+  document.getElementById('permTable').innerHTML = html + '</tbody>';
 }
 
-/* ============================================================
-   渲染：數值分桶表
-   ============================================================ */
 function renderNumTable(tableId, analysis, label){
-  var html = '<thead><tr>' +
-    '<th style="text-align:left">' + label + ' 區間</th>' +
-    '<th style="width:50px">總數</th>' +
-    '<th style="width:40px">H</th>' +
-    '<th style="width:40px">D</th>' +
-    '<th style="width:40px">A</th>' +
-    '<th>結果分布</th>' +
-    '<th style="width:100px">最常出現</th>' +
-    '</tr></thead><tbody>';
-
+  var html = '<thead><tr><th style="text-align:left">' + label + ' 區間</th><th style="width:50px">總數</th><th style="width:40px">H</th><th style="width:40px">D</th><th style="width:40px">A</th><th>結果分布</th><th style="width:110px">最常出現</th></tr></thead><tbody>';
   for(var i = 0; i < analysis.keys.length; i++){
-    var key = analysis.keys[i];
-    var b = analysis.buckets[key];
+    var key = analysis.keys[i], b = analysis.buckets[key];
     if(b.total === 0) continue;
-
     var next = analysis.keys[i+1];
     var range = next !== undefined ? (key + ' ~ ' + next) : (key + '+');
     var top = topResult(b);
-
     html += '<tr>' +
       '<td class="name">' + range + '</td>' +
       '<td>' + b.total + '</td>' +
@@ -306,104 +288,157 @@ function renderNumTable(tableId, analysis, label){
       '<td>' + (top ? '<span class="tag-' + top.tag + '">' + top.name + ' ' + top.pct + '%</span>' : '<span class="tag-none">—</span>') + '</td>' +
       '</tr>';
   }
-  html += '</tbody>';
-  document.getElementById(tableId).innerHTML = html;
+  document.getElementById(tableId).innerHTML = html + '</tbody>';
 }
 
-/* ============================================================
-   主流程：分析
-   ============================================================ */
+/* ============ 主分析 ============ */
 function analyze(){
-  var text = document.getElementById('input').value;
-  var rows = parseData(text);
+  var rows = parseData(document.getElementById('input').value);
   DATA = rows;
+  if(rows.length === 0){ alert('沒有有效資料。格式：A B C 結果'); return; }
 
-  if(rows.length === 0){
-    alert('沒有有效資料。請確認格式：A B C 結果（每行一筆）');
-    return;
-  }
-
-  /* 統計結果分布 */
-  var resCount = { H:0, D:0, A:0 };
-  rows.forEach(function(r){ resCount[r.result]++; });
-
+  var rc = { H:0, D:0, A:0 };
+  rows.forEach(function(r){ rc[r.result]++; });
   var statsHtml = '📊 共 <b>' + rows.length + '</b> 筆｜';
-  statsHtml += 'H 主勝 <b>' + resCount.H + '</b>（' + (resCount.H / rows.length * 100).toFixed(0) + '%）｜';
-  statsHtml += 'D 和局 <b>' + resCount.D + '</b>（' + (resCount.D / rows.length * 100).toFixed(0) + '%）｜';
-  statsHtml += 'A 客勝 <b>' + resCount.A + '</b>（' + (resCount.A / rows.length * 100).toFixed(0) + '%）';
+  statsHtml += 'H 主勝 <b>' + rc.H + '</b>（' + (rc.H/rows.length*100).toFixed(0) + '%）｜';
+  statsHtml += 'D 和局 <b>' + rc.D + '</b>（' + (rc.D/rows.length*100).toFixed(0) + '%）｜';
+  statsHtml += 'A 客勝 <b>' + rc.A + '</b>（' + (rc.A/rows.length*100).toFixed(0) + '%）';
   document.getElementById('stats').innerHTML = statsHtml;
   document.getElementById('stats').style.display = 'block';
+  document.getElementById('optBar').style.display = 'flex';
 
-  /* 1. 排列 */
-  var permA = analyzePermutations(rows);
-  renderPermTable(permA);
+  renderPermTable(analyzePermutations(rows));
   document.getElementById('sec-perm').classList.add('show');
 
-  /* 2. A-C */
-  var acA = analyzeNumeric(rows, function(r){ return r.A - r.C; }, -100, 101, 10);
-  renderNumTable('acTable', acA, 'A − C');
+  renderNumTable('acTable', analyzeNumeric(rows, function(r){ return r.A - r.C; }, -100, 101, 10), 'A − C');
   document.getElementById('sec-ac').classList.add('show');
 
-  /* 3. A-B */
-  var abA = analyzeNumeric(rows, function(r){ return r.A - r.B; }, -100, 101, 10);
-  renderNumTable('abTable', abA, 'A − B');
+  renderNumTable('abTable', analyzeNumeric(rows, function(r){ return r.A - r.B; }, -100, 101, 10), 'A − B');
   document.getElementById('sec-ab').classList.add('show');
 
-  /* 4. B-C */
-  var bcA = analyzeNumeric(rows, function(r){ return r.B - r.C; }, -100, 101, 10);
-  renderNumTable('bcTable', bcA, 'B − C');
+  renderNumTable('bcTable', analyzeNumeric(rows, function(r){ return r.B - r.C; }, -100, 101, 10), 'B − C');
   document.getElementById('sec-bc').classList.add('show');
 
-  /* 5. A 絕對值 */
-  var aA = analyzeNumeric(rows, function(r){ return r.A; }, 0, 101, 10);
-  renderNumTable('aTable', aA, 'A（主勝率）');
+  renderNumTable('aTable', analyzeNumeric(rows, function(r){ return r.A; }, 0, 101, 10), 'A（主勝率）');
   document.getElementById('sec-a').classList.add('show');
 
-  /* 6. 隱藏規則區塊（等使用者按按鈕） */
+  /* 隱藏規則（等使用者按） */
   document.getElementById('sec-rules').classList.remove('show');
   document.getElementById('sec-rules').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
-/* ============================================================
-   規則搜索
-   ============================================================ */
+/* ============ 三向規則搜索 ============ */
 function showRuleSearch(){
   if(DATA.length === 0){
-    var text = document.getElementById('input').value;
-    DATA = parseData(text);
+    DATA = parseData(document.getElementById('input').value);
     if(DATA.length === 0){ alert('請先貼上資料並按「開始分析」'); return; }
   }
 
-  var rules = searchRules(DATA);
-  var html = '';
-  if(rules.length === 0){
-    html = '<div class="empty-msg">找不到高純度規則（每組至少 5 筆、純度 ≥ 60%）</div>';
-  } else {
-    html += '<div style="font-size:12px;color:#94a3b8;margin-bottom:10px">' +
-      '搜尋所有可能的 A/B/C 區間組合 → 找出最適合押注的條件（每組樣本 ≥ 5 筆，純度 ≥ 60%）' +
-      '</div>';
-    for(var i = 0; i < rules.length; i++){
-      var r = rules[i];
-      html += '<div class="rule-card">' +
-        '<div class="cond">' + r.cond + '</div>' +
-        '<div class="stat">' +
-        '<span class="tag-' + r.top + '">' + r.top + ' ' + r.topPct + '%</span>' +
-        '　共 ' + r.total + ' 筆（H ' + r.H + ' / D ' + r.D + ' / A ' + r.A + '）' +
-        (r.best ? '<span class="best">★ 推薦</span>' : '') +
-        '</div></div>';
-    }
-  }
-  document.getElementById('ruleResults').innerHTML = html;
+  var minSample = parseInt(document.getElementById('optMinSample').value) || 5;
+  var minPurity = parseInt(document.getElementById('optMinPurity').value) || 60;
+  var topN = parseInt(document.getElementById('optTopN').value) || 5;
+
+  var allRules = searchAllRules(DATA, minSample, minPurity);
+
+  /* 分三榜 */
+  var listH = allRules.filter(function(r){ return r.top === 'H'; });
+  var listD = allRules.filter(function(r){ return r.top === 'D'; });
+  var listA = allRules.filter(function(r){ return r.top === 'A'; });
+
+  /* 排序：純度 × min(樣本, 30) */
+  var sortFn = function(a, b){
+    return (b.topPct * Math.min(b.total, 30)) - (a.topPct * Math.min(a.total, 30));
+  };
+  listH.sort(sortFn); listD.sort(sortFn); listA.sort(sortFn);
+
+  renderBoard('rules-H', listH.slice(0, topN), 'H');
+  renderBoard('rules-D', listD.slice(0, topN), 'D');
+  renderBoard('rules-A', listA.slice(0, topN), 'A');
+
+  document.getElementById('count-H').textContent = listH.length + ' 條';
+  document.getElementById('count-D').textContent = listD.length + ' 條';
+  document.getElementById('count-A').textContent = listA.length + ' 條';
+
   document.getElementById('sec-rules').classList.add('show');
   document.getElementById('sec-rules').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
-function searchRules(rows){
-  var candidates = [];
+function renderBoard(containerId, rules, type){
+  var el = document.getElementById(containerId);
+  if(rules.length === 0){
+    el.innerHTML = '<div class="empty-msg">找不到符合條件的規則<br><span style="font-size:11px">（試試降低純度或最少樣本）</span></div>';
+    return;
+  }
+  var html = '';
+  for(var i = 0; i < rules.length; i++){
+    var r = rules[i];
+    var rankClass = i === 0 ? ' rank-1' : '';
+    html += '<div class="rule-item' + rankClass + '">' +
+      '<div class="head">' +
+        '<span class="rank">#' + (i+1) + '</span>' +
+        '<span class="pct">' + r.topPct + '%</span>' +
+      '</div>' +
+      '<div class="cond">' + r.cond + '</div>' +
+      '<div class="samples">' +
+        '<span>共 ' + r.total + ' 筆</span>' +
+        '<span class="cH">H ' + r.H + '</span>' +
+        '<span class="cD">D ' + r.D + '</span>' +
+        '<span class="cA">A ' + r.A + '</span>' +
+      '</div>' +
+    '</div>';
+  }
+  el.innerHTML = html;
+}
 
-  /* 條件類型 */
-  var conditions = [
+function searchAllRules(rows, minSample, minPurity){
+  var conditions = buildConditions();
+  var allRules = [];
+
+  /* 單條件 */
+  for(var i = 0; i < conditions.length; i++){
+    var c = conditions[i];
+    var b = makeBucket();
+    for(var j = 0; j < rows.length; j++){
+      if(c.test(rows[j])) addToBucket(b, rows[j].result);
+    }
+    var r = evalBucket(c.name, b, minSample, minPurity);
+    if(r) allRules.push(r);
+  }
+
+  /* 雙條件 */
+  for(var i = 0; i < conditions.length; i++){
+    for(var j = i + 1; j < conditions.length; j++){
+      var c1 = conditions[i], c2 = conditions[j];
+      if(contradict(c1, c2)) continue;
+      var b2 = makeBucket();
+      for(var k = 0; k < rows.length; k++){
+        if(c1.test(rows[k]) && c2.test(rows[k])) addToBucket(b2, rows[k].result);
+      }
+      var r2 = evalBucket(c1.name + ' 且 ' + c2.name, b2, minSample, minPurity);
+      if(r2) allRules.push(r2);
+    }
+  }
+
+  return allRules;
+}
+
+/* 檢查兩條件是否矛盾（同一欄位的方向相反） */
+function contradict(c1, c2){
+  /* 用 name 粗略判斷：如果一個有 "≥" 一個有 "≤" 且同一欄位 → 可能矛盾（但不一定） */
+  /* 這裡簡化：同欄位的最大/最小判斷 */
+  var a1 = c1.name, a2 = c2.name;
+  if(a1 === 'A 最大' && (a2 === 'A 最小' || a2 === 'B 最大' || a2 === 'C 最大')) return true;
+  if(a1 === 'B 最大' && (a2 === 'B 最小' || a2 === 'C 最大')) return true;
+  if(a1 === 'C 最大' && a2 === 'C 最小') return true;
+  if(a1 === 'A 最小' && a2 === 'B 最小') return true;
+  return false;
+}
+
+function buildConditions(){
+  return [
     /* A 絕對值 */
+    { name:'A ≥ 30', test:function(r){ return r.A >= 30; } },
+    { name:'A ≥ 35', test:function(r){ return r.A >= 35; } },
     { name:'A ≥ 40', test:function(r){ return r.A >= 40; } },
     { name:'A ≥ 45', test:function(r){ return r.A >= 45; } },
     { name:'A ≥ 50', test:function(r){ return r.A >= 50; } },
@@ -411,30 +446,39 @@ function searchRules(rows){
     { name:'A ≥ 60', test:function(r){ return r.A >= 60; } },
     { name:'A ≥ 65', test:function(r){ return r.A >= 65; } },
     { name:'A ≥ 70', test:function(r){ return r.A >= 70; } },
-    { name:'A < 30', test:function(r){ return r.A < 30; } },
     { name:'A < 25', test:function(r){ return r.A < 25; } },
+    { name:'A < 30', test:function(r){ return r.A < 30; } },
     /* B 絕對值 */
+    { name:'B ≥ 22', test:function(r){ return r.B >= 22; } },
     { name:'B ≥ 25', test:function(r){ return r.B >= 25; } },
     { name:'B ≥ 28', test:function(r){ return r.B >= 28; } },
     { name:'B ≥ 30', test:function(r){ return r.B >= 30; } },
     { name:'B ≥ 33', test:function(r){ return r.B >= 33; } },
+    { name:'B < 20', test:function(r){ return r.B < 20; } },
     /* C 絕對值 */
+    { name:'C ≥ 30', test:function(r){ return r.C >= 30; } },
     { name:'C ≥ 40', test:function(r){ return r.C >= 40; } },
     { name:'C ≥ 45', test:function(r){ return r.C >= 45; } },
     { name:'C ≥ 50', test:function(r){ return r.C >= 50; } },
     { name:'C ≥ 55', test:function(r){ return r.C >= 55; } },
+    { name:'C ≥ 60', test:function(r){ return r.C >= 60; } },
     { name:'C < 20', test:function(r){ return r.C < 20; } },
+    { name:'C < 25', test:function(r){ return r.C < 25; } },
     /* A - C */
     { name:'A − C ≥ 10', test:function(r){ return r.A - r.C >= 10; } },
+    { name:'A − C ≥ 15', test:function(r){ return r.A - r.C >= 15; } },
     { name:'A − C ≥ 20', test:function(r){ return r.A - r.C >= 20; } },
+    { name:'A − C ≥ 25', test:function(r){ return r.A - r.C >= 25; } },
     { name:'A − C ≥ 30', test:function(r){ return r.A - r.C >= 30; } },
     { name:'A − C ≥ 40', test:function(r){ return r.A - r.C >= 40; } },
     { name:'A − C ≥ 50', test:function(r){ return r.A - r.C >= 50; } },
     { name:'A − C ≤ -20', test:function(r){ return r.A - r.C <= -20; } },
+    { name:'A − C ≤ -25', test:function(r){ return r.A - r.C <= -25; } },
     { name:'A − C ≤ -30', test:function(r){ return r.A - r.C <= -30; } },
     { name:'A − C ≤ -40', test:function(r){ return r.A - r.C <= -40; } },
     { name:'|A − C| ≤ 10', test:function(r){ return Math.abs(r.A - r.C) <= 10; } },
-    { name:'|A − C| ≤ 5', test:function(r){ return Math.abs(r.A - r.C) <= 5; } },
+    { name:'|A − C| ≤ 5',  test:function(r){ return Math.abs(r.A - r.C) <= 5; } },
+    { name:'|A − C| ≤ 15', test:function(r){ return Math.abs(r.A - r.C) <= 15; } },
     /* A - B */
     { name:'A − B ≥ 15', test:function(r){ return r.A - r.B >= 15; } },
     { name:'A − B ≥ 20', test:function(r){ return r.A - r.B >= 20; } },
@@ -442,15 +486,13 @@ function searchRules(rows){
     { name:'A − B ≥ 30', test:function(r){ return r.A - r.B >= 30; } },
     { name:'A − B ≥ 40', test:function(r){ return r.A - r.B >= 40; } },
     /* B - C */
-    { name:'B − C ≥ 5', test:function(r){ return r.B - r.C >= 5; } },
+    { name:'B − C ≥ 5',  test:function(r){ return r.B - r.C >= 5; } },
     { name:'B − C ≥ 10', test:function(r){ return r.B - r.C >= 10; } },
     { name:'B − C ≥ 15', test:function(r){ return r.B - r.C >= 15; } },
     { name:'B − C ≤ -10', test:function(r){ return r.B - r.C <= -10; } },
     { name:'B − C ≤ -15', test:function(r){ return r.B - r.C <= -15; } },
-    /* 差值小：雙方接近 */
-    { name:'|A − C| ≤ 15', test:function(r){ return Math.abs(r.A - r.C) <= 15; } },
-    { name:'|A − C| ≤ 20', test:function(r){ return Math.abs(r.A - r.C) <= 20; } },
-    /* 最大值位置 */
+    { name:'B − C ≤ -20', test:function(r){ return r.B - r.C <= -20; } },
+    /* 最大值/最小值位置 */
     { name:'A 最大', test:function(r){ return r.A >= r.B && r.A >= r.C; } },
     { name:'B 最大', test:function(r){ return r.B > r.A && r.B >= r.C; } },
     { name:'C 最大', test:function(r){ return r.C > r.A && r.C > r.B; } },
@@ -458,131 +500,44 @@ function searchRules(rows){
     { name:'B 最小', test:function(r){ return r.B < r.A && r.B < r.C; } },
     { name:'C 最小', test:function(r){ return r.C < r.A && r.C <= r.B; } }
   ];
-
-  /* 單一條件 */
-  for(var i = 0; i < conditions.length; i++){
-    var cond = conditions[i];
-    var bucket = makeBucket();
-    for(var j = 0; j < rows.length; j++){
-      if(cond.test(rows[j])) addToBucket(bucket, rows[j].result);
-    }
-    var rule = evalBucket(cond.name, bucket);
-    if(rule) candidates.push(rule);
-  }
-
-  /* 雙重條件（A + B-C 這種組合） */
-  for(var i = 0; i < conditions.length; i++){
-    for(var j = i + 1; j < conditions.length; j++){
-      var c1 = conditions[i], c2 = conditions[j];
-      /* 只做不會互相矛盾的（例如 A>=50 和 A<30） */
-      if(c1.name === 'A 最大' && c2.name === 'A 最小') continue;
-      if(c1.name === 'A 最大' && c2.name === 'B 最大') continue;
-      if(c1.name === 'A 最大' && c2.name === 'C 最大') continue;
-      if(c1.name === 'B 最大' && c2.name === 'C 最大') continue;
-
-      var bucket2 = makeBucket();
-      for(var k = 0; k < rows.length; k++){
-        if(c1.test(rows[k]) && c2.test(rows[k])) addToBucket(bucket2, rows[k].result);
-      }
-      var rule2 = evalBucket(c1.name + ' 且 ' + c2.name, bucket2);
-      if(rule2) candidates.push(rule2);
-    }
-  }
-
-  /* 排序：純度 × 樣本數 */
-  candidates.sort(function(a, b){
-    return (b.topPct * Math.min(b.total, 30)) - (a.topPct * Math.min(a.total, 30));
-  });
-
-  /* 標記推薦 */
-  if(candidates.length > 0) candidates[0].best = true;
-  if(candidates.length > 1 && candidates[1].topPct >= 70 && candidates[1].total >= 10){
-    candidates[1].best = true;
-  }
-
-  /* 只取前 15 個 */
-  return candidates.slice(0, 15);
 }
 
-function evalBucket(name, bucket){
-  if(bucket.total < 5) return null;
-
-  var max = Math.max(bucket.H, bucket.D, bucket.A);
+function evalBucket(name, b, minSample, minPurity){
+  if(b.total < minSample) return null;
+  var max = Math.max(b.H, b.D, b.A);
   var top;
-  if(max === bucket.H) top = 'H';
-  else if(max === bucket.D) top = 'D';
+  if(max === b.H) top = 'H';
+  else if(max === b.D) top = 'D';
   else top = 'A';
-
-  var topPct = Math.round(max / bucket.total * 100);
-  if(topPct < 60) return null;
-
-  return {
-    cond: name,
-    total: bucket.total,
-    H: bucket.H,
-    D: bucket.D,
-    A: bucket.A,
-    top: top,
-    topPct: topPct,
-    best: false
-  };
+  var topPct = Math.round(max / b.total * 100);
+  if(topPct < minPurity) return null;
+  return { cond:name, total:b.total, H:b.H, D:b.D, A:b.A, top:top, topPct:topPct };
 }
 
-/* ============================================================
-   範例資料
-   ============================================================ */
+/* ============ 範例 ============ */
 function loadSample(){
   document.getElementById('input').value =
-'44 33 23 H\n' +
-'42 28 30 D\n' +
-'23 27 50 A\n' +
-'48 28 24 H\n' +
-'30 29 41 A\n' +
-'60 23 17 H\n' +
-'50 22 28 H\n' +
-'39 30 31 H\n' +
-'58 20 22 H\n' +
-'35 20 45 A\n' +
-'69 19 12 H\n' +
-'38 20 42 D\n' +
-'61 22 17 H\n' +
-'18 20 62 A\n' +
-'43 29 28 A\n' +
-'17 13 70 H\n' +
-'68 18 14 H\n' +
-'48 26 26 H\n' +
-'58 20 22 H\n' +
-'30 29 41 A\n' +
-'64 21 15 D\n' +
-'23 27 50 A\n' +
-'39 30 31 H\n' +
-'35 20 45 A\n' +
-'18 20 62 A\n' +
-'48 28 24 H\n' +
-'69 19 12 H\n' +
-'42 28 30 D\n' +
-'61 22 17 H\n' +
-'38 20 42 D\n' +
-'50 22 28 H\n' +
-'44 33 23 H\n' +
-'17 13 70 H\n' +
-'30 29 41 A\n' +
-'60 23 17 H\n' +
-'58 20 22 H\n' +
-'68 18 14 H\n' +
-'38 20 42 D';
+'44 33 23 H\n42 28 30 D\n23 27 50 A\n48 28 24 H\n30 29 41 A\n' +
+'60 23 17 H\n50 22 28 H\n39 30 31 H\n58 20 22 H\n35 20 45 A\n' +
+'69 19 12 H\n38 20 42 D\n61 22 17 H\n18 20 62 A\n43 29 28 A\n' +
+'17 13 70 H\n68 18 14 H\n48 26 26 H\n58 20 22 H\n30 29 41 A\n' +
+'64 21 15 D\n23 27 50 A\n39 30 31 H\n35 20 45 A\n18 20 62 A\n' +
+'48 28 24 H\n69 19 12 H\n42 28 30 D\n61 22 17 H\n38 20 42 D\n' +
+'50 22 28 H\n44 33 23 H\n17 13 70 H\n30 29 41 A\n60 23 17 H\n' +
+'58 20 22 H\n68 18 14 H\n38 20 42 D';
   analyze();
 }
 
 function clearAll(){
   document.getElementById('input').value = '';
   document.getElementById('stats').style.display = 'none';
-  var sections = ['sec-perm','sec-ac','sec-ab','sec-bc','sec-a','sec-rules'];
-  sections.forEach(function(id){ document.getElementById(id).classList.remove('show'); });
+  document.getElementById('optBar').style.display = 'none';
+  ['sec-perm','sec-ac','sec-ab','sec-bc','sec-a','sec-rules'].forEach(function(id){
+    document.getElementById(id).classList.remove('show');
+  });
   DATA = [];
 }
 
-/* 初始化 */
 document.getElementById('input').focus();
 </script>
 </body>
