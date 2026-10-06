@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>V15-X 終極版 v4.2</title>
+<title>V15-X 終極版 v5.1</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -25,7 +25,6 @@ button{padding:10px 22px;font-size:14px;margin:6px 6px 6px 0;cursor:pointer;back
 button:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,.3)}
 button.green{background:linear-gradient(135deg,#10b981,#059669)}
 button.green:hover{box-shadow:0 4px 12px rgba(16,185,129,.3)}
-button.amber{background:linear-gradient(135deg,#f59e0b,#d97706)}
 button.gray{background:#2a3441}
 button.gray:hover{background:#3a4451;box-shadow:none}
 .card{background:#1a1f2e;border:1px solid #2a3441;border-radius:10px;padding:16px;margin-bottom:14px;overflow:hidden}
@@ -41,11 +40,11 @@ th{background:#232a3a;color:#94a3b8;font-size:11px;font-weight:600}
 td{font-family:'Consolas',monospace;color:#e8e8e8}
 td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
 .bar{height:20px;border-radius:4px;display:flex;overflow:hidden;background:#232a3a;min-width:100px}
-.bar > div{display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;min-width:0;overflow:hidden}
+.bar > div{min-width:0;overflow:hidden}
 .bar .h{background:linear-gradient(90deg,#10b981,#059669)}
 .bar .d{background:linear-gradient(90deg,#f59e0b,#d97706)}
 .bar .a{background:linear-gradient(90deg,#ef4444,#dc2626)}
-.bar .empty{background:#2a3441;color:#666}
+.bar .empty{background:#2a3441}
 .tag-H{background:#10b981;color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap;display:inline-block}
 .tag-D{background:#f59e0b;color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap;display:inline-block}
 .tag-A{background:#ef4444;color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap;display:inline-block}
@@ -105,34 +104,41 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
 .copy-status{font-size:12px;color:#10b981;margin-left:10px;font-weight:600}
 .legend{font-size:11px;color:#6b7280;margin-top:10px;line-height:1.7}
 .legend code{background:#232a3a;padding:2px 6px;border-radius:3px;color:#60a5fa;font-size:10px}
-.rules-preview{background:#0f1419;border:1px solid #2a3441;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:12px;font-family:'Consolas',monospace;line-height:1.8;max-height:200px;overflow-y:auto}
+.rules-preview{background:#0f1419;border:1px solid #2a3441;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:12px;font-family:'Consolas',monospace;line-height:1.8;max-height:250px;overflow-y:auto}
 .rules-preview .r-H{color:#10b981}
 .rules-preview .r-D{color:#f59e0b}
 .rules-preview .r-A{color:#ef4444}
+.type-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:10px}
+.type-card{background:#232a3a;border-radius:8px;padding:10px 12px;border-left:3px solid #3b82f6;min-width:0}
+.type-card .num{font-size:10px;color:#60a5fa;font-weight:700;margin-bottom:2px}
+.type-card .name{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px}
+.type-card .example{font-size:11px;color:#94a3b8;font-family:'Consolas',monospace;word-break:break-word}
+.type-card.new{border-left-color:#f59e0b}
+.type-card.new .num{color:#f59e0b}
 .loading-overlay{position:fixed;inset:0;background:rgba(10,14,20,.9);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px}
 .loading-overlay .spinner{width:48px;height:48px;border:4px solid #374151;border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-overlay .text{color:#fff;font-size:14px;font-weight:600}
+.loading-overlay .sub{color:#94a3b8;font-size:12px}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>📊 V15-X 終極版 <span class="version">v4.2</span></h1>
-  <div class="sub">一鍵分析 · 三向排行 · 即時預測 · Google Sheets 公式（H/D/A/skip）</div>
+  <h1>📊 V15-X 終極版 <span class="version">v5.1</span></h1>
+  <div class="sub">12 種類型 · 234 個單條件 · 智慧組合 · 一鍵分析 · 公式匯出</div>
 </div>
 
 <div class="tabs">
   <button class="tab-btn active" data-tab="train" onclick="switchTab('train')">🎯 訓練</button>
   <button class="tab-btn" data-tab="predict" onclick="switchTab('predict')">🔮 預測</button>
   <button class="tab-btn" data-tab="export" onclick="switchTab('export')">📤 匯出公式</button>
+  <button class="tab-btn" data-tab="types" onclick="switchTab('types')">📚 條件類型</button>
 </div>
 
 <div class="main">
 
-<!-- ===== TAB 1 ===== -->
 <div class="panel active" id="panel-train">
-
   <div class="card">
     <h2>📥 貼上歷史資料 <span class="badge">每行：A B C 結果</span></h2>
     <textarea id="input-train" placeholder="44 33 23 H
@@ -149,26 +155,11 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
   <div id="statBar"></div>
 
   <div id="analysisArea" class="hidden">
-    <div class="card">
-      <h2>📍 A / B / C 相對位置 <span class="badge">誰最大？</span></h2>
-      <table id="permTable"></table>
-    </div>
-    <div class="card">
-      <h2>📈 A − C（主勝率 − 客勝率）</h2>
-      <table id="acTable"></table>
-    </div>
-    <div class="card">
-      <h2>📈 A − B（主勝率 − 和率）</h2>
-      <table id="abTable"></table>
-    </div>
-    <div class="card">
-      <h2>📈 B − C（和率 − 客勝率）</h2>
-      <table id="bcTable"></table>
-    </div>
-    <div class="card">
-      <h2>📈 A（主勝率）絕對值</h2>
-      <table id="aTable"></table>
-    </div>
+    <div class="card"><h2>📍 A / B / C 相對位置</h2><table id="permTable"></table></div>
+    <div class="card"><h2>📈 A − C（主勝率 − 客勝率）</h2><table id="acTable"></table></div>
+    <div class="card"><h2>📈 A − B（主勝率 − 和率）</h2><table id="abTable"></table></div>
+    <div class="card"><h2>📈 B − C（和率 − 客勝率）</h2><table id="bcTable"></table></div>
+    <div class="card"><h2>📈 A（主勝率）絕對值</h2><table id="aTable"></table></div>
   </div>
 
   <div id="rulesArea" class="hidden">
@@ -192,31 +183,18 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
           <div class="rule-list" id="rules-A"></div>
         </div>
       </div>
-      <div class="legend">
-        <b>評分</b> = 純度 × min(樣本, 30)。避免「3 場 100%」這種假最優。
-      </div>
+      <div class="legend" id="searchStats"></div>
     </div>
   </div>
-
 </div>
 
-<!-- ===== TAB 2 ===== -->
 <div class="panel" id="panel-predict">
   <div class="card">
     <h2>🔮 即時預測</h2>
     <div class="predict-input">
-      <div class="field">
-        <label>A · 主勝率%</label>
-        <input type="number" id="pred-A" placeholder="44" min="0" max="100">
-      </div>
-      <div class="field">
-        <label>B · 和率%</label>
-        <input type="number" id="pred-B" placeholder="33" min="0" max="100">
-      </div>
-      <div class="field">
-        <label>C · 客勝率%</label>
-        <input type="number" id="pred-C" placeholder="23" min="0" max="100">
-      </div>
+      <div class="field"><label>A · 主勝率%</label><input type="number" id="pred-A" placeholder="44" min="0" max="100"></div>
+      <div class="field"><label>B · 和率%</label><input type="number" id="pred-B" placeholder="33" min="0" max="100"></div>
+      <div class="field"><label>C · 客勝率%</label><input type="number" id="pred-C" placeholder="23" min="0" max="100"></div>
     </div>
     <button class="green" onclick="doPredict()">🎯 預測結果</button>
     <button class="gray" onclick="clearPredict()">🗑 清空</button>
@@ -227,15 +205,11 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
   </div>
 </div>
 
-<!-- ===== TAB 3 ===== -->
 <div class="panel" id="panel-export">
   <div class="card">
-    <h2>📤 Google Sheets 公式 <span class="badge">只用 A / B / C，不含賠率</span></h2>
+    <h2>📤 Google Sheets 公式 <span class="badge">只用 A / B / C</span></h2>
     <p style="font-size:12px;color:#94a3b8;margin:0 0 12px;line-height:1.7">
-      <b>使用方式：</b><br>
-      ① 你的 Google Sheets 中，A 欄 = 主勝率、B 欄 = 和率、C 欄 = 客勝率（從第 2 列開始）<br>
-      ② 找一個空欄（例如 D 欄），把下方公式貼進 D2<br>
-      ③ 按 Enter → 自動對每一列算出預測結果（<b style="color:#10b981">H</b> / <b style="color:#f59e0b">D</b> / <b style="color:#ef4444">A</b> / <b style="color:#9ca3af">skip</b>）
+      A 欄 = 主勝率、B 欄 = 和率、C 欄 = 客勝率（從第 2 列開始）→ 把公式貼到 D2
     </p>
     <div>
       <button class="green" onclick="generateSheetFormula()">🔧 生成公式</button>
@@ -243,9 +217,18 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
       <span id="copyStatus" class="copy-status"></span>
     </div>
     <textarea id="sheetFormula" placeholder="按「🔧 生成公式」自動產生..." readonly></textarea>
-
     <div id="formulaInfo" class="legend"></div>
     <div id="rulesPreview" class="rules-preview" style="display:none"></div>
+  </div>
+</div>
+
+<div class="panel" id="panel-types">
+  <div class="card">
+    <h2>📚 支援的條件類型（12 類）</h2>
+    <div class="type-grid" id="typeGrid"></div>
+    <div class="legend">
+      <b>組合策略：</b>單條件全評估 → 從合格 Top 100 做雙條件 → 從 Top 20 做三條件。
+    </div>
   </div>
 </div>
 
@@ -257,15 +240,16 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
 var FIXED_MIN_SAMPLE = 5;
 var FIXED_MIN_PURITY = 55;
 var TOP_N = 10;
-var FORMULA_MAX_RULES = 30;      /* 公式最多用幾條規則 */
-var FORMULA_PER_CLASS = 8;       /* ⭐ 每個結果（H/D/A）各取前 8 條 */
+var FORMULA_MAX_RULES = 30;
+var FORMULA_PER_CLASS = 8;
+var DOUBLE_FROM_TOP = 100;
+var TRIPLE_FROM_TOP = 20;
 
 var DATA = [];
 var ALL_RULES = [];
 var TOP_RULES = [];
 
 function $(id){ return document.getElementById(id); }
-
 function switchTab(name){
   document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
   document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
@@ -298,21 +282,427 @@ function topResult(b){
   var nameMap = { H:'H 主勝', D:'D 和局', A:'A 客勝' };
   return { tag:tag, name:nameMap[tag], pct:(max/b.total*100).toFixed(0) };
 }
+
+/* ⭐ v5.1：分布條只顯示顏色，無文字 */
 function barHtml(b){
-  if(b.total === 0) return '<div class="bar"><div class="empty" style="width:100%">無</div></div>';
+  if(b.total === 0) return '<div class="bar"><div class="empty" style="width:100%"></div></div>';
   var h = b.H/b.total*100, d = b.D/b.total*100, a = b.A/b.total*100;
   var out = '<div class="bar">';
-  if(h > 0) out += '<div class="h" style="width:' + h + '%">' + (h >= 10 ? 'H ' + b.H : '') + '</div>';
-  if(d > 0) out += '<div class="d" style="width:' + d + '%">' + (d >= 10 ? 'D ' + b.D : '') + '</div>';
-  if(a > 0) out += '<div class="a" style="width:' + a + '%">' + (a >= 10 ? 'A ' + b.A : '') + '</div>';
+  if(h > 0) out += '<div class="h" style="width:' + h + '%"></div>';
+  if(d > 0) out += '<div class="d" style="width:' + d + '%"></div>';
+  if(a > 0) out += '<div class="a" style="width:' + a + '%"></div>';
   return out + '</div>';
 }
+
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
   });
 }
 
+/* ===== 條件生成（12 類型） ===== */
+function buildConditions(){
+  var conds = [];
+
+  /* 類型 1：絕對值 */
+  ['A','B','C'].forEach(function(f){
+    [20,25,30,35,40,45,50,55,60,65,70].forEach(function(t){
+      conds.push({ name:f + ' ≥ ' + t, test:(function(f2,t2){ return function(r){ return r[f2] >= t2; }; })(f,t), dim:f });
+      conds.push({ name:f + ' < ' + t, test:(function(f2,t2){ return function(r){ return r[f2] < t2; }; })(f,t), dim:f });
+    });
+  });
+
+  /* 類型 2：區間 */
+  ['A','B','C'].forEach(function(f){
+    [[30,50],[35,55],[40,60],[45,65],[50,70],[25,45]].forEach(function(range){
+      var lo = range[0], hi = range[1];
+      conds.push({
+        name:lo + ' ≤ ' + f + ' ≤ ' + hi,
+        test:(function(f2,lo2,hi2){ return function(r){ return r[f2] >= lo2 && r[f2] <= hi2; }; })(f,lo,hi),
+        dim:f + '-range'
+      });
+    });
+  });
+
+  /* 類型 3：差值 */
+  [
+    ['A-C', function(r){ return r.A - r.C; }, [-40,-30,-25,-20,-15,-10,10,15,20,25,30,40]],
+    ['A-B', function(r){ return r.A - r.B; }, [-30,-20,-15,-10,10,15,20,25,30,40,50]],
+    ['B-C', function(r){ return r.B - r.C; }, [-25,-20,-15,-10,-5,5,10,15,20]],
+    ['C-A', function(r){ return r.C - r.A; }, [10,15,20,25,30,40]],
+    ['C-B', function(r){ return r.C - r.B; }, [10,15,20,25]],
+    ['B-A', function(r){ return r.B - r.A; }, [10,15,20,25]]
+  ].forEach(function(d){
+    d[2].forEach(function(t){
+      var fn = d[1];
+      if(t > 0){
+        conds.push({ name:d[0] + ' ≥ ' + t, test:(function(g,t2){ return function(r){ return g(r) >= t2; }; })(fn,t), dim:d[0] });
+      } else {
+        conds.push({ name:d[0] + ' ≤ ' + t, test:(function(g,t2){ return function(r){ return g(r) <= t2; }; })(fn,t), dim:d[0] });
+      }
+    });
+  });
+
+  /* 類型 4：差值區間 */
+  [
+    ['A-C', function(r){ return r.A - r.C; }, [[10,30],[15,35],[20,40],[5,25],[25,45]]],
+    ['A-B', function(r){ return r.A - r.B; }, [[10,30],[15,35],[20,40],[5,25],[25,45]]],
+    ['B-C', function(r){ return r.B - r.C; }, [[5,20],[10,25],[0,15]]],
+    ['C-A', function(r){ return r.C - r.A; }, [[10,30],[15,35],[20,40]]]
+  ].forEach(function(d){
+    d[2].forEach(function(range){
+      var lo = range[0], hi = range[1];
+      conds.push({
+        name:lo + ' ≤ ' + d[0] + ' ≤ ' + hi,
+        test:(function(g,lo2,hi2){ return function(r){ var v = g(r); return v >= lo2 && v <= hi2; }; })(d[1],lo,hi),
+        dim:d[0] + '-range'
+      });
+    });
+  });
+
+  /* 類型 5：絕對差 */
+  [
+    ['A-C', function(r){ return Math.abs(r.A - r.C); }, [3,5,8,10,12,15,20,25]],
+    ['A-B', function(r){ return Math.abs(r.A - r.B); }, [5,8,10,15,20,25]],
+    ['B-C', function(r){ return Math.abs(r.B - r.C); }, [3,5,8,10,12,15,20]]
+  ].forEach(function(d){
+    d[2].forEach(function(t){
+      conds.push({
+        name:'|' + d[0] + '| ≤ ' + t,
+        test:(function(g,t2){ return function(r){ return g(r) <= t2; }; })(d[1],t),
+        dim:'|' + d[0] + '|'
+      });
+    });
+  });
+
+  /* 類型 6：比值 */
+  [
+    ['A/B', function(r){ return r.B > 0 ? r.A / r.B : 0; }, [1, 1.2, 1.5, 1.8, 2, 2.5]],
+    ['A/C', function(r){ return r.C > 0 ? r.A / r.C : 0; }, [1, 1.2, 1.5, 1.8, 2, 2.5]],
+    ['C/A', function(r){ return r.A > 0 ? r.C / r.A : 0; }, [1, 1.2, 1.5, 1.8, 2, 2.5]],
+    ['B/C', function(r){ return r.C > 0 ? r.B / r.C : 0; }, [1, 1.2, 1.5]],
+    ['C/B', function(r){ return r.B > 0 ? r.C / r.B : 0; }, [1, 1.2, 1.5]]
+  ].forEach(function(d){
+    d[2].forEach(function(t){
+      conds.push({
+        name:d[0] + ' ≥ ' + t,
+        test:(function(g,t2){ return function(r){ return g(r) >= t2; }; })(d[1],t),
+        dim:d[0]
+      });
+    });
+  });
+
+  /* 類型 7：和 */
+  [
+    ['A+B', function(r){ return r.A + r.B; }, [55, 60, 65, 70, 75, 80, 85]],
+    ['B+C', function(r){ return r.B + r.C; }, [40, 45, 50, 55, 60, 65, 70]],
+    ['A+C', function(r){ return r.A + r.C; }, [50, 55, 60, 65, 70, 75, 80]],
+    ['A+B+C', function(r){ return r.A + r.B + r.C; }, [95, 98, 100, 102, 105]]
+  ].forEach(function(d){
+    d[2].forEach(function(t){
+      conds.push({ name:d[0] + ' ≥ ' + t, test:(function(g,t2){ return function(r){ return g(r) >= t2; }; })(d[1],t), dim:d[0] });
+      conds.push({ name:d[0] + ' < ' + t, test:(function(g,t2){ return function(r){ return g(r) < t2; }; })(d[1],t), dim:d[0] });
+    });
+  });
+
+  /* 類型 8：三變數排序 */
+  [
+    ['A > B > C', function(r){ return r.A > r.B && r.B > r.C; }],
+    ['A > C > B', function(r){ return r.A > r.C && r.C > r.B; }],
+    ['B > A > C', function(r){ return r.B > r.A && r.A > r.C; }],
+    ['B > C > A', function(r){ return r.B > r.C && r.C > r.A; }],
+    ['C > A > B', function(r){ return r.C > r.A && r.A > r.B; }],
+    ['C > B > A', function(r){ return r.C > r.B && r.B > r.A; }]
+  ].forEach(function(d){
+    conds.push({ name:d[0], test:d[1], dim:'order' });
+  });
+
+  /* 類型 9：排名 */
+  ['A','B','C'].forEach(function(f){
+    var others = ['A','B','C'].filter(function(x){ return x !== f; });
+    var o1 = others[0], o2 = others[1];
+    conds.push({
+      name:f + ' 第 1',
+      test:(function(f2,o12,o22){ return function(r){ return r[f2] >= r[o12] && r[f2] >= r[o22]; }; })(f,o1,o2),
+      dim:'rank-' + f
+    });
+    conds.push({
+      name:f + ' 第 3',
+      test:(function(f2,o12,o22){ return function(r){ return r[f2] < r[o12] && r[f2] < r[o22]; }; })(f,o1,o2),
+      dim:'rank-' + f
+    });
+    conds.push({
+      name:f + ' 第 2',
+      test:(function(f2,o12,o22){
+        return function(r){
+          var isMin = r[f2] < r[o12] && r[f2] < r[o22];
+          var isMax = r[f2] >= r[o12] && r[f2] >= r[o22];
+          return !isMin && !isMax;
+        };
+      })(f,o1,o2),
+      dim:'rank-' + f
+    });
+  });
+
+  /* 類型 10：極差 */
+  [10, 15, 20, 25, 30, 35, 40, 50].forEach(function(t){
+    conds.push({
+      name:'max − min ≥ ' + t,
+      test:(function(t2){ return function(r){ return Math.max(r.A,r.B,r.C) - Math.min(r.A,r.B,r.C) >= t2; }; })(t),
+      dim:'range'
+    });
+  });
+  [5, 10, 15, 20].forEach(function(t){
+    conds.push({
+      name:'max − min ≤ ' + t,
+      test:(function(t2){ return function(r){ return Math.max(r.A,r.B,r.C) - Math.min(r.A,r.B,r.C) <= t2; }; })(t),
+      dim:'range'
+    });
+  });
+
+  /* 類型 11：與平均差 */
+  ['A','B','C'].forEach(function(f){
+    [5, 8, 10, 12, 15, 18, 20].forEach(function(t){
+      conds.push({
+        name:f + ' − avg ≥ ' + t,
+        test:(function(f2,t2){ return function(r){ return r[f2] - (r.A+r.B+r.C)/3 >= t2; }; })(f,t),
+        dim:'avg-' + f
+      });
+      conds.push({
+        name:f + ' − avg ≤ -' + t,
+        test:(function(f2,t2){ return function(r){ return r[f2] - (r.A+r.B+r.C)/3 <= -t2; }; })(f,t),
+        dim:'avg-' + f
+      });
+    });
+  });
+
+  /* 類型 12：標準化差 */
+  [
+    ['A-C', function(r){ return (r.A - r.C) / Math.max(1, r.A+r.B+r.C); }, [0.05, 0.1, 0.15, 0.2, 0.25]],
+    ['C-A', function(r){ return (r.C - r.A) / Math.max(1, r.A+r.B+r.C); }, [0.05, 0.1, 0.15, 0.2, 0.25]],
+    ['A-B', function(r){ return (r.A - r.B) / Math.max(1, r.A+r.B+r.C); }, [0.05, 0.1, 0.15, 0.2]],
+    ['B-C', function(r){ return (r.B - r.C) / Math.max(1, r.A+r.B+r.C); }, [0.05, 0.1, 0.15]]
+  ].forEach(function(d){
+    d[2].forEach(function(t){
+      conds.push({
+        name:'(' + d[0] + ')/Σ ≥ ' + t,
+        test:(function(g,t2){ return function(r){ return g(r) >= t2; }; })(d[1],t),
+        dim:'norm-' + d[0]
+      });
+    });
+  });
+
+  return conds;
+}
+
+/* 矛盾檢查 */
+function isContradict(c1, c2){
+  var n1 = c1.name, n2 = c2.name;
+  if(c1.dim === c2.dim){
+    var a1 = n1.match(/^([ABC]) (≥|<) (\d+)/);
+    var a2 = n2.match(/^([ABC]) (≥|<) (\d+)/);
+    if(a1 && a2 && a1[1] === a2[1]){
+      var dir1 = (a1[2] === '≥') ? 'up' : 'dn';
+      var dir2 = (a2[2] === '≥') ? 'up' : 'dn';
+      if(dir1 !== dir2){
+        var t1 = +a1[3], t2 = +a2[3];
+        if(dir1 === 'up' && t1 >= t2) return true;
+        if(dir1 === 'dn' && t1 <= t2) return true;
+      }
+    }
+  }
+  var maxNames = ['A 第 1', 'B 第 1', 'C 第 1', 'A 最大', 'B 最大', 'C 最大'];
+  if(maxNames.indexOf(n1) !== -1 && maxNames.indexOf(n2) !== -1) return true;
+  var minNames = ['A 第 3', 'B 第 3', 'C 第 3', 'A 最小', 'B 最小', 'C 最小'];
+  if(minNames.indexOf(n1) !== -1 && minNames.indexOf(n2) !== -1) return true;
+  if(n1.indexOf(' > ') !== -1 && n2.indexOf(' > ') !== -1){
+    var p1 = n1.split(' > ').map(function(x){ return x.trim(); }).join('>');
+    var p2 = n2.split(' > ').map(function(x){ return x.trim(); }).join('>');
+    var rev = p2.split('>').reverse().join('>');
+    if(p1 === rev) return true;
+  }
+  return false;
+}
+
+function evalBucket(name, b){
+  if(b.total < FIXED_MIN_SAMPLE) return null;
+  var max = Math.max(b.H, b.D, b.A);
+  var top = max === b.H ? 'H' : (max === b.D ? 'D' : 'A');
+  var topPct = Math.round(max / b.total * 100);
+  if(topPct < FIXED_MIN_PURITY) return null;
+  return {
+    cond:name, total:b.total, H:b.H, D:b.D, A:b.A, top:top, topPct:topPct,
+    score: topPct * Math.min(b.total, 30)
+  };
+}
+
+/* ===== 主流程 ===== */
+function runAll(){
+  var rows = parseData($('input-train').value);
+  DATA = rows;
+  if(rows.length === 0){ alert('沒有有效資料。格式：A B C 結果'); return; }
+
+  var overlay = document.createElement('div');
+  overlay.className = 'loading-overlay';
+  overlay.innerHTML = '<div class="spinner"></div><div class="text">分析中...</div><div class="sub" id="loadingSub">生成條件...</div>';
+  document.body.appendChild(overlay);
+
+  setTimeout(function(){
+    try {
+      var tStart = Date.now();
+      var rc = { H:0, D:0, A:0 };
+      rows.forEach(function(r){ rc[r.result]++; });
+      $('statBar').innerHTML = '<div class="stat-bar">' +
+        '<span>📊 共 <b>' + rows.length + '</b> 筆</span>' +
+        '<span class="h">🟢 H 主勝 <b>' + rc.H + '</b>（' + (rc.H/rows.length*100).toFixed(0) + '%）</span>' +
+        '<span class="d">🟡 D 和局 <b>' + rc.D + '</b>（' + (rc.D/rows.length*100).toFixed(0) + '%）</span>' +
+        '<span class="a">🔴 A 客勝 <b>' + rc.A + '</b>（' + (rc.A/rows.length*100).toFixed(0) + '%）</span>' +
+        '</div>';
+
+      renderPermTable(analyzePermutations(rows));
+      renderNumTable('acTable', analyzeNumeric(rows, function(r){ return r.A - r.C; }, -100, 101, 10));
+      renderNumTable('abTable', analyzeNumeric(rows, function(r){ return r.A - r.B; }, -100, 101, 10));
+      renderNumTable('bcTable', analyzeNumeric(rows, function(r){ return r.B - r.C; }, -100, 101, 10));
+      renderNumTable('aTable', analyzeNumeric(rows, function(r){ return r.A; }, 0, 101, 10));
+      $('analysisArea').classList.remove('hidden');
+
+      var conds = buildConditions();
+      $('loadingSub').textContent = '單條件：' + conds.length + ' 個...';
+      console.log('[v5.1] 生成單條件：', conds.length, '個');
+
+      var allRules = [];
+      var singleRules = [];
+
+      for(var i = 0; i < conds.length; i++){
+        var c = conds[i], b = makeBucket();
+        for(var j = 0; j < rows.length; j++){
+          if(c.test(rows[j])) addToBucket(b, rows[j].result);
+        }
+        var r = evalBucket(c.name, b);
+        if(r){ r.condObj = c; singleRules.push(r); allRules.push(r); }
+      }
+
+      singleRules.sort(function(a, b){ return b.score - a.score; });
+      console.log('[v5.1] 合格單條件：', singleRules.length, '個');
+
+      $('loadingSub').textContent = '雙條件組合中...';
+      var doubleBase = singleRules.slice(0, DOUBLE_FROM_TOP);
+      for(var i = 0; i < doubleBase.length; i++){
+        for(var j = i + 1; j < doubleBase.length; j++){
+          var c1 = doubleBase[i].condObj, c2 = doubleBase[j].condObj;
+          if(isContradict(c1, c2)) continue;
+          var b2 = makeBucket();
+          for(var k = 0; k < rows.length; k++){
+            if(c1.test(rows[k]) && c2.test(rows[k])) addToBucket(b2, rows[k].result);
+          }
+          var r2 = evalBucket(c1.name + ' 且 ' + c2.name, b2);
+          if(r2){ r2.condObj = c1; allRules.push(r2); }
+        }
+      }
+
+      $('loadingSub').textContent = '三條件組合中...';
+      var tripleBase = singleRules.slice(0, TRIPLE_FROM_TOP);
+      for(var i = 0; i < tripleBase.length; i++){
+        for(var j = i + 1; j < tripleBase.length; j++){
+          for(var k = j + 1; k < tripleBase.length; k++){
+            var c1 = tripleBase[i].condObj, c2 = tripleBase[j].condObj, c3 = tripleBase[k].condObj;
+            if(isContradict(c1, c2) || isContradict(c1, c3) || isContradict(c2, c3)) continue;
+            var b3 = makeBucket();
+            for(var m = 0; m < rows.length; m++){
+              if(c1.test(rows[m]) && c2.test(rows[m]) && c3.test(rows[m])){
+                addToBucket(b3, rows[m].result);
+              }
+            }
+            var r3 = evalBucket(c1.name + ' 且 ' + c2.name + ' 且 ' + c3.name, b3);
+            if(r3) allRules.push(r3);
+          }
+        }
+      }
+
+      console.log('[v5.1] 總規則數：', allRules.length);
+
+      var seen = {};
+      ALL_RULES = allRules.filter(function(r){
+        if(seen[r.cond]) return false;
+        seen[r.cond] = true;
+        return true;
+      });
+
+      TOP_RULES = pickBalancedRules(ALL_RULES, FORMULA_MAX_RULES);
+
+      var listH = ALL_RULES.filter(function(r){ return r.top === 'H'; }).sort(function(a,b){ return b.score - a.score; }).slice(0, TOP_N);
+      var listD = ALL_RULES.filter(function(r){ return r.top === 'D'; }).sort(function(a,b){ return b.score - a.score; }).slice(0, TOP_N);
+      var listA = ALL_RULES.filter(function(r){ return r.top === 'A'; }).sort(function(a,b){ return b.score - a.score; }).slice(0, TOP_N);
+
+      renderBoard('rules-H', listH);
+      renderBoard('rules-D', listD);
+      renderBoard('rules-A', listA);
+
+      $('count-H').textContent = listH.length;
+      $('count-D').textContent = listD.length;
+      $('count-A').textContent = listA.length;
+
+      var elapsed = ((Date.now() - tStart) / 1000).toFixed(2);
+      $('searchStats').innerHTML =
+        '📊 評估條件：<b>' + conds.length + '</b> 個單條件 · ' +
+        '合格單條件 <b>' + singleRules.length + '</b> 條 · ' +
+        '總規則 <b>' + ALL_RULES.length + '</b> 條 · ' +
+        '耗時 <b>' + elapsed + '</b> 秒';
+
+      $('rulesArea').classList.remove('hidden');
+      document.body.removeChild(overlay);
+      $('rulesArea').scrollIntoView({behavior:'smooth', block:'start'});
+
+    } catch(e){
+      console.error(e);
+      if(overlay.parentNode) document.body.removeChild(overlay);
+      alert('分析出錯：' + e.message);
+    }
+  }, 50);
+}
+
+function pickBalancedRules(allRules, limit){
+  var byTop = { H:[], D:[], A:[] };
+  allRules.forEach(function(r){ byTop[r.top].push(r); });
+  Object.keys(byTop).forEach(function(k){
+    byTop[k].sort(function(a, b){ return b.score - a.score; });
+  });
+  var picked = [];
+  ['H','D','A'].forEach(function(k){
+    picked = picked.concat(byTop[k].slice(0, FORMULA_PER_CLASS));
+  });
+  if(picked.length < limit){
+    var pickedConds = {};
+    picked.forEach(function(r){ pickedConds[r.cond] = true; });
+    var rest = allRules.filter(function(r){ return !pickedConds[r.cond]; }).sort(function(a, b){ return b.score - a.score; });
+    picked = picked.concat(rest.slice(0, limit - picked.length));
+  }
+  picked.sort(function(a, b){ return b.score - a.score; });
+  return picked.slice(0, limit);
+}
+
+function renderBoard(containerId, rules){
+  var el = $(containerId);
+  if(rules.length === 0){
+    el.innerHTML = '<div class="empty-msg">找不到規則</div>';
+    return;
+  }
+  var html = '';
+  for(var i = 0; i < rules.length; i++){
+    var r = rules[i];
+    var medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '#' + (i+1)));
+    html += '<div class="rule-item' + (i === 0 ? ' rank-1' : '') + '">' +
+      '<div class="head"><span class="rank">' + medal + '</span><span class="pct">' + r.topPct + '%</span></div>' +
+      '<div class="cond">' + escapeHtml(r.cond) + '</div>' +
+      '<div class="samples"><span>共 ' + r.total + '</span>' +
+        '<span class="cH">H ' + r.H + '</span>' +
+        '<span class="cD">D ' + r.D + '</span>' +
+        '<span class="cA">A ' + r.A + '</span></div></div>';
+  }
+  el.innerHTML = html;
+}
+
+/* ===== 分布表 ===== */
 function analyzePermutations(rows){
   var keys = ['A≥B≥C', 'A≥C>B', 'B>A≥C', 'B≥C>A', 'C>A≥B', 'C>B>A'];
   var buckets = {};
@@ -329,7 +719,6 @@ function analyzePermutations(rows){
   }
   return { keys:keys, buckets:buckets };
 }
-
 function analyzeNumeric(rows, getValue, min, max, step){
   var buckets = {};
   for(var v = min; v < max; v += step) buckets[v] = makeBucket();
@@ -342,7 +731,6 @@ function analyzeNumeric(rows, getValue, min, max, step){
   }
   return { keys:Object.keys(buckets).map(Number).sort(function(a,b){return a-b;}), buckets:buckets };
 }
-
 function renderPermTable(analysis){
   var html = '<thead><tr><th style="text-align:left">排列</th><th style="width:50px">總數</th><th style="width:36px">H</th><th style="width:36px">D</th><th style="width:36px">A</th><th>分布</th><th style="width:110px">最常</th></tr></thead><tbody>';
   var any = false;
@@ -361,7 +749,6 @@ function renderPermTable(analysis){
   if(!any) html += '<tr><td colspan="7" class="empty-msg">無資料</td></tr>';
   $('permTable').innerHTML = html + '</tbody>';
 }
-
 function renderNumTable(tableId, analysis){
   var html = '<thead><tr><th style="text-align:left">區間</th><th style="width:44px">總數</th><th style="width:32px">H</th><th style="width:32px">D</th><th style="width:32px">A</th><th>分布</th><th style="width:100px">最常</th></tr></thead><tbody>';
   var any = false;
@@ -383,251 +770,7 @@ function renderNumTable(tableId, analysis){
   $(tableId).innerHTML = html + '</tbody>';
 }
 
-function buildConditions(){
-  var conds = [];
-
-  [['A',[25,30,35,40,45,50,55,60,65,70]], ['B',[20,22,25,28,30,33]], ['C',[20,25,30,35,40,45,50,55,60]]].forEach(function(pair){
-    var f = pair[0];
-    pair[1].forEach(function(t){
-      conds.push({ name:f + ' ≥ ' + t, test:(function(f2,t2){ return function(r){ return r[f2] >= t2; }; })(f,t), dim:f });
-      conds.push({ name:f + ' < ' + t, test:(function(f2,t2){ return function(r){ return r[f2] < t2; }; })(f,t), dim:f });
-    });
-  });
-
-  [
-    ['A-C', function(r){ return r.A - r.C; }, [-40,-30,-25,-20,-15,-10,10,15,20,25,30,40]],
-    ['A-B', function(r){ return r.A - r.B; }, [10,15,20,25,30,40,50]],
-    ['B-C', function(r){ return r.B - r.C; }, [-25,-20,-15,-10,5,10,15]],
-    ['C-A', function(r){ return r.C - r.A; }, [10,20,30,40]]
-  ].forEach(function(d){
-    var name = d[0];
-    d[2].forEach(function(t){
-      if(t > 0){
-        conds.push({ name:name + ' ≥ ' + t, test:(function(g,t2){ return function(r){ return g(r) >= t2; }; })(d[1],t), dim:name });
-      } else {
-        conds.push({ name:name + ' ≤ ' + t, test:(function(g,t2){ return function(r){ return g(r) <= t2; }; })(d[1],t), dim:name });
-      }
-    });
-  });
-
-  [['A','C',[5,10,15,20]], ['A','B',[10,15,20]], ['B','C',[5,10,15]]].forEach(function(p){
-    var f1 = p[0], f2 = p[1];
-    p[2].forEach(function(t){
-      conds.push({
-        name:'|' + f1 + '-' + f2 + '| ≤ ' + t,
-        test:(function(a, b, t2){ return function(r){ return Math.abs(r[a] - r[b]) <= t2; }; })(f1, f2, t),
-        dim:'|' + f1 + '-' + f2 + '|'
-      });
-    });
-  });
-
-  [
-    ['A/B', function(r){ return r.B > 0 ? r.A / r.B : 0; }, [1, 1.2, 1.5, 2]],
-    ['A/C', function(r){ return r.C > 0 ? r.A / r.C : 0; }, [1, 1.2, 1.5, 2]],
-    ['C/A', function(r){ return r.A > 0 ? r.C / r.A : 0; }, [1, 1.2, 1.5, 2]]
-  ].forEach(function(d){
-    var name = d[0];
-    d[2].forEach(function(t){
-      conds.push({
-        name:name + ' ≥ ' + t,
-        test:(function(g,t2){ return function(r){ return g(r) >= t2; }; })(d[1],t),
-        dim:name
-      });
-    });
-  });
-
-  conds.push({ name:'A 最大', test:function(r){ return r.A >= r.B && r.A >= r.C; }, dim:'pos' });
-  conds.push({ name:'B 最大', test:function(r){ return r.B > r.A && r.B >= r.C; }, dim:'pos' });
-  conds.push({ name:'C 最大', test:function(r){ return r.C > r.A && r.C > r.B; }, dim:'pos' });
-  conds.push({ name:'A 最小', test:function(r){ return r.A <= r.B && r.A <= r.C; }, dim:'pos' });
-  conds.push({ name:'B 最小', test:function(r){ return r.B < r.A && r.B < r.C; }, dim:'pos' });
-  conds.push({ name:'C 最小', test:function(r){ return r.C < r.A && r.C <= r.B; }, dim:'pos' });
-
-  return conds;
-}
-
-function isContradict(c1, c2){
-  if(c1.dim === c2.dim){
-    var n1 = c1.name, n2 = c2.name;
-    if((n1 === 'A 最大' && n2 === 'A 最小') || (n1 === 'A 最小' && n2 === 'A 最大')) return true;
-    if((n1 === 'B 最大' && n2 === 'B 最小') || (n1 === 'B 最小' && n2 === 'B 最大')) return true;
-    if((n1 === 'C 最大' && n2 === 'C 最小') || (n1 === 'C 最小' && n2 === 'C 最大')) return true;
-    var maxNames = ['A 最大', 'B 最大', 'C 最大'];
-    if(maxNames.indexOf(n1) !== -1 && maxNames.indexOf(n2) !== -1) return true;
-    var minNames = ['A 最小', 'B 最小', 'C 最小'];
-    if(minNames.indexOf(n1) !== -1 && minNames.indexOf(n2) !== -1) return true;
-  }
-  return false;
-}
-
-function evalBucket(name, b){
-  if(b.total < FIXED_MIN_SAMPLE) return null;
-  var max = Math.max(b.H, b.D, b.A);
-  var top = max === b.H ? 'H' : (max === b.D ? 'D' : 'A');
-  var topPct = Math.round(max / b.total * 100);
-  if(topPct < FIXED_MIN_PURITY) return null;
-  return {
-    cond:name, total:b.total, H:b.H, D:b.D, A:b.A, top:top, topPct:topPct,
-    score: topPct * Math.min(b.total, 30)
-  };
-}
-
-function runAll(){
-  var rows = parseData($('input-train').value);
-  DATA = rows;
-  if(rows.length === 0){ alert('沒有有效資料。格式：A B C 結果'); return; }
-
-  var overlay = document.createElement('div');
-  overlay.className = 'loading-overlay';
-  overlay.innerHTML = '<div class="spinner"></div><div class="text">分析中...</div>';
-  document.body.appendChild(overlay);
-
-  setTimeout(function(){
-    try {
-      var rc = { H:0, D:0, A:0 };
-      rows.forEach(function(r){ rc[r.result]++; });
-      $('statBar').innerHTML = '<div class="stat-bar">' +
-        '<span>📊 共 <b>' + rows.length + '</b> 筆</span>' +
-        '<span class="h">🟢 H 主勝 <b>' + rc.H + '</b>（' + (rc.H/rows.length*100).toFixed(0) + '%）</span>' +
-        '<span class="d">🟡 D 和局 <b>' + rc.D + '</b>（' + (rc.D/rows.length*100).toFixed(0) + '%）</span>' +
-        '<span class="a">🔴 A 客勝 <b>' + rc.A + '</b>（' + (rc.A/rows.length*100).toFixed(0) + '%）</span>' +
-        '</div>';
-
-      renderPermTable(analyzePermutations(rows));
-      renderNumTable('acTable', analyzeNumeric(rows, function(r){ return r.A - r.C; }, -100, 101, 10));
-      renderNumTable('abTable', analyzeNumeric(rows, function(r){ return r.A - r.B; }, -100, 101, 10));
-      renderNumTable('bcTable', analyzeNumeric(rows, function(r){ return r.B - r.C; }, -100, 101, 10));
-      renderNumTable('aTable', analyzeNumeric(rows, function(r){ return r.A; }, 0, 101, 10));
-      $('analysisArea').classList.remove('hidden');
-
-      var conds = buildConditions();
-      var allRules = [];
-
-      for(var i = 0; i < conds.length; i++){
-        var c = conds[i], b = makeBucket();
-        for(var j = 0; j < rows.length; j++){
-          if(c.test(rows[j])) addToBucket(b, rows[j].result);
-        }
-        var r = evalBucket(c.name, b);
-        if(r){ r.condObj = c; allRules.push(r); }
-      }
-
-      for(var i = 0; i < conds.length; i++){
-        for(var j = i + 1; j < conds.length; j++){
-          var c1 = conds[i], c2 = conds[j];
-          if(isContradict(c1, c2)) continue;
-          var b2 = makeBucket();
-          for(var k = 0; k < rows.length; k++){
-            if(c1.test(rows[k]) && c2.test(rows[k])) addToBucket(b2, rows[k].result);
-          }
-          var r2 = evalBucket(c1.name + ' 且 ' + c2.name, b2);
-          if(r2){ r2.condObj = c1; allRules.push(r2); }
-        }
-      }
-
-      var topSingles = allRules.slice().sort(function(a, b){ return b.score - a.score; }).slice(0, 20);
-      for(var i = 0; i < topSingles.length; i++){
-        for(var j = i + 1; j < topSingles.length; j++){
-          for(var k = j + 1; k < topSingles.length; k++){
-            var r1 = topSingles[i], r2b = topSingles[j], r3 = topSingles[k];
-            if(!r1.condObj || !r2b.condObj || !r3.condObj) continue;
-            if(isContradict(r1.condObj, r2b.condObj) || isContradict(r1.condObj, r3.condObj) || isContradict(r2b.condObj, r3.condObj)) continue;
-            var b3 = makeBucket();
-            for(var m = 0; m < rows.length; m++){
-              if(r1.condObj.test(rows[m]) && r2b.condObj.test(rows[m]) && r3.condObj.test(rows[m])){
-                addToBucket(b3, rows[m].result);
-              }
-            }
-            var r3b = evalBucket(r1.cond + ' 且 ' + r2b.cond + ' 且 ' + r3.cond, b3);
-            if(r3b) allRules.push(r3b);
-          }
-        }
-      }
-
-      var seen = {};
-      ALL_RULES = allRules.filter(function(r){
-        if(seen[r.cond]) return false;
-        seen[r.cond] = true;
-        return true;
-      });
-
-      /* ⭐ v4.2 修正：H/D/A 三類各取前 N 條，合併後排序 */
-      TOP_RULES = pickBalancedRules(ALL_RULES, FORMULA_MAX_RULES);
-
-      var listH = ALL_RULES.filter(function(r){ return r.top === 'H'; }).sort(function(a,b){ return b.score - a.score; }).slice(0, TOP_N);
-      var listD = ALL_RULES.filter(function(r){ return r.top === 'D'; }).sort(function(a,b){ return b.score - a.score; }).slice(0, TOP_N);
-      var listA = ALL_RULES.filter(function(r){ return r.top === 'A'; }).sort(function(a,b){ return b.score - a.score; }).slice(0, TOP_N);
-
-      renderBoard('rules-H', listH);
-      renderBoard('rules-D', listD);
-      renderBoard('rules-A', listA);
-
-      $('count-H').textContent = listH.length;
-      $('count-D').textContent = listD.length;
-      $('count-A').textContent = listA.length;
-
-      $('rulesArea').classList.remove('hidden');
-      document.body.removeChild(overlay);
-      $('rulesArea').scrollIntoView({behavior:'smooth', block:'start'});
-
-    } catch(e){
-      console.error(e);
-      if(overlay.parentNode) document.body.removeChild(overlay);
-      alert('分析出錯：' + e.message);
-    }
-  }, 50);
-}
-
-/* ⭐ 平衡選擇：每個結果各取前 N 條，再按分數排序 */
-function pickBalancedRules(allRules, limit){
-  var byTop = { H:[], D:[], A:[] };
-  allRules.forEach(function(r){ byTop[r.top].push(r); });
-  Object.keys(byTop).forEach(function(k){
-    byTop[k].sort(function(a, b){ return b.score - a.score; });
-  });
-
-  var perClass = FORMULA_PER_CLASS;
-  var picked = [];
-  ['H','D','A'].forEach(function(k){
-    picked = picked.concat(byTop[k].slice(0, perClass));
-  });
-
-  /* 若不足 limit，用剩餘高分規則補滿 */
-  if(picked.length < limit){
-    var pickedConds = {};
-    picked.forEach(function(r){ pickedConds[r.cond] = true; });
-    var rest = allRules.filter(function(r){ return !pickedConds[r.cond]; }).sort(function(a, b){ return b.score - a.score; });
-    picked = picked.concat(rest.slice(0, limit - picked.length));
-  }
-
-  /* 若超過 limit，按分數截斷 */
-  picked.sort(function(a, b){ return b.score - a.score; });
-  return picked.slice(0, limit);
-}
-
-function renderBoard(containerId, rules){
-  var el = $(containerId);
-  if(rules.length === 0){
-    el.innerHTML = '<div class="empty-msg">找不到規則<br><span style="font-size:11px">試試增加更多資料</span></div>';
-    return;
-  }
-  var html = '';
-  for(var i = 0; i < rules.length; i++){
-    var r = rules[i];
-    var medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '#' + (i+1)));
-    html += '<div class="rule-item' + (i === 0 ? ' rank-1' : '') + '">' +
-      '<div class="head"><span class="rank">' + medal + '</span><span class="pct">' + r.topPct + '%</span></div>' +
-      '<div class="cond">' + escapeHtml(r.cond) + '</div>' +
-      '<div class="samples">' +
-        '<span>共 ' + r.total + '</span>' +
-        '<span class="cH">H ' + r.H + '</span>' +
-        '<span class="cD">D ' + r.D + '</span>' +
-        '<span class="cA">A ' + r.A + '</span>' +
-      '</div></div>';
-  }
-  el.innerHTML = html;
-}
-
+/* ===== 預測 ===== */
 function doPredict(){
   var A = parseFloat($('pred-A').value);
   var B = parseFloat($('pred-B').value);
@@ -696,32 +839,97 @@ function matchRule(row, condStr){
 }
 
 function matchSingle(row, cond){
-  var A = row.A, B = row.B, C = row.C, m;
+  var A = row.A, B = row.B, C = row.C, m, avg;
+
   if((m = cond.match(/^A ≥ (\d+)$/))) return A >= +m[1];
   if((m = cond.match(/^A < (\d+)$/))) return A < +m[1];
   if((m = cond.match(/^B ≥ (\d+)$/))) return B >= +m[1];
   if((m = cond.match(/^B < (\d+)$/))) return B < +m[1];
   if((m = cond.match(/^C ≥ (\d+)$/))) return C >= +m[1];
   if((m = cond.match(/^C < (\d+)$/))) return C < +m[1];
+
+  if((m = cond.match(/^(\d+) ≤ A ≤ (\d+)$/))) return A >= +m[1] && A <= +m[2];
+  if((m = cond.match(/^(\d+) ≤ B ≤ (\d+)$/))) return B >= +m[1] && B <= +m[2];
+  if((m = cond.match(/^(\d+) ≤ C ≤ (\d+)$/))) return C >= +m[1] && C <= +m[2];
+
   if((m = cond.match(/^A-C ≥ (-?\d+)$/))) return (A - C) >= +m[1];
   if((m = cond.match(/^A-C ≤ (-?\d+)$/))) return (A - C) <= +m[1];
   if((m = cond.match(/^A-B ≥ (-?\d+)$/))) return (A - B) >= +m[1];
   if((m = cond.match(/^A-B ≤ (-?\d+)$/))) return (A - B) <= +m[1];
   if((m = cond.match(/^B-C ≥ (-?\d+)$/))) return (B - C) >= +m[1];
   if((m = cond.match(/^B-C ≤ (-?\d+)$/))) return (B - C) <= +m[1];
-  if((m = cond.match(/^C-A ≥ (\d+)$/))) return (C - A) >= +m[1];
+  if((m = cond.match(/^C-A ≥ (-?\d+)$/))) return (C - A) >= +m[1];
+  if((m = cond.match(/^C-B ≥ (-?\d+)$/))) return (C - B) >= +m[1];
+  if((m = cond.match(/^B-A ≥ (-?\d+)$/))) return (B - A) >= +m[1];
+
+  if((m = cond.match(/^(-?\d+) ≤ A-C ≤ (-?\d+)$/))){ var v = A-C; return v >= +m[1] && v <= +m[2]; }
+  if((m = cond.match(/^(-?\d+) ≤ A-B ≤ (-?\d+)$/))){ var v = A-B; return v >= +m[1] && v <= +m[2]; }
+  if((m = cond.match(/^(-?\d+) ≤ B-C ≤ (-?\d+)$/))){ var v = B-C; return v >= +m[1] && v <= +m[2]; }
+  if((m = cond.match(/^(-?\d+) ≤ C-A ≤ (-?\d+)$/))){ var v = C-A; return v >= +m[1] && v <= +m[2]; }
+
   if((m = cond.match(/^\|A-C\| ≤ (\d+)$/))) return Math.abs(A - C) <= +m[1];
   if((m = cond.match(/^\|A-B\| ≤ (\d+)$/))) return Math.abs(A - B) <= +m[1];
   if((m = cond.match(/^\|B-C\| ≤ (\d+)$/))) return Math.abs(B - C) <= +m[1];
+
   if((m = cond.match(/^A\/B ≥ ([\d.]+)$/))) return B > 0 && (A / B) >= +m[1];
   if((m = cond.match(/^A\/C ≥ ([\d.]+)$/))) return C > 0 && (A / C) >= +m[1];
   if((m = cond.match(/^C\/A ≥ ([\d.]+)$/))) return A > 0 && (C / A) >= +m[1];
-  if(cond === 'A 最大') return A >= B && A >= C;
-  if(cond === 'B 最大') return B > A && B >= C;
-  if(cond === 'C 最大') return C > A && C > B;
-  if(cond === 'A 最小') return A <= B && A <= C;
-  if(cond === 'B 最小') return B < A && B < C;
-  if(cond === 'C 最小') return C < A && C <= B;
+  if((m = cond.match(/^B\/C ≥ ([\d.]+)$/))) return C > 0 && (B / C) >= +m[1];
+  if((m = cond.match(/^C\/B ≥ ([\d.]+)$/))) return B > 0 && (C / B) >= +m[1];
+
+  if((m = cond.match(/^A\+B ≥ (\d+)$/))) return (A + B) >= +m[1];
+  if((m = cond.match(/^A\+B < (\d+)$/))) return (A + B) < +m[1];
+  if((m = cond.match(/^B\+C ≥ (\d+)$/))) return (B + C) >= +m[1];
+  if((m = cond.match(/^B\+C < (\d+)$/))) return (B + C) < +m[1];
+  if((m = cond.match(/^A\+C ≥ (\d+)$/))) return (A + C) >= +m[1];
+  if((m = cond.match(/^A\+C < (\d+)$/))) return (A + C) < +m[1];
+  if((m = cond.match(/^A\+B\+C ≥ (\d+)$/))) return (A + B + C) >= +m[1];
+  if((m = cond.match(/^A\+B\+C < (\d+)$/))) return (A + B + C) < +m[1];
+
+  if(cond === 'A > B > C') return A > B && B > C;
+  if(cond === 'A > C > B') return A > C && C > B;
+  if(cond === 'B > A > C') return B > A && A > C;
+  if(cond === 'B > C > A') return B > C && C > A;
+  if(cond === 'C > A > B') return C > A && A > B;
+  if(cond === 'C > B > A') return C > B && B > A;
+
+  if(cond === 'A 第 1') return A >= B && A >= C;
+  if(cond === 'B 第 1') return B >= A && B >= C;
+  if(cond === 'C 第 1') return C >= A && C >= B;
+  if(cond === 'A 第 3') return A < B && A < C;
+  if(cond === 'B 第 3') return B < A && B < C;
+  if(cond === 'C 第 3') return C < A && C < B;
+  if(cond === 'A 第 2'){
+    var isMinA = A < B && A < C, isMaxA = A >= B && A >= C;
+    return !isMinA && !isMaxA;
+  }
+  if(cond === 'B 第 2'){
+    var isMinB = B < A && B < C, isMaxB = B >= A && B >= C;
+    return !isMinB && !isMaxB;
+  }
+  if(cond === 'C 第 2'){
+    var isMinC = C < A && C < B, isMaxC = C >= A && C >= B;
+    return !isMinC && !isMaxC;
+  }
+
+  if((m = cond.match(/^max − min ≥ (\d+)$/))) return (Math.max(A,B,C) - Math.min(A,B,C)) >= +m[1];
+  if((m = cond.match(/^max − min ≤ (\d+)$/))) return (Math.max(A,B,C) - Math.min(A,B,C)) <= +m[1];
+
+  avg = (A + B + C) / 3;
+  if((m = cond.match(/^A − avg ≥ (\d+)$/))) return (A - avg) >= +m[1];
+  if((m = cond.match(/^A − avg ≤ -(\d+)$/))) return (A - avg) <= -(+m[1]);
+  if((m = cond.match(/^B − avg ≥ (\d+)$/))) return (B - avg) >= +m[1];
+  if((m = cond.match(/^B − avg ≤ -(\d+)$/))) return (B - avg) <= -(+m[1]);
+  if((m = cond.match(/^C − avg ≥ (\d+)$/))) return (C - avg) >= +m[1];
+  if((m = cond.match(/^C − avg ≤ -(\d+)$/))) return (C - avg) <= -(+m[1]);
+
+  var sum = Math.max(1, A + B + C);
+  if((m = cond.match(/^\(A-C\)\/Σ ≥ ([\d.]+)$/))) return (A - C) / sum >= +m[1];
+  if((m = cond.match(/^\(C-A\)\/Σ ≥ ([\d.]+)$/))) return (C - A) / sum >= +m[1];
+  if((m = cond.match(/^\(A-B\)\/Σ ≥ ([\d.]+)$/))) return (A - B) / sum >= +m[1];
+  if((m = cond.match(/^\(B-C\)\/Σ ≥ ([\d.]+)$/))) return (B - C) / sum >= +m[1];
+
+  console.warn('無法解析：' + cond);
   return false;
 }
 
@@ -732,9 +940,7 @@ function clearPredict(){
   $('predictArea').classList.add('hidden');
 }
 
-/* ============================================================
-   Google Sheets 公式
-   ============================================================ */
+/* ===== Google Sheets 公式 ===== */
 function condToSheetFormula(cond){
   var m;
   if((m = cond.match(/^A ≥ (\d+)$/))) return '(A2:A>=' + m[1] + ')';
@@ -743,25 +949,83 @@ function condToSheetFormula(cond){
   if((m = cond.match(/^B < (\d+)$/))) return '(B2:B<' + m[1] + ')';
   if((m = cond.match(/^C ≥ (\d+)$/))) return '(C2:C>=' + m[1] + ')';
   if((m = cond.match(/^C < (\d+)$/))) return '(C2:C<' + m[1] + ')';
+
+  if((m = cond.match(/^(\d+) ≤ A ≤ (\d+)$/))) return '(A2:A>=' + m[1] + ')*(A2:A<=' + m[2] + ')';
+  if((m = cond.match(/^(\d+) ≤ B ≤ (\d+)$/))) return '(B2:B>=' + m[1] + ')*(B2:B<=' + m[2] + ')';
+  if((m = cond.match(/^(\d+) ≤ C ≤ (\d+)$/))) return '(C2:C>=' + m[1] + ')*(C2:C<=' + m[2] + ')';
+
   if((m = cond.match(/^A-C ≥ (-?\d+)$/))) return '((A2:A-C2:C)>=' + m[1] + ')';
   if((m = cond.match(/^A-C ≤ (-?\d+)$/))) return '((A2:A-C2:C)<=' + m[1] + ')';
   if((m = cond.match(/^A-B ≥ (-?\d+)$/))) return '((A2:A-B2:B)>=' + m[1] + ')';
   if((m = cond.match(/^A-B ≤ (-?\d+)$/))) return '((A2:A-B2:B)<=' + m[1] + ')';
   if((m = cond.match(/^B-C ≥ (-?\d+)$/))) return '((B2:B-C2:C)>=' + m[1] + ')';
   if((m = cond.match(/^B-C ≤ (-?\d+)$/))) return '((B2:B-C2:C)<=' + m[1] + ')';
-  if((m = cond.match(/^C-A ≥ (\d+)$/))) return '((C2:C-A2:A)>=' + m[1] + ')';
+  if((m = cond.match(/^C-A ≥ (-?\d+)$/))) return '((C2:C-A2:A)>=' + m[1] + ')';
+  if((m = cond.match(/^C-B ≥ (-?\d+)$/))) return '((C2:C-B2:B)>=' + m[1] + ')';
+  if((m = cond.match(/^B-A ≥ (-?\d+)$/))) return '((B2:B-A2:A)>=' + m[1] + ')';
+
+  if((m = cond.match(/^(-?\d+) ≤ A-C ≤ (-?\d+)$/))) return '((A2:A-C2:C)>=' + m[1] + ')*((A2:A-C2:C)<=' + m[2] + ')';
+  if((m = cond.match(/^(-?\d+) ≤ A-B ≤ (-?\d+)$/))) return '((A2:A-B2:B)>=' + m[1] + ')*((A2:A-B2:B)<=' + m[2] + ')';
+  if((m = cond.match(/^(-?\d+) ≤ B-C ≤ (-?\d+)$/))) return '((B2:B-C2:C)>=' + m[1] + ')*((B2:B-C2:C)<=' + m[2] + ')';
+  if((m = cond.match(/^(-?\d+) ≤ C-A ≤ (-?\d+)$/))) return '((C2:C-A2:A)>=' + m[1] + ')*((C2:C-A2:A)<=' + m[2] + ')';
+
   if((m = cond.match(/^\|A-C\| ≤ (\d+)$/))) return '(ABS(A2:A-C2:C)<=' + m[1] + ')';
   if((m = cond.match(/^\|A-B\| ≤ (\d+)$/))) return '(ABS(A2:A-B2:B)<=' + m[1] + ')';
   if((m = cond.match(/^\|B-C\| ≤ (\d+)$/))) return '(ABS(B2:B-C2:C)<=' + m[1] + ')';
+
   if((m = cond.match(/^A\/B ≥ ([\d.]+)$/))) return 'IF(B2:B=0,FALSE,(A2:A/B2:B)>=' + m[1] + ')';
   if((m = cond.match(/^A\/C ≥ ([\d.]+)$/))) return 'IF(C2:C=0,FALSE,(A2:A/C2:C)>=' + m[1] + ')';
   if((m = cond.match(/^C\/A ≥ ([\d.]+)$/))) return 'IF(A2:A=0,FALSE,(C2:C/A2:A)>=' + m[1] + ')';
-  if(cond === 'A 最大') return '(A2:A>=B2:B)*(A2:A>=C2:C)';
-  if(cond === 'B 最大') return '(B2:B>A2:A)*(B2:B>=C2:C)';
-  if(cond === 'C 最大') return '(C2:C>A2:A)*(C2:C>B2:B)';
-  if(cond === 'A 最小') return '(A2:A<=B2:B)*(A2:A<=C2:C)';
-  if(cond === 'B 最小') return '(B2:B<A2:A)*(B2:B<C2:C)';
-  if(cond === 'C 最小') return '(C2:C<A2:A)*(C2:C<=B2:B)';
+  if((m = cond.match(/^B\/C ≥ ([\d.]+)$/))) return 'IF(C2:C=0,FALSE,(B2:B/C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^C\/B ≥ ([\d.]+)$/))) return 'IF(B2:B=0,FALSE,(C2:C/B2:B)>=' + m[1] + ')';
+
+  if((m = cond.match(/^A\+B ≥ (\d+)$/))) return '((A2:A+B2:B)>=' + m[1] + ')';
+  if((m = cond.match(/^A\+B < (\d+)$/))) return '((A2:A+B2:B)<' + m[1] + ')';
+  if((m = cond.match(/^B\+C ≥ (\d+)$/))) return '((B2:B+C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^B\+C < (\d+)$/))) return '((B2:B+C2:C)<' + m[1] + ')';
+  if((m = cond.match(/^A\+C ≥ (\d+)$/))) return '((A2:A+C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^A\+C < (\d+)$/))) return '((A2:A+C2:C)<' + m[1] + ')';
+  if((m = cond.match(/^A\+B\+C ≥ (\d+)$/))) return '((A2:A+B2:B+C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^A\+B\+C < (\d+)$/))) return '((A2:A+B2:B+C2:C)<' + m[1] + ')';
+
+  if(cond === 'A > B > C') return '(A2:A>B2:B)*(B2:B>C2:C)';
+  if(cond === 'A > C > B') return '(A2:A>C2:C)*(C2:C>B2:B)';
+  if(cond === 'B > A > C') return '(B2:B>A2:A)*(A2:A>C2:C)';
+  if(cond === 'B > C > A') return '(B2:B>C2:C)*(C2:C>A2:A)';
+  if(cond === 'C > A > B') return '(C2:C>A2:A)*(A2:A>B2:B)';
+  if(cond === 'C > B > A') return '(C2:C>B2:B)*(B2:B>A2:A)';
+
+  if(cond === 'A 第 1') return '(A2:A>=B2:B)*(A2:A>=C2:C)';
+  if(cond === 'B 第 1') return '(B2:B>=A2:A)*(B2:B>=C2:C)';
+  if(cond === 'C 第 1') return '(C2:C>=A2:A)*(C2:C>=B2:B)';
+  if(cond === 'A 第 3') return '(A2:A<B2:B)*(A2:A<C2:C)';
+  if(cond === 'B 第 3') return '(B2:B<A2:A)*(B2:B<C2:C)';
+  if(cond === 'C 第 3') return '(C2:C<A2:A)*(C2:C<B2:B)';
+  if(cond === 'A 第 2') return 'NOT((A2:A>=B2:B)*(A2:A>=C2:C))*NOT((A2:A<B2:B)*(A2:A<C2:C))';
+  if(cond === 'B 第 2') return 'NOT((B2:B>=A2:A)*(B2:B>=C2:C))*NOT((B2:B<A2:A)*(B2:B<C2:C))';
+  if(cond === 'C 第 2') return 'NOT((C2:C>=A2:A)*(C2:C>=B2:B))*NOT((C2:C<A2:A)*(C2:C<B2:B))';
+
+  if((m = cond.match(/^max − min ≥ (\d+)$/))){
+    var t = m[1];
+    return '(MAX(A2:A,B2:B,C2:C)-MIN(A2:A,B2:B,C2:C)>=' + t + ')';
+  }
+  if((m = cond.match(/^max − min ≤ (\d+)$/))){
+    var t = m[1];
+    return '(MAX(A2:A,B2:B,C2:C)-MIN(A2:A,B2:B,C2:C)<=' + t + ')';
+  }
+
+  if((m = cond.match(/^A − avg ≥ (\d+)$/))) return '((A2:A-(A2:A+B2:B+C2:C)/3)>=' + m[1] + ')';
+  if((m = cond.match(/^A − avg ≤ -(\d+)$/))) return '((A2:A-(A2:A+B2:B+C2:C)/3)<=-' + m[1] + ')';
+  if((m = cond.match(/^B − avg ≥ (\d+)$/))) return '((B2:B-(A2:A+B2:B+C2:C)/3)>=' + m[1] + ')';
+  if((m = cond.match(/^B − avg ≤ -(\d+)$/))) return '((B2:B-(A2:A+B2:B+C2:C)/3)<=-' + m[1] + ')';
+  if((m = cond.match(/^C − avg ≥ (\d+)$/))) return '((C2:C-(A2:A+B2:B+C2:C)/3)>=' + m[1] + ')';
+  if((m = cond.match(/^C − avg ≤ -(\d+)$/))) return '((C2:C-(A2:A+B2:B+C2:C)/3)<=-' + m[1] + ')';
+
+  if((m = cond.match(/^\(A-C\)\/Σ ≥ ([\d.]+)$/))) return 'IF((A2:A+B2:B+C2:C)=0,FALSE,((A2:A-C2:C)/(A2:A+B2:B+C2:C))>=' + m[1] + ')';
+  if((m = cond.match(/^\(C-A\)\/Σ ≥ ([\d.]+)$/))) return 'IF((A2:A+B2:B+C2:C)=0,FALSE,((C2:C-A2:A)/(A2:A+B2:B+C2:C))>=' + m[1] + ')';
+  if((m = cond.match(/^\(A-B\)\/Σ ≥ ([\d.]+)$/))) return 'IF((A2:A+B2:B+C2:C)=0,FALSE,((A2:A-B2:B)/(A2:A+B2:B+C2:C))>=' + m[1] + ')';
+  if((m = cond.match(/^\(B-C\)\/Σ ≥ ([\d.]+)$/))) return 'IF((A2:A+B2:B+C2:C)=0,FALSE,((B2:B-C2:C)/(A2:A+B2:B+C2:C))>=' + m[1] + ')';
+
   return null;
 }
 
@@ -781,35 +1045,25 @@ function generateSheetFormula(){
     alert('尚未生成規則。請先到「訓練」分頁按「🚀 一鍵分析」。');
     return;
   }
-
   var parts = [];
-  var usedCount = 0;
-  var skipped = 0;
+  var usedCount = 0, skipped = 0;
   var countH = 0, countD = 0, countA = 0;
 
   for(var i = 0; i < TOP_RULES.length; i++){
     var cond = ruleToSheetCondition(TOP_RULES[i]);
     if(!cond){ skipped++; continue; }
-    /* ⭐ 每個規則寫入它自己的 top（H / D / A） */
     parts.push('IF(' + cond + ',"' + TOP_RULES[i].top + '",');
     usedCount++;
     if(TOP_RULES[i].top === 'H') countH++;
     else if(TOP_RULES[i].top === 'D') countD++;
     else if(TOP_RULES[i].top === 'A') countA++;
   }
+  if(usedCount === 0){ alert('無法轉換任何規則為公式'); return; }
 
-  if(usedCount === 0){
-    alert('無法轉換任何規則為公式');
-    return;
-  }
-
-  /* 組合公式：IF(cond1,"H", IF(cond2,"D", IF(cond3,"A", ..., "skip"))) */
   var inner = parts.join('') + '"skip"' + ')'.repeat(usedCount);
   var formula = '=ARRAYFORMULA(IF(A2:A="","",' + inner + '))';
-
   $('sheetFormula').value = formula;
 
-  /* 顯示資訊 */
   var info = '<b>✅ 已生成公式</b><br>';
   info += '· 使用 <b>' + usedCount + '</b> 條規則：';
   info += '<span style="color:#10b981">H ' + countH + '</span> / ';
@@ -817,19 +1071,12 @@ function generateSheetFormula(){
   info += '<span style="color:#ef4444">A ' + countA + '</span>';
   if(skipped > 0) info += '　· 跳過 ' + skipped + ' 條';
   info += '<br>· 公式長度：<b>' + formula.length + '</b> 字元';
-  info += '<br>· 全部條件不匹配 → 輸出 <b>skip</b>';
-  info += '<br><br><b>💡 使用步驟：</b><br>';
-  info += '1. 在 Google Sheets 中把公式貼到 D2（或任何空欄的第 2 列）<br>';
-  info += '2. A/B/C 欄位對應：主勝率 / 和率 / 客勝率<br>';
-  info += '3. 結果欄自動出現 <b style="color:#10b981">H</b> / <b style="color:#f59e0b">D</b> / <b style="color:#ef4444">A</b> / <b style="color:#9ca3af">skip</b>';
   $('formulaInfo').innerHTML = info;
 
-  /* 顯示規則順序預覽 */
-  var preview = '<b>📋 規則順序（命中第一條即決定）：</b><br>';
+  var preview = '<b>📋 規則順序：</b><br>';
   for(var i = 0; i < TOP_RULES.length; i++){
     var r = TOP_RULES[i];
-    var cls = 'r-' + r.top;
-    preview += '<span class="' + cls + '">#' + (i+1) + ' [' + r.top + ']</span> ' + escapeHtml(r.cond) +
+    preview += '<span class="r-' + r.top + '">#' + (i+1) + ' [' + r.top + ']</span> ' + escapeHtml(r.cond) +
       ' <span style="color:#6b7280">（' + r.topPct + '% · ' + r.total + ' 筆）</span><br>';
   }
   $('rulesPreview').innerHTML = preview;
@@ -838,35 +1085,51 @@ function generateSheetFormula(){
 
 function copySheetFormula(){
   var txt = $('sheetFormula').value;
-  if(!txt){
-    alert('請先按「🔧 生成公式」');
-    return;
-  }
+  if(!txt){ alert('請先按「🔧 生成公式」'); return; }
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(function(){
       $('copyStatus').textContent = '✅ 已複製 ' + txt.length + ' 字元';
       setTimeout(function(){ $('copyStatus').textContent = ''; }, 3000);
     }).catch(function(){ fallbackCopy(txt); });
-  } else {
-    fallbackCopy(txt);
-  }
+  } else { fallbackCopy(txt); }
 }
-
 function fallbackCopy(text){
-  var ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.left = '-9999px';
-  document.body.appendChild(ta);
-  ta.select();
-  try {
-    document.execCommand('copy');
+  var ta = document.createElement('textarea'); ta.value = text;
+  ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy');
     $('copyStatus').textContent = '✅ 已複製 ' + text.length + ' 字元';
     setTimeout(function(){ $('copyStatus').textContent = ''; }, 3000);
-  } catch(e){
-    alert('複製失敗，請手動選取');
-  }
+  } catch(e){ alert('複製失敗'); }
   document.body.removeChild(ta);
+}
+
+/* ===== 類型說明 ===== */
+function renderTypesPage(){
+  var types = [
+    { n:1, name:'絕對值', ex:'A ≥ 50 / B < 25', isNew:false },
+    { n:2, name:'區間', ex:'40 ≤ A ≤ 60', isNew:true },
+    { n:3, name:'差值', ex:'A − C ≥ 20', isNew:false },
+    { n:4, name:'差值區間', ex:'10 ≤ A − C ≤ 30', isNew:true },
+    { n:5, name:'絕對差', ex:'\\|A − C\\| ≤ 10', isNew:false },
+    { n:6, name:'比值', ex:'A / C ≥ 1.5', isNew:false },
+    { n:7, name:'和', ex:'A + B ≥ 75', isNew:true },
+    { n:8, name:'三變數排序', ex:'A > B > C', isNew:true },
+    { n:9, name:'排名', ex:'A 第 1', isNew:true },
+    { n:10, name:'極差', ex:'max − min ≥ 30', isNew:true },
+    { n:11, name:'與平均差', ex:'A − avg ≥ 15', isNew:true },
+    { n:12, name:'標準化差', ex:'(A − C) / Σ ≥ 0.15', isNew:true }
+  ];
+  var html = '';
+  for(var i = 0; i < types.length; i++){
+    var t = types[i];
+    html += '<div class="type-card' + (t.isNew ? ' new' : '') + '">' +
+      '<div class="num">類型 ' + t.n + (t.isNew ? ' · 🆕' : '') + '</div>' +
+      '<div class="name">' + t.name + '</div>' +
+      '<div class="example">' + t.ex + '</div>' +
+      '</div>';
+  }
+  $('typeGrid').innerHTML = html;
 }
 
 function loadSample(){
@@ -887,11 +1150,10 @@ function clearAll(){
   $('statBar').innerHTML = '';
   $('analysisArea').classList.add('hidden');
   $('rulesArea').classList.add('hidden');
-  DATA = [];
-  ALL_RULES = [];
-  TOP_RULES = [];
+  DATA = []; ALL_RULES = []; TOP_RULES = [];
 }
 
+renderTypesPage();
 $('input-train').focus();
 </script>
 </body>
