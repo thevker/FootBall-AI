@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>V15-C-v2.0 和局 & 冷門</title>
+<title>V15-C-v3.0 和局 & 冷門</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -11,7 +11,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0a0e14;color:#e8
 .header{background:linear-gradient(135deg,#1a1f2e,#0f1419);border-bottom:1px solid #2a3441;padding:16px 24px}
 .header h1{font-size:20px;margin:0 0 4px;color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .header .sub{font-size:12px;color:#6b7280}
-.header .version{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:bold}
+.header .version{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:bold}
 .main{padding:20px 24px;max-width:1600px;margin:0 auto;width:100%}
 textarea{width:100%;font-family:'Consolas',monospace;font-size:13px;padding:12px;border:1px solid #2a3441;border-radius:6px;background:#1a1f2e;color:#e8e8e8;resize:vertical;line-height:1.6}
 #input-train{height:150px}
@@ -30,16 +30,15 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 .stat-bar b{color:#60a5fa}
 .stat-bar .h{color:#10b981}.stat-bar .d{color:#f59e0b}.stat-bar .a{color:#ef4444}
 
-.control-bar{background:#1a1f2e;border:1px solid #2a3441;border-radius:8px;padding:10px 16px;margin:10px 0;display:flex;gap:20px;flex-wrap:wrap;align-items:center;font-size:13px}
-.control-bar label{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
-.control-bar input[type=checkbox]{width:16px;height:16px;cursor:pointer}
-.control-bar .desc{color:#94a3b8;font-size:11px;margin-left:4px}
+.legend-box{background:linear-gradient(135deg,#2a1a1a,#1a0e0e);border:1px solid #ef4444;border-radius:8px;padding:12px 16px;margin:10px 0;font-size:12px;line-height:1.8}
+.legend-box b{color:#fca5a5}
+.legend-box .ex{color:#94a3b8;font-family:'Consolas',monospace}
 
 .boards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:12px;width:100%}
 @media(max-width:900px){.boards{grid-template-columns:1fr}}
 .board{background:#232a3a;border-radius:8px;padding:14px;border-top:3px solid #666;min-width:0;overflow:hidden}
 .board.D{border-top-color:#f59e0b}
-.board.A{border-top-color:#ef4444}
+.board.COLD{border-top-color:#ef4444}
 .board h3{margin:0 0 12px;font-size:14px;display:flex;align-items:center;gap:8px;color:#fff;flex-wrap:wrap}
 .board h3 .icon{font-size:18px}
 .board h3 .label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -50,12 +49,15 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 .rule-list::-webkit-scrollbar-thumb{background:#374151;border-radius:3px}
 .rule-item{background:#1a1f2e;border-radius:6px;padding:10px 12px;border-left:3px solid #444;min-width:0;transition:all .15s;overflow:hidden}
 .board.D .rule-item.rank-1{background:linear-gradient(135deg,#3a2e1f,#2e221a);border-left-color:#f59e0b;box-shadow:0 0 0 1px rgba(245,158,11,.3)}
-.board.A .rule-item.rank-1{background:linear-gradient(135deg,#3a1f1f,#2e1a1a);border-left-color:#ef4444;box-shadow:0 0 0 1px rgba(239,68,68,.3)}
+.board.COLD .rule-item.rank-1{background:linear-gradient(135deg,#3a1f1f,#2e1a1a);border-left-color:#ef4444;box-shadow:0 0 0 1px rgba(239,68,68,.3)}
 .rule-item .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;flex-wrap:wrap}
 .rule-item .rank{background:#374151;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0;min-width:32px;text-align:center}
 .rule-item.rank-1 .rank{background:#fbbf24;color:#1a1f2e;font-size:11px;padding:3px 9px}
 .rule-item .pct{font-size:15px;font-weight:700;color:#fff;font-family:'Consolas',monospace;flex-shrink:0}
 .rule-item.rank-1 .pct{font-size:16px}
+.rule-item .dir-badge{font-size:10px;padding:2px 7px;border-radius:8px;margin-left:6px;font-weight:700}
+.rule-item .dir-badge.away{color:#f87171;background:rgba(248,113,113,.15)}
+.rule-item .dir-badge.home{color:#4ade80;background:rgba(74,222,128,.15)}
 .rule-item .lift-badge{font-size:10px;color:#60a5fa;background:rgba(96,165,250,.15);padding:2px 6px;border-radius:8px;margin-left:6px;font-weight:700}
 .rule-item .cold-badge{font-size:10px;color:#f472b6;background:rgba(244,114,182,.15);padding:2px 6px;border-radius:8px;margin-left:6px;font-weight:700}
 .rule-item .cond{font-size:12px;color:#e8e8e8;font-family:'Consolas',monospace;margin-bottom:6px;line-height:1.5;word-break:break-word;overflow-wrap:anywhere}
@@ -70,18 +72,18 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 .bt-card{background:#232a3a;border-radius:8px;padding:14px;border-top:3px solid #3b82f6;min-width:0;overflow:hidden}
 .bt-card.all{border-top-color:#60a5fa}
 .bt-card.D{border-top-color:#f59e0b}
-.bt-card.A{border-top-color:#ef4444}
+.bt-card.COLD{border-top-color:#ef4444}
 .bt-card .title{font-size:12px;color:#94a3b8;margin-bottom:10px;font-weight:600}
 .bt-card .big{font-size:26px;font-weight:900;font-family:'Consolas',monospace;color:#fff;margin-bottom:4px;line-height:1.1}
 .bt-card.D .big{color:#f59e0b}
-.bt-card.A .big{color:#ef4444}
+.bt-card.COLD .big{color:#ef4444}
 .bt-card .row{display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;padding:3px 0;border-bottom:1px dashed #2a3441}
 .bt-card .row:last-child{border-bottom:none}
 .bt-card .row b{color:#fff;font-family:'Consolas',monospace}
 .bt-card .pct-bar{height:6px;background:#0f1419;border-radius:3px;margin-top:8px;overflow:hidden}
 .bt-card .pct-bar > div{height:100%;border-radius:3px;transition:width .3s}
 .bt-card.D .pct-bar > div{background:#f59e0b}
-.bt-card.A .pct-bar > div{background:#ef4444}
+.bt-card.COLD .pct-bar > div{background:#ef4444}
 .bt-card.all .pct-bar > div{background:#60a5fa}
 
 #sheetFormula{width:100%;font-family:'Consolas',monospace;font-size:11px;padding:12px;border:1px solid #2a3441;border-radius:6px;background:#0f1419;color:#60a5fa;min-height:140px;resize:vertical;line-height:1.6;white-space:pre-wrap;word-break:break-all}
@@ -89,18 +91,14 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 .legend{font-size:11px;color:#6b7280;margin-top:10px;line-height:1.7}
 .rules-preview{background:#0f1419;border:1px solid #2a3441;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:12px;font-family:'Consolas',monospace;line-height:1.8;max-height:250px;overflow-y:auto}
 .rules-preview .r-D{color:#f59e0b}
+.rules-preview .r-H{color:#10b981}
 .rules-preview .r-A{color:#ef4444}
 
 .base-rate-box{background:#1a1f2e;border:1px solid #2a3441;border-radius:8px;padding:12px 16px;margin:10px 0;display:flex;gap:20px;flex-wrap:wrap;font-size:13px;align-items:center}
-.base-rate-box .item{display:flex;gap:6px;align-items:center}
-.base-rate-box .dot{width:10px;height:10px;border-radius:50%}
-.base-rate-box .dot.h{background:#10b981}
-.base-rate-box .dot.d{background:#f59e0b}
-.base-rate-box .dot.a{background:#ef4444}
-.base-rate-box b{font-family:'Consolas',monospace}
+.base-rate-box b{font-family:'Consolas',monospace;color:#60a5fa}
 
 .loading-overlay{position:fixed;inset:0;background:rgba(10,14,20,.9);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px}
-.loading-overlay .spinner{width:48px;height:48px;border:4px solid #374151;border-top-color:#f59e0b;border-radius:50%;animation:spin 1s linear infinite}
+.loading-overlay .spinner{width:48px;height:48px;border:4px solid #374151;border-top-color:#ef4444;border-radius:50%;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-overlay .text{color:#fff;font-size:14px;font-weight:600}
 </style>
@@ -108,8 +106,8 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 <body>
 
 <div class="header">
-  <h1>🎯 V15-C-v2.0 <span class="version">和局 & 冷門</span></h1>
-  <div class="sub">冷門度 = 主勝率平均（越高越冷）· 真冷門過濾</div>
+  <h1>🎯 V15-C-v3.0 <span class="version">和局 & 冷門</span></h1>
+  <div class="sub">冷門 = 勝率低的那方贏了 · 分主隊爆冷 / 客隊爆冷</div>
 </div>
 
 <div class="main">
@@ -127,33 +125,26 @@ button.gray:hover{background:#3a4451;box-shadow:none}
   </div>
 </div>
 
+<div class="legend-box">
+  <b>🔥 冷門定義：</b><br>
+  ① <b>客隊爆冷</b>：<span class="ex">A（主勝率）> C（客勝率）</span> → 結果卻是 <span class="ex">A（客勝）</span><br>
+  ② <b>主隊爆冷</b>：<span class="ex">C > A</span> → 結果卻是 <span class="ex">H（主勝）</span>
+</div>
+
 <div id="statBar"></div>
 <div id="baseRateBar"></div>
 
 <div id="rulesArea" class="hidden">
   <div class="card">
-    <h2>🎯 機會榜 <span class="badge" style="background:#f59e0b">🟡 和局</span> <span class="badge" style="background:#ef4444">🔴 冷門</span></h2>
-
-    <div class="control-bar">
-      <label>
-        <input type="checkbox" id="chkColdOnly" checked onchange="rerenderBoards()">
-        <span>只顯示「主勝率 ≥ 55%」的真冷門</span>
-        <span class="desc">（過濾掉客隊本來就強的場次）</span>
-      </label>
-      <label>
-        <input type="checkbox" id="chkColdSort" checked onchange="rerenderBoards()">
-        <span>冷門榜按「純度 × 冷門度」排序</span>
-      </label>
-    </div>
-
+    <h2>🎯 機會榜 <span class="badge" style="background:#f59e0b">🟡 和局</span> <span class="badge" style="background:#ef4444">🔥 冷門（弱方贏）</span></h2>
     <div class="boards">
       <div class="board D">
         <h3><span class="icon">🟡</span><span class="label">和局（D）</span><span class="count" id="count-D">0</span></h3>
         <div class="rule-list" id="rules-D"></div>
       </div>
-      <div class="board A">
-        <h3><span class="icon">🔴</span><span class="label">冷門（A 客勝）</span><span class="count" id="count-A">0</span></h3>
-        <div class="rule-list" id="rules-A"></div>
+      <div class="board COLD">
+        <h3><span class="icon">🔥</span><span class="label">冷門榜</span><span class="count" id="count-COLD">0</span></h3>
+        <div class="rule-list" id="rules-COLD"></div>
       </div>
     </div>
     <div class="legend" id="searchStats"></div>
@@ -168,7 +159,7 @@ button.gray:hover{background:#3a4451;box-shadow:none}
   </div>
 
   <div class="card">
-    <h2>📤 Google Sheets 公式 <span class="badge">只含 D 和 A</span></h2>
+    <h2>📤 Google Sheets 公式 <span class="badge">只含 D 和冷門</span></h2>
     <div>
       <button class="green" onclick="generateSheetFormula()">🔧 生成公式</button>
       <button onclick="copySheetFormula()">📋 複製公式</button>
@@ -188,15 +179,13 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 /* ===== 固定參數 ===== */
 var MIN_SAMPLE_D = 4;
 var MIN_PURITY_D = 30;
-var MIN_SAMPLE_A = 5;
-var MIN_PURITY_A = 40;
-var COLD_THRESHOLD = 55;   /* 主勝率 ≥ 55% 才算真冷門 */
+var MIN_SAMPLE_COLD = 4;
+var MIN_PURITY_COLD = 40;
 var TOP_N = 15;
 
 var DATA = [];
 var ALL_RULES_D = [];
-var ALL_RULES_A = [];        /* 原始 A 規則（含所有） */
-var ALL_RULES_A_FILTERED = []; /* 過濾後的真冷門規則 */
+var ALL_RULES_COLD = [];
 var TOP_RULES = [];
 var BASE_RATE = { H:0.33, D:0.33, A:0.33 };
 
@@ -354,42 +343,88 @@ function isContradict(c1, c2){
   return false;
 }
 
-/* ===== 評估 ===== */
-function evalBucket(name, b, targetClass){
-  var hits = b[targetClass];
-  var total = b.total;
-  var purity = hits / total;
-
-  var minSample = (targetClass === 'D') ? MIN_SAMPLE_D : MIN_SAMPLE_A;
-  var minPurity = ((targetClass === 'D') ? MIN_PURITY_D : MIN_PURITY_A) / 100;
-
-  if(total < minSample) return null;
-  if(purity < minPurity) return null;
-
-  var baseRate = BASE_RATE[targetClass];
+/* ===== 和局評估 ===== */
+function evalBucketD(name, b){
+  if(b.total < MIN_SAMPLE_D) return null;
+  var purity = b.D / b.total;
+  if(purity < MIN_PURITY_D / 100) return null;
+  var baseRate = BASE_RATE.D;
   var lift = Math.round((purity / baseRate) * 100) / 100;
-
   return {
-    cond: name,
-    top: targetClass,
-    total: total,
+    cond: name, top: 'D', total: b.total,
     H: b.H, D: b.D, A: b.A,
-    hits: hits,
-    topPct: Math.round(purity * 100),
-    lift: lift,
-    coldScore: 0,        /* 稍後填 */
-    score: Math.round(purity * 100) * Math.min(total, 30)
+    hits: b.D, topPct: Math.round(purity * 100), lift: lift,
+    score: Math.round(purity * 100) * Math.min(b.total, 30)
   };
 }
 
-/* ⭐ 計算規則下的 A 場次平均主勝率（冷門度） */
-function calcColdScore(rows, testFn){
-  var sum = 0, count = 0;
+/* ⭐ 冷門評估：分「客隊爆冷」和「主隊爆冷」 */
+function evalCold(name, testFn, rows){
+  var rules = [];
+
+  /* 客隊爆冷：A > C 時押 A（客隊贏） */
+  var awayBets = 0, awayHits = 0, awayDiffSum = 0;
+  /* 主隊爆冷：A < C 時押 H（主隊贏） */
+  var homeBets = 0, homeHits = 0, homeDiffSum = 0;
+
   for(var i = 0; i < rows.length; i++){
     var r = rows[i];
-    if(r.result === 'A' && testFn(r)){ sum += r.A; count++; }
+    if(!testFn(r)) continue;
+
+    if(r.A > r.C){
+      /* 主隊被看好 → 押客隊爆冷（A 結果） */
+      awayBets++;
+      if(r.result === 'A'){
+        awayHits++;
+        awayDiffSum += (r.A - r.C);
+      }
+    } else if(r.A < r.C){
+      /* 客隊被看好 → 押主隊爆冷（H 結果） */
+      homeBets++;
+      if(r.result === 'H'){
+        homeHits++;
+        homeDiffSum += (r.C - r.A);
+      }
+    }
   }
-  return count > 0 ? Math.round(sum / count * 10) / 10 : 0;
+
+  /* 客隊爆冷規則 */
+  if(awayBets >= MIN_SAMPLE_COLD){
+    var purityA = awayHits / awayBets;
+    if(purityA >= MIN_PURITY_COLD / 100){
+      rules.push({
+        cond: name + ' 且 A > C',
+        top: 'A',
+        direction: 'away',
+        dirLabel: '客隊爆冷',
+        total: awayBets,
+        hits: awayHits,
+        topPct: Math.round(purityA * 100),
+        coldScore: awayHits > 0 ? Math.round(awayDiffSum / awayHits * 10) / 10 : 0,
+        score: Math.round(purityA * 100) * Math.min(awayBets, 30)
+      });
+    }
+  }
+
+  /* 主隊爆冷規則 */
+  if(homeBets >= MIN_SAMPLE_COLD){
+    var purityH = homeHits / homeBets;
+    if(purityH >= MIN_PURITY_COLD / 100){
+      rules.push({
+        cond: name + ' 且 A < C',
+        top: 'H',
+        direction: 'home',
+        dirLabel: '主隊爆冷',
+        total: homeBets,
+        hits: homeHits,
+        topPct: Math.round(purityH * 100),
+        coldScore: homeHits > 0 ? Math.round(homeDiffSum / homeHits * 10) / 10 : 0,
+        score: Math.round(purityH * 100) * Math.min(homeBets, 30)
+      });
+    }
+  }
+
+  return rules;
 }
 
 /* ===== 主流程 ===== */
@@ -415,48 +450,56 @@ function runAll(){
         A: rc.A / rows.length
       };
 
+      /* 統計爆冷場次 */
+      var awayUpsets = 0, homeUpsets = 0;
+      rows.forEach(function(r){
+        if(r.A > r.C && r.result === 'A') awayUpsets++;
+        if(r.A < r.C && r.result === 'H') homeUpsets++;
+      });
+
       $('statBar').innerHTML = '<div class="stat-bar">' +
         '<span>📊 共 <b>' + rows.length + '</b> 筆</span>' +
-        '<span class="d">🟡 D 和局 <b>' + rc.D + '</b>（' + (rc.D/rows.length*100).toFixed(1) + '%）</span>' +
-        '<span class="a">🔴 A 客勝 <b>' + rc.A + '</b>（' + (rc.A/rows.length*100).toFixed(1) + '%）</span>' +
-        '<span class="h" style="opacity:.5">（H 主勝 ' + rc.H + ' 已忽略）</span>' +
+        '<span class="d">🟡 D 和局 <b>' + rc.D + '</b></span>' +
+        '<span class="a">🔥 客隊爆冷 <b>' + awayUpsets + '</b></span>' +
+        '<span class="h">🔥 主隊爆冷 <b>' + homeUpsets + '</b></span>' +
+        '<span style="opacity:.5">（總爆冷 ' + (awayUpsets + homeUpsets) + '）</span>' +
         '</div>';
 
       $('baseRateBar').innerHTML = '<div class="base-rate-box">' +
         '<b>📐 基準比率：</b>' +
-        '<span class="item"><span class="dot d"></span>D = <b>' + (BASE_RATE.D*100).toFixed(1) + '%</b></span>' +
-        '<span class="item"><span class="dot a"></span>A = <b>' + (BASE_RATE.A*100).toFixed(1) + '%</b></span>' +
-        '<span style="color:#94a3b8;font-size:11px">門檻：D 樣本≥' + MIN_SAMPLE_D + ' 純度≥' + MIN_PURITY_D + '% ｜ A 樣本≥' + MIN_SAMPLE_A + ' 純度≥' + MIN_PURITY_A + '%</span>' +
+        'D = <b>' + (BASE_RATE.D*100).toFixed(1) + '%</b> ｜ ' +
+        '客隊爆冷 = <b>' + (awayUpsets/rows.length*100).toFixed(1) + '%</b> ｜ ' +
+        '主隊爆冷 = <b>' + (homeUpsets/rows.length*100).toFixed(1) + '%</b>' +
         '</div>';
 
       var conds = buildConditions();
 
-      var singleD = [], singleA = [];
+      /* 收集單條件 */
+      var singleD = [], singleCold = [];
       for(var i = 0; i < conds.length; i++){
         var c = conds[i], b = makeBucket();
         for(var j = 0; j < rows.length; j++){
           if(c.test(rows[j])) addToBucket(b, rows[j].result);
         }
-        var rD = evalBucket(c.name, b, 'D');
+        var rD = evalBucketD(c.name, b);
         if(rD){ rD.condObj = c; singleD.push(rD); }
-        var rA = evalBucket(c.name, b, 'A');
-        if(rA){
-          rA.condObj = c;
-          rA.coldScore = calcColdScore(rows, c.test);
-          singleA.push(rA);
-        }
+
+        var colds = evalCold(c.name, c.test, rows);
+        colds.forEach(function(r){ r.condObj = c; singleCold.push(r); });
       }
 
+      /* 合併單條件用於雙條件組合 */
       var allSingles = [];
       var seen = {};
-      [singleD, singleA].forEach(function(arr){
+      [singleD, singleCold].forEach(function(arr){
         arr.forEach(function(r){
           if(!seen[r.cond]){ seen[r.cond] = true; allSingles.push(r); }
         });
       });
       allSingles.sort(function(a, b){ return b.score - a.score; });
 
-      var doubleD = [], doubleA = [];
+      /* 雙條件 */
+      var doubleD = [], doubleCold = [];
       var base100 = allSingles.slice(0, 100);
       for(var i = 0; i < base100.length; i++){
         for(var j = i + 1; j < base100.length; j++){
@@ -470,14 +513,16 @@ function runAll(){
           var name = c1.name + ' 且 ' + c2.name;
           var test2 = (function(f1,f2){ return function(r){ return f1(r) && f2(r); }; })(c1.test, c2.test);
 
-          var rD = evalBucket(name, b2, 'D');
+          var rD = evalBucketD(name, b2);
           if(rD){ rD.condObj = c1; doubleD.push(rD); }
-          var rA = evalBucket(name, b2, 'A');
-          if(rA){ rA.condObj = c1; rA.coldScore = calcColdScore(rows, test2); doubleA.push(rA); }
+
+          var colds = evalCold(name, test2, rows);
+          colds.forEach(function(r){ r.condObj = c1; doubleCold.push(r); });
         }
       }
 
-      var tripleD = [], tripleA = [];
+      /* 三條件 */
+      var tripleD = [], tripleCold = [];
       var top15 = allSingles.slice(0, 15);
       for(var i = 0; i < top15.length; i++){
         for(var j = i + 1; j < top15.length; j++){
@@ -494,52 +539,55 @@ function runAll(){
             var name = c1.name + ' 且 ' + c2.name + ' 且 ' + c3.name;
             var test3 = (function(f1,f2,f3){ return function(r){ return f1(r) && f2(r) && f3(r); }; })(c1.test, c2.test, c3.test);
 
-            var rD = evalBucket(name, b3, 'D');
+            var rD = evalBucketD(name, b3);
             if(rD){ rD.condObj = c1; tripleD.push(rD); }
-            var rA = evalBucket(name, b3, 'A');
-            if(rA){ rA.condObj = c1; rA.coldScore = calcColdScore(rows, test3); tripleA.push(rA); }
+
+            var colds = evalCold(name, test3, rows);
+            colds.forEach(function(r){ r.condObj = c1; tripleCold.push(r); });
           }
         }
       }
 
-      function mergeRules(arr1, arr2, arr3){
-        var combined = [];
-        var seen = {};
-        [arr1, arr2, arr3].forEach(function(arr){
-          arr.forEach(function(r){
-            if(seen[r.cond]) return;
+      function mergeRules(){
+        var combined = [], seen = {};
+        for(var a = 0; a < arguments.length; a++){
+          var arr = arguments[a];
+          for(var b = 0; b < arr.length; b++){
+            var r = arr[b];
+            if(seen[r.cond]) continue;
             seen[r.cond] = true;
             combined.push(r);
-          });
-        });
+          }
+        }
         return combined;
       }
 
       ALL_RULES_D = mergeRules(singleD, doubleD, tripleD);
       ALL_RULES_D.sort(function(a, b){ return b.score - a.score; });
 
-      ALL_RULES_A = mergeRules(singleA, doubleA, tripleA);
-      ALL_RULES_A.sort(function(a, b){ return b.score - a.score; });
+      ALL_RULES_COLD = mergeRules(singleCold, doubleCold, tripleCold);
+      /* 冷門榜按「純度 × 冷門度 × 樣本」排序 */
+      ALL_RULES_COLD.sort(function(a, b){
+        var sA = a.topPct * a.coldScore * Math.min(a.total, 30) / 100;
+        var sB = b.topPct * b.coldScore * Math.min(b.total, 30) / 100;
+        return sB - sA;
+      });
 
-      /* 真冷門過濾 */
-      ALL_RULES_A_FILTERED = ALL_RULES_A.filter(function(r){
-        return r.coldScore >= COLD_THRESHOLD;
-      });
-      /* 真冷門榜重新排序：按 純度 × 冷門度 × 樣本 */
-      ALL_RULES_A_FILTERED.sort(function(a, b){
-        var scoreA = a.topPct * a.coldScore * Math.min(a.total, 30) / 100;
-        var scoreB = b.topPct * b.coldScore * Math.min(b.total, 30) / 100;
-        return scoreB - scoreA;
-      });
+      renderBoard('rules-D', ALL_RULES_D.slice(0, TOP_N), 'D');
+      renderBoard('rules-COLD', ALL_RULES_COLD.slice(0, TOP_N), 'COLD');
+      $('count-D').textContent = ALL_RULES_D.length;
+      $('count-COLD').textContent = ALL_RULES_COLD.length;
+
+      /* TOP_RULES：D 前 10 + 冷門前 10 */
+      TOP_RULES = ALL_RULES_D.slice(0, 10).concat(ALL_RULES_COLD.slice(0, 10));
+      TOP_RULES.sort(function(a, b){ return b.score - a.score; });
 
       var elapsed = ((Date.now() - tStart) / 1000).toFixed(2);
       $('searchStats').innerHTML =
-        '📊 評估：<b>' + conds.length + '</b> 個條件 · 合格：D <b>' + ALL_RULES_D.length + '</b> 條 · ' +
-        'A <b>' + ALL_RULES_A.length + '</b> 條（其中真冷門 <b style="color:#f472b6">' + ALL_RULES_A_FILTERED.length + '</b> 條）· ' +
-        '耗時 <b>' + elapsed + '</b> 秒';
+        '📊 評估：<b>' + conds.length + '</b> 個條件 · 合格：D <b>' + ALL_RULES_D.length + '</b> 條 · 冷門 <b>' + ALL_RULES_COLD.length + '</b> 條 · 耗時 <b>' + elapsed + '</b> 秒';
 
-      rerenderBoards();
-      rerunBacktest();
+      var backtest = runBacktest(rows, TOP_RULES);
+      renderBacktest(backtest);
 
       $('rulesArea').classList.remove('hidden');
       document.body.removeChild(overlay);
@@ -553,62 +601,42 @@ function runAll(){
   }, 50);
 }
 
-/* ⭐ 根據勾選框重新渲染兩榜 */
-function rerenderBoards(){
-  var coldOnly = $('chkColdOnly').checked;
-  var coldSort = $('chkColdSort').checked;
-
-  /* 和局榜：永遠按正常排序 */
-  renderBoard('rules-D', ALL_RULES_D.slice(0, TOP_N), 'D');
-  $('count-D').textContent = ALL_RULES_D.length;
-
-  /* 冷門榜：可選過濾、可選排序 */
-  var listA = coldOnly ? ALL_RULES_A_FILTERED.slice() : ALL_RULES_A.slice();
-
-  if(coldSort){
-    listA.sort(function(a, b){
-      var scoreA = a.topPct * a.coldScore * Math.min(a.total, 30) / 100;
-      var scoreB = b.topPct * b.coldScore * Math.min(b.total, 30) / 100;
-      return scoreB - scoreA;
-    });
-  }
-
-  renderBoard('rules-A', listA.slice(0, TOP_N), 'A');
-  $('count-A').textContent = listA.length + (coldOnly ? '（真冷門）' : '');
-
-  /* 更新 TOP_RULES：D 前 10 + A（過濾後）前 10 */
-  var topA = coldOnly ? ALL_RULES_A_FILTERED : ALL_RULES_A;
-  TOP_RULES = ALL_RULES_D.slice(0, 10).concat(topA.slice(0, 10));
-  TOP_RULES.sort(function(a, b){ return b.score - a.score; });
-}
-
 function renderBoard(containerId, rules, cls){
   var el = $(containerId);
   if(rules.length === 0){
-    el.innerHTML = '<div class="empty-msg">找不到規則<br><span style="font-size:11px">' +
-      (cls === 'A' ? '試試取消「只顯示真冷門」' : '資料量太少或條件太嚴') +
-      '</span></div>';
+    el.innerHTML = '<div class="empty-msg">找不到規則<br><span style="font-size:11px">資料量太少或條件太嚴</span></div>';
     return;
   }
   var html = '';
   for(var i = 0; i < rules.length; i++){
     var r = rules[i];
     var medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '#' + (i+1)));
+
     var extraBadge = '';
-    if(cls === 'A'){
-      var coldColor = r.coldScore >= 60 ? '#f472b6' : (r.coldScore >= 50 ? '#a78bfa' : '#94a3b8');
-      extraBadge = '<span class="cold-badge" style="color:' + coldColor + '">冷門度 ' + r.coldScore + '%</span>';
+    if(cls === 'COLD'){
+      var dirClass = (r.direction === 'away') ? 'away' : 'home';
+      extraBadge = '<span class="dir-badge ' + dirClass + '">' + r.dirLabel + '</span>';
+      var coldColor = r.coldScore >= 15 ? '#f472b6' : (r.coldScore >= 10 ? '#a78bfa' : '#94a3b8');
+      extraBadge += '<span class="cold-badge" style="color:' + coldColor + '">冷門度 ' + r.coldScore + '</span>';
     }
-    html += '<div class="rule-item' + (i === 0 ? ' rank-1' : '') + '">' +
-      '<div class="head"><span class="rank">' + medal + '</span>' +
-        '<span><span class="pct">' + r.topPct + '%</span>' +
-        '<span class="lift-badge">Lift ' + r.lift + '</span>' + extraBadge + '</span>' +
-      '</div>' +
-      '<div class="cond">' + escapeHtml(r.cond) + '</div>' +
-      '<div class="samples"><span>共 ' + r.total + '</span>' +
+
+    /* 對冷門規則，samples 顯示簡化版 */
+    var samplesHtml = '';
+    if(cls === 'COLD'){
+      samplesHtml = '<span>共 ' + r.total + '</span><span>命中 ' + r.hits + '</span>';
+    } else {
+      samplesHtml = '<span>共 ' + r.total + '</span>' +
         '<span class="cH">H ' + r.H + '</span>' +
         '<span class="cD">D ' + r.D + '</span>' +
-        '<span class="cA">A ' + r.A + '</span></div></div>';
+        '<span class="cA">A ' + r.A + '</span>';
+    }
+
+    html += '<div class="rule-item' + (i === 0 ? ' rank-1' : '') + '">' +
+      '<div class="head"><span class="rank">' + medal + '</span>' +
+        '<span><span class="pct">' + r.topPct + '%</span>' + extraBadge + '</span>' +
+      '</div>' +
+      '<div class="cond">' + escapeHtml(r.cond) + ' → 押 ' + r.top + '</div>' +
+      '<div class="samples">' + samplesHtml + '</div></div>';
   }
   el.innerHTML = html;
 }
@@ -618,7 +646,8 @@ function runBacktest(rows, rules){
   var stats = {
     all: { bets:0, hits:0, skip:0 },
     D:   { bets:0, hits:0 },
-    A:   { bets:0, hits:0 }
+    H:   { bets:0, hits:0 },  /* 主隊爆冷命中 */
+    A:   { bets:0, hits:0 }   /* 客隊爆冷命中 */
   };
   for(var i = 0; i < rows.length; i++){
     var row = rows[i];
@@ -640,12 +669,6 @@ function runBacktest(rows, rules){
   return stats;
 }
 
-function rerunBacktest(){
-  if(TOP_RULES.length === 0) return;
-  var stats = runBacktest(DATA, TOP_RULES);
-  renderBacktest(stats);
-}
-
 function pct(hits, bets){
   if(bets === 0) return 0;
   return Math.round(hits / bets * 10000) / 100;
@@ -654,7 +677,9 @@ function pct(hits, bets){
 function renderBacktest(stats){
   var allRate = pct(stats.all.hits, stats.all.bets);
   var dRate = pct(stats.D.hits, stats.D.bets);
-  var aRate = pct(stats.A.hits, stats.A.bets);
+  var coldBets = stats.H.bets + stats.A.bets;
+  var coldHits = stats.H.hits + stats.A.hits;
+  var coldRate = pct(coldHits, coldBets);
 
   function card(cls, title, bets, hits, rate){
     return '<div class="bt-card ' + cls + '">' +
@@ -670,16 +695,27 @@ function renderBacktest(stats){
   var html = '';
   html += card('all', '🎯 全體（ALL）', stats.all.bets, stats.all.hits, allRate);
   html += card('D', '🟡 和局（D）', stats.D.bets, stats.D.hits, dRate);
-  html += card('A', '🔴 冷門（A）', stats.A.bets, stats.A.hits, aRate);
+  html += card('COLD', '🔥 冷門（H+A 弱方贏）', coldBets, coldHits, coldRate);
   $('backtestArea').innerHTML = html;
 }
 
 /* ===== 匹配 ===== */
 function matchRule(row, condStr){
-  var parts = condStr.split(' 且 ');
+  /* 移除方向標記（" 且 A > C" 或 " 且 A < C"） */
+  var mainCond = condStr.replace(/ 且 A [<>] C$/, '');
+  var direction = null;
+  if(/ 且 A > C$/.test(condStr)) direction = 'away';
+  if(/ 且 A < C$/.test(condStr)) direction = 'home';
+
+  var parts = mainCond.split(' 且 ');
   for(var i = 0; i < parts.length; i++){
     if(!matchSingle(row, parts[i].trim())) return false;
   }
+
+  /* 檢查方向 */
+  if(direction === 'away' && !(row.A > row.C)) return false;
+  if(direction === 'home' && !(row.A < row.C)) return false;
+
   return true;
 }
 
@@ -784,12 +820,20 @@ function condToSheetFormula(cond){
 }
 
 function ruleToSheetCondition(rule){
-  var parts = rule.cond.split(' 且 ');
+  /* 移除方向，稍後單獨處理 */
+  var mainCond = rule.cond.replace(/ 且 A [<>] C$/, '');
+  var parts = mainCond.split(' 且 ');
   var formulas = [];
   for(var i = 0; i < parts.length; i++){
     var f = condToSheetFormula(parts[i].trim());
     if(!f) return null;
     formulas.push(f);
+  }
+  /* 加入方向條件 */
+  if(/ 且 A > C$/.test(rule.cond)){
+    formulas.push('(A2:A>C2:C)');
+  } else if(/ 且 A < C$/.test(rule.cond)){
+    formulas.push('(A2:A<C2:C)');
   }
   return formulas.join('*');
 }
@@ -801,7 +845,7 @@ function generateSheetFormula(){
   }
   var parts = [];
   var usedCount = 0, skipped = 0;
-  var countD = 0, countA = 0;
+  var countD = 0, countH = 0, countA = 0;
 
   for(var i = 0; i < TOP_RULES.length; i++){
     var cond = ruleToSheetCondition(TOP_RULES[i]);
@@ -809,6 +853,7 @@ function generateSheetFormula(){
     parts.push('IF(' + cond + ',"' + TOP_RULES[i].top + '",');
     usedCount++;
     if(TOP_RULES[i].top === 'D') countD++;
+    else if(TOP_RULES[i].top === 'H') countH++;
     else if(TOP_RULES[i].top === 'A') countA++;
   }
   if(usedCount === 0){ alert('無法轉換任何規則為公式'); return; }
@@ -820,7 +865,8 @@ function generateSheetFormula(){
   var info = '<b>✅ 已生成公式</b><br>';
   info += '· 使用 <b>' + usedCount + '</b> 條規則：';
   info += '<span style="color:#f59e0b">D ' + countD + '</span> / ';
-  info += '<span style="color:#ef4444">A ' + countA + '</span>';
+  info += '<span style="color:#4ade80">H ' + countH + '</span> / ';
+  info += '<span style="color:#f87171">A ' + countA + '</span>';
   if(skipped > 0) info += '　· 跳過 ' + skipped + ' 條';
   info += '<br>· 公式長度：<b>' + formula.length + '</b> 字元';
   $('formulaInfo').innerHTML = info;
@@ -828,9 +874,10 @@ function generateSheetFormula(){
   var preview = '<b>📋 規則順序：</b><br>';
   for(var i = 0; i < TOP_RULES.length; i++){
     var r = TOP_RULES[i];
-    var cold = (r.top === 'A' && r.coldScore) ? ' · 冷門度 ' + r.coldScore + '%' : '';
-    preview += '<span class="r-' + r.top + '">#' + (i+1) + ' [' + r.top + ']</span> ' + escapeHtml(r.cond) +
-      ' <span style="color:#6b7280">（' + r.topPct + '% · ' + r.total + ' 筆' + cold + '）</span><br>';
+    var dirText = r.dirLabel ? ' [' + r.dirLabel + ']' : '';
+    preview += '<span class="r-' + r.top + '">#' + (i+1) + ' [' + r.top + ']</span>' + dirText + ' ' + escapeHtml(r.cond) +
+      ' <span style="color:#6b7280">（' + r.topPct + '% · ' + r.total + ' 筆' +
+      (r.coldScore ? ' · 冷門度 ' + r.coldScore : '') + '）</span><br>';
   }
   $('rulesPreview').innerHTML = preview;
   $('rulesPreview').style.display = 'block';
@@ -871,7 +918,7 @@ function clearAll(){
   $('statBar').innerHTML = '';
   $('baseRateBar').innerHTML = '';
   $('rulesArea').classList.add('hidden');
-  DATA = []; ALL_RULES_D = []; ALL_RULES_A = []; ALL_RULES_A_FILTERED = []; TOP_RULES = [];
+  DATA = []; ALL_RULES_D = []; ALL_RULES_COLD = []; TOP_RULES = [];
 }
 
 $('input-train').focus();
