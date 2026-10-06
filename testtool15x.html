@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>V15-X 終極版 v5.2</title>
+<title>V15-X 終極版 v5.3</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -35,7 +35,6 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 .stat-bar b{color:#60a5fa}
 .stat-bar .h{color:#10b981}.stat-bar .d{color:#f59e0b}.stat-bar .a{color:#ef4444}
 
-/* 回測統計卡 */
 .backtest{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
 @media(max-width:900px){.backtest{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.backtest{grid-template-columns:1fr}}
@@ -59,7 +58,6 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 .bt-card.A .pct-bar > div{background:#ef4444}
 .bt-card.all .pct-bar > div{background:#60a5fa}
 
-/* 警告 */
 .warn-box{background:rgba(245,158,11,.1);border:1px solid #f59e0b;color:#fbbf24;padding:10px 14px;border-radius:6px;font-size:12px;margin-top:12px;line-height:1.7}
 .warn-box b{color:#fcd34d}
 
@@ -99,6 +97,7 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
 .rule-item.rank-1 .rank{background:#fbbf24;color:#1a1f2e;font-size:11px;padding:3px 9px}
 .rule-item .pct{font-size:15px;font-weight:700;color:#fff;font-family:'Consolas',monospace;flex-shrink:0}
 .rule-item.rank-1 .pct{font-size:16px}
+.rule-item .lift-badge{font-size:10px;color:#60a5fa;background:rgba(96,165,250,.15);padding:2px 6px;border-radius:8px;margin-left:6px;font-weight:700}
 .rule-item .cond{font-size:12px;color:#e8e8e8;font-family:'Consolas',monospace;margin-bottom:6px;line-height:1.5;word-break:break-word;overflow-wrap:anywhere}
 .rule-item .samples{font-size:10px;color:#94a3b8;display:flex;gap:10px;flex-wrap:wrap}
 .rule-item .samples .cH{color:#10b981;font-weight:600}
@@ -144,6 +143,13 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
 .type-card .example{font-size:11px;color:#94a3b8;font-family:'Consolas',monospace;word-break:break-word}
 .type-card.new{border-left-color:#f59e0b}
 .type-card.new .num{color:#f59e0b}
+.base-rate-box{background:#1a1f2e;border:1px solid #2a3441;border-radius:8px;padding:12px 16px;margin:10px 0;display:flex;gap:20px;flex-wrap:wrap;font-size:13px;align-items:center}
+.base-rate-box .item{display:flex;gap:6px;align-items:center}
+.base-rate-box .dot{width:10px;height:10px;border-radius:50%}
+.base-rate-box .dot.h{background:#10b981}
+.base-rate-box .dot.d{background:#f59e0b}
+.base-rate-box .dot.a{background:#ef4444}
+.base-rate-box b{font-family:'Consolas',monospace}
 .loading-overlay{position:fixed;inset:0;background:rgba(10,14,20,.9);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px}
 .loading-overlay .spinner{width:48px;height:48px;border:4px solid #374151;border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -154,8 +160,8 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
 <body>
 
 <div class="header">
-  <h1>📊 V15-X 終極版 <span class="version">v5.2</span></h1>
-  <div class="sub">12 種類型 · 回測統計 · 一鍵分析 · 公式匯出</div>
+  <h1>📊 V15-X 終極版 <span class="version">v5.3</span></h1>
+  <div class="sub">D 類獨立門檻 · Lift 排序 · 回測統計</div>
 </div>
 
 <div class="tabs">
@@ -182,6 +188,7 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
   </div>
 
   <div id="statBar"></div>
+  <div id="baseRateBar"></div>
 
   <div id="analysisArea" class="hidden">
     <div class="card"><h2>📍 A / B / C 相對位置</h2><table id="permTable"></table></div>
@@ -193,7 +200,7 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
 
   <div id="rulesArea" class="hidden">
     <div class="card">
-      <h2>🏆 三向規則排行 Top 10
+      <h2>🏆 三向規則排行 Top 10 <span class="badge">按 Lift 排序</span>
         <span class="badge" style="background:#10b981">🟢 主勝</span>
         <span class="badge" style="background:#f59e0b">🟡 和局</span>
         <span class="badge" style="background:#ef4444">🔴 客勝</span>
@@ -275,8 +282,11 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
 <script>
 'use strict';
 
-var FIXED_MIN_SAMPLE = 5;
-var FIXED_MIN_PURITY = 55;
+/* ===== v5.3 固定參數 ===== */
+var MIN_SAMPLE_DEFAULT = 5;   /* H/A 類 */
+var MIN_PURITY_DEFAULT = 55;  /* H/A 類 */
+var MIN_SAMPLE_D = 4;         /* D 類特殊 */
+var MIN_PURITY_D = 45;        /* D 類特殊 */
 var TOP_N = 10;
 var FORMULA_MAX_RULES = 30;
 var FORMULA_PER_CLASS = 8;
@@ -286,6 +296,7 @@ var TRIPLE_FROM_TOP = 20;
 var DATA = [];
 var ALL_RULES = [];
 var TOP_RULES = [];
+var BASE_RATE = { H:0.33, D:0.33, A:0.33 };
 
 function $(id){ return document.getElementById(id); }
 function switchTab(name){
@@ -607,15 +618,34 @@ function isContradict(c1, c2){
   return false;
 }
 
+/* ⭐ v5.3：分佈門檻 + Lift 排序 */
 function evalBucket(name, b){
-  if(b.total < FIXED_MIN_SAMPLE) return null;
   var max = Math.max(b.H, b.D, b.A);
   var top = max === b.H ? 'H' : (max === b.D ? 'D' : 'A');
   var topPct = Math.round(max / b.total * 100);
-  if(topPct < FIXED_MIN_PURITY) return null;
+
+  /* 分佈門檻 */
+  var minSample, minPurity;
+  if(top === 'D'){
+    minSample = MIN_SAMPLE_D;   /* 4 */
+    minPurity = MIN_PURITY_D;   /* 45% */
+  } else {
+    minSample = MIN_SAMPLE_DEFAULT;  /* 5 */
+    minPurity = MIN_PURITY_DEFAULT;  /* 55% */
+  }
+
+  if(b.total < minSample) return null;
+  if(topPct < minPurity) return null;
+
+  /* ⭐ Lift = 純度 / 基準比率 */
+  var baseRate = BASE_RATE[top] || 0.33;
+  var lift = (topPct / 100) / baseRate;
+  lift = Math.round(lift * 100) / 100;
+
   return {
-    cond:name, total:b.total, H:b.H, D:b.D, A:b.A, top:top, topPct:topPct,
-    score: topPct * Math.min(b.total, 30)
+    cond:name, total:b.total, H:b.H, D:b.D, A:b.A,
+    top:top, topPct:topPct, lift:lift,
+    score: lift * Math.min(b.total, 30)
   };
 }
 
@@ -634,11 +664,28 @@ function runAll(){
       var tStart = Date.now();
       var rc = { H:0, D:0, A:0 };
       rows.forEach(function(r){ rc[r.result]++; });
+
+      /* 計算基準比率 */
+      BASE_RATE = {
+        H: rc.H / rows.length,
+        D: rc.D / rows.length,
+        A: rc.A / rows.length
+      };
+
       $('statBar').innerHTML = '<div class="stat-bar">' +
         '<span>📊 共 <b>' + rows.length + '</b> 筆</span>' +
-        '<span class="h">🟢 H 主勝 <b>' + rc.H + '</b>（' + (rc.H/rows.length*100).toFixed(0) + '%）</span>' +
-        '<span class="d">🟡 D 和局 <b>' + rc.D + '</b>（' + (rc.D/rows.length*100).toFixed(0) + '%）</span>' +
-        '<span class="a">🔴 A 客勝 <b>' + rc.A + '</b>（' + (rc.A/rows.length*100).toFixed(0) + '%）</span>' +
+        '<span class="h">🟢 H 主勝 <b>' + rc.H + '</b>（' + (rc.H/rows.length*100).toFixed(1) + '%）</span>' +
+        '<span class="d">🟡 D 和局 <b>' + rc.D + '</b>（' + (rc.D/rows.length*100).toFixed(1) + '%）</span>' +
+        '<span class="a">🔴 A 客勝 <b>' + rc.A + '</b>（' + (rc.A/rows.length*100).toFixed(1) + '%）</span>' +
+        '</div>';
+
+      /* 基準比率顯示 */
+      $('baseRateBar').innerHTML = '<div class="base-rate-box">' +
+        '<b>📐 基準比率（用於 Lift 計算）：</b>' +
+        '<span class="item"><span class="dot h"></span>H = <b>' + (BASE_RATE.H*100).toFixed(1) + '%</b></span>' +
+        '<span class="item"><span class="dot d"></span>D = <b>' + (BASE_RATE.D*100).toFixed(1) + '%</b></span>' +
+        '<span class="item"><span class="dot a"></span>A = <b>' + (BASE_RATE.A*100).toFixed(1) + '%</b></span>' +
+        '<span style="color:#94a3b8;font-size:11px">門檻：H/A 樣本≥' + MIN_SAMPLE_DEFAULT + ' 純度≥' + MIN_PURITY_DEFAULT + '% ｜ D 樣本≥' + MIN_SAMPLE_D + ' 純度≥' + MIN_PURITY_D + '%</span>' +
         '</div>';
 
       renderPermTable(analyzePermutations(rows));
@@ -725,9 +772,9 @@ function runAll(){
         '📊 評估條件：<b>' + conds.length + '</b> 個單條件 · ' +
         '合格單條件 <b>' + singleRules.length + '</b> 條 · ' +
         '總規則 <b>' + ALL_RULES.length + '</b> 條 · ' +
-        '耗時 <b>' + elapsed + '</b> 秒';
+        '耗時 <b>' + elapsed + '</b> 秒 · ' +
+        '<span style="color:#60a5fa">按 Lift 排序</span>';
 
-      /* ⭐ 回測統計 */
       $('loadingSub').textContent = '回測統計中...';
       var backtest = runBacktest(rows, TOP_RULES);
       renderBacktest(backtest);
@@ -767,7 +814,7 @@ function pickBalancedRules(allRules, limit){
 function renderBoard(containerId, rules){
   var el = $(containerId);
   if(rules.length === 0){
-    el.innerHTML = '<div class="empty-msg">找不到規則</div>';
+    el.innerHTML = '<div class="empty-msg">找不到規則<br><span style="font-size:11px">資料量太少或條件太嚴</span></div>';
     return;
   }
   var html = '';
@@ -775,7 +822,10 @@ function renderBoard(containerId, rules){
     var r = rules[i];
     var medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '#' + (i+1)));
     html += '<div class="rule-item' + (i === 0 ? ' rank-1' : '') + '">' +
-      '<div class="head"><span class="rank">' + medal + '</span><span class="pct">' + r.topPct + '%</span></div>' +
+      '<div class="head"><span class="rank">' + medal + '</span>' +
+        '<span><span class="pct">' + r.topPct + '%</span>' +
+        '<span class="lift-badge">Lift ' + r.lift + '</span></span>' +
+      '</div>' +
       '<div class="cond">' + escapeHtml(r.cond) + '</div>' +
       '<div class="samples"><span>共 ' + r.total + '</span>' +
         '<span class="cH">H ' + r.H + '</span>' +
@@ -852,7 +902,6 @@ function renderNumTable(tableId, analysis){
   $(tableId).innerHTML = html + '</tbody>';
 }
 
-/* ===== 預測 ===== */
 function doPredict(){
   var A = parseFloat($('pred-A').value);
   var B = parseFloat($('pred-B').value);
@@ -872,9 +921,10 @@ function doPredict(){
 
   var confText = '';
   if(matched){
-    if(matched.topPct >= 75 && matched.total >= 15) confText = '⭐ 高信心（純度 ' + matched.topPct + '% · 樣本 ' + matched.total + '）';
-    else if(matched.topPct >= 65 && matched.total >= 8) confText = '✓ 中信心（純度 ' + matched.topPct + '% · 樣本 ' + matched.total + '）';
-    else confText = '⚠ 低信心（純度 ' + matched.topPct + '% · 樣本 ' + matched.total + '）';
+    var liftText = 'Lift ' + matched.lift;
+    if(matched.lift >= 2.5 && matched.total >= 15) confText = '⭐ 高信心（純度 ' + matched.topPct + '% · ' + liftText + ' · 樣本 ' + matched.total + '）';
+    else if(matched.lift >= 1.8 && matched.total >= 8) confText = '✓ 中信心（純度 ' + matched.topPct + '% · ' + liftText + ' · 樣本 ' + matched.total + '）';
+    else confText = '⚠ 低信心（純度 ' + matched.topPct + '% · ' + liftText + ' · 樣本 ' + matched.total + '）';
   } else {
     confText = '沒有任何規則匹配 → 建議跳過';
   }
@@ -902,7 +952,7 @@ function doPredict(){
         '<div class="label"><span>' + (i === 0 ? '🥇 最佳' : '#' + (i+1)) + '</span>' +
         '<span class="tag-' + r.top + '">' + r.top + ' ' + r.topPct + '%</span></div>' +
         '<div class="cond">' + escapeHtml(r.cond) + '</div>' +
-        '<div class="stats-row">共 ' + r.total + '｜H ' + r.H + ' / D ' + r.D + ' / A ' + r.A + '</div>' +
+        '<div class="stats-row">共 ' + r.total + '｜Lift ' + r.lift + '｜H ' + r.H + ' / D ' + r.D + ' / A ' + r.A + '</div>' +
       '</div>';
     }
     html += '</div>';
@@ -1144,7 +1194,7 @@ function generateSheetFormula(){
   for(var i = 0; i < TOP_RULES.length; i++){
     var r = TOP_RULES[i];
     preview += '<span class="r-' + r.top + '">#' + (i+1) + ' [' + r.top + ']</span> ' + escapeHtml(r.cond) +
-      ' <span style="color:#6b7280">（' + r.topPct + '% · ' + r.total + ' 筆）</span><br>';
+      ' <span style="color:#6b7280">（' + r.topPct + '% · Lift ' + r.lift + ' · ' + r.total + ' 筆）</span><br>';
   }
   $('rulesPreview').innerHTML = preview;
   $('rulesPreview').style.display = 'block';
@@ -1214,6 +1264,7 @@ function loadSample(){
 function clearAll(){
   $('input-train').value = '';
   $('statBar').innerHTML = '';
+  $('baseRateBar').innerHTML = '';
   $('analysisArea').classList.add('hidden');
   $('rulesArea').classList.add('hidden');
   DATA = []; ALL_RULES = []; TOP_RULES = [];
