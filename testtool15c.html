@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>V15-C-v3.1 和局 & 冷門 & 預測</title>
+<title>V15-C-v3.2 和局 & 冷門 & 預測</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -32,15 +32,12 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 .card h2{font-size:15px;margin:0 0 12px;color:#fff;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .card h2 .badge{font-size:11px;padding:2px 8px;border-radius:10px;background:#3b82f6;color:#fff;font-weight:500}
 .hidden{display:none!important}
-
 .stat-bar{background:#1a1f2e;border:1px solid #2a3441;border-radius:8px;padding:10px 16px;margin:10px 0;font-size:13px;display:flex;gap:18px;flex-wrap:wrap;align-items:center}
 .stat-bar b{color:#60a5fa}
 .stat-bar .h{color:#10b981}.stat-bar .d{color:#f59e0b}.stat-bar .a{color:#ef4444}
-
 .legend-box{background:linear-gradient(135deg,#2a1a1a,#1a0e0e);border:1px solid #ef4444;border-radius:8px;padding:12px 16px;margin:10px 0;font-size:12px;line-height:1.8}
 .legend-box b{color:#fca5a5}
 .legend-box .ex{color:#94a3b8;font-family:'Consolas',monospace}
-
 .boards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:12px;width:100%}
 @media(max-width:900px){.boards{grid-template-columns:1fr}}
 .board{background:#232a3a;border-radius:8px;padding:14px;border-top:3px solid #666;min-width:0;overflow:hidden}
@@ -51,10 +48,12 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 .board h3 .label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .board h3 .count{font-size:11px;color:#94a3b8;font-weight:500;background:#1a1f2e;padding:2px 8px;border-radius:10px;white-space:nowrap}
 
-.rule-list{display:flex;flex-direction:column;gap:8px;max-height:700px;overflow-y:auto;padding-right:4px}
-.rule-list::-webkit-scrollbar{width:6px}
-.rule-list::-webkit-scrollbar-thumb{background:#374151;border-radius:3px}
-.rule-item{background:#1a1f2e;border-radius:6px;padding:10px 12px;border-left:3px solid #444;min-width:0;transition:all .15s;overflow:hidden}
+/* ⭐ v3.2 修復 1：移除 max-height 和 overflow-y */
+.rule-list{display:flex;flex-direction:column;gap:8px;padding-right:4px}
+
+/* ⭐ v3.2 修復 2：加 flex-shrink:0 */
+.rule-item{background:#1a1f2e;border-radius:6px;padding:10px 12px;border-left:3px solid #444;min-width:0;transition:all .15s;overflow:hidden;flex-shrink:0}
+
 .board.D .rule-item.rank-1{background:linear-gradient(135deg,#3a2e1f,#2e221a);border-left-color:#f59e0b;box-shadow:0 0 0 1px rgba(245,158,11,.3)}
 .board.COLD .rule-item.rank-1{background:linear-gradient(135deg,#3a1f1f,#2e1a1a);border-left-color:#ef4444;box-shadow:0 0 0 1px rgba(239,68,68,.3)}
 .rule-item .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;flex-wrap:wrap}
@@ -73,7 +72,6 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 .rule-item .samples .cD{color:#f59e0b;font-weight:600}
 .rule-item .samples .cA{color:#ef4444;font-weight:600}
 .empty-msg{text-align:center;padding:40px 10px;color:#6b7280;font-size:13px;line-height:1.7}
-
 .backtest{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
 @media(max-width:600px){.backtest{grid-template-columns:1fr}}
 .bt-card{background:#232a3a;border-radius:8px;padding:14px;border-top:3px solid #3b82f6;min-width:0;overflow:hidden}
@@ -92,7 +90,6 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 .bt-card.D .pct-bar > div{background:#f59e0b}
 .bt-card.COLD .pct-bar > div{background:#ef4444}
 .bt-card.all .pct-bar > div{background:#60a5fa}
-
 #sheetFormula{width:100%;font-family:'Consolas',monospace;font-size:11px;padding:12px;border:1px solid #2a3441;border-radius:6px;background:#0f1419;color:#60a5fa;min-height:140px;resize:vertical;line-height:1.6;white-space:pre-wrap;word-break:break-all}
 .copy-status{font-size:12px;color:#10b981;margin-left:10px;font-weight:600}
 .legend{font-size:11px;color:#6b7280;margin-top:10px;line-height:1.7}
@@ -100,8 +97,6 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 .rules-preview .r-D{color:#f59e0b}
 .rules-preview .r-H{color:#10b981}
 .rules-preview .r-A{color:#ef4444}
-
-/* 預測 */
 .predict-input{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
 @media(max-width:600px){.predict-input{grid-template-columns:1fr}}
 .predict-input .field{background:#232a3a;border-radius:8px;padding:14px;text-align:center;min-width:0}
@@ -118,7 +113,6 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 .predict-result .cn{font-size:20px;font-weight:700;color:#fff;margin:8px 0}
 .predict-result .reason{font-size:13px;color:#e8e8e8;margin-top:14px;font-family:'Consolas',monospace;background:#0f1419;padding:10px 14px;border-radius:6px;display:inline-block;max-width:100%;word-break:break-word}
 .predict-result .stats{font-size:11px;color:#94a3b8;margin-top:10px}
-
 .multi-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:14px}
 .multi-card{background:#232a3a;border-radius:8px;padding:12px;border-left:3px solid #444;min-width:0;overflow:hidden}
 .multi-card.D{border-left-color:#f59e0b}
@@ -127,7 +121,6 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 .multi-card .label{font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
 .multi-card .cond{font-size:11px;color:#94a3b8;margin-top:6px;font-family:'Consolas',monospace;word-break:break-word;overflow-wrap:anywhere}
 .multi-card .stats-row{font-size:10px;color:#6b7280;margin-top:6px}
-
 .loading-overlay{position:fixed;inset:0;background:rgba(10,14,20,.9);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px}
 .loading-overlay .spinner{width:48px;height:48px;border:4px solid #374151;border-top-color:#ef4444;border-radius:50%;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -137,8 +130,8 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 <body>
 
 <div class="header">
-  <h1>🎯 V15-C-v3.1 <span class="version">和局 & 冷門 & 預測</span></h1>
-  <div class="sub">冷門 = 勝率低的那方贏了 · 含即時預測</div>
+  <h1>🎯 V15-C-v3.2 <span class="version">和局 & 冷門 & 預測</span></h1>
+  <div class="sub">冷門 = 勝率低的那方贏了 · 修復卡片顯示</div>
 </div>
 
 <div class="tabs">
@@ -148,9 +141,7 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 
 <div class="main">
 
-<!-- ========== 訓練 ========== -->
 <div class="panel active" id="panel-train">
-
   <div class="card">
     <h2>📥 貼上歷史資料 <span class="badge">每行：A B C 結果</span></h2>
     <textarea id="input-train" placeholder="52 27 21 1:1 D
@@ -209,10 +200,8 @@ button.gray:hover{background:#3a4451;box-shadow:none}
       <div id="rulesPreview" class="rules-preview" style="display:none"></div>
     </div>
   </div>
-
 </div>
 
-<!-- ========== 預測 ========== -->
 <div class="panel" id="panel-predict">
   <div class="card">
     <h2>🔮 即時預測</h2>
@@ -426,10 +415,7 @@ function evalBucketD(name, b){
 
 function evalCold(name, testFn, rows){
   var rules = [];
-
-  /* 客隊爆冷 */
   var awayBets = 0, awayHits = 0, awayDiffSum = 0;
-  /* 主隊爆冷 */
   var homeBets = 0, homeHits = 0, homeDiffSum = 0;
 
   for(var i = 0; i < rows.length; i++){
@@ -663,7 +649,6 @@ function renderBoard(containerId, rules, cls){
   el.innerHTML = html;
 }
 
-/* ===== 回測 ===== */
 function runBacktest(rows, rules){
   var stats = {
     all: { bets:0, hits:0, skip:0 },
@@ -712,7 +697,6 @@ function renderBacktest(stats){
   $('backtestArea').innerHTML = html;
 }
 
-/* ===== 匹配 ===== */
 function matchRule(row, condStr){
   var mainCond = condStr.replace(/ 且 A [<>] C$/, '');
   var direction = null;
@@ -777,7 +761,6 @@ function matchSingle(row, cond){
   return false;
 }
 
-/* ===== 預測 ===== */
 function doPredict(){
   var A = parseFloat($('pred-A').value);
   var B = parseFloat($('pred-B').value);
@@ -831,7 +814,7 @@ function doPredict(){
       var extra = (r.top === 'D') ? 'Lift ' + r.lift : '冷門度 ' + r.coldScore;
       html += '<div class="multi-card ' + r.top + '">' +
         '<div class="label"><span>' + (i === 0 ? '🥇 最佳' : '#' + (i+1)) + '</span>' +
-        '<span class="tag-' + r.top + '" style="background:' + (r.top === 'D' ? '#f59e0b' : (r.top === 'H' ? '#10b981' : '#ef4444')) + ';color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">' + r.top + ' ' + r.topPct + '%</span></div>' +
+        '<span style="background:' + (r.top === 'D' ? '#f59e0b' : (r.top === 'H' ? '#10b981' : '#ef4444')) + ';color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">' + r.top + ' ' + r.topPct + '%</span></div>' +
         '<div class="cond">' + escapeHtml(r.cond) + '</div>' +
         '<div class="stats-row">共 ' + r.total + '｜' + extra + (r.dirLabel ? '｜' + r.dirLabel : '') + '</div>' +
       '</div>';
@@ -850,7 +833,6 @@ function clearPredict(){
   $('predictArea').classList.add('hidden');
 }
 
-/* ===== Google Sheets 公式 ===== */
 function condToSheetFormula(cond){
   var m;
   if((m = cond.match(/^A ≥ (\d+)$/))) return '(A2:A>=' + m[1] + ')';
