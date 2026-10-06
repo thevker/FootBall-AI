@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>V15-X 終極版 v5.1</title>
+<title>V15-X 終極版 v5.2</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -34,6 +34,35 @@ button.gray:hover{background:#3a4451;box-shadow:none}
 .stat-bar{background:#1a1f2e;border:1px solid #2a3441;border-radius:8px;padding:10px 16px;margin:10px 0;font-size:13px;display:flex;gap:18px;flex-wrap:wrap;align-items:center}
 .stat-bar b{color:#60a5fa}
 .stat-bar .h{color:#10b981}.stat-bar .d{color:#f59e0b}.stat-bar .a{color:#ef4444}
+
+/* 回測統計卡 */
+.backtest{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+@media(max-width:900px){.backtest{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.backtest{grid-template-columns:1fr}}
+.bt-card{background:#232a3a;border-radius:8px;padding:14px;border-top:3px solid #3b82f6;min-width:0;overflow:hidden}
+.bt-card.all{border-top-color:#60a5fa}
+.bt-card.H{border-top-color:#10b981}
+.bt-card.D{border-top-color:#f59e0b}
+.bt-card.A{border-top-color:#ef4444}
+.bt-card .title{font-size:12px;color:#94a3b8;margin-bottom:10px;font-weight:600}
+.bt-card .big{font-size:26px;font-weight:900;font-family:'Consolas',monospace;color:#fff;margin-bottom:4px;line-height:1.1}
+.bt-card.H .big{color:#10b981}
+.bt-card.D .big{color:#f59e0b}
+.bt-card.A .big{color:#ef4444}
+.bt-card .row{display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;padding:3px 0;border-bottom:1px dashed #2a3441}
+.bt-card .row:last-child{border-bottom:none}
+.bt-card .row b{color:#fff;font-family:'Consolas',monospace}
+.bt-card .pct-bar{height:6px;background:#0f1419;border-radius:3px;margin-top:8px;overflow:hidden}
+.bt-card .pct-bar > div{height:100%;border-radius:3px;transition:width .3s}
+.bt-card.H .pct-bar > div{background:#10b981}
+.bt-card.D .pct-bar > div{background:#f59e0b}
+.bt-card.A .pct-bar > div{background:#ef4444}
+.bt-card.all .pct-bar > div{background:#60a5fa}
+
+/* 警告 */
+.warn-box{background:rgba(245,158,11,.1);border:1px solid #f59e0b;color:#fbbf24;padding:10px 14px;border-radius:6px;font-size:12px;margin-top:12px;line-height:1.7}
+.warn-box b{color:#fcd34d}
+
 table{width:100%;border-collapse:collapse;font-size:12px}
 th,td{padding:7px 8px;text-align:center;border-bottom:1px solid #2a3441;white-space:nowrap}
 th{background:#232a3a;color:#94a3b8;font-size:11px;font-weight:600}
@@ -125,8 +154,8 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
 <body>
 
 <div class="header">
-  <h1>📊 V15-X 終極版 <span class="version">v5.1</span></h1>
-  <div class="sub">12 種類型 · 234 個單條件 · 智慧組合 · 一鍵分析 · 公式匯出</div>
+  <h1>📊 V15-X 終極版 <span class="version">v5.2</span></h1>
+  <div class="sub">12 種類型 · 回測統計 · 一鍵分析 · 公式匯出</div>
 </div>
 
 <div class="tabs">
@@ -184,6 +213,15 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
         </div>
       </div>
       <div class="legend" id="searchStats"></div>
+    </div>
+
+    <div class="card">
+      <h2>📊 回測統計 <span class="badge">用訓練資料本身模擬</span></h2>
+      <div class="backtest" id="backtestArea"></div>
+      <div class="warn-box">
+        ⚠️ <b>這是 in-sample 統計（訓練資料本身回測）</b>，命中率天生偏高，<b>不能當真實表現</b>。<br>
+        真實表現要用「沒看過的新資料」測。資料 < 200 筆時，數字波動會很大。
+      </div>
     </div>
   </div>
 </div>
@@ -283,7 +321,6 @@ function topResult(b){
   return { tag:tag, name:nameMap[tag], pct:(max/b.total*100).toFixed(0) };
 }
 
-/* ⭐ v5.1：分布條只顯示顏色，無文字 */
 function barHtml(b){
   if(b.total === 0) return '<div class="bar"><div class="empty" style="width:100%"></div></div>';
   var h = b.H/b.total*100, d = b.D/b.total*100, a = b.A/b.total*100;
@@ -300,11 +337,69 @@ function escapeHtml(s){
   });
 }
 
+/* ===== 回測統計 ===== */
+function runBacktest(rows, rules){
+  var stats = {
+    all: { bets:0, hits:0, skip:0 },
+    H:   { bets:0, hits:0 },
+    D:   { bets:0, hits:0 },
+    A:   { bets:0, hits:0 }
+  };
+  for(var i = 0; i < rows.length; i++){
+    var row = rows[i];
+    var pred = 'skip';
+    for(var j = 0; j < rules.length; j++){
+      if(matchRule(row, rules[j].cond)){
+        pred = rules[j].top;
+        break;
+      }
+    }
+    if(pred === 'skip'){ stats.all.skip++; continue; }
+    stats.all.bets++;
+    stats[pred].bets++;
+    if(pred === row.result){
+      stats.all.hits++;
+      stats[pred].hits++;
+    }
+  }
+  return stats;
+}
+
+function pct(hits, bets){
+  if(bets === 0) return 0;
+  return Math.round(hits / bets * 10000) / 100;
+}
+
+function renderBacktest(stats){
+  var allRate = pct(stats.all.hits, stats.all.bets);
+  var hRate = pct(stats.H.hits, stats.H.bets);
+  var dRate = pct(stats.D.hits, stats.D.bets);
+  var aRate = pct(stats.A.hits, stats.A.bets);
+
+  function card(cls, title, bets, hits, rate){
+    return '<div class="bt-card ' + cls + '">' +
+      '<div class="title">' + title + '</div>' +
+      '<div class="big">' + rate.toFixed(2) + '%</div>' +
+      '<div class="row"><span>出手數</span><b>' + bets + '</b></div>' +
+      '<div class="row"><span>命中數</span><b>' + hits + '</b></div>' +
+      '<div class="row"><span>命中率</span><b>' + rate.toFixed(2) + '%</b></div>' +
+      '<div class="pct-bar"><div style="width:' + Math.min(100, rate) + '%"></div></div>' +
+      '</div>';
+  }
+
+  var html = '';
+  html += card('all', '🎯 全體（ALL）', stats.all.bets, stats.all.hits, allRate);
+  html += card('H', '🟢 主勝（H）', stats.H.bets, stats.H.hits, hRate);
+  html += card('D', '🟡 和局（D）', stats.D.bets, stats.D.hits, dRate);
+  html += card('A', '🔴 客勝（A）', stats.A.bets, stats.A.hits, aRate);
+
+  $('backtestArea').innerHTML = html;
+}
+
 /* ===== 條件生成（12 類型） ===== */
 function buildConditions(){
   var conds = [];
 
-  /* 類型 1：絕對值 */
   ['A','B','C'].forEach(function(f){
     [20,25,30,35,40,45,50,55,60,65,70].forEach(function(t){
       conds.push({ name:f + ' ≥ ' + t, test:(function(f2,t2){ return function(r){ return r[f2] >= t2; }; })(f,t), dim:f });
@@ -312,7 +407,6 @@ function buildConditions(){
     });
   });
 
-  /* 類型 2：區間 */
   ['A','B','C'].forEach(function(f){
     [[30,50],[35,55],[40,60],[45,65],[50,70],[25,45]].forEach(function(range){
       var lo = range[0], hi = range[1];
@@ -324,7 +418,6 @@ function buildConditions(){
     });
   });
 
-  /* 類型 3：差值 */
   [
     ['A-C', function(r){ return r.A - r.C; }, [-40,-30,-25,-20,-15,-10,10,15,20,25,30,40]],
     ['A-B', function(r){ return r.A - r.B; }, [-30,-20,-15,-10,10,15,20,25,30,40,50]],
@@ -343,7 +436,6 @@ function buildConditions(){
     });
   });
 
-  /* 類型 4：差值區間 */
   [
     ['A-C', function(r){ return r.A - r.C; }, [[10,30],[15,35],[20,40],[5,25],[25,45]]],
     ['A-B', function(r){ return r.A - r.B; }, [[10,30],[15,35],[20,40],[5,25],[25,45]]],
@@ -360,7 +452,6 @@ function buildConditions(){
     });
   });
 
-  /* 類型 5：絕對差 */
   [
     ['A-C', function(r){ return Math.abs(r.A - r.C); }, [3,5,8,10,12,15,20,25]],
     ['A-B', function(r){ return Math.abs(r.A - r.B); }, [5,8,10,15,20,25]],
@@ -375,7 +466,6 @@ function buildConditions(){
     });
   });
 
-  /* 類型 6：比值 */
   [
     ['A/B', function(r){ return r.B > 0 ? r.A / r.B : 0; }, [1, 1.2, 1.5, 1.8, 2, 2.5]],
     ['A/C', function(r){ return r.C > 0 ? r.A / r.C : 0; }, [1, 1.2, 1.5, 1.8, 2, 2.5]],
@@ -392,7 +482,6 @@ function buildConditions(){
     });
   });
 
-  /* 類型 7：和 */
   [
     ['A+B', function(r){ return r.A + r.B; }, [55, 60, 65, 70, 75, 80, 85]],
     ['B+C', function(r){ return r.B + r.C; }, [40, 45, 50, 55, 60, 65, 70]],
@@ -405,7 +494,6 @@ function buildConditions(){
     });
   });
 
-  /* 類型 8：三變數排序 */
   [
     ['A > B > C', function(r){ return r.A > r.B && r.B > r.C; }],
     ['A > C > B', function(r){ return r.A > r.C && r.C > r.B; }],
@@ -417,7 +505,6 @@ function buildConditions(){
     conds.push({ name:d[0], test:d[1], dim:'order' });
   });
 
-  /* 類型 9：排名 */
   ['A','B','C'].forEach(function(f){
     var others = ['A','B','C'].filter(function(x){ return x !== f; });
     var o1 = others[0], o2 = others[1];
@@ -444,7 +531,6 @@ function buildConditions(){
     });
   });
 
-  /* 類型 10：極差 */
   [10, 15, 20, 25, 30, 35, 40, 50].forEach(function(t){
     conds.push({
       name:'max − min ≥ ' + t,
@@ -460,7 +546,6 @@ function buildConditions(){
     });
   });
 
-  /* 類型 11：與平均差 */
   ['A','B','C'].forEach(function(f){
     [5, 8, 10, 12, 15, 18, 20].forEach(function(t){
       conds.push({
@@ -476,7 +561,6 @@ function buildConditions(){
     });
   });
 
-  /* 類型 12：標準化差 */
   [
     ['A-C', function(r){ return (r.A - r.C) / Math.max(1, r.A+r.B+r.C); }, [0.05, 0.1, 0.15, 0.2, 0.25]],
     ['C-A', function(r){ return (r.C - r.A) / Math.max(1, r.A+r.B+r.C); }, [0.05, 0.1, 0.15, 0.2, 0.25]],
@@ -495,7 +579,6 @@ function buildConditions(){
   return conds;
 }
 
-/* 矛盾檢查 */
 function isContradict(c1, c2){
   var n1 = c1.name, n2 = c2.name;
   if(c1.dim === c2.dim){
@@ -536,7 +619,6 @@ function evalBucket(name, b){
   };
 }
 
-/* ===== 主流程 ===== */
 function runAll(){
   var rows = parseData($('input-train').value);
   DATA = rows;
@@ -568,7 +650,6 @@ function runAll(){
 
       var conds = buildConditions();
       $('loadingSub').textContent = '單條件：' + conds.length + ' 個...';
-      console.log('[v5.1] 生成單條件：', conds.length, '個');
 
       var allRules = [];
       var singleRules = [];
@@ -583,7 +664,6 @@ function runAll(){
       }
 
       singleRules.sort(function(a, b){ return b.score - a.score; });
-      console.log('[v5.1] 合格單條件：', singleRules.length, '個');
 
       $('loadingSub').textContent = '雙條件組合中...';
       var doubleBase = singleRules.slice(0, DOUBLE_FROM_TOP);
@@ -619,8 +699,6 @@ function runAll(){
         }
       }
 
-      console.log('[v5.1] 總規則數：', allRules.length);
-
       var seen = {};
       ALL_RULES = allRules.filter(function(r){
         if(seen[r.cond]) return false;
@@ -648,6 +726,11 @@ function runAll(){
         '合格單條件 <b>' + singleRules.length + '</b> 條 · ' +
         '總規則 <b>' + ALL_RULES.length + '</b> 條 · ' +
         '耗時 <b>' + elapsed + '</b> 秒';
+
+      /* ⭐ 回測統計 */
+      $('loadingSub').textContent = '回測統計中...';
+      var backtest = runBacktest(rows, TOP_RULES);
+      renderBacktest(backtest);
 
       $('rulesArea').classList.remove('hidden');
       document.body.removeChild(overlay);
@@ -702,7 +785,6 @@ function renderBoard(containerId, rules){
   el.innerHTML = html;
 }
 
-/* ===== 分布表 ===== */
 function analyzePermutations(rows){
   var keys = ['A≥B≥C', 'A≥C>B', 'B>A≥C', 'B≥C>A', 'C>A≥B', 'C>B>A'];
   var buckets = {};
@@ -899,18 +981,9 @@ function matchSingle(row, cond){
   if(cond === 'A 第 3') return A < B && A < C;
   if(cond === 'B 第 3') return B < A && B < C;
   if(cond === 'C 第 3') return C < A && C < B;
-  if(cond === 'A 第 2'){
-    var isMinA = A < B && A < C, isMaxA = A >= B && A >= C;
-    return !isMinA && !isMaxA;
-  }
-  if(cond === 'B 第 2'){
-    var isMinB = B < A && B < C, isMaxB = B >= A && B >= C;
-    return !isMinB && !isMaxB;
-  }
-  if(cond === 'C 第 2'){
-    var isMinC = C < A && C < B, isMaxC = C >= A && C >= B;
-    return !isMinC && !isMaxC;
-  }
+  if(cond === 'A 第 2'){ var isMinA = A < B && A < C, isMaxA = A >= B && A >= C; return !isMinA && !isMaxA; }
+  if(cond === 'B 第 2'){ var isMinB = B < A && B < C, isMaxB = B >= A && B >= C; return !isMinB && !isMaxB; }
+  if(cond === 'C 第 2'){ var isMinC = C < A && C < B, isMaxC = C >= A && C >= B; return !isMinC && !isMaxC; }
 
   if((m = cond.match(/^max − min ≥ (\d+)$/))) return (Math.max(A,B,C) - Math.min(A,B,C)) >= +m[1];
   if((m = cond.match(/^max − min ≤ (\d+)$/))) return (Math.max(A,B,C) - Math.min(A,B,C)) <= +m[1];
@@ -1005,14 +1078,8 @@ function condToSheetFormula(cond){
   if(cond === 'B 第 2') return 'NOT((B2:B>=A2:A)*(B2:B>=C2:C))*NOT((B2:B<A2:A)*(B2:B<C2:C))';
   if(cond === 'C 第 2') return 'NOT((C2:C>=A2:A)*(C2:C>=B2:B))*NOT((C2:C<A2:A)*(C2:C<B2:B))';
 
-  if((m = cond.match(/^max − min ≥ (\d+)$/))){
-    var t = m[1];
-    return '(MAX(A2:A,B2:B,C2:C)-MIN(A2:A,B2:B,C2:C)>=' + t + ')';
-  }
-  if((m = cond.match(/^max − min ≤ (\d+)$/))){
-    var t = m[1];
-    return '(MAX(A2:A,B2:B,C2:C)-MIN(A2:A,B2:B,C2:C)<=' + t + ')';
-  }
+  if((m = cond.match(/^max − min ≥ (\d+)$/))) return '(MAX(A2:A,B2:B,C2:C)-MIN(A2:A,B2:B,C2:C)>=' + m[1] + ')';
+  if((m = cond.match(/^max − min ≤ (\d+)$/))) return '(MAX(A2:A,B2:B,C2:C)-MIN(A2:A,B2:B,C2:C)<=' + m[1] + ')';
 
   if((m = cond.match(/^A − avg ≥ (\d+)$/))) return '((A2:A-(A2:A+B2:B+C2:C)/3)>=' + m[1] + ')';
   if((m = cond.match(/^A − avg ≤ -(\d+)$/))) return '((A2:A-(A2:A+B2:B+C2:C)/3)<=-' + m[1] + ')';
@@ -1104,7 +1171,6 @@ function fallbackCopy(text){
   document.body.removeChild(ta);
 }
 
-/* ===== 類型說明 ===== */
 function renderTypesPage(){
   var types = [
     { n:1, name:'絕對值', ex:'A ≥ 50 / B < 25', isNew:false },
