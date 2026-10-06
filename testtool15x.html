@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>V15-X 終極版 v5.5</title>
+<title>V15-X 終極版 v5.6</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -157,8 +157,8 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
 <body>
 
 <div class="header">
-  <h1>📊 V15-X 終極版 <span class="version">v5.5</span></h1>
-  <div class="sub">D 門檻降至 30% · 三榜獨立評估 · Lift 排序</div>
+  <h1>📊 V15-X 終極版 <span class="version">v5.6</span></h1>
+  <div class="sub">排序改用純度 × 樣本 · Lift 僅顯示 · D 門檻 30%</div>
 </div>
 
 <div class="tabs">
@@ -196,7 +196,7 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
 
   <div id="rulesArea" class="hidden">
     <div class="card">
-      <h2>🏆 三向規則排行 Top 10 <span class="badge">按 Lift 排序</span>
+      <h2>🏆 三向規則排行 Top 10 <span class="badge">按純度排序</span>
         <span class="badge" style="background:#10b981">🟢 主勝</span>
         <span class="badge" style="background:#f59e0b">🟡 和局</span>
         <span class="badge" style="background:#ef4444">🔴 客勝</span>
@@ -271,11 +271,11 @@ td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
 <script>
 'use strict';
 
-/* ===== v5.5 固定參數 ===== */
+/* ===== v5.6 固定參數 ===== */
 var MIN_SAMPLE_DEFAULT = 5;
 var MIN_PURITY_DEFAULT = 55;
 var MIN_SAMPLE_D = 5;
-var MIN_PURITY_D = 30;   /* ⭐ v5.5 改動：42 → 30 */
+var MIN_PURITY_D = 30;
 var TOP_N = 10;
 var FORMULA_MAX_RULES = 30;
 var FORMULA_PER_CLASS = 8;
@@ -603,6 +603,7 @@ function isContradict(c1, c2){
   return false;
 }
 
+/* ⭐ v5.6 核心改動：排序用「純度 × 樣本」，Lift 只顯示 */
 function evalBucketForClass(name, b, targetClass){
   var hits = b[targetClass];
   var total = b.total;
@@ -632,7 +633,8 @@ function evalBucketForClass(name, b, targetClass){
     hits: hits,
     topPct: Math.round(purity * 100),
     lift: lift,
-    score: lift * Math.min(total, 30)
+    /* ⭐ v5.6：改成用純度排序（Lift 只顯示） */
+    score: Math.round(purity * 100) * Math.min(total, 30)
   };
 }
 
@@ -798,7 +800,8 @@ function runAll(){
       var elapsed = ((Date.now() - tStart) / 1000).toFixed(2);
       $('searchStats').innerHTML =
         '📊 評估：<b>' + conds.length + '</b> 個單條件 · 合格：H <b>' + RULES_BY_CLASS.H.length + '</b> / D <b>' + RULES_BY_CLASS.D.length + '</b> / A <b>' + RULES_BY_CLASS.A.length + '</b> 條 · ' +
-        'TOP <b>' + TOP_RULES.length + '</b> 條 · 耗時 <b>' + elapsed + '</b> 秒';
+        'TOP <b>' + TOP_RULES.length + '</b> 條 · 耗時 <b>' + elapsed + '</b> 秒 · ' +
+        '<span style="color:#60a5fa">按純度排序</span>';
 
       $('loadingSub').textContent = '回測統計中...';
       var backtest = runBacktest(rows, TOP_RULES);
