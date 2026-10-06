@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V15-X 終極版 · 懶人包</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:0;background:#0a0e14;color:#e8e8e8}
+.header{background:linear-gradient(135deg,#1a1f2e,#0f1419);border-bottom:1px solid #2a3441;padding:16px 24px}
+.header h1{font-size:20px;margin:0 0 4px;color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header .sub{font-size:12px;color:#6b7280}
+.header .version{background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:bold}
+
+.tabs{display:flex;gap:0;background:#0f1419;border-bottom:1px solid #2a3441;padding:0 24px}
+.tab-btn{padding:12px 22px;font-size:14px;font-weight:600;background:transparent;color:#6b7280;border:none;border-bottom:3px solid transparent;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px}
+.tab-btn:hover{color:#94a3b8}
+.tab-btn.active{color:#60a5fa;border-bottom-color:#3b82f6;background:rgba(59,130,246,.05)}
+
+.main{padding:20px 24px;max-width:1700px;margin:0 auto}
+.panel{display:none}
+.panel.active{display:block}
+
+textarea{width:100%;font-family:'Consolas',monospace;font-size:13px;padding:12px;border:1px solid #2a3441;border-radius:6px;background:#1a1f2e;color:#e8e8e8;resize:vertical;line-height:1.6}
+#input-train{height:160px}
+
+button{padding:10px 22px;font-size:14px;margin:6px 6px 6px 0;cursor:pointer;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:6px;font-weight:600;transition:all .15s}
+button:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,.3)}
+button.green{background:linear-gradient(135deg,#10b981,#059669)}
+button.green:hover{box-shadow:0 4px 12px rgba(16,185,129,.3)}
+button.gray{background:#2a3441}
+button.gray:hover{background:#3a4451;box-shadow:none}
+button.small{padding:5px 12px;font-size:11px;margin:2px 3px}
+
+.card{background:#1a1f2e;border:1px solid #2a3441;border-radius:10px;padding:16px;margin-bottom:14px}
+.card h2{font-size:15px;margin:0 0 12px;color:#fff;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card h2 .badge{font-size:11px;padding:2px 8px;border-radius:10px;background:#3b82f6;color:#fff;font-weight:500}
+
+.hidden{display:none!important}
+
+.stat-bar{background:#1a1f2e;border:1px solid #2a3441;border-radius:8px;padding:10px 16px;margin:10px 0;font-size:13px;display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+.stat-bar b{color:#60a5fa}
+.stat-bar .h{color:#10b981}.stat-bar .d{color:#f59e0b}.stat-bar .a{color:#ef4444}
+
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+th,td{padding:7px 8px;text-align:center;border-bottom:1px solid #2a3441}
+th{background:#232a3a;color:#94a3b8;font-size:11px;font-weight:600}
+td{font-family:'Consolas',monospace;color:#e8e8e8}
+td.name{text-align:left;font-family:system-ui;font-weight:600;color:#fff}
+
+.bar{height:20px;border-radius:4px;display:flex;overflow:hidden;background:#232a3a}
+.bar > div{display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700}
+.bar .h{background:linear-gradient(90deg,#10b981,#059669)}
+.bar .d{background:linear-gradient(90deg,#f59e0b,#d97706)}
+.bar .a{background:linear-gradient(90deg,#ef4444,#dc2626)}
+.bar .empty{background:#2a3441;color:#666}
+
+.tag-H{background:#10b981;color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap}
+.tag-D{background:#f59e0b;color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap}
+.tag-A{background:#ef4444;color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap}
+
+/* ⭐ 三榜 - 修復版 */
+.boards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:12px}
+@media(max-width:1100px){.boards{grid-template-columns:1fr}}
+
+.board{background:#232a3a;border-radius:8px;padding:14px;border-top:3px solid #666;min-width:0;overflow:hidden}
+.board.H{border-top-color:#10b981}
+.board.D{border-top-color:#f59e0b}
+.board.A{border-top-color:#ef4444}
+.board h3{margin:0 0 12px;font-size:14px;display:flex;align-items:center;gap:8px;color:#fff;flex-wrap:wrap}
+.board h3 .icon{font-size:18px}
+.board h3 .label{flex:1;min-width:0}
+.board h3 .count{font-size:11px;color:#94a3b8;font-weight:500;background:#1a1f2e;padding:2px 8px;border-radius:10px}
+
+.rule-list{display:flex;flex-direction:column;gap:8px;max-height:600px;overflow-y:auto;padding-right:4px}
+.rule-list::-webkit-scrollbar{width:6px}
+.rule-list::-webkit-scrollbar-thumb{background:#374151;border-radius:3px}
+
+.rule-item{background:#1a1f2e;border-radius:6px;padding:10px 12px;border-left:3px solid #444;min-width:0;transition:all .15s}
+.rule-item.rank-1{background:linear-gradient(135deg,#1f3a2e,#1a2e22);border-left-color:#10b981;box-shadow:0 0 0 1px rgba(16,185,129,.3)}
+.board.D .rule-item.rank-1{background:linear-gradient(135deg,#3a2e1f,#2e221a);border-left-color:#f59e0b;box-shadow:0 0 0 1px rgba(245,158,11,.3)}
+.board.A .rule-item.rank-1{background:linear-gradient(135deg,#3a1f1f,#2e1a1a);border-left-color:#ef4444;box-shadow:0 0 0 1px rgba(239,68,68,.3)}
+
+.rule-item .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
+.rule-item .rank{background:#374151;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0}
+.rule-item.rank-1 .rank{background:#fbbf24;color:#1a1f2e;font-size:11px;padding:3px 9px}
+.rule-item .pct{font-size:15px;font-weight:700;color:#fff;font-family:'Consolas',monospace;flex-shrink:0}
+.rule-item.rank-1 .pct{font-size:16px}
+.rule-item .cond{font-size:12px;color:#e8e8e8;font-family:'Consolas',monospace;margin-bottom:6px;line-height:1.5;word-break:break-word}
+.rule-item .samples{font-size:10px;color:#94a3b8;display:flex;gap:10px;flex-wrap:wrap}
+.rule-item .samples .cH{color:#10b981;font-weight:600}
+.rule-item .samples .cD{color:#f59e0b;font-weight:600}
+.rule-item .samples .cA{color:#ef4444;font-weight:600}
+
+.empty-msg{text-align:center;padding:40px 10px;color:#6b7280;font-size:13px;line-height:1.7}
+
+/* 預測 */
+.predict-input{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+@media(max-width:600px){.predict-input{grid-template-columns:1fr}}
+.predict-input .field{background:#232a3a;border-radius:8px;padding:14px;text-align:center}
+.predict-input .field label{display:block;font-size:11px;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+.predict-input .field input{width:100%;font-size:26px;font-family:'Consolas',monospace;font-weight:700;background:#1a1f2e;border:1px solid #374151;color:#fff;border-radius:6px;padding:12px;text-align:center}
+.predict-input .field input:focus{outline:2px solid #3b82f6;border-color:#3b82f6}
+
+.predict-result{background:linear-gradient(135deg,#232a3a,#1a1f2e);border-radius:12px;padding:28px;text-align:center;margin:14px 0}
+.predict-result .label{font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px}
+.predict-result .verdict{font-size:60px;font-weight:900;margin:10px 0;font-family:'Consolas',monospace;line-height:1}
+.predict-result .verdict.H{color:#10b981;text-shadow:0 0 30px rgba(16,185,129,.4)}
+.predict-result .verdict.D{color:#f59e0b;text-shadow:0 0 30px rgba(245,158,11,.4)}
+.predict-result .verdict.A{color:#ef4444;text-shadow:0 0 30px rgba(239,68,68,.4)}
+.predict-result .verdict.skip{color:#6b7280}
+.predict-result .cn{font-size:20px;font-weight:700;color:#fff;margin:8px 0}
+.predict-result .reason{font-size:13px;color:#e8e8e8;margin-top:14px;font-family:'Consolas',monospace;background:#0f1419;padding:10px 14px;border-radius:6px;display:inline-block;max-width:100%;word-break:break-word}
+.predict-result .stats{font-size:11px;color:#94a3b8;margin-top:10px}
+
+.multi-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:14px}
+.multi-card{background:#232a3a;border-radius:8px;padding:12px;border-left:3px solid #444;min-width:0}
+.multi-card.H{border-left-color:#10b981}
+.multi-card.D{border-left-color:#f59e0b}
+.multi-card.A{border-left-color:#ef4444}
+.multi-card .label{font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
+.multi-card .cond{font-size:11px;color:#94a3b8;margin-top:6px;font-family:'Consolas',monospace;word-break:break-word}
+.multi-card .stats-row{font-size:10px;color:#6b7280;margin-top:6px}
+
+.legend{font-size:11px;color:#6b7280;margin-top:10px;line-height:1.7}
+.legend code{background:#232a3a;padding:2px 6px;border-radius:3px;color:#60a5fa;font-size:10px}
+
+.loading-overlay{position:fixed;inset:0;background:rgba(10,14,20,.9);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px}
+.loading-overlay .spinner{width:48px;height:48px;border:4px solid #374151;border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay .text{color:#fff;font-size:14px;font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📊 V15-X 終極版 <span class="version">v4.0 懶人包</span></h1>
+  <div class="sub">一鍵分析 · 三向排行 · 即時預測 — 參數全幫你決定好了</div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="train" onclick="switchTab('train')">🎯 訓練</button>
+  <button class="tab-btn" data-tab="predict" onclick="switchTab('predict')">🔮 預測</button>
+</div>
+
+<div class="main">
+
+<!-- ========== TAB 1 ========== -->
+<div class="panel active" id="panel-train">
+
+  <div class="card">
+    <h2>📥 貼上歷史資料 <span class="badge">每行：A B C 結果</span></h2>
+    <textarea id="input-train" placeholder="44 33 23 H
+42 28 30 D
+23 27 50 A
+（含比分也可以：44 33 23 2:1 H，比分會被忽略）"></textarea>
+    <div style="margin-top:10px">
+      <button class="green" onclick="runAll()">🚀 一鍵分析</button>
+      <button class="gray" onclick="loadSample()">📋 載入範例</button>
+      <button class="gray" onclick="clearAll()">🗑 清空</button>
+    </div>
+  </div>
+
+  <div id="statBar"></div>
+
+  <div id="analysisArea" class="hidden">
+    <div class="card">
+      <h2>📍 A / B / C 相對位置 <span class="badge">誰最大？</span></h2>
+      <table id="permTable"></table>
+    </div>
+
+    <div class="card">
+      <h2>📈 差值分析</h2>
+      <table id="acTable" style="margin-bottom:14px"></table>
+      <table id="abTable" style="margin-bottom:14px"></table>
+      <table id="bcTable" style="margin-bottom:14px"></table>
+      <table id="aTable"></table>
+    </div>
+  </div>
+
+  <div id="rulesArea" class="hidden">
+    <div class="card">
+      <h2>🏆 三向規則排行 Top 10
+        <span class="badge" style="background:#10b981">🟢 主勝</span>
+        <span class="badge" style="background:#f59e0b">🟡 和局</span>
+        <span class="badge" style="background:#ef4444">🔴 客勝</span>
+      </h2>
+      <div class="boards">
+        <div class="board H">
+          <h3><span class="icon">🟢</span><span class="label">主勝榜（H）</span><span class="count" id="count-H">0 條</span></h3>
+          <div class="rule-list" id="rules-H"></div>
+        </div>
+        <div class="board D">
+          <h3><span class="icon">🟡</span><span class="label">和局榜（D）</span><span class="count" id="count-D">0 條</span></h3>
+          <div class="rule-list" id="rules-D"></div>
+        </div>
+        <div class="board A">
+          <h3><span class="icon">🔴</span><span class="label">客勝榜（A）</span><span class="count" id="count-A">0 條</span></h3>
+          <div class="rule-list" id="rules-A"></div>
+        </div>
+      </div>
+      <div class="legend">
+        <b>評分</b> = 純度 × min(樣本, 30)。避免「3 場 100%」這種假最優。
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== TAB 2 ========== -->
+<div class="panel" id="panel-predict">
+
+  <div class="card">
+    <h2>🔮 即時預測</h2>
+    <div class="predict-input">
+      <div class="field">
+        <label>A · 主勝率%</label>
+        <input type="number" id="pred-A" placeholder="44" min="0" max="100">
+      </div>
+      <div class="field">
+        <label>B · 和率%</label>
+        <input type="number" id="pred-B" placeholder="33" min="0" max="100">
+      </div>
+      <div class="field">
+        <label>C · 客勝率%</label>
+        <input type="number" id="pred-C" placeholder="23" min="0" max="100">
+      </div>
+    </div>
+    <button class="green" onclick="doPredict()">🎯 預測結果</button>
+    <button class="gray" onclick="clearPredict()">🗑 清空</button>
+  </div>
+
+  <div id="predictArea" class="hidden">
+    <div class="predict-result" id="predictResult"></div>
+    <div id="predictDetail"></div>
+  </div>
+
+</div>
+
+</div>
+
+<script>
+'use strict';
+
+/* ============================================================
+   固定參數（懶人包）
+   ============================================================ */
+var FIXED_MIN_SAMPLE = 5;
+var FIXED_MIN_PURITY = 55;
+var TOP_N = 10;
+
+/* ============================================================
+   全域
+   ============================================================ */
+var DATA = [];
+var ALL_RULES = [];
+
+function $(id){ return document.getElementById(id); }
+
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelector('.tab-btn[data-tab="' + name + '"]').classList.add('active');
+  $('panel-' + name).classList.add('active');
+}
+
+/* ============================================================
+   解析
+   ============================================================ */
+function parseData(text){
+  var rows = [];
+  var lines = text.split('\n');
+  for(var i = 0; i < lines.length; i++){
+    var line = lines[i].trim();
+    if(!line) continue;
+    var p = line.split(/\s+/);
+    if(p.length < 4) continue;
+    var last = p[p.length - 1].toUpperCase();
+    if(['H','D','A'].indexOf(last) === -1) continue;
+    var A = parseInt(p[0], 10), B = parseInt(p[1], 10), C = parseInt(p[2], 10);
+    if(isNaN(A) || isNaN(B) || isNaN(C)) continue;
+    rows.push({ A:A, B:B, C:C, result:last });
+  }
+  return rows;
+}
+
+/* ============================================================
+   統計
+   ============================================================ */
+function makeBucket(){ return { H:0, D:0, A:0, total:0 }; }
+function addToBucket(b, r){ b[r]++; b.total++; }
+function topResult(b){
+  if(b.total === 0) return null;
+  var max = Math.max(b.H, b.D, b.A);
+  var tag = max === b.H ? 'H' : (max === b.D ? 'D' : 'A');
+  var nameMap = { H:'H 主勝', D:'D 和局', A:'A 客勝' };
+  return { tag:tag, name:nameMap[tag], pct:(max/b.total*100).toFixed(0) };
+}
+function barHtml(b){
+  if(b.total === 0) return '<div class="bar"><div class="empty" style="width:100%">無資料</div></div>';
+  var h = b.H/b.total*100, d = b.D/b.total*100, a = b.A/b.total*100;
+  var out = '<div class="bar">';
+  if(h > 0) out += '<div class="h" style="width:' + h + '%">' + (h >= 8 ? 'H ' + b.H : '') + '</div>';
+  if(d > 0) out += '<div class="d" style="width:' + d + '%">' + (d >= 8 ? 'D ' + b.D : '') + '</div>';
+  if(a > 0) out += '<div class="a" style="width:' + a + '%">' + (a >= 8 ? 'A ' + b.A : '') + '</div>';
+  return out + '</div>';
+}
+
+/* ============================================================
+   分布分析
+   ============================================================ */
+function analyzePermutations(rows){
+  var keys = ['A≥B≥C', 'A≥C>B', 'B>A≥C', 'B≥C>A', 'C>A≥B', 'C>B>A'];
+  var buckets = {};
+  keys.forEach(function(k){ buckets[k] = makeBucket(); });
+  for(var i = 0; i < rows.length; i++){
+    var r = rows[i], a = r.A, b = r.B, c = r.C, key;
+    if(a >= b && b >= c) key = 'A≥B≥C';
+    else if(a >= c && c > b) key = 'A≥C>B';
+    else if(b > a && a >= c) key = 'B>A≥C';
+    else if(b >= c && c > a) key = 'B≥C>A';
+    else if(c > a && a >= b) key = 'C>A≥B';
+    else key = 'C>B>A';
+    addToBucket(buckets[key], r.result);
+  }
+  return { keys:keys, buckets:buckets };
+}
+
+function analyzeNumeric(rows, getValue, min, max, step){
+  var buckets = {};
+  for(var v = min; v < max; v += step) buckets[v] = makeBucket();
+  for(var i = 0; i < rows.length; i++){
+    var val = getValue(rows[i]);
+    var key = Math.floor(val / step) * step;
+    if(key < min) key = min;
+    if(key >= max) key = max - step;
+    if(buckets[key]) addToBucket(buckets[key], rows[i].result);
+  }
+  return { keys:Object.keys(buckets).map(Number).sort(function(a,b){return a-b;}), buckets:buckets };
+}
+
+function renderPermTable(analysis){
+  var html = '<thead><tr><th style="text-align:left">排列</th><th style="width:50px">總數</th><th style="width:36px">H</th><th style="width:36px">D</th><th style="width:36px">A</th><th>分布</th><th style="width:110px">最常</th></tr></thead><tbody>';
+  for(var i = 0; i < analysis.keys.length; i++){
+    var k = analysis.keys[i], b = analysis.buckets[k], t = topResult(b);
+    if(b.total === 0) continue;
+    html += '<tr><td class="name">' + k + '</td><td>' + b.total + '</td>' +
+      '<td style="color:#10b981">' + b.H + '</td>' +
+      '<td style="color:#f59e0b">' + b.D + '</td>' +
+      '<td style="color:#ef4444">' + b.A + '</td>' +
+      '<td>' + barHtml(b) + '</td>' +
+      '<td>' + (t ? '<span class="tag-' + t.tag + '">' + t.name + ' ' + t.pct + '%</span>' : '—') + '</td></tr>';
+  }
+  $('permTable').innerHTML = html + '</tbody>';
+}
+
+function renderNumTable(tableId, analysis, label){
+  var html = '<thead><tr><th style="text-align:left">' + label + '</th><th style="width:44px">總數</th><th style="width:32px">H</th><th style="width:32px">D</th><th style="width:32px">A</th><th>分布</th><th style="width:100px">最常</th></tr></thead><tbody>';
+  var any = false;
+  for(var i = 0; i < analysis.keys.length; i++){
+    var k = analysis.keys[i], b = analysis.buckets[k];
+    if(b.total === 0) continue;
+    any = true;
+    var next = analysis.keys[i+1];
+    var range = next !== undefined ? (k + ' ~ ' + next) : (k + '+');
+    var t = topResult(b);
+    html += '<tr><td class="name">' + range + '</td><td>' + b.total + '</td>' +
+      '<td style="color:#10b981">' + b.H + '</td>' +
+      '<td style="color:#f59e0b">' + b.D + '</td>' +
+      '<td style="color:#ef4444">' + b.A + '</td>' +
+      '<td>' + barHtml(b) + '</td>' +
+      '<td>' + (t ? '<span class="tag-' + t.tag + '">' + t.name + ' ' + t.pct + '%</span>' : '—') + '</td></tr>';
+  }
+  if(!any) html += '<tr><td colspan="7" class="empty-msg">無資料</td></tr>';
+  $(tableId).innerHTML = html + '</tbody>';
+}
+
+/* ============================================================
+   規則生成
+   ============================================================ */
+function buildConditions(){
+  var conds = [];
+
+  /* 絕對值 */
+  [['A',[25,30,35,40,45,50,55,60,65,70]], ['B',[20,22,25,28,30,33]], ['C',[20,25,30,35,40,45,50,55,60]]].forEach(function(pair){
+    var f = pair[0];
+    pair[1].forEach(function(t){
+      conds.push({ name:f + ' ≥ ' + t, test:(function(f2,t2){ return function(r){ return r[f2] >= t2; }; })(f,t), dim:f });
+      conds.push({ name:f + ' < ' + t, test:(function(f2,t2){ return function(r){ return r[f2] < t2; }; })(f,t), dim:f });
+    });
+  });
+
+  /* 差值 */
+  [
+    ['A-C', function(r){ return r.A - r.C; }, [-40,-30,-25,-20,-15,-10,10,15,20,25,30,40]],
+    ['A-B', function(r){ return r.A - r.B; }, [10,15,20,25,30,40,50]],
+    ['B-C', function(r){ return r.B - r.C; }, [-25,-20,-15,-10,5,10,15]],
+    ['C-A', function(r){ return r.C - r.A; }, [10,20,30,40]]
+  ].forEach(function(d){
+    var name = d[0];
+    d[2].forEach(function(t){
+      if(t > 0){
+        conds.push({ name:name + ' ≥ ' + t, test:(function(g,t2){ return function(r){ return g(r) >= t2; }; })(d[1],t), dim:name });
+      } else {
+        conds.push({ name:name + ' ≤ ' + t, test:(function(g,t2){ return function(r){ return g(r) <= t2; }; })(d[1],t), dim:name });
+      }
+    });
+  });
+
+  /* 絕對差 */
+  [['A','C',[5,10,15,20]], ['A','B',[10,15,20]], ['B','C',[5,10,15]]].forEach(function(p){
+    var f1 = p[0], f2 = p[1];
+    p[2].forEach(function(t){
+      conds.push({
+        name:'|' + f1 + '-' + f2 + '| ≤ ' + t,
+        test:(function(a, b, t2){ return function(r){ return Math.abs(r[a] - r[b]) <= t2; }; })(f1, f2, t),
+        dim:'|' + f1 + '-' + f2 + '|'
+      });
+    });
+  });
+
+  /* 比值 */
+  [
+    ['A/B', function(r){ return r.B > 0 ? r.A / r.B : 0; }, [1, 1.2, 1.5, 2]],
+    ['A/C', function(r){ return r.C > 0 ? r.A / r.C : 0; }, [1, 1.2, 1.5, 2]],
+    ['C/A', function(r){ return r.A > 0 ? r.C / r.A : 0; }, [1, 1.2, 1.5, 2]]
+  ].forEach(function(d){
+    var name = d[0];
+    d[2].forEach(function(t){
+      conds.push({
+        name:name + ' ≥ ' + t,
+        test:(function(g,t2){ return function(r){ return g(r) >= t2; }; })(d[1],t),
+        dim:name
+      });
+    });
+  });
+
+  /* 位置 */
+  conds.push({ name:'A 最大', test:function(r){ return r.A >= r.B && r.A >= r.C; }, dim:'pos' });
+  conds.push({ name:'B 最大', test:function(r){ return r.B > r.A && r.B >= r.C; }, dim:'pos' });
+  conds.push({ name:'C 最大', test:function(r){ return r.C > r.A && r.C > r.B; }, dim:'pos' });
+  conds.push({ name:'A 最小', test:function(r){ return r.A <= r.B && r.A <= r.C; }, dim:'pos' });
+  conds.push({ name:'B 最小', test:function(r){ return r.B < r.A && r.B < r.C; }, dim:'pos' });
+  conds.push({ name:'C 最小', test:function(r){ return r.C < r.A && r.C <= r.B; }, dim:'pos' });
+
+  return conds;
+}
+
+function isContradict(c1, c2){
+  if(c1.dim === c2.dim){
+    var n1 = c1.name, n2 = c2.name;
+    if((n1 === 'A 最大' && n2 === 'A 最小') || (n1 === 'A 最小' && n2 === 'A 最大')) return true;
+    if((n1 === 'B 最大' && n2 === 'B 最小') || (n1 === 'B 最小' && n2 === 'B 最大')) return true;
+    if((n1 === 'C 最大' && n2 === 'C 最小') || (n1 === 'C 最小' && n2 === 'C 最大')) return true;
+    var maxNames = ['A 最大', 'B 最大', 'C 最大'];
+    if(maxNames.indexOf(n1) !== -1 && maxNames.indexOf(n2) !== -1) return true;
+    var minNames = ['A 最小', 'B 最小', 'C 最小'];
+    if(minNames.indexOf(n1) !== -1 && minNames.indexOf(n2) !== -1) return true;
+  }
+  return false;
+}
+
+function evalBucket(name, b){
+  if(b.total < FIXED_MIN_SAMPLE) return null;
+  var max = Math.max(b.H, b.D, b.A);
+  var top = max === b.H ? 'H' : (max === b.D ? 'D' : 'A');
+  var topPct = Math.round(max / b.total * 100);
+  if(topPct < FIXED_MIN_PURITY) return null;
+  return {
+    cond:name, total:b.total, H:b.H, D:b.D, A:b.A, top:top, topPct:topPct,
+    score: topPct * Math.min(b.total, 30)
+  };
+}
+
+/* ============================================================
+   一鍵分析
+   ============================================================ */
+function runAll(){
+  var rows = parseData($('input-train').value);
+  DATA = rows;
+  if(rows.length === 0){ alert('沒有有效資料。格式：A B C 結果'); return; }
+
+  /* 顯示 loading */
+  var overlay = document.createElement('div');
+  overlay.className = 'loading-overlay';
+  overlay.innerHTML = '<div class="spinner"></div><div class="text">分析中...</div>';
+  document.body.appendChild(overlay);
+
+  setTimeout(function(){
+    try {
+      /* 1. 統計 */
+      var rc = { H:0, D:0, A:0 };
+      rows.forEach(function(r){ rc[r.result]++; });
+      $('statBar').innerHTML = '<div class="stat-bar">' +
+        '<span>📊 共 <b>' + rows.length + '</b> 筆</span>' +
+        '<span class="h">🟢 H 主勝 <b>' + rc.H + '</b>（' + (rc.H/rows.length*100).toFixed(0) + '%）</span>' +
+        '<span class="d">🟡 D 和局 <b>' + rc.D + '</b>（' + (rc.D/rows.length*100).toFixed(0) + '%）</span>' +
+        '<span class="a">🔴 A 客勝 <b>' + rc.A + '</b>（' + (rc.A/rows.length*100).toFixed(0) + '%）</span>' +
+        '</div>';
+
+      /* 2. 分布表 */
+      renderPermTable(analyzePermutations(rows));
+      renderNumTable('acTable', analyzeNumeric(rows, function(r){ return r.A - r.C; }, -100, 101, 10), 'A − C');
+      renderNumTable('abTable', analyzeNumeric(rows, function(r){ return r.A - r.B; }, -100, 101, 10), 'A − B');
+      renderNumTable('bcTable', analyzeNumeric(rows, function(r){ return r.B - r.C; }, -100, 101, 10), 'B − C');
+      renderNumTable('aTable', analyzeNumeric(rows, function(r){ return r.A; }, 0, 101, 10), 'A（主勝率）');
+      $('analysisArea').classList.remove('hidden');
+
+      /* 3. 規則搜索 */
+      var conds = buildConditions();
+
+      /* 單條件 */
+      var allRules = [];
+      for(var i = 0; i < conds.length; i++){
+        var c = conds[i], b = makeBucket();
+        for(var j = 0; j < rows.length; j++){
+          if(c.test(rows[j])) addToBucket(b, rows[j].result);
+        }
+        var r = evalBucket(c.name, b);
+        if(r){ r.condObj = c; allRules.push(r); }
+      }
+
+      /* 雙條件 */
+      for(var i = 0; i < conds.length; i++){
+        for(var j = i + 1; j < conds.length; j++){
+          var c1 = conds[i], c2 = conds[j];
+          if(isContradict(c1, c2)) continue;
+          var b2 = makeBucket();
+          for(var k = 0; k < rows.length; k++){
+            if(c1.test(rows[k]) && c2.test(rows[k])) addToBucket(b2, rows[k].result);
+          }
+          var r2 = evalBucket(c1.name + ' 且 ' + c2.name, b2);
+          if(r2){ r2.condObj = c1; allRules.push(r2); }
+        }
+      }
+
+      /* 三條件（從 top 20 單條件中） */
+      var topSingles = allRules.slice().sort(function(a, b){ return b.score - a.score; }).slice(0, 20);
+      for(var i = 0; i < topSingles.length; i++){
+        for(var j = i + 1; j < topSingles.length; j++){
+          for(var k = j + 1; k < topSingles.length; k++){
+            var r1 = topSingles[i], r2b = topSingles[j], r3 = topSingles[k];
+            if(!r1.condObj || !r2b.condObj || !r3.condObj) continue;
+            if(isContradict(r1.condObj, r2b.condObj) || isContradict(r1.condObj, r3.condObj) || isContradict(r2b.condObj, r3.condObj)) continue;
+            var b3 = makeBucket();
+            for(var m = 0; m < rows.length; m++){
+              if(r1.condObj.test(rows[m]) && r2b.condObj.test(rows[m]) && r3.condObj.test(rows[m])){
+                addToBucket(b3, rows[m].result);
+              }
+            }
+            var r3b = evalBucket(r1.cond + ' 且 ' + r2b.cond + ' 且 ' + r3.cond, b3);
+            if(r3b) allRules.push(r3b);
+          }
+        }
+      }
+
+      /* 去重 */
+      var seen = {};
+      ALL_RULES = allRules.filter(function(r){
+        if(seen[r.cond]) return false;
+        seen[r.cond] = true;
+        return true;
+      });
+
+      /* 分三榜，各取 top 10 */
+      var listH = ALL_RULES.filter(function(r){ return r.top === 'H'; }).sort(function(a,b){ return b.score - a.score; }).slice(0, TOP_N);
+      var listD = ALL_RULES.filter(function(r){ return r.top === 'D'; }).sort(function(a,b){ return b.score - a.score; }).slice(0, TOP_N);
+      var listA = ALL_RULES.filter(function(r){ return r.top === 'A'; }).sort(function(a,b){ return b.score - a.score; }).slice(0, TOP_N);
+
+      renderBoard('rules-H', listH);
+      renderBoard('rules-D', listD);
+      renderBoard('rules-A', listA);
+
+      $('count-H').textContent = listH.length + ' 條';
+      $('count-D').textContent = listD.length + ' 條';
+      $('count-A').textContent = listA.length + ' 條';
+
+      $('rulesArea').classList.remove('hidden');
+      document.body.removeChild(overlay);
+
+      $('rulesArea').scrollIntoView({behavior:'smooth', block:'start'});
+
+    } catch(e){
+      console.error(e);
+      if(overlay.parentNode) document.body.removeChild(overlay);
+      alert('分析出錯：' + e.message);
+    }
+  }, 50);
+}
+
+function renderBoard(containerId, rules){
+  var el = $(containerId);
+  if(rules.length === 0){
+    el.innerHTML = '<div class="empty-msg">找不到符合條件的規則<br>（試試增加更多資料）</div>';
+    return;
+  }
+  var html = '';
+  for(var i = 0; i < rules.length; i++){
+    var r = rules[i];
+    var medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '#' + (i+1)));
+    html += '<div class="rule-item' + (i === 0 ? ' rank-1' : '') + '">' +
+      '<div class="head"><span class="rank">' + medal + '</span><span class="pct">' + r.topPct + '%</span></div>' +
+      '<div class="cond">' + escapeHtml(r.cond) + '</div>' +
+      '<div class="samples">' +
+        '<span>共 ' + r.total + '</span>' +
+        '<span class="cH">H ' + r.H + '</span>' +
+        '<span class="cD">D ' + r.D + '</span>' +
+        '<span class="cA">A ' + r.A + '</span>' +
+      '</div></div>';
+  }
+  el.innerHTML = html;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+/* ============================================================
+   預測
+   ============================================================ */
+function doPredict(){
+  var A = parseFloat($('pred-A').value);
+  var B = parseFloat($('pred-B').value);
+  var C = parseFloat($('pred-C').value);
+  if(isNaN(A) || isNaN(B) || isNaN(C)){ alert('請輸入 A、B、C'); return; }
+  if(ALL_RULES.length === 0){ alert('尚未生成規則。請先到「訓練」分頁分析。'); return; }
+
+  var row = { A:A, B:B, C:C };
+
+  /* 按分數從高到低匹配 */
+  var sorted = ALL_RULES.slice().sort(function(a, b){ return b.score - a.score; });
+  var matched = null;
+  for(var i = 0; i < sorted.length; i++){
+    if(matchRule(row, sorted[i].cond)){ matched = sorted[i]; break; }
+  }
+
+  var verdict = matched ? matched.top : 'skip';
+  var cnMap = { H:'🟢 主勝', D:'🟡 和局', A:'🔴 客勝', skip:'⚪ 跳過' };
+
+  var confText = '';
+  if(matched){
+    if(matched.topPct >= 75 && matched.total >= 15) confText = '⭐ 高信心（純度 ' + matched.topPct + '% · 樣本 ' + matched.total + '）';
+    else if(matched.topPct >= 65 && matched.total >= 8) confText = '✓ 中信心（純度 ' + matched.topPct + '% · 樣本 ' + matched.total + '）';
+    else confText = '⚠ 低信心（純度 ' + matched.topPct + '% · 樣本 ' + matched.total + '）';
+  } else {
+    confText = '沒有任何規則匹配 → 建議跳過';
+  }
+
+  $('predictResult').innerHTML =
+    '<div class="label">建議下注</div>' +
+    '<div class="verdict ' + verdict + '">' + (verdict === 'skip' ? 'SKIP' : verdict) + '</div>' +
+    '<div class="cn">' + cnMap[verdict] + '</div>' +
+    '<div class="reason">' + (matched ? escapeHtml(matched.cond) : '（無匹配規則）') + '</div>' +
+    '<div class="stats">' + confText + '</div>';
+
+  /* 匹配詳情 */
+  var html = '<div class="card"><h2>🔍 所有匹配的規則</h2>';
+  var matchedList = [];
+  for(var i = 0; i < sorted.length; i++){
+    if(matchRule(row, sorted[i].cond)) matchedList.push(sorted[i]);
+    if(matchedList.length >= 12) break;
+  }
+  if(matchedList.length === 0){
+    html += '<div class="empty-msg">沒有規則匹配</div>';
+  } else {
+    html += '<div class="multi-results">';
+    for(var i = 0; i < matchedList.length; i++){
+      var r = matchedList[i];
+      html += '<div class="multi-card ' + r.top + '">' +
+        '<div class="label"><span>' + (i === 0 ? '🥇 最佳' : '#' + (i+1)) + '</span>' +
+        '<span class="tag-' + r.top + '">' + r.top + ' ' + r.topPct + '%</span></div>' +
+        '<div class="cond">' + escapeHtml(r.cond) + '</div>' +
+        '<div class="stats-row">共 ' + r.total + '｜H ' + r.H + ' / D ' + r.D + ' / A ' + r.A + '</div>' +
+      '</div>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+  $('predictDetail').innerHTML = html;
+  $('predictArea').classList.remove('hidden');
+}
+
+function matchRule(row, condStr){
+  var parts = condStr.split(' 且 ');
+  for(var i = 0; i < parts.length; i++){
+    if(!matchSingle(row, parts[i].trim())) return false;
+  }
+  return true;
+}
+
+function matchSingle(row, cond){
+  var A = row.A, B = row.B, C = row.C, m;
+  if((m = cond.match(/^A ≥ (\d+)$/))) return A >= +m[1];
+  if((m = cond.match(/^A < (\d+)$/))) return A < +m[1];
+  if((m = cond.match(/^B ≥ (\d+)$/))) return B >= +m[1];
+  if((m = cond.match(/^B < (\d+)$/))) return B < +m[1];
+  if((m = cond.match(/^C ≥ (\d+)$/))) return C >= +m[1];
+  if((m = cond.match(/^C < (\d+)$/))) return C < +m[1];
+  if((m = cond.match(/^A-C ≥ (-?\d+)$/))) return (A - C) >= +m[1];
+  if((m = cond.match(/^A-C ≤ (-?\d+)$/))) return (A - C) <= +m[1];
+  if((m = cond.match(/^A-B ≥ (-?\d+)$/))) return (A - B) >= +m[1];
+  if((m = cond.match(/^A-B ≤ (-?\d+)$/))) return (A - B) <= +m[1];
+  if((m = cond.match(/^B-C ≥ (-?\d+)$/))) return (B - C) >= +m[1];
+  if((m = cond.match(/^B-C ≤ (-?\d+)$/))) return (B - C) <= +m[1];
+  if((m = cond.match(/^C-A ≥ (\d+)$/))) return (C - A) >= +m[1];
+  if((m = cond.match(/^\|A-C\| ≤ (\d+)$/))) return Math.abs(A - C) <= +m[1];
+  if((m = cond.match(/^\|A-B\| ≤ (\d+)$/))) return Math.abs(A - B) <= +m[1];
+  if((m = cond.match(/^\|B-C\| ≤ (\d+)$/))) return Math.abs(B - C) <= +m[1];
+  if((m = cond.match(/^A\/B ≥ ([\d.]+)$/))) return B > 0 && (A / B) >= +m[1];
+  if((m = cond.match(/^A\/C ≥ ([\d.]+)$/))) return C > 0 && (A / C) >= +m[1];
+  if((m = cond.match(/^C\/A ≥ ([\d.]+)$/))) return A > 0 && (C / A) >= +m[1];
+  if(cond === 'A 最大') return A >= B && A >= C;
+  if(cond === 'B 最大') return B > A && B >= C;
+  if(cond === 'C 最大') return C > A && C > B;
+  if(cond === 'A 最小') return A <= B && A <= C;
+  if(cond === 'B 最小') return B < A && B < C;
+  if(cond === 'C 最小') return C < A && C <= B;
+  return false;
+}
+
+function clearPredict(){
+  $('pred-A').value = '';
+  $('pred-B').value = '';
+  $('pred-C').value = '';
+  $('predictArea').classList.add('hidden');
+}
+
+/* ============================================================
+   範例
+   ============================================================ */
+function loadSample(){
+  $('input-train').value =
+'44 33 23 H\n42 28 30 D\n23 27 50 A\n48 28 24 H\n30 29 41 A\n' +
+'60 23 17 H\n50 22 28 H\n39 30 31 H\n58 20 22 H\n35 20 45 A\n' +
+'69 19 12 H\n38 20 42 D\n61 22 17 H\n18 20 62 A\n43 29 28 A\n' +
+'17 13 70 H\n68 18 14 H\n48 26 26 H\n58 20 22 H\n30 29 41 A\n' +
+'64 21 15 D\n23 27 50 A\n39 30 31 H\n35 20 45 A\n18 20 62 A\n' +
+'48 28 24 H\n69 19 12 H\n42 28 30 D\n61 22 17 H\n38 20 42 D\n' +
+'50 22 28 H\n44 33 23 H\n17 13 70 H\n30 29 41 A\n60 23 17 H\n' +
+'58 20 22 H\n68 18 14 H\n38 20 42 D';
+  runAll();
+}
+
+function clearAll(){
+  $('input-train').value = '';
+  $('statBar').innerHTML = '';
+  $('analysisArea').classList.add('hidden');
+  $('rulesArea').classList.add('hidden');
+  DATA = [];
+  ALL_RULES = [];
+}
+
+$('input-train').focus();
+</script>
+</body>
+</html>
