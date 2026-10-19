@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v85.0 — 極限次數自選版</title>
+<title>🚀 v86.0 — 終極全控版 (次數+門檻自選)</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -77,10 +77,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v85.0 — 極限次數自選版</h2>
+<h2>🚀 v86.0 — 終極全控版 (次數+門檻自選)</h2>
 
 <div class="warn-banner">
-  <b>🔥 終極算力解放：</b>可自選 100 ~ 10000 次搜索。次數越多，越有機會跳出局部最優，找到真正的最高利潤（但耗時會成倍增加）。門檻已設為 5% 勝場。
+  <b>🔥 全面自訂：</b>你可以自由選擇「搜索次數」（100~10000次）與「勝場門檻」（5%~20%）。這能完美平衡「利潤最大化」與「抗過擬合」的需求！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -93,13 +93,21 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
   <button id="btnCopy" class="copy" onclick="copyIt('txtH')">📋 複製 H2 公式</button>
 
-  <label>搜索次數：</label>
+  <label>🔄 搜索次數：</label>
   <select id="runCount">
-    <option value="100" selected>100 次 (快速)</option>
+    <option value="100" selected>100 次</option>
     <option value="500">500 次</option>
     <option value="1000">1000 次</option>
-    <option value="5000">5000 次 (耗時)</option>
-    <option value="10000">10000 次 (極致耗時)</option>
+    <option value="5000">5000 次</option>
+    <option value="10000">10000 次</option>
+  </select>
+
+  <label>🛡️ 勝場門檻：</label>
+  <select id="minHitsPct">
+    <option value="0.05" selected>5% (推薦)</option>
+    <option value="0.10">10%</option>
+    <option value="0.15">15%</option>
+    <option value="0.20">20%</option>
   </select>
 </div>
 
@@ -217,7 +225,7 @@ var condBSCache={};
 var condBSCacheSize=0;
 var COND_CACHE_MAX=300000; 
 
-var minWinsRequired = 0; // 5% 勝場門檻
+var minWinsRequired = 0; // 動態勝場門檻
 
 /* ========== 位圖 ========== */
 function bsWords(N){ return (N+31)>>5; }
@@ -746,14 +754,15 @@ async function start(){
     }
     rawRowsData = parsed.rows;
     
-    // ★ 門檻降為 5%
-    minWinsRequired = Math.ceil(rawRowsData.length * 0.05);
+    // ★ 動態讀取 UI 門檻與次數
+    var pctStr = document.getElementById('minHitsPct').value;
+    var pct = parseFloat(pctStr);
+    minWinsRequired = Math.ceil(rawRowsData.length * pct);
     
-    // ★ 讀取自選次數
     var selectedRuns = parseInt(document.getElementById('runCount').value);
     totalPhases = selectedRuns;
     
-    pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。 5% 勝利門檻 = 至少贏 '+minWinsRequired+' 場。','info');
+    pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。 '+(pct*100)+'% 勝利門檻 = 至少贏 '+minWinsRequired+' 場。','info');
 
     running=true; startTime=Date.now(); evalCount=0;
     poolSize=0; currentRun=0;
@@ -770,7 +779,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v85.0 — 極限次數自選版','head');
+    pushLog('🚀 v86.0 — 終極全控版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：尾盤結算，勝場 ≥ '+minWinsRequired+'，預計執行 '+totalPhases+' 次','info');
@@ -835,7 +844,7 @@ async function start(){
     document.getElementById('rGames').textContent=finalStats.games;
     document.getElementById('rWin').textContent=bestWinRate.toFixed(1)+'%';
     document.getElementById('resultInfo').innerHTML=
-      '🛡️ 勝利場次門檻：<b>至少 '+minWinsRequired+' 場 (5%)</b><br>'+
+      '🛡️ 勝利場次門檻：<b>至少 '+minWinsRequired+' 場 ('+(pct*100)+'%)</b><br>'+
       '結算：<b>尾盤</b>　'+
       '搜索次數：<b>'+totalPhases+' 次</b>';
 
