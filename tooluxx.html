@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v87.1 — 雙模式進化版</title>
+<title>🚀 v87.2 — 雙模式 + 條件上限版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -81,10 +81,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v87.1 — 雙模式進化版</h2>
+<h2>🚀 v87.2 — 雙模式 + 條件上限版</h2>
 
 <div class="warn-banner">
-  <b>🎯 雙模式進化：</b>「盈利模式」追求最大總利潤；「命中模式」追求最高命中率。兩種模式各自獨立搜索，可自由切換！
+  <b>🎯 雙模式 + 📐 條件上限：</b>可選「盈利/命中」模式，並限制每條規則的條件數量（1/2/3/無限）。<br>
+  條件越少 → 規則越簡潔、抗過擬合；條件越多 → 擬合能力越強。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -101,6 +102,14 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
   <select id="optMode">
     <option value="profit" selected>💰 盈利模式（最高利潤）</option>
     <option value="hitrate">🎯 命中模式（最高命中率）</option>
+  </select>
+
+  <label>📐 條件上限：</label>
+  <select id="maxConds">
+    <option value="0" selected>無限</option>
+    <option value="1">1 個條件</option>
+    <option value="2">2 個條件</option>
+    <option value="3">3 個條件</option>
   </select>
 
   <label>🔄 搜索次數：</label>
@@ -124,8 +133,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 <div class="stats" id="liveStats" style="display:none">
   <div class="stat pool-stat" id="stat-pool">📦 候選池: 0</div>
   <div class="stat greedy-stat" id="stat-greedy">🌡️ 當前輪次: 0 / -</div>
-  <div class="stat win-stat" id="stat-win">🎲 全局最高命中率: -</div>
-  <div class="stat train-stat" id="stat-train">📊 全局最高場次: -</div>
+  <div class="stat win-stat" id="stat-win">🎯 全局最高命中率: -</div>
+  <div class="stat train-stat" id="stat-train">📊 全局場次: -</div>
   <div class="stat total-stat" id="stat-total">💵 全局最高盈利: -</div>
 </div>
 
@@ -216,8 +225,9 @@ var currentPhase=0,totalPhases=100;
 
 var poolSize=0,currentRun=0;
 var optMode='profit';               // 'profit' 或 'hitrate'
-var globalBestScore=-Infinity;      // 主優化目標分數（依模式）
-var globalBestProfit=-Infinity;     // 對應的利潤（展示用）
+var maxCondsLimit=0;                // 0 = 無限；1/2/3 = 每條規則最多幾個條件
+var globalBestScore=-Infinity;
+var globalBestProfit=-Infinity;
 var globalBestWinRate=0;
 var globalBestGames=0;
 var globalBestRules=null;
@@ -311,7 +321,6 @@ function metricOfBS(bs, thenCode, mode){
   if(total === 0) return -Infinity;
   if(mode === 'hitrate'){
     var wins = getWins(bs, thenCode);
-    // 主指標：命中率%；tie-breaker：極小場次加成，避免 1 場 100% 獨大
     return (wins / total) * 100 + total * 0.0001;
   }
   return profitOfBS(bs, thenCode);
@@ -408,7 +417,7 @@ function getThresholds(fi){
 }
 
 /* ============================================================
-   核心引擎：單次爬山變異搜索（雙模式）
+   核心引擎：單次爬山變異搜索（雙模式 + 條件上限）
    ============================================================ */
 async function runSingleEngine() {
   featureValueCache={};
@@ -433,13 +442,11 @@ async function runSingleEngine() {
         
         for(var tc=0;tc<3;tc++){
           if(optMode === 'hitrate'){
-            // 命中模式：只保留高於隨機基準 33% 的單條件
             var w = getWins(bs, tc);
             if(w * 100 > total * 33){
               singles.push({ fi: fi, cond: [fi,op,thr], bs:bs, thenCode:tc, profit: profitOfBS(bs, tc) });
             }
           } else {
-            // 盈利模式：只保留正利潤的單條件
             var p = profitOfBS(bs, tc);
             if(p > 0){
               singles.push({ fi: fi, cond: [fi,op,thr], bs:bs, thenCode:tc, profit:p });
@@ -456,12 +463,11 @@ async function runSingleEngine() {
   // 2. 針對三個目標分別進行 5 萬次爬山變異
   var bestRules = [null, null, null];
 
-  for(var tc=0; tc<23; tc++){
-    var tcSingles = singles.filter(function(s){ return) s';
-.thenCode === tc; });
-    if(t   cSingles.length === 0 case) continue;
+  for(var tc=0; tc<3; tc++){
+    var tcSingles = singles.filter(function(s){ return s.thenCode === tc; });
+    if(tcSingles.length === 0) continue;
     
-    var current = ' {
+    var current = {
       conds: [tcSingles[Math.floor(Math.random() * tcSingles.length)].cond],
       bs: null,
       score: -Infinity
@@ -481,7 +487,8 @@ async function runSingleEngine() {
       var testConds = current.conds.slice();
       var changed = false;
       
-      if(moveType < 0.6) {
+      // 增加條件（僅在未達上限或無限時允許）
+      if(moveType < 0.6 && (maxCondsLimit === 0 || testConds.length < maxCondsLimit)) {
         var cand = tcSingles[Math.floor(Math.random() * tcSingles.length)];
         var overlap = false;
         for(var c=0; c<testConds.length; c++){
@@ -492,10 +499,12 @@ async function runSingleEngine() {
           changed = true;
         }
       } else if(moveType < 0.85 && testConds.length > 1) {
+        // 移除條件
         var idx = Math.floor(Math.random() * testConds.length);
         testConds.splice(idx, 1);
         changed = true;
       } else if(testConds.length > 0) {
+        // 替換條件（長度不變，永遠允許）
         var idx2 = Math.floor(Math.random() * testConds.length);
         var cand2 = tcSingles[Math.floor(Math.random() * tcSingles.length)];
         var overlap2 = false;
@@ -533,7 +542,7 @@ async function runSingleEngine() {
     bestRules[tc] = globalBest;
   }
 
-  // 3. 測試 6 種順序組合（依模式比較整體分數）
+  // 3. 測試 6 種順序組合
   var bestScore = -Infinity;
   var finalRules = [];
   
@@ -663,7 +672,8 @@ function featToExpr(fi){
     case 'A/D':return 'ROUND(IF('+D+'=0,0,'+A+'/'+D+'),2)';
     case 'B/E':return 'ROUND(IF('+E+'=0,0,'+B+'/'+E+'),2)';
     case 'C/F':return 'ROUND(IF('+F+'=0,0,'+C+'/'+F+'),2)';
-    case 'MA-MC':return 'ROUND(IF('+A+'=0,0,IF('+C+'=0,0,('+A+'-'+D+')/'+A+'*100-('+C+'-'+F+')/'+C+'*100)),MA-MB':return 'ROUND(IF('+A+'=0,0,IF('+B+'=0,0,('+A+'-'+D+')/'+A+'*100-('+B+'-'+E+')/'+B+'*100)),2)';
+    case 'MA-MC':return 'ROUND(IF('+A+'=0,0,IF('+C+'=0,0,('+A+'-'+D+')/'+A+'*100-('+C+'-'+F+')/'+C+'*100)),2)';
+    case 'MA-MB':return 'ROUND(IF('+A+'=0,0,IF('+B+'=0,0,('+A+'-'+D+')/'+A+'*100-('+B+'-'+E+')/'+B+'*100)),2)';
     case 'MC-MB':return 'ROUND(IF('+C+'=0,0,IF('+B+'=0,0,('+C+'-'+F+')/'+C+'*100-('+B+'-'+E+')/'+B+'*100)),2)';
     case 'A-D-(C-F)':return '(('+A+'-'+D+')-('+C+'-'+F+'))';
     case 'A-D-(B-E)':return '(('+A+'-'+D+')-('+B+'-'+E+'))';
@@ -783,7 +793,10 @@ async function start(){
     rawRowsData = parsed.rows;
     
     optMode = document.getElementById('optMode').value;
+    maxCondsLimit = parseInt(document.getElementById('maxConds').value) || 0;
+    
     var modeLabel = (optMode === 'hitrate') ? '🎯 命中模式（最高命中率）' : '💰 盈利模式（最高利潤）';
+    var condLabel = (maxCondsLimit === 0) ? '無限' : (maxCondsLimit + ' 個條件');
     
     var selectedRuns = parseInt(document.getElementById('runCount').value);
     totalPhases = selectedRuns;
@@ -806,10 +819,10 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v87.1 — 雙模式進化版','head');
+    pushLog('🚀 v87.2 — 雙模式 + 條件上限版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
-    pushLog(nowTime()+' 模式：'+modeLabel+'，尾盤結算，預計執行 '+totalPhases+' 次','info');
+    pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，尾盤結算，預計執行 '+totalPhases+' 次','info');
     await yieldUI();
 
     for(var run=1; run<=totalPhases; run++){
@@ -874,14 +887,14 @@ async function start(){
       document.getElementById('summary').innerHTML=
         '<div style="font-size:28px;color:#4ade80;font-weight:bold;margin-bottom:8px">🎯 歷史最高命中率：'+bestWinRate.toFixed(2)+'%</div>'+
         '<div style="font-size:14px;color:#cbd5e1;line-height:1.9">'+
-        '結算模式：<b>尾盤 D/E/F</b><br>'+
+        '結算模式：<b>尾盤 D/E/F</b>　條件上限：<b>'+condLabel+'</b><br>'+
         '總盈利 <b style="color:#fde68a">'+bestTotal+'</b>（'+finalStats.wins+'/'+finalStats.games+'）　'+
         '啟用 <b>'+activeCount+'</b> 條規則</div>';
     } else {
       document.getElementById('summary').innerHTML=
         '<div style="font-size:28px;color:#4ade80;font-weight:bold;margin-bottom:8px">💰 歷史最高總盈利：'+bestTotal+'</div>'+
         '<div style="font-size:14px;color:#cbd5e1;line-height:1.9">'+
-        '結算模式：<b>尾盤 D/E/F</b><br>'+
+        '結算模式：<b>尾盤 D/E/F</b>　條件上限：<b>'+condLabel+'</b><br>'+
         '命中率 <b style="color:#c084fc">'+bestWinRate.toFixed(2)+'%</b>（'+finalStats.wins+'/'+finalStats.games+'）　'+
         '啟用 <b>'+activeCount+'</b> 條規則</div>';
     }
@@ -891,7 +904,7 @@ async function start(){
     document.getElementById('rGames').textContent=finalStats.games;
     document.getElementById('rWin').textContent=bestWinRate.toFixed(1)+'%';
     document.getElementById('resultInfo').innerHTML=
-      '模式：<b>'+modeLabel+'</b><br>'+
+      '模式：<b>'+modeLabel+'</b>　條件上限：<b>'+condLabel+'</b><br>'+
       '結算：<b>尾盤</b>　'+
       '搜索次數：<b>'+totalPhases+' 次</b>';
 
