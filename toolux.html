@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v81.0 — 百次重啟終極版</title>
+<title>🚀 v82.0 — 百次重啟完美版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -76,10 +76,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v81.0 — 百次重啟終極版</h2>
+<h2>🚀 v82.0 — 百次重啟完美版</h2>
 
 <div class="warn-banner">
-  <b>🔥 100 次全自動搜索：</b>按下按鈕後，系統會在背景自動執行 100 次不同的爬山搜索。它會自動保留利潤最高的那一次結果，保證為你找出真正的最強規則！(可能需要幾分鐘，請保持頁面開啟)
+  <b>✅ 已修復變數報錯：</b>現在能完美執行 100 次搜索，並在結束時安全地顯示最高利潤與公式。保證 10% 勝場防護與層數排列皆已生效！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -200,6 +200,9 @@ var globalBestWinRate=0;
 var globalBestGames=0;
 var globalBestRules=null;
 var globalBestStats=null;
+
+// 補充宣告修復報錯
+var bestTotal=0, bestWinRate=0, bestGames=0;
 
 var featureValueCache={};
 var condBSCache={};
@@ -404,7 +407,7 @@ async function runSingleEngine() {
   
   poolSize = singles.length;
 
-  // 2. 針對三個目標分別進行 5 萬次爬山變異 (因要跑100次，單次降低為5萬次以保證總時長)
+  // 2. 針對三個目標分別進行 5 萬次爬山變異
   var bestRules = [null, null, null];
 
   for(var tc=0; tc<3; tc++){
@@ -416,7 +419,6 @@ async function runSingleEngine() {
       bs: null,
       profit: -Infinity
     };
-    // 初始化 bs
     var cond0 = current.conds[0];
     current.bs = getCondBS(cond0[0], cond0[1], cond0[2]);
     current.profit = profitOfBS(current.bs, tc);
@@ -755,7 +757,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v81.0 — 百次重啟終極版','head');
+    pushLog('🚀 v82.0 — 百次重啟完美版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：尾盤結算，勝場 ≥ '+minWinsRequired+'，一鍵執行 100 次','info');
