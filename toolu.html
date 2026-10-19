@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v64.0 — 無限條件實戰版 (5%防護)</title>
+<title>🚀 v64.1 — 無限條件實戰版 (10%防護)</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -76,13 +76,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v64.0 — 無限條件實戰版 (5%防護)</h2>
+<h2>🚀 v64.1 — 無限條件實戰版 (10%防護)</h2>
 
 <div class="warn-banner">
   <b>🛡️ 全新實戰防護機制：</b><br>
   1. <b>數據量檢查：</b>少於 100 場直接報錯跳出。<br>
-  2. <b>5% 覆蓋率門檻：</b>任何規則命中場次必須 ≥ 總場次的 5%，否則直接丟棄。<br>
-  3. <b>無限條件生成：</b>系統會自動疊加條件（1個、2個、3個...），直到利潤無法上升或覆蓋率跌破 5%。
+  2. <b>10% 覆蓋率門檻：</b>任何規則命中場次必須 ≥ 總場次的 10%，否則直接丟棄。（例如 100 場需至少命中 10 場）。<br>
+  3. <b>無限條件生成：</b>系統會自動疊加條件，直到利潤無法上升或覆蓋率跌破 10%。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -204,7 +204,7 @@ var condBSCache={};
 var condBSCacheSize=0;
 var COND_CACHE_MAX=300000; 
 
-var minHitsRequired = 0; // 5% 門檻
+var minHitsRequired = 0; // 10% 門檻
 
 /* ========== 位圖 ========== */
 function bsWords(N){ return (N+31)>>5; }
@@ -367,7 +367,7 @@ function cloneRules(rules){
    核心引擎：無限條件 + 遺傳演算法
    ============================================================ */
 async function runEngine(mode) {
-  pushLog(nowTime()+' ⚙️ 初始化 [尾盤] 引擎，5% 門檻：'+minHitsRequired+' 場...','info');
+  pushLog(nowTime()+' ⚙️ 初始化 [尾盤] 引擎，10% 門檻：'+minHitsRequired+' 場...','info');
   
   featureValueCache={};
   clearCondCache();
@@ -388,7 +388,7 @@ async function runEngine(mode) {
         var bs=getCondBS(fi,op,thr);
         var cnt=bsCount(bs);
         
-        // ★ 5% 防護限制
+        // ★ 10% 防護限制
         if(cnt < minHitsRequired) continue; 
         
         var pH = profitOfBS(bs, 0);
@@ -414,27 +414,23 @@ async function runEngine(mode) {
   var pool = [];
   var seen = {};
   
-  // 將所有單條件放入池中
   for(var i=0; i<singles.length; i++) {
     var key = singles[i].conds[0][0]+'_'+singles[i].conds[0][1]+'_'+singles[i].conds[0][2]+'→'+singles[i].thenCode;
     if(!seen[key]) { seen[key]=1; pool.push(singles[i]); }
   }
 
-  var growthBase = singles.slice(0, 100); // 取前 100 名單條件作為生長起點
+  var growthBase = singles.slice(0, 100); 
   for(var g=0; g<growthBase.length; g++){
     var currentRule = growthBase[g];
     var added = true;
     
-    // 只要還能加條件，且不超過 10 個條件（防止死循環），就繼續
     while(added && currentRule.conds.length < 10) {
       added = false;
       var bestAdd = null;
       
-      // 嘗試從前 50 名的單條件中找附加條件
       for(var j=0; j<Math.min(50, singles.length); j++){
         var cand = singles[j];
         
-        // 檢查特徵是否重複
         var overlap = false;
         for(var c=0; c<currentRule.conds.length; c++){
           if(currentRule.conds[c][0] === cand.conds[0][0]) { overlap = true; break; }
@@ -444,12 +440,11 @@ async function runEngine(mode) {
         var newBS = bsAnd(currentRule.bs, cand.bs);
         var newCnt = bsCount(newBS);
         
-        // ★ 5% 防護限制
+        // ★ 10% 防護限制
         if(newCnt < minHitsRequired) continue;
         
         var newProfit = profitOfBS(newBS, cand.thenCode);
         
-        // 如果疊加後利潤更高（且為正），就記錄為最佳附加
         if(newProfit > currentRule.profit && newProfit > 0){
           if(!bestAdd || newProfit > bestAdd.profit) {
             bestAdd = { conds: currentRule.conds.concat([cand.conds[0]]), bs:newBS, thenCode:cand.thenCode, profit:newProfit, cnt:newCnt };
@@ -461,7 +456,6 @@ async function runEngine(mode) {
         currentRule = bestAdd;
         added = true;
         
-        // 將這條新生成的無限條件規則加入池中
         var newKey = '';
         var cs = currentRule.conds.slice().sort(function(a,b){ return a[0]-b[0]; });
         for(var c=0; c<cs.length; c++) newKey += cs[c][0]+'_'+cs[c][1]+'_'+cs[c][2]+'|';
@@ -497,7 +491,7 @@ async function runEngine(mode) {
         var cand = pool[Math.floor(Math.random() * pool.length)];
         var only = bsAndNot(cand.bs, matched);
         var cnt = bsCount(only);
-        if(cnt < minHitsRequired) continue; // 5% 防護限制
+        if(cnt < minHitsRequired) continue; 
         var marg = profitOfBS(only, cand.thenCode);
         if(marg > bestMarg){
           bestMarg = marg;
@@ -566,7 +560,6 @@ async function runEngine(mode) {
           childRules.splice(Math.floor(Math.random() * childRules.length), 1);
         } else {
           var randCand = pool[Math.floor(Math.random() * pool.length)];
-          // 確保加入的規則不會導致 0 命中
           if(randCand.cnt >= minHitsRequired) {
             childRules.push({ on:1, then:RESULTS[randCand.thenCode], thenCode:randCand.thenCode, conds:randCand.conds, bs:randCand.bs });
           }
@@ -826,9 +819,9 @@ async function start(){
     }
     rawRowsData = parsed.rows;
     
-    // ★ 計算 5% 門檻
-    minHitsRequired = Math.ceil(rawRowsData.length * 0.05);
-    pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。 5% 門檻 = 至少命中 '+minHitsRequired+' 場。','info');
+    // ★ 計算 10% 門檻
+    minHitsRequired = Math.ceil(rawRowsData.length * 0.10);
+    pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。 10% 門檻 = 至少命中 '+minHitsRequired+' 場。','info');
 
     running=true; startTime=Date.now(); evalCount=0;
     poolSize=0; pickedCount=0;
@@ -845,7 +838,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v64.0 — 無限條件實戰版 (5%防護)','head');
+    pushLog('🚀 v64.1 — 無限條件實戰版 (10%防護)','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：尾盤結算，無限條件疊加，遺傳演算法','info');
@@ -896,7 +889,7 @@ async function start(){
     document.getElementById('rGames').textContent=finalStats.games;
     document.getElementById('rWin').textContent=bestWinRate.toFixed(1)+'%';
     document.getElementById('resultInfo').innerHTML=
-      '🛡️ 覆蓋率門檻：<b>5% ('+minHitsRequired+' 場)</b><br>'+
+      '🛡️ 覆蓋率門檻：<b>10% ('+minHitsRequired+' 場)</b><br>'+
       '結算：<b>尾盤</b>　'+
       '條件限制：<b>無限疊加</b>';
 
