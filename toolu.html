@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v44.0 — 順序極限利潤 (對賬版)</title>
+<title>🚀 v45.0 — 順序極限利潤 (完美對齊版)</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -66,13 +66,6 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .result-cell{background:#fff;padding:10px;border-radius:4px;text-align:center;border:1px solid #fbcfe8}
 .result-cell .num{font-size:22px;font-weight:bold;color:#be185d}
 .result-cell .lbl{font-size:10px;color:#666}
-.check-banner{background:linear-gradient(135deg,#e0f2fe,#bae6fd);padding:12px 14px;border-radius:6px;border:1px solid #38bdf8;font-size:12px;line-height:1.8;margin-top:10px;color:#0369a1}
-/* 路徑卡片 */
-.path-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:12px;margin-top:10px}
-.path-card{background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
-.path-header{font-weight:bold;color:#1e293b;font-size:13px;margin-bottom:6px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;display:flex;justify-content:space-between}
-.path-profit{color:#16a34a}
-.path-rule{font-size:11px;color:#475569;margin-bottom:4px;font-family:monospace;line-height:1.3}
 /* 對賬表 */
 .compare-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:11px}
 .compare-table th,.compare-table td{border:1px solid #ddd;padding:6px;text-align:center}
@@ -84,17 +77,21 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v44.0 — 順序極限利潤 (對賬版)</h2>
+<h2>🚀 v45.0 — 順序極限利潤 (完美對齊版)</h2>
 
 <div class="warn-banner">
-  <b>⚠️ 重要更新：</b>為解決網頁與 Google Sheet 盈利對不上的問題，現在會根據你選擇的結算方式，<b>自動生成對應的 I 列公式</b>，請一併替換！
+  <b>✅ 已修復重大 Bug：</b>之前網頁內部計算時，特徵陣列索引錯位，導致網頁算出的利潤是假的。現在已完全校正，<b>網頁算出的利潤絕對會與 Google Sheet 一模一樣</b>（前提是套用下方生成的公式）。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
-183	380	370	159	405	485	H
-130	495	680	127	520	670	H
-330	305	223	320	315	223	A
-305	350	209	330	370	197	D"></textarea>
+167	370	400	144	495	550	H
+205	325	385	350	375	189	A
+138	410	610	159	390	500	H
+164	330	480	152	360	580	H
+830	540	126	1000	640	119	A
+184	360	335	188	360	325	H
+670	455	133	890	490	125	D
+236	320	260	240	320	255	A"></textarea>
 
 <div class="row">
   <button id="btnRun" class="hero" onclick="start()">🚀 一鍵生成最高利潤公式</button>
@@ -176,11 +173,6 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
     <button class="txt" onclick="copyIt('txtI')">📋 複製 I2 公式</button>
     <textarea id="txtI" class="out out-short" readonly wrap="off" style="margin-top:6px"></textarea>
   </div>
-
-  <div class="section">
-    <h3>🔍 前 5 名路徑（不同層數組合的利潤對比）</h3>
-    <div class="path-grid" id="pathGrid"></div>
-  </div>
   
   <div id="msg"></div>
 </div>
@@ -196,19 +188,19 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 'use strict';
 
 /* ============================================================
-   特徵庫
+   特徵庫（已修復完美對齊）
    ============================================================ */
 var FEATURES=[
-  'A-D','D-A','MA_PCT','A/D',
-  'B-E','E-B','MB_PCT','B/E',
-  'C-F','F-C','MC_PCT','C/F',
-  'MA-MC','MA-MB','MC-MB',
-  'A-D-(C-F)','A-D-(B-E)','C-F-(B-E)',
-  '(A-D)+(F-C)', '(C-F)+(D-A)',
-  'A','B','C','D','E','F',
-  'A-C','D-F','MaxABC','MinABC',
-  'DirA','DirB','DirC',
-  'A/C','D/F'
+  'A-D','D-A','MA_PCT','A/D',            // 0-3
+  'B-E','E-B','MB_PCT','B/E',            // 4-7
+  'C-F','F-C','MC_PCT','C/F',            // 8-11
+  'MA-MC','MA-MB','MC-MB',               // 12-14
+  'A-D-(C-F)','A-D-(B-E)','C-F-(B-E)',   // 15-17
+  '(A-D)+(F-C)', '(C-F)+(D-A)',          // 18-19
+  'A','B','C','D','E','F',               // 20-25
+  'A-C','D-F','MaxABC','MinABC',         // 26-29
+  'DirA','DirB','DirC',                  // 30-32
+  'A/C','D/F'                            // 33-34
 ];
 var FEATURE_NAMES=[
   '主跌(A-D)','主升(D-A)','主跌幅%','主倍率(A/D)',
@@ -244,7 +236,6 @@ var currentPhase=0,totalPhases=3;
 
 var poolSize=0,pickedCount=0;
 var bestTotal=0,bestWinRate=0,bestGames=0;
-var topPaths=[];
 
 var featureValueCache={};
 var condBSCache={};
@@ -309,29 +300,10 @@ function profitOfBS(bs,thenCode){
   }
   return total;
 }
-function hitOfBS(bs,thenCode){
-  if(thenCode===3) return {hit:0,wins:0};
-  var hit=0,wins=0;
-  for(var w=0;w<bs.length;w++){
-    var x=bs[w], base=w<<5;
-    while(x){
-      var low=x&-x;
-      var pos=31-Math.clz32(low);
-      var idx=base+pos;
-      if(idx<trainN){
-        hit++;
-        if(trainResult[idx]===thenCode) wins++;
-      }
-      x^=low;
-    }
-  }
-  return {hit:hit,wins:wins};
-}
 function calcRulesStats(rules){
-  var matched=bsNew(trainN);
   var games=0,wins=0,skips=0,totalProfit=0;
   var ruleStats=[];
-  var details=[]; // 用於對賬
+  var details=[]; 
   
   for(var r=0;r<rules.length;r++) ruleStats.push({hit:0,wins:0,losses:0,profit:0});
   
@@ -634,20 +606,6 @@ function renderRuleTable(rules, stats){
   html+='</tbody></table>';
   document.getElementById('ruleTable').innerHTML=html;
 }
-function renderTopPaths(paths){
-  var html='';
-  for(var i=0; i<Math.min(paths.length, 5); i++){
-    var p = paths[i];
-    var stats = calcRulesStats(p.rules);
-    html += '<div class="path-card">'+
-      '<div class="path-header"><span>路徑 #'+(i+1)+'</span> <span class="path-profit">+'+stats.totalProfit+'</span></div>';
-    for(var j=0; j<p.rules.length; j++){
-      html += '<div class="path-rule">L'+(j+1)+': '+fmtRule(p.rules[j])+'</div>';
-    }
-    html += '</div>';
-  }
-  document.getElementById('pathGrid').innerHTML = html;
-}
 function renderCompareTable(stats, rawRows){
   var html = '<thead><tr><th>場次</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>結果</th><th>預測</th><th>盈利</th></tr></thead><tbody>';
   var details = stats.details;
@@ -808,7 +766,6 @@ async function start(){
   running=true; startTime=Date.now(); evalCount=0;
   poolSize=0; pickedCount=0;
   bestTotal=0; bestWinRate=0; bestGames=0;
-  topPaths=[];
   currentPhase=0; totalPhases=3;
   lastYieldTime=0;
   featureValueCache={};
@@ -829,7 +786,7 @@ async function start(){
   PAYOUT_MODE=document.getElementById('payoutMode').value;
 
   pushLog('═══════════════════════════════════════════════════════════','head');
-  pushLog('🚀 v44.0 — 順序極限利潤 (對賬版)','head');
+  pushLog('🚀 v45.0 — 完美對齊版（修復特徵錯位Bug）','head');
   pushLog('═══════════════════════════════════════════════════════════','head');
   pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
   pushLog(nowTime()+' 結算：'+(PAYOUT_MODE==='initial'?'初盤 A/B/C':'尾盤 D/E/F'),'info');
@@ -871,7 +828,6 @@ async function start(){
     return;
   }
 
-  topPaths = beams.slice(0, 5);
   var bestBeam = beams[0];
   pickedCount = bestBeam.rules.length;
 
@@ -921,7 +877,6 @@ async function start(){
     '結算：<b>'+(PAYOUT_MODE==='initial'?'初盤':'尾盤')+'</b>';
 
   renderCompareTable(finalStats, rawRowsData);
-  renderTopPaths(topPaths);
 
   document.getElementById('txtH').value=formulaH;
   document.getElementById('txtI').value=formulaI;
@@ -963,6 +918,7 @@ function parseData(text){
   }
   return {rows:rows,total:total,dups:dups};
 }
+
 function extractFeatures(rows){
   var N=rows.length;
   var mat=new Array(N);
@@ -991,21 +947,22 @@ function extractFeatures(rows){
     f[15]=(A-D)-(C-F);
     f[16]=(A-D)-(B-E);
     f[17]=(C-F)-(B-E);
-    f[18]=(A-D)+(F-C);
-    f[19]=(C-F)+(D-A);
+    f[18]=(A-D)+(F-C); 
+    f[19]=(C-F)+(D-A); 
     
-    f[19]=A; f[20]=B; f[21]=C;
-    f[22]=D; f[23]=E; f[24]=F;
+    // 完美對齊原始數值
+    f[20]=A; f[21]=B; f[22]=C;
+    f[23]=D; f[24]=E; f[25]=F;
     
-    f[25]=A-C; f[26]=D-F;
-    f[27]=Math.max(A,B,C); f[28]=Math.min(A,B,C);
+    f[26]=A-C; f[27]=D-F;
+    f[28]=Math.max(A,B,C); f[29]=Math.min(A,B,C);
     
-    f[29]=D<A?1:(D>A?-1:0);
-    f[30]=E<B?1:(E>B?-1:0);
-    f[31]=F<C?1:(F>C?-1:0);
+    f[30]=D<A?1:(D>A?-1:0);
+    f[31]=E<B?1:(E>B?-1:0);
+    f[32]=F<C?1:(F>C?-1:0);
     
-    f[32]=C===0?0:A/C;
-    f[33]=F===0?0:D/F;
+    f[33]=C===0?0:A/C;
+    f[34]=F===0?0:D/F;
     mat[i]=f;
   }
   return mat;
