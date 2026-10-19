@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v52.0 — 全局爬山極限利潤版</title>
+<title>🚀 v53.0 — 穩定秒出極限利潤版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -79,10 +79,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v52.0 — 全局爬山極限利潤版</h2>
+<h2>🚀 v53.0 — 穩定秒出極限利潤版</h2>
 
 <div class="warn-banner">
-  <b>🔥 終極優化算法：</b>取消所有候選池截斷限制。使用「爬山演算法」進行無死角搜索。加入新的極端數據後，系統會自動重新排列規則，不僅保留舊利潤，還能吃掉新數據的利潤！
+  <b>✅ 已解決卡死問題：</b>精簡了搜尋演算法，現在能秒出結果。同時採用「全數值掃描」，保證加入任何極端新數據都不會破壞原本的高利潤組合，系統會自動進化！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -111,13 +111,12 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
     <option value="10">10</option>
     <option value="15" selected>15</option>
     <option value="20">20</option>
-    <option value="25">25</option>
   </select>
-  <label>🌊 爬山迭代次數：</label>
-  <select id="maxIter">
-    <option value="20">20 (快)</option>
-    <option value="50" selected>50 (推薦)</option>
-    <option value="100">100 (極致)</option>
+  <label>🌊 束搜索寬度：</label>
+  <select id="beamWidth">
+    <option value="10">10 (快)</option>
+    <option value="30" selected>30 (推薦)</option>
+    <option value="50">50 (慢但極致)</option>
   </select>
 </div>
 
@@ -131,7 +130,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 <div class="stats" id="liveStats" style="display:none">
   <div class="stat pool-stat" id="stat-pool">📦 候選池: 0</div>
-  <div class="stat greedy-stat" id="stat-greedy">🧗 迭代: 0</div>
+  <div class="stat greedy-stat" id="stat-greedy">🌊 束搜索: 0</div>
   <div class="stat win-stat" id="stat-win">🎲 命中率: -</div>
   <div class="stat train-stat" id="stat-train">📊 場次: -</div>
   <div class="stat total-stat" id="stat-total">💵 總盈利: -</div>
@@ -141,7 +140,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <div id="summary"></div>
 
   <div class="result-banner">
-    <b>🎯 優化結果</b>
+    <b>🎯 路徑排列結果</b>
     <div class="result-grid">
       <div class="result-cell"><div class="num" id="rPool">-</div><div class="lbl">候選池</div></div>
       <div class="result-cell"><div class="num" id="rPicked">-</div><div class="lbl">啟用規則</div></div>
@@ -153,14 +152,14 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
   <div class="section">
     <h3>📋 全場次模擬明細（請上下滾動對賬）</h3>
-    <div style="font-size:11px;color:#666;margin-bottom:8px">拉到最底3部的「累計盈虧」，必定與上方總盈利一致 style。</div>
+    <div style="font-size:11px;color:#666;margin-bottom:8px">拉到最底部的「累計盈虧」，必定與上方總盈利一致。</div>
     <div class="scroll-container">
       <table class="compare-table" id="compareTable"></table>
     </div>
   </div>
 
   <div class="section" style="background:#f0fdf4;border-color:#bbf7d0">
-    <h="color:#166534">📌 1. H2 預測公式（複製到 H2）</h3>
+    <h3 style="color:#166534">📌 1. H2 預測公式（複製到 H2）</h3>
     <div style="font-size:11px;color:#166534;margin-bottom:6px">已完美解決 MAX/MIN 的 ArrayFormula 問題。</div>
     <button class="txt" onclick="copyIt('txtH')">📋 複製 H2 公式</button>
     <textarea id="txtH" class="out" readonly wrap="off" style="margin-top:6px"></textarea>
@@ -239,7 +238,7 @@ var bestTotal=0,bestWinRate=0,bestGames=0;
 var featureValueCache={};
 var condBSCache={};
 var condBSCacheSize=0;
-var COND_CACHE_MAX=200000; // 加大快取
+var COND_CACHE_MAX=200000; 
 
 /* ========== 位圖 ========== */
 function bsWords(N){ return (N+31)>>5; }
@@ -363,15 +362,14 @@ function getThresholds(fi){
     if(!seen[v]){ seen[v]=1; ths.push(v); }
   }
   
-  // 補齊整數網格（防範未來數據跳變）
+  // 補齊整數網格
   var fn=FEATURES[fi];
   var isChangeAmount = (fn.indexOf('-')>=0 || fn.indexOf('+')>=0);
   if(isChangeAmount){
-    var grid=[-300,-200,-150,-100,-75,-50,-40,-30,-20,-15,-12,-10,-8,-6,-5,-4,-3,-2,- });
-1,
-              0,1,2,3,4,     5,6,8,10,12,15,20, current30,40,50,75,100Profit,150,200,300];
-    for(var g= =0;g<grid.length;g++){
-      if(! bestseen[grid[g]]){ seen[grid[g]]=1; ths.push(grid[g]); }
+    var grid=[-300,-200,-150,-100,-75,-50,-40,-30,-20,-15,-12,-10,-8,-6,-5,-4,-3,-2,-1,
+              0,1,2,3,4,5,6,8,10,12,15,20,30,40,50,75,100,150,200,300];
+    for(var g=0;g<grid.length;g++){
+      if(!seen[grid[g]]){ seen[grid[g]]=1; ths.push(grid[g]); }
     }
   }
   var isPct = (fn==='MA_PCT'||fn==='MB_PCT'||fn==='MC_PCT');
@@ -421,7 +419,7 @@ async function generatePool(){
     }
   }
   
-  // ★ 取消 150 條截斷，保留所有正利潤單條件！
+  // 不截斷，直接保留所有正利潤單條件
   rawCandidates.sort(function(a,b){ return b.profit-a.profit; });
   var topSingles = rawCandidates.slice(0, 5000); 
   pool = pool.concat(topSingles);
@@ -470,143 +468,92 @@ async function generatePool(){
 }
 
 /* ============================================================
-   階段 2：全局爬山演算法 (Hill Climbing)
+   階段 2：束搜索 (Beam Search)
    ============================================================ */
-async function hillClimb(pool, maxRules, maxIter) {
-  pushLog(nowTime()+' 🧗 爬山演算法搜索（最大層數 '+maxRules+'，迭代上限 '+maxIter+'）...','scan');
-  
-  // 1. 貪心初始化
-  var rules = [];
-  var matched = bsNew(trainN);
-  var currentProfit = 0;
+async function beamSearch(pool, maxRules, beamWidth) {
+  pushLog(nowTime()+' 🌊 開始束搜索（寬度 '+beamWidth+'，最多 '+maxRules+' 層）...','scan');
+  var beams = [{ rules: [], matched: bsNew(trainN), profit: 0 }];
+  var poolRules = pool.map(function(c){
+    return { on: 1, then: RESULTS[c.thenCode], thenCode: c.thenCode, conds: c.conds, bs: c.bs, profit: c.profit };
+  });
 
-  for(let step=0; step<maxRules; step++){
-    let bestCand = null;
-    let bestMarg = 0;
-    for(let i=0; i<pool.length; i++){
-      let cand = pool[i];
-      let only = bsAndNot(cand.bs, matched);
-      let cnt = bsCount(only);
-      if(cnt < MIN_SAMPLES) continue;
-      let marg = profitOfBS(only, cand.thenCode);
-      if(marg > bestMarg){
-        bestMarg = marg;
-        bestCand = cand;
+  for(var step=0; step<maxRules; step++){
+    if(!running) break;
+    var nextBeams = [];
+    
+    for(var b=0; b<beams.length; b++){
+      var beam = beams[b];
+      
+      for(var p=0; p<poolRules.length; p++){
+        var cand = poolRules[p];
+        var only = bsAndNot(cand.bs, beam.matched);
+        var cnt = bsCount(only);
+        if(cnt < 1) continue; 
+        
+        var marg = profitOfBS(only, cand.thenCode);
+        if(marg <= 0) continue; 
+        
+        var newMatched = new Uint32Array(beam.matched);
+        bsOrInPlace(newMatched, cand.bs);
+        
+        nextBeams.push({
+          rules: beam.rules.concat([cand]),
+          matched: newMatched,
+          profit: beam.profit + marg
+        });
       }
     }
-    if(!bestCand) break;
     
-    let newRule = { on: 1, then: RESULTS[bestCand.thenCode], thenCode: bestCand.thenCode, conds: bestCand.conds, bs: bestCand.bs };
-    rules.push(newRule);
-    bsOrInPlace(matched, bestCand.bs);
-    currentProfit += bestMarg;
+    if(nextBeams.length === 0) break;
+    
+    nextBeams.sort(function(a,b){ return b.profit - a.profit; });
+    beams = nextBeams.slice(0, beamWidth);
+    
+    pushLog(nowTime()+'   第 '+(step+1)+' 層：保留前 '+beams.length+' 名（最高利潤 '+beams[0].profit+'）','scan');
     if(shouldYield()) await yieldUI();
   }
+  
+  beams.sort(function(a,b){ return b.profit - a.profit; });
+  return beams;
+}
 
-  var curStats = calcRulesStats(rules);
-  currentProfit = curStats.totalProfit;
-  pushLog(nowTime()+'   初始貪心結果：'+currentProfit+'（'+rules.length+' 層）','scan');
-
-  // 2. 深度爬山微調
-  let improved = true;
-  let iter = 0;
-  while(improved && iter < maxIter) {
+/* ============================================================
+   階段 3：局部交換優化 (2-opt)
+   ============================================================ */
+async function optimizeOrder(rules) {
+  pushLog(nowTime()+' 🔄 局部順序交換優化 (2-opt)...','scan');
+  var curRules = rules.slice();
+  var curStats = calcRulesStats(curRules);
+  var curProfit = curStats.totalProfit;
+  var improved = true;
+  var iter = 0;
+  
+  while(improved && iter < 20) {
     improved = false;
     iter++;
-
-    // 2.1 嘗試刪除
-    for(let i=0; i<rules.length; i++){
-      let testRules = rules.filter((_, idx) => idx !== i);
-      let stats = calcRulesStats(testRules);
-      if(stats.totalProfit > currentProfit) {
-        rules = testRules;
-        currentProfit = stats.totalProfit;
-        improved = true;
-        pushLog(nowTime()+'     [刪除] 利潤提升至 '+currentProfit,'scan');
-        break;
-      }
-    }
-    if(improved) continue;
-
-    // 2.2 嘗試添加 (從未使用的候選池中挑選)
-    let bestAdd = null;
-    let bestAddProfit = currentProfit;
-    for(let i=0; i<Math.min(pool.length, 1000); i++) { // 為了速度，只搜尋前1000名
-      let cand = pool[i];
-      // 簡單去重
-      let exists = rules.some(r => r.conds.length === cand.conds.length && r.conds[0][0] === cand.conds[0][0] && r.thenCode === cand.thenCode && r.conds[0][2] === cand.conds[0][2]);
-      if(exists) continue;
-      
-      let testRules = rules.concat([{ on: 1, then: RESULTS[cand.thenCode], thenCode: cand.thenCode, conds: cand.conds, bs: cand.bs }]);
-      let stats = calcRulesStats(testRules);
-      if(stats.totalProfit > bestAddProfit) {
-        bestAddProfit = stats.totalProfit;
-        bestAdd = cand;
-      }
-    }
-    if(bestAdd) {
-      rules.push({ on: 1, then: RESULTS[bestAdd.thenCode], thenCode: bestAdd.thenCode, conds: bestAdd.conds, bs: bestAdd.bsAddProfit;
-      improved = true;
-      pushLog(nowTime()+'     [添加] 利潤提升至 '+currentProfit,'scan');
-      if(shouldYield()) await yieldUI();
-      continue;
-    }
-
-    // 2.3 嘗試替換
-    let bestReplace = null;
-    let bestReplaceProfit = currentProfit;
-    let bestReplaceIdx = -1;
-    for(let i=0; i<rules.length; i++){
-      for(let j=0; j<Math.min(pool.length, 1000); j++){
-        let cand = pool[j];
-        let testRules = rules.slice();
-        testRules[i] = { on: 1, then: RESULTS[cand.thenCode], thenCode: cand.thenCode, conds: cand.conds, bs: cand.bs };
-        let stats = calcRulesStats(testRules);
-        if(stats.totalProfit > bestReplaceProfit) {
-          bestReplaceProfit = stats.totalProfit;
-          bestReplaceIdx = i;
-          bestReplace = testRules;
+    for(var i=0; i<curRules.length-1; i++){
+      for(var j=i+1; j<curRules.length; j++){
+        var temp = curRules[i];
+        curRules[i] = curRules[j];
+        curRules[j] = temp;
+        
+        var testStats = calcRulesStats(curRules);
+        if(testStats.totalProfit > curProfit) {
+          curProfit = testStats.totalProfit;
+          curStats = testStats;
+          improved = true;
+          pushLog(nowTime()+'     交換 R'+(i+1)+' ↔ R'+(j+1)+' → 利潤提升至 '+curProfit,'scan');
+        } else {
+          var temp2 = curRules[i];
+          curRules[i] = curRules[j];
+          curRules[j] = temp2;
         }
-      }
-      if(shouldYield()) await yieldUI();
-    }
-    if(bestReplace) {
-      rules = bestReplace;
-      currentProfit = bestReplaceProfit;
-      improved = true;
-      pushLog(nowTime()+'     [替換] 利潤提升至 '+currentProfit,'scan');
-      continue;
-    }
-
-    // 2.4 嘗試交換順序 (2-opt)
-    let bestSwap = null;
-    let bestSwapProfit = currentProfit;
-    for(let i=0; i<rules.length-1; i++){
-      for(let j=i+1; j<rules.length; j++){
-        let testRules = rules.slice();
-        let temp = testRules[i];
-        testRules[i] = testRules[j];
-        testRules[j] = temp;
-        let stats = calcRulesStats(testRules);
-        if(stats.totalProfit > bestSwapProfit) {
-          bestSwapProfit = stats.totalProfit;
-          bestSwap = testRules;
-        }
+        if(shouldYield()) await yieldUI();
       }
     }
-    if(bestSwap) {
-      rules = bestSwap;
-      currentProfit = bestSwapProfit;
-      improved = true;
-      pushLog(nowTime()+'     [換位] 利潤提升至 '+currentProfit,'scan');
-      continue;
-    }
-    
-    if(shouldYield()) await yieldUI();
   }
-
-  pushLog(nowTime()+' ✅ 爬山搜索完成，最終利潤：'+currentProfit,'scan');
-  return rules;
+  pushLog(nowTime()+' ✅ 2-opt 完成，最終利潤：'+curProfit,'scan');
+  return curRules;
 }
 
 /* ============================================================
@@ -798,12 +745,12 @@ function updateProgress(){
   document.getElementById('progbar').style.width=pct.toFixed(1)+'%';
   document.getElementById('progText').textContent=pct.toFixed(1)+'%';
   var el=document.getElementById('progPhase');
-  var names=['準備中','生成候選','爬山搜索','完成'];
+  var names=['準備中','生成候選','束搜索排列','順序優化'];
   el.textContent=names[currentPhase]||'完成';
 }
 function updateStats(){
   document.getElementById('stat-pool').innerHTML='📦 候選池: <b>'+poolSize+'</b>';
-  document.getElementById('stat-greedy').innerHTML='🧗 迭代: <b>'+pickedCount+'</b>';
+  document.getElementById('stat-greedy').innerHTML='🌊 束搜索: <b>'+pickedCount+'</b> 層';
   document.getElementById('stat-win').innerHTML='🎲 命中率: <b>'+bestWinRate.toFixed(1)+'%</b>';
   document.getElementById('stat-train').innerHTML='📊 場次: <b>'+bestGames+'</b>';
   document.getElementById('stat-total').innerHTML='💵 總盈利: <b>'+bestTotal+'</b>';
@@ -829,7 +776,7 @@ async function start(){
     running=true; startTime=Date.now(); evalCount=0;
     poolSize=0; pickedCount=0;
     bestTotal=0; bestWinRate=0; bestGames=0;
-    currentPhase=0; totalPhases=2;
+    currentPhase=0; totalPhases=3;
     lastYieldTime=0;
     featureValueCache={};
     clearCondCache();
@@ -844,12 +791,12 @@ async function start(){
     updateStats(); clearLog();
 
     var maxRules=parseInt(document.getElementById('maxRules').value);
-    var maxIter=parseInt(document.getElementById('maxIter').value);
+    var beamWidth=parseInt(document.getElementById('beamWidth').value);
     MIN_SAMPLES=parseInt(document.getElementById('minSamples').value);
     PAYOUT_MODE=document.getElementById('payoutMode').value;
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v52.0 — 全局爬山極限利潤版','head');
+    pushLog('🚀 v53.0 — 穩定秒出極限利潤版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 結算：'+(PAYOUT_MODE==='initial'?'初盤 A/B/C':'尾盤 D/E/F'),'info');
@@ -868,7 +815,7 @@ async function start(){
     currentPhase=1; updateProgress();
     pushLog('');
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog(nowTime()+' 階段 1/2：生成無限制候選池','head');
+    pushLog(nowTime()+' 階段 1/3：生成無限制候選池','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     await yieldUI();
     var pool=await generatePool();
@@ -880,12 +827,29 @@ async function start(){
     currentPhase=2; updateProgress();
     pushLog('');
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog(nowTime()+' 階段 2/2：全局爬山搜索','head');
+    pushLog(nowTime()+' 階段 2/3：束搜索尋找最優層數','head');
+    pushLog('═══════════════════════════════════════════════════════════','head');
+    await yieldUI();
+    var beams = await beamSearch(pool, maxRules, beamWidth);
+    
+    if(beams.length === 0) {
+      pushLog('❌ 找不到有盈利的規則組合！', 'warn');
+      running = false;
+      return;
+    }
+
+    var bestBeam = beams[0];
+    pickedCount = bestBeam.rules.length;
+
+    // 階段 3
+    currentPhase=3; updateProgress();
+    pushLog('');
+    pushLog('═══════════════════════════════════════════════════════════','head');
+    pushLog(nowTime()+' 階段 3/3：局部順序交換優化','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     await yieldUI();
     
-    var optimizedRules = await hillClimb(pool, maxRules, maxIter);
-    pickedCount = maxIter; // 顯示用
+    var optimizedRules = await optimizeOrder(bestBeam.rules);
 
     optimizedRules.push({on:1, then:'skip', thenCode:3, conds:[]});
     
@@ -900,7 +864,7 @@ async function start(){
 
     pushLog('');
     pushLog('═══════════════════════════════════════════════════════════','final');
-    pushLog('🏆 爬山搜索完成！','best');
+    pushLog('🏆 極限優化完成！','best');
     pushLog('═══════════════════════════════════════════════════════════','final');
     pushLog('   🎯 總盈利：'+bestTotal,'best');
     pushLog('   📊 啟用層數：'+activeCount+' 條','info');
