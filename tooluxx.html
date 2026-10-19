@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v87.4 — 雙模式 + 條件上限 + 勝利門檻</title>
+<title>🚀 v87.5 — 三規則進化版（無 skip）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -81,11 +81,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v87.4 — 雙模式 + 條件上限 + 勝利門檻</h2>
+<h2>🚀 v87.5 — 三規則進化版（無 skip）</h2>
 
 <div class="warn-banner">
-  <b>🎯 雙模式 + 📐 條件上限 + 🛡️ 勝利門檻：</b>可選「盈利/命中」模式、限制每條規則的條件數量（1/2/3/無限），並設定規則至少要贏多少場才算合格（5%~50% 可選）。<br>
-  條件越少 → 規則越簡潔、抗過擬合；條件越多 → 擬合能力越強。勝利門檻越高 → 抗過擬合越強。
+  <b>🎯 三規則模式：</b>最終必定輸出 <b>H、D、A 三條規則</b>，不再有 skip 兜底。某類若找不到合格條件，會自動退化為「無條件（全押）」該類，保證覆蓋全部場次。<br>
+  可選「盈利/命中」模式、條件上限（1/2/3/無限）、勝利門檻（關閉或 5%~50%）。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -239,9 +239,9 @@ var lastYieldTime=0;
 var currentPhase=0,totalPhases=100;
 
 var poolSize=0,currentRun=0;
-var optMode='profit';               // 'profit' 或 'hitrate'
-var maxCondsLimit=0;                // 0 = 無限；1/2/3 = 每條規則最多幾個條件
-var minWinsRequired=0;              // 0 = 關閉；>0 = 每條規則至少贏多少場
+var optMode='profit';
+var maxCondsLimit=0;
+var minWinsRequired=0;
 var globalBestScore=-Infinity;
 var globalBestProfit=-Infinity;
 var globalBestWinRate=0;
@@ -258,6 +258,11 @@ var COND_CACHE_MAX=300000;
 /* ========== 位圖 ========== */
 function bsWords(N){ return (N+31)>>5; }
 function bsNew(N){ return new Uint32Array(bsWords(N)); }
+function bsAllOnes(N){
+  var bs = bsNew(N);
+  for(var i=0;i<N;i++) bs[i>>5] |= (1<<(i&31));
+  return bs;
+}
 function bsAnd(a,b){ var n=a.length,o=new Uint32Array(n); for(var i=0;i<n;i++) o[i]=a[i]&b[i]; return o; }
 function bsAndNot(a,b){ var n=a.length,o=new Uint32Array(n); for(var i=0;i<n;i++) o[i]=a[i]&~b[i]; return o; }
 function bsOrInPlace(a,b){ for(var i=0;i<a.length;i++) a[i]|=b[i]; }
@@ -331,7 +336,6 @@ function getWins(bs, thenCode){
   return wins;
 }
 
-/* ========== 依模式回傳主評分（越大越好） ========== */
 function metricOfBS(bs, thenCode, mode){
   var total = bsCount(bs);
   if(total === 0) return -Infinity;
@@ -433,20 +437,10 @@ function getThresholds(fi){
 }
 
 /* ============================================================
-   核心引擎：單次爬山變異搜索（雙模式 + 條件上限 + 勝利門檻）
+   單類候選生成（strict=true 嚴格；false 放寬不檢查利潤/命中率）
    ============================================================ */
-async function runSingleEngine() {
-  featureValueCache={};
-  clearCondCache();
-  
-  var meta = extractMeta(rawRowsData, 'final'); // 固定尾盤
-  trainResult = meta.codes; 
-  trainOdds = meta.odds;
-  trainN = rawRowsData.length;
-  trainFeat = extractFeatures(rawRowsData);
-  
-  // 1. 生成單條件零件（套用勝利門檻）
-  var singles = [];
+function generateSinglesForTC(tc, strict){
+  var result = [];
   for(var fi=0;fi<FCOUNT;fi++){
     var ths=getThresholds(fi);
     for(var op=0;op<4;op++){
@@ -456,36 +450,64 @@ async function runSingleEngine() {
         var total=bsCount(bs);
         if(total === 0) continue;
         
-        for(var tc=0;tc<3;tc++){
-          var w = getWins(bs, tc);
-          
-          // 勝利門檻檢查
-          if(minWinsRequired > 0 && w < minWinsRequired) continue;
-          
+        var w = getWins(bs, tc);
+        if(minWinsRequired > 0 && w < minWinsRequired) continue;
+        
+        var p = profitOfBS(bs, tc);
+        
+        if(strict){
           if(optMode === 'hitrate'){
-            if(w * 100 > total * 33){
-              singles.push({ fi: fi, cond: [fi,op,thr], bs:bs, thenCode:tc, profit: profitOfBS(bs, tc) });
-            }
+            if(w * 100 <= total * 33) continue;
           } else {
-            var p = profitOfBS(bs, tc);
-            if(p > 0){
-              singles.push({ fi: fi, cond: [fi,op,thr], bs:bs, thenCode:tc, profit:p });
-            }
+            if(p <= 0) continue;
           }
         }
+        
+        result.push({ fi: fi, cond: [fi,op,thr], bs:bs, thenCode:tc, profit: p });
       }
     }
   }
-  if(singles.length === 0) return { rules:[], stats:{totalProfit:0, winRate:0, games:0} };
-  
-  poolSize = singles.length;
+  return result;
+}
 
-  // 2. 針對三個目標分別進行 5 萬次爬山變異
+/* ============================================================
+   核心引擎（三規則、無 skip）
+   ============================================================ */
+async function runSingleEngine() {
+  featureValueCache={};
+  clearCondCache();
+  
+  var meta = extractMeta(rawRowsData, 'final');
+  trainResult = meta.codes; 
+  trainOdds = meta.odds;
+  trainN = rawRowsData.length;
+  trainFeat = extractFeatures(rawRowsData);
+  
+  // 為每類生成候選（嚴格優先，空則放寬）
+  var singlesByTC = [[], [], []];
+  var singlesAll = [];
+  for(var tc0=0; tc0<3; tc0++){
+    var tcs = generateSinglesForTC(tc0, true);
+    if(tcs.length === 0){
+      tcs = generateSinglesForTC(tc0, false);
+    }
+    singlesByTC[tc0] = tcs;
+    for(var s=0; s<tcs.length; s++) singlesAll.push(tcs[s]);
+  }
+  poolSize = singlesAll.length;
+
+  // 針對三類分別爬山
   var bestRules = [null, null, null];
 
   for(var tc=0; tc<3; tc++){
-    var tcSingles = singles.filter(function(s){ return s.thenCode === tc; });
-    if(tcSingles.length === 0) continue;
+    var tcSingles = singlesByTC[tc];
+    
+    // 該類完全無候選 → 退化為空條件規則（保證存在）
+    if(tcSingles.length === 0){
+      var allBS = bsAllOnes(trainN);
+      bestRules[tc] = { conds: [], bs: allBS, score: metricOfBS(allBS, tc, optMode) };
+      continue;
+    }
     
     var current = {
       conds: [tcSingles[Math.floor(Math.random() * tcSingles.length)].cond],
@@ -507,7 +529,6 @@ async function runSingleEngine() {
       var testConds = current.conds.slice();
       var changed = false;
       
-      // 增加條件（僅在未達上限或無限時允許）
       if(moveType < 0.6 && (maxCondsLimit === 0 || testConds.length < maxCondsLimit)) {
         var cand = tcSingles[Math.floor(Math.random() * tcSingles.length)];
         var overlap = false;
@@ -519,12 +540,10 @@ async function runSingleEngine() {
           changed = true;
         }
       } else if(moveType < 0.85 && testConds.length > 1) {
-        // 移除條件
         var idx = Math.floor(Math.random() * testConds.length);
         testConds.splice(idx, 1);
         changed = true;
       } else if(testConds.length > 0) {
-        // 替換條件（長度不變，永遠允許）
         var idx2 = Math.floor(Math.random() * testConds.length);
         var cand2 = tcSingles[Math.floor(Math.random() * tcSingles.length)];
         var overlap2 = false;
@@ -546,8 +565,6 @@ async function runSingleEngine() {
       }
       
       if(!newBS || bsCount(newBS) === 0) continue;
-      
-      // 勝利門檻檢查
       if(minWinsRequired > 0 && getWins(newBS, tc) < minWinsRequired) continue;
       
       var newScore = metricOfBS(newBS, tc, optMode);
@@ -565,7 +582,7 @@ async function runSingleEngine() {
     bestRules[tc] = globalBest;
   }
 
-  // 3. 測試 6 種順序組合
+  // 组装：三条规则必须都在，空条件规则永远放末尾
   var bestScore = -Infinity;
   var finalRules = [];
   
@@ -578,22 +595,40 @@ async function runSingleEngine() {
   for(var o=0; o<orders.length; o++){
     var order = orders[o];
     var tempRules = [];
-    var matched = bsNew(trainN);
+    var covered = bsNew(trainN);
+    var pendingEmpty = [];
     
     for(var step=0; step<3; step++){
       var targetTc = order[step];
       var rule = bestRules[targetTc];
-      
       if(rule){
-        var only = bsAndNot(rule.bs, matched);
-        if(bsCount(only) > 0){
-          tempRules.push({ on: 1, then: RESULTS[targetTc], thenCode: targetTc, conds: rule.conds, bs: rule.bs });
-          bsOrInPlace(matched, rule.bs);
+        if(rule.conds.length === 0){
+          pendingEmpty.push({ on:1, then: RESULTS[targetTc], thenCode: targetTc, conds: [], bs: rule.bs });
+        } else {
+          tempRules.push({ on:1, then: RESULTS[targetTc], thenCode: targetTc, conds: rule.conds, bs: rule.bs });
+          bsOrInPlace(covered, rule.bs);
         }
       }
     }
     
-    tempRules.push({on:1, then:'skip', thenCode:3, conds:[], bs:bsNew(trainN)});
+    // 空條件規則追加到末尾
+    for(var p=0; p<pendingEmpty.length; p++){
+      tempRules.push(pendingEmpty[p]);
+      bsOrInPlace(covered, pendingEmpty[p].bs);
+    }
+    
+    // 仍未全覆蓋 → 把最後一條改為無條件（極少發生）
+    if(bsCount(covered) < trainN && tempRules.length > 0){
+      var lastRule = tempRules[tempRules.length - 1];
+      if(lastRule.conds.length > 0){
+        var allBS = bsAllOnes(trainN);
+        tempRules[tempRules.length - 1] = {
+          on:1, then: lastRule.then, thenCode: lastRule.thenCode,
+          conds: [], bs: allBS
+        };
+      }
+    }
+    
     var stats = calcRulesStats(tempRules);
     var score = statsScore(stats, optMode);
     if(score > bestScore){
@@ -613,7 +648,7 @@ function fmtCond(c){
   return FEATURE_NAMES[c[0]]+OPS[c[1]]+Number(c[2].toFixed(2));
 }
 function fmtRule(r){
-  if(!r.conds || r.conds.length===0) return '(空)';
+  if(!r.conds || r.conds.length===0) return '(無條件)';
   return r.conds.map(fmtCond).join(' & ')+' → '+r.then;
 }
 function renderRuleTable(rules, stats){
@@ -629,7 +664,7 @@ function renderRuleTable(rules, stats){
     var wr=rs.hit>0?(rs.wins/rs.hit*100).toFixed(1)+'%':'-';
     
     if(r.conds.length === 0) {
-      html+='<tr><td>兜底</td><td style="text-align:left;color:#94a3b8">其餘全部</td><td>'+thenTag+'</td><td>'+rs.hit+'</td><td>'+rs.wins+'</td><td>'+rs.losses+'</td><td>'+wr+'</td><td class="'+pcls+'">'+rs.profit+'</td></tr>';
+      html+='<tr><td>兜底</td><td style="text-align:left;color:#fbbf24">無條件（全押）</td><td>'+thenTag+'</td><td>'+rs.hit+'</td><td>'+rs.wins+'</td><td>'+rs.losses+'</td><td>'+wr+'</td><td class="'+pcls+'">'+rs.profit+'</td></tr>';
     } else {
       html+='<tr><td>第 '+(i+1)+'</td>'+
         '<td style="text-align:left;font-size:10px">'+ss+'</td><td>'+thenTag+'</td>'+
@@ -717,7 +752,7 @@ function featToExpr(fi){
 
 function genFormulaRecursive(rules, index){
   if(index >= rules.length){
-    return '"skip"';
+    return '""';
   }
   var rule = rules[index];
   var nextIf = genFormulaRecursive(rules, index + 1);
@@ -742,7 +777,7 @@ function genFormulaRecursive(rules, index){
 }
 
 function genHFormula(rules){
-  if(rules.length === 0) return '=ARRAYFORMULA(IF((A2:A=""),"","skip"))';
+  if(rules.length === 0) return '=ARRAYFORMULA(IF((A2:A=""),"",""))';
   var body = genFormulaRecursive(rules, 0);
   return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",' + body + '))';
 }
@@ -818,7 +853,6 @@ async function start(){
     optMode = document.getElementById('optMode').value;
     maxCondsLimit = parseInt(document.getElementById('maxConds').value) || 0;
     
-    // ★ 讀取勝利門檻
     var gatePct = parseFloat(document.getElementById('minHitsPct').value) || 0;
     minWinsRequired = gatePct > 0 ? Math.ceil(rawRowsData.length * gatePct) : 0;
     
@@ -847,11 +881,11 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v87.4 — 雙模式 + 條件上限 + 勝利門檻','head');
+    pushLog('🚀 v87.5 — 三規則進化版（無 skip）','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，勝利門檻：'+gateLabel,'info');
-    pushLog(nowTime()+' 尾盤結算，預計執行 '+totalPhases+' 次','info');
+    pushLog(nowTime()+' 尾盤結算，H/D/A 三規則必出，無 skip 兜底，預計執行 '+totalPhases+' 次','info');
     await yieldUI();
 
     for(var run=1; run<=totalPhases; run++){
@@ -888,7 +922,7 @@ async function start(){
       await yieldUI();
     }
     
-    if(!running) return; // 被手動停止
+    if(!running) return;
 
     pushLog('');
     pushLog('═══════════════════════════════════════════════════════════','final');
@@ -903,9 +937,9 @@ async function start(){
     bestGames = finalStats.games;
 
     var formulaH = genHFormula(optimizedRules);
-    var activeCount = optimizedRules.length - 1;
+    var activeCount = optimizedRules.length;
 
-    pushLog('   📊 啟用層數：'+activeCount+' 條','info');
+    pushLog('   📊 最終規則數：'+activeCount+' 條（H/D/A 全出，無 skip）','info');
     pushLog('   🎯 命中率：'+bestWinRate.toFixed(1)+'%（'+finalStats.wins+'/'+finalStats.games+'）','info');
     pushLog('   💵 總盈利：'+bestTotal,'info');
     pushLog('   🛡️ 勝利門檻：'+gateLabel,'info');
@@ -919,14 +953,14 @@ async function start(){
         '<div style="font-size:14px;color:#cbd5e1;line-height:1.9">'+
         '結算模式：<b>尾盤 D/E/F</b>　條件上限：<b>'+condLabel+'</b>　勝利門檻：<b>'+gateLabel+'</b><br>'+
         '總盈利 <b style="color:#fde68a">'+bestTotal+'</b>（'+finalStats.wins+'/'+finalStats.games+'）　'+
-        '啟用 <b>'+activeCount+'</b> 條規則</div>';
+        '規則數 <b>'+activeCount+'</b>（H/D/A 全出）</div>';
     } else {
       document.getElementById('summary').innerHTML=
         '<div style="font-size:28px;color:#4ade80;font-weight:bold;margin-bottom:8px">💰 歷史最高總盈利：'+bestTotal+'</div>'+
         '<div style="font-size:14px;color:#cbd5e1;line-height:1.9">'+
         '結算模式：<b>尾盤 D/E/F</b>　條件上限：<b>'+condLabel+'</b>　勝利門檻：<b>'+gateLabel+'</b><br>'+
         '命中率 <b style="color:#c084fc">'+bestWinRate.toFixed(2)+'%</b>（'+finalStats.wins+'/'+finalStats.games+'）　'+
-        '啟用 <b>'+activeCount+'</b> 條規則</div>';
+        '規則數 <b>'+activeCount+'</b>（H/D/A 全出）</div>';
     }
 
     document.getElementById('rPool').textContent=poolSize;
