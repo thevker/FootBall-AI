@@ -2,30 +2,26 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v41.0 — 盈利優先規則發現器</title>
+<title>🚀 v43.0 — 順序極限利潤版</title>
 <style>
 *{box-sizing:border-box}
-body{font-family:system-ui;padding:16px;max-width:1500px;margin:auto;background:#f0f2f5}
+body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
 h2{margin:0 0 8px 0}
 textarea{width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #ccc;border-radius:4px}
-#input{height:110px}
+#input{height:120px}
 button{padding:10px 22px;font-size:15px;margin:6px 4px 6px 0;cursor:pointer;background:#007bff;color:#fff;border:none;border-radius:5px;font-weight:bold}
 button:hover{background:#0056b3}
 button:disabled{background:#999;cursor:not-allowed}
 button.stop{background:#dc3545}
 button.txt{background:#28a745}
 button.hero{padding:14px 36px;font-size:17px;background:linear-gradient(135deg,#16a34a,#22c55e)}
-#log{background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:14px;margin-top:12px;height:340px;overflow-y:auto;font-family:Consolas,monospace;font-size:12px;white-space:pre;line-height:1.5;border:1px solid #222}
+#log{background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:14px;margin-top:12px;height:300px;overflow-y:auto;font-family:Consolas,monospace;font-size:12px;white-space:pre;line-height:1.5;border:1px solid #222}
 #log::-webkit-scrollbar{width:10px}
 #log::-webkit-scrollbar-track{background:#1a1a1a}
 #log::-webkit-scrollbar-thumb{background:#444;border-radius:5px}
 .l-info{color:#4ea3ff}.l-success{color:#4ade80;font-weight:bold}
 .l-warn{color:#ffc107}.l-dim{color:#666}.l-head{color:#fff;font-weight:bold;font-size:13px}
 .l-best{color:#facc15;font-weight:bold}
-.l-pool{color:#38bdf8;font-weight:bold}
-.l-greedy{color:#f472b6;font-weight:bold}
-.l-local{color:#22d3ee;font-weight:bold}
-.l-adapt{color:#a855f7;font-weight:bold}
 .l-scan{color:#fbbf24;font-weight:bold}
 .l-final{color:#4ade80;background:rgba(74,222,128,0.1);font-weight:bold;padding:2px 0}
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
@@ -55,7 +51,6 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:12px}
 .stat{background:#fff;padding:6px 10px;border-radius:4px;border:1px solid #ddd}
 .stat b{color:#007bff}
-.stat.scan-stat{background:#fed7aa;border-color:#f59e0b}.stat.scan-stat b{color:#7c2d12}
 .stat.pool-stat{background:#e0f2fe;border-color:#38bdf8}.stat.pool-stat b{color:#075985}
 .stat.greedy-stat{background:#fce7f3;border-color:#f472b6}.stat.greedy-stat b{color:#9d174d}
 .stat.win-stat{background:#fef3c7;border-color:#fbbf24}.stat.win-stat b{color:#92400e}
@@ -63,7 +58,6 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .stat.total-stat{background:#dcfce7;border-color:#22c55e}.stat.total-stat b{color:#14532d;font-size:15px}
 .warn-banner{background:linear-gradient(135deg,#dcfce7,#bbf7d0);padding:12px 14px;border-radius:6px;border:1px solid #22c55e;font-size:13px;line-height:1.7;margin-bottom:10px}
 .warn-banner b{color:#166534}
-.warn-banner code{background:#fff;padding:1px 5px;border-radius:3px;color:#065f46}
 .result-banner{background:linear-gradient(135deg,#fce7f3,#fbcfe8);padding:12px 14px;border-radius:6px;border:1px solid #f472b6;font-size:13px;line-height:1.8;margin-top:10px;color:#9d174d}
 .result-banner b{color:#831843}
 .result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
@@ -71,101 +65,56 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .result-cell .num{font-size:22px;font-weight:bold;color:#be185d}
 .result-cell .lbl{font-size:10px;color:#666}
 .check-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);padding:12px 14px;border-radius:6px;border:1px solid #fbbf24;font-size:12px;line-height:1.8;margin-top:10px;color:#92400e}
-
-/* 三大押注對比 */
-.payout-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
-.payout-card{background:#fff;border:2px solid #e5e7eb;border-radius:8px;padding:14px;transition:all 0.2s}
-.payout-card.win{border-color:#16a34a;background:linear-gradient(135deg,#fff,#f0fdf4);box-shadow:0 4px 12px rgba(22,163,74,0.15)}
-.payout-card.lose{border-color:#dc2626;background:linear-gradient(135deg,#fff,#fef2f2)}
-.payout-card.neutral{border-color:#f59e0b;background:linear-gradient(135deg,#fff,#fffbeb)}
-.payout-title{font-weight:bold;font-size:16px;margin-bottom:10px;color:#1f2937;display:flex;justify-content:space-between;align-items:center}
-.payout-title .tag{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:normal}
-.tag-win{background:#dcfce7;color:#166534}
-.tag-lose{background:#fee2e2;color:#991b1b}
-.tag-neutral{background:#fef3c7;color:#92400e}
-.payout-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
-.payout-row .label{color:#666;font-weight:normal;margin:0}
-.payout-val{font-weight:bold;font-family:monospace}
-.edge-pos{color:#16a34a}.edge-neg{color:#dc2626}
-.payout-recommend{margin-top:10px;text-align:center}
-.recommend{display:inline-block;padding:4px 12px;border-radius:4px;background:#16a34a;color:#fff;font-size:11px;font-weight:bold}
-.recommend.warn{background:#f59e0b}
-.recommend.bad{background:#94a3b8}
-
-/* 六大方向 */
-.direction-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:10px}
-.dir-card{background:#fff;border:2px solid #e5e7eb;border-radius:8px;padding:12px;overflow:hidden}
-.dir-card.hot{border-color:#f59e0b;box-shadow:0 4px 12px rgba(245,158,11,0.2)}
-.dir-card.hot2{border-color:#dc2626;box-shadow:0 4px 12px rgba(220,38,38,0.25);background:linear-gradient(135deg,#fff,#fef2f2)}
-.dir-card.cold{border-color:#94a3b8;opacity:0.65}
-.dir-header{font-weight:bold;font-size:14px;margin-bottom:8px;color:#1f2937;display:flex;justify-content:space-between;align-items:center}
-.dir-header .icon{font-size:18px;margin-right:6px}
-.dir-header .badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:normal}
-.badge-hot{background:#fef3c7;color:#92400e;border:1px solid #f59e0b}
-.badge-strong{background:#fee2e2;color:#991b1b;border:1px solid #dc2626}
-.badge-cold{background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1}
-.dir-row{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;margin:3px 0;border-radius:4px;font-size:11px;font-family:monospace}
-.dir-row:hover{background:#f9fafb}
-.dir-row.thr-strong{background:#fef9c3}
-.dir-row.thr-best{background:#fecaca;font-weight:bold}
-.dir-thr{color:#666;min-width:60px;text-align:left}
-.dir-rate{font-weight:bold;font-size:12px;min-width:60px;text-align:center}
-.dir-profit{font-weight:bold;font-size:12px;min-width:70px;text-align:center}
-.dir-rate.good{color:#16a34a}
-.dir-rate.great{color:#0891b2}
-.dir-rate.awesome{color:#be185d;font-size:13px}
-.dir-cnt{color:#9ca3af;min-width:50px;text-align:right;font-size:10px}
-.dir-summary{margin-top:6px;font-size:10px;color:#6b7280;text-align:center}
-.best-pick{margin-top:8px;padding:6px 8px;background:#fef3c7;border-radius:4px;font-size:11px;color:#92400e;font-family:monospace}
-.best-pick.strong{background:#fee2e2;color:#991b1b;font-weight:bold}
-
-/* 提示橫幅 */
-.small-data-warn{background:linear-gradient(135deg,#fef3c7,#fde68a);padding:10px 14px;border-radius:6px;border:1px solid #fbbf24;font-size:12px;line-height:1.6;margin-top:10px;color:#92400e}
-.small-data-warn b{color:#78350f}
+/* 路徑卡片 */
+.path-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:12px;margin-top:10px}
+.path-card{background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+.path-header{font-weight:bold;color:#1e293b;font-size:13px;margin-bottom:6px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;display:flex;justify-content:space-between}
+.path-profit{color:#16a34a}
+.path-rule{font-size:11px;color:#475569;margin-bottom:4px;font-family:monospace;line-height:1.3}
 </style>
 </head>
 <body>
 
-<h2>🚀 v41.0 — 盈利優先規則發現器</h2>
+<h2>🚀 v43.0 — 順序極限利潤版</h2>
 
 <div class="warn-banner">
-  <b>💰 核心：</b>目標是「總盈利最大化」，不是「命中率最大化」。系統會顯示每個押注選項的<b>平衡線</b>（命中率需要超過多少才盈利），讓你一眼看出：<b>即使命中率低，只要賠率高且超過平衡線就賺錢</b>。
+  <b>🎯 核心邏輯：</b>放棄過擬合保護，放棄最少樣本限制。採用「束搜索 (Beam Search)」尋找能帶來最高總利潤的**層數排列組合**。確保高利潤的規則不會被前面的低利潤規則攔截。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
 183	380	370	159	405	485	H
 130	495	680	127	520	670	H
-330	305	223	320	315	223	A"></textarea>
+330	305	223	320	315	223	A
+305	350	209	330	370	197	D"></textarea>
 
 <div class="row">
-  <button id="btnRun" class="hero" onclick="start()">🚀 一鍵生成最優規則</button>
+  <button id="btnRun" class="hero" onclick="start()">🚀 一鍵生成最高利潤公式</button>
   <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
 
-  <label>🎯 目標：</label>
-  <select id="objective">
-    <option value="profit" selected>💰 總盈利</option>
-    <option value="balanced">⚖️ 平衡</option>
+  <label>🎚️ 最少樣本：</label>
+  <select id="minSamples">
+    <option value="1" selected>1 (極限暴力)</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="5">5</option>
   </select>
   <label>💵 結算：</label>
   <select id="payoutMode">
-    <option value="initial" selected>初盤 A/B/C</option>
-    <option value="final">尾盤 D/E/F</option>
+    <option value="initial">初盤 A/B/C</option>
+    <option value="final" selected>尾盤 D/E/F</option>
   </select>
-  <label>🎚️ 最少樣本：</label>
-  <select id="minSamples">
-    <option value="auto" selected>自動</option>
-    <option value="3">3</option>
-    <option value="5">5</option>
-    <option value="8">8</option>
-    <option value="10">10</option>
-    <option value="15">15</option>
-  </select>
-  <label>📏 最多規則數：</label>
+  <label>📏 最多層數：</label>
   <select id="maxRules">
     <option value="10">10</option>
-    <option value="20" selected>20</option>
+    <option value="15" selected>15</option>
+    <option value="20">20</option>
     <option value="30">30</option>
-    <option value="50">50</option>
+  </select>
+  <label>🌊 束搜索寬度：</label>
+  <select id="beamWidth">
+    <option value="10">10 (快)</option>
+    <option value="30" selected>30 (推薦)</option>
+    <option value="50">50 (慢但極致)</option>
   </select>
 </div>
 
@@ -178,9 +127,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <div id="log">等待開始...</div>
 
 <div class="stats" id="liveStats" style="display:none">
-  <div class="stat scan-stat" id="stat-scan">📊 掃描信號: -</div>
   <div class="stat pool-stat" id="stat-pool">📦 候選池: 0</div>
-  <div class="stat greedy-stat" id="stat-greedy">🎯 選中: 0</div>
+  <div class="stat greedy-stat" id="stat-greedy">🌊 束搜索: 0</div>
   <div class="stat win-stat" id="stat-win">🎲 命中率: -</div>
   <div class="stat train-stat" id="stat-train">📊 場次: -</div>
   <div class="stat total-stat" id="stat-total">💵 總盈利: -</div>
@@ -189,43 +137,31 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <div class="best" id="best">
   <div id="summary"></div>
 
-  <div class="section" id="payoutSection">
-    <h3>💰 三大押注對比（這 23 場如果無腦押，盈虧如何？）</h3>
-    <div style="font-size:11px;color:#666;margin-bottom:8px">
-      平衡線 = 100/平均賠率，代表命中率需超過多少才盈利。<b>命中率高 ≠ 賺錢，要看是否超過平衡線</b>。
-    </div>
-    <div class="payout-grid" id="payoutGrid"></div>
-  </div>
-
   <div class="result-banner">
-    <b>🎯 貪心集合覆蓋統計</b>
+    <b>🎯 路徑排列結果</b>
     <div class="result-grid">
       <div class="result-cell"><div class="num" id="rPool">-</div><div class="lbl">候選池</div></div>
-      <div class="result-cell"><div class="num" id="rPicked">-</div><div class="lbl">選中規則</div></div>
+      <div class="result-cell"><div class="num" id="rPicked">-</div><div class="lbl">啟用規則</div></div>
       <div class="result-cell"><div class="num" id="rGames">-</div><div class="lbl">參與場次</div></div>
       <div class="result-cell"><div class="num" id="rWin">-</div><div class="lbl">命中率</div></div>
     </div>
     <div id="resultInfo" style="margin-top:8px;font-size:12px"></div>
   </div>
 
-  <div class="section" id="scanSection">
-    <h3>🔍 六大變化方向分析（按盈利排序，不是命中率）</h3>
-    <div style="font-size:11px;color:#666;margin-bottom:8px">
-      每個方向逐階掃描閾值，<b>最佳門檻按「總盈利」選，不是按命中率</b>。
-    </div>
-    <div class="direction-grid" id="dirGrid"></div>
+  <div class="section">
+    <h3>🔍 前 5 名路徑（不同層數組合的利潤對比）</h3>
+    <div style="font-size:11px;color:#666;margin-bottom:8px">比較不同「層數排列」對總利潤的影響。</div>
+    <div class="path-grid" id="pathGrid"></div>
   </div>
 
-  <div class="small-data-warn" id="smallDataWarn" style="display:none"></div>
-
   <div class="check-banner">
-    <b>📌 I 列盈利公式（H2 命中則 +賠率−100，否則 −100，skip 為 0）</b>
+    <b>📌 I 列盈利公式</b>
     <div style="font-family:monospace;font-size:11px;margin-top:6px;background:#fff;padding:8px;border-radius:4px;white-space:pre-wrap">
 =IF(H2="skip",0,IF(AND(H2="H",G2="H"),A2-100,IF(AND(H2="D",G2="D"),B2-100,IF(AND(H2="A",G2="A"),C2-100,-100))))</div>
   </div>
 
   <div class="box">
-    <div class="label">🟢 H2 公式（貼到 Google Sheets H2 儲存格）</div>
+    <div class="label">🟢 H2 公式（直接貼到 Google Sheets）</div>
     <div style="font-size:11px;color:#666;margin-bottom:6px" id="charInfo"></div>
     <button class="txt" onclick="copyIt('txtOut')">📋 複製公式</button>
     <textarea id="txtOut" class="out" readonly wrap="off"></textarea>
@@ -235,7 +171,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 <div id="diag" style="display:none">
   <div class="section">
-    <h3>📋 最終規則（依執行順序，第 1 條優先匹配）</h3>
+    <h3>📋 最終規則順序（第 1 條優先匹配）</h3>
     <div class="diag" id="ruleTable"></div>
   </div>
 </div>
@@ -244,7 +180,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 'use strict';
 
 /* ============================================================
-   特徵庫（v41：變化優先）
+   特徵庫（豐富的變化與絕對值特徵）
    ============================================================ */
 var FEATURES=[
   'A-D','D-A','MA_PCT','A/D',
@@ -252,12 +188,11 @@ var FEATURES=[
   'C-F','F-C','MC_PCT','C/F',
   'MA-MC','MA-MB','MC-MB',
   'A-D-(C-F)','A-D-(B-E)','C-F-(B-E)',
-  '(A-C)-(D-F)','(B-E)-(A-D)',
-  'DirA','DirB','DirC',
-  '|A-D|','|B-E|','|C-F|',
-  'TotChange','TotAbsChange',
+  '(A-D)+(F-C)', '(C-F)+(D-A)',
   'A','B','C','D','E','F',
-  'A-C','D-F','MaxABC','MinABC','MaxDEF','MinDEF','RkABC(A)','RkDEF(D)'
+  'A-C','D-F','MaxABC','MinABC',
+  'DirA','DirB','DirC',
+  'A/C','D/F'
 ];
 var FEATURE_NAMES=[
   '主跌(A-D)','主升(D-A)','主跌幅%','主倍率(A/D)',
@@ -265,15 +200,16 @@ var FEATURE_NAMES=[
   '客跌(C-F)','客升(F-C)','客跌幅%','客倍率(C/F)',
   '主跌%-客跌%','主跌%-和跌%','客跌%-和跌%',
   '主跌-客跌','主跌-和跌','客跌-和跌',
-  '主客差變化','和跌-主跌',
-  '主方向','和方向','客方向',
-  '|主變|','|和變|','|客變|',
-  '總變化','總變動量',
+  '主跌+客升','客跌+主升',
   'A主初','B和初','C客初','D主尾','E和尾','F客尾',
-  'A-C','D-F','MaxABC','MinABC','MaxDEF','MinDEF','初盤A排名','尾盤D排名'
+  'A-C','D-F','MaxABC','MinABC',
+  '主方向','和方向','客方向',
+  'A/C','D/F'
 ];
 var FCOUNT=FEATURES.length;
-var CHANGE_END=28;
+var CHANGE_END=19;
+var ABS_START=19;
+var ABS_END=25;
 
 var OPS=['>','>=','<','<=','==','!='];
 var OPS_SHEET=['>','>=','<','<=','=','<>'];
@@ -281,16 +217,8 @@ var RESULTS=['H','D','A','skip'];
 var RESULT_CODES={H:0,D:1,A:2,skip:3};
 var RESULT_NAME=['H','D','A'];
 
-var MIN_SAMPLES=5;
-var MIN_SAMPLES_MODE='auto';
-var PAYOUT_MODE='initial';
-var OBJECTIVE='profit';
-
-function calcMinSamples(N,maxClass){
-  var base=Math.round(3+3*Math.log10(Math.max(10,N)/50));
-  var cap=Math.max(3,Math.floor(maxClass*0.4));
-  return Math.min(20,Math.max(3,Math.min(base,cap)));
-}
+var MIN_SAMPLES=1;
+var PAYOUT_MODE='final';
 
 /* ========== 全域 ========== */
 var trainFeat=null,trainResult=null,trainOdds=null;
@@ -299,13 +227,11 @@ var trainN=0;
 var running=false,startTime=0,evalCount=0;
 var logBuffer=[],logTimer=null,LOG_MAX=5000;
 var lastYieldTime=0;
-var currentPhase=0,totalPhases=4;
+var currentPhase=0,totalPhases=3;
 
-var poolSize=0,pickedCount=0,deletedCount=0,swapCount=0;
+var poolSize=0,pickedCount=0;
 var bestTotal=0,bestWinRate=0,bestGames=0;
-var scanResults=[];
-var directionAnalysis={};
-var payoutStats=null;
+var topPaths=[];
 
 var featureValueCache={};
 var condBSCache={};
@@ -350,29 +276,8 @@ function getCondBS(fi,op,v){
   return bs;
 }
 function clearCondCache(){ condBSCache={}; condBSCacheSize=0; }
-function markDirty(r){ r._ver=(r._ver||0)+1; }
-function getRuleBS(rule){
-  var ver=rule._ver||0;
-  if(!rule._bsCache) rule._bsCache={ver:-1,bs:null};
-  if(rule._bsCache.ver!==ver){ rule._bsCache.ver=ver; rule._bsCache.bs=null; }
-  if(rule._bsCache.bs) return rule._bsCache.bs;
-  var result=bsNew(trainN);
-  for(var g=0;g<rule.groups.length;g++){
-    var group=rule.groups[g];
-    if(group.length===0){ for(var i=0;i<trainN;i++) result[i>>5]|=(1<<(i&31)); continue; }
-    var gbs=null;
-    for(var c=0;c<group.length;c++){
-      var cc=getCondBS(group[c][0],group[c][1],group[c][2]);
-      if(!cc) continue;
-      gbs=gbs===null?cc:bsAnd(gbs,cc);
-    }
-    if(gbs) bsOrInPlace(result,gbs);
-  }
-  rule._bsCache.bs=result;
-  return result;
-}
 
-/* ========== 盈利 / 命中率 ========== */
+/* ========== 盈利計算 ========== */
 function profitOfBS(bs,thenCode){
   if(thenCode===3) return 0;
   var total=0;
@@ -409,36 +314,20 @@ function hitOfBS(bs,thenCode){
   }
   return {hit:hit,wins:wins};
 }
-function calcRulesProfit(rules){
-  if(trainN===0) return 0;
-  var matched=bsNew(trainN);
-  var total=0;
-  for(var r=0;r<rules.length;r++){
-    if(!rules[r].on) continue;
-    var rbs=getRuleBS(rules[r]);
-    var only=bsAndNot(rbs,matched);
-    total+=profitOfBS(only,rules[r].thenCode);
-    bsOrInPlace(matched,rbs);
-  }
-  return total;
-}
 function calcRulesStats(rules){
   var matched=bsNew(trainN);
   var games=0,wins=0,skips=0,totalProfit=0;
   var ruleStats=[];
   for(var r=0;r<rules.length;r++) ruleStats.push({hit:0,wins:0,losses:0,profit:0});
+  
   for(var i=0;i<trainN;i++){
     var pred=-1,hr=-1;
     for(var j=0;j<rules.length;j++){
       if(!rules[j].on) continue;
       var f=trainFeat[i];
       var ok=true;
-      for(var g=0;g<rules[j].groups.length&&ok;g++){
-        var grp=rules[j].groups[g];
-        for(var c=0;c<grp.length;c++){
-          if(!evalCondVal(f[grp[c][0]],grp[c][1],grp[c][2])){ ok=false; break; }
-        }
-        if(ok) break;
+      for(var c=0;c<rules[j].conds.length;c++){
+        if(!evalCondVal(f[rules[j].conds[c][0]],rules[j].conds[c][1],rules[j].conds[c][2])){ ok=false; break; }
       }
       if(ok){ pred=rules[j].thenCode; hr=j; break; }
     }
@@ -459,97 +348,6 @@ function calcRulesStats(rules){
     ruleStats:ruleStats
   };
 }
-function fitness(rules){
-  evalCount++;
-  var p=calcRulesProfit(rules);
-  if(OBJECTIVE==='profit') return p;
-  var s=calcRulesStats(rules);
-  return p + s.winRate*10;
-}
-
-function cloneRule(r){
-  var groups=[];
-  for(var g=0;g<r.groups.length;g++){
-    var gs=[];
-    for(var c=0;c<r.groups[g].length;c++){
-      var cond=r.groups[g][c];
-      gs.push([cond[0],cond[1],cond[2]]);
-    }
-    groups.push(gs);
-  }
-  return {on:r.on,then:r.then,thenCode:r.thenCode,groups:groups,_marg:r._marg,_cnt:r._cnt};
-}
-function cloneRules(rules){
-  var out=new Array(rules.length);
-  for(var i=0;i<rules.length;i++) out[i]=cloneRule(rules[i]);
-  return out;
-}
-
-/* ========== 三大押注對比計算 ========== */
-function calcPayoutStats(){
-  var stats = {
-    H: {games:0, wins:0, profit:0, totalOdds:0},
-    D: {games:0, wins:0, profit:0, totalOdds:0},
-    A: {games:0, wins:0, profit:0, totalOdds:0}
-  };
-  for(var i=0;i<trainN;i++){
-    var actual = trainResult[i];
-    if(actual===3) continue;
-    var oddsH = trainOdds[i*3+0];
-    stats.H.games++; stats.H.totalOdds += oddsH;
-    if(actual===0){ stats.H.wins++; stats.H.profit += oddsH-100; }
-    else { stats.H.profit -= 100; }
-    var oddsD = trainOdds[i*3+1];
-    stats.D.games++; stats.D.totalOdds += oddsD;
-    if(actual===1){ stats.D.wins++; stats.D.profit += oddsD-100; }
-    else { stats.D.profit -= 100; }
-    var oddsA = trainOdds[i*3+2];
-    stats.A.games++; stats.A.totalOdds += oddsA;
-    if(actual===2){ stats.A.wins++; stats.A.profit += oddsA-100; }
-    else { stats.A.profit -= 100; }
-  }
-  ['H','D','A'].forEach(function(k){
-    var s = stats[k];
-    s.avgOdds = s.games>0 ? s.totalOdds/s.games : 0;
-    s.winRate = s.games>0 ? s.wins/s.games*100 : 0;
-    s.breakEven = s.avgOdds>0 ? 100/s.avgOdds*100 : 0;
-    s.edge = s.winRate - s.breakEven;
-  });
-  return stats;
-}
-
-function renderPayoutComparison(stats){
-  var html = '';
-  ['H','D','A'].forEach(function(k){
-    var s = stats[k];
-    var cardClass = 'payout-card';
-    var tagClass = 'tag';
-    var tagText = '';
-    var recommend = '';
-    if(s.profit>0 && s.edge>0){
-      cardClass += ' win'; tagClass += ' tag-win'; tagText = '✅ 盈利';
-      recommend = '<span class="recommend">✅ 推薦押注</span>';
-    } else if(s.profit<0 && s.edge<0){
-      cardClass += ' lose'; tagClass += ' tag-lose'; tagText = '❌ 虧損';
-      recommend = '<span class="recommend bad">❌ 不推薦</span>';
-    } else {
-      cardClass += ' neutral'; tagClass += ' tag-neutral'; tagText = '⚠️ 觀察';
-      recommend = '<span class="recommend warn">⚠️ 邊際</span>';
-    }
-    var titleMap = {H:'押主勝 H', D:'押和局 D', A:'押客勝 A'};
-    html += '<div class="'+cardClass+'">'+
-      '<div class="payout-title"><span>'+titleMap[k]+'</span><span class="'+tagClass+'">'+tagText+'</span></div>'+
-      '<div class="payout-row"><span class="label">命中率</span><span class="payout-val">'+s.winRate.toFixed(1)+'%</span></div>'+
-      '<div class="payout-row"><span class="label">平衡線（需超過）</span><span class="payout-val">'+s.breakEven.toFixed(1)+'%</span></div>'+
-      '<div class="payout-row"><span class="label">超額（命中−平衡）</span><span class="payout-val '+(s.edge>=0?'edge-pos':'edge-neg')+'">'+(s.edge>=0?'+':'')+s.edge.toFixed(1)+'%</span></div>'+
-      '<div class="payout-row"><span class="label">平均賠率</span><span class="payout-val">'+s.avgOdds.toFixed(0)+'</span></div>'+
-      '<div class="payout-row"><span class="label">命中場次</span><span class="payout-val">'+s.wins+'/'+s.games+'</span></div>'+
-      '<div class="payout-row" style="border-top:2px solid #e5e7eb;margin-top:6px;padding-top:8px"><span class="label" style="font-weight:bold">總盈利</span><span class="payout-val '+(s.profit>=0?'profit-pos':'profit-neg')+'" style="font-size:18px">'+(s.profit>=0?'+':'')+s.profit+'</span></div>'+
-      '<div class="payout-recommend">'+recommend+'</div>'+
-    '</div>';
-  });
-  document.getElementById('payoutGrid').innerHTML = html;
-}
 
 /* ========== 閾值生成 ========== */
 function getThresholds(fi){
@@ -566,7 +364,8 @@ function getThresholds(fi){
     if(!seen[key]){ seen[key]=1; ths.push(v); }
   }
   var fn=FEATURES[fi];
-  var isChangeAmount = (fn.indexOf('-')>=0 || fn.indexOf('|')===0 || fn==='TotChange' || fn==='TotAbsChange');
+  
+  var isChangeAmount = (fn.indexOf('-')>=0 || fn.indexOf('+')>=0);
   if(isChangeAmount){
     var grid=[-300,-200,-150,-100,-75,-50,-40,-30,-20,-15,-12,-10,-8,-6,-5,-4,-3,-2,-1,
               0,1,2,3,4,5,6,8,10,12,15,20,30,40,50,75,100,150,200,300];
@@ -583,12 +382,19 @@ function getThresholds(fi){
       if(!seen[pk]){ seen[pk]=1; ths.push(pgrid[pg]); }
     }
   }
-  var isRatio = (fn==='A/D'||fn==='B/E'||fn==='C/F');
+  var isRatio = (fn==='A/D'||fn==='B/E'||fn==='C/F'||fn==='A/C'||fn==='D/F');
   if(isRatio){
-    var rgrid=[0.5,0.6,0.7,0.75,0.8,0.85,0.9,0.95,0.97,0.98,0.99,1,1.01,1.02,1.03,1.05,1.1,1.15,1.2,1.25,1.3,1.4,1.5,1.75,2];
+    var rgrid=[0.5,0.6,0.7,0.75,0.8,0.85,0.9,0.95,0.97,0.98,0.99,1,1.01,1.02,1.03,1.05,1.1,1.15,1.2,1.25,1.3,1.4,1.5,1.75,2,3,5,10];
     for(var rg=0;rg<rgrid.length;rg++){
       var rk=Math.round(rgrid[rg]*10000);
       if(!seen[rk]){ seen[rk]=1; ths.push(rgrid[rg]); }
+    }
+  }
+  if(fn==='A'||fn==='B'||fn==='C'||fn==='D'||fn==='E'||fn==='F'){
+    var absGrid=[150,200,250,300,400,500,600,700,800,900,1000,1200,1500];
+    for(var ag=0;ag<absGrid.length;ag++){
+      var ak=Math.round(absGrid[ag]*10000);
+      if(!seen[ak]){ seen[ak]=1; ths.push(absGrid[ag]); }
     }
   }
   if(fn==='DirA'||fn==='DirB'||fn==='DirC'){ ths=[-1,0,1]; }
@@ -597,195 +403,77 @@ function getThresholds(fi){
 }
 
 /* ============================================================
-   階段 1：六大方向掃描（按盈利選最佳）
+   階段 1：生成極大候選池
    ============================================================ */
-var DIRECTION_DEFS=[
-  {id:'A_DOWN', icon:'🟢', title:'主賠下跌（A→D）', fi:0, op:0, thenCode:0,
-   desc:'主賠下跌代表主隊被看好 → 押 H（但要賠率夠高）'},
-  {id:'A_UP', icon:'🔴', title:'主賠上漲（A→D）', fi:1, op:0, thenCode:2,
-   desc:'主賠上漲代表主隊被看淡 → 押 A（客勝賠率高，適合）'},
-  {id:'B_DOWN', icon:'🟡', title:'和賠下跌（B→E）', fi:4, op:0, thenCode:1,
-   desc:'和賠下跌代表和局被看好 → 押 D'},
-  {id:'B_UP', icon:'🟠', title:'和賠上漲（B→E）', fi:5, op:0, thenCode:2,
-   desc:'和賠上漲代表和局不被看好 → 押主或客'},
-  {id:'C_DOWN', icon:'🟢', title:'客賠下跌（C→F）', fi:8, op:0, thenCode:2,
-   desc:'客賠下跌代表客隊被看好 → 押 A（有機會）'},
-  {id:'C_UP', icon:'🔴', title:'客賠上漲（C→F）', fi:9, op:0, thenCode:0,
-   desc:'客賠上漲代表客隊被看淡 → 押 H'}
-];
-
-async function scanDirections(){
-  pushLog(nowTime()+' 🔍 六大方向掃描（按盈利選擇）...','scan');
-  var result={};
-  for(var d=0;d<DIRECTION_DEFS.length;d++){
-    var def=DIRECTION_DEFS[d];
-    var fi=def.fi;
-    var fn=FEATURES[fi];
-    var ladder;
-    if(fn==='A-D'||fn==='D-A'||fn==='B-E'||fn==='E-B'||fn==='C-F'||fn==='F-C'){
-      ladder=[5,10,15,20,25,30,40,50,75,100,150];
-    } else {
-      ladder=[5,10,15,20,25,30,40,50,75,100];
-    }
-    var rows=[];
-    var baseCnt=0;
-    for(var bi=0;bi<trainN;bi++) if(trainResult[bi]===def.thenCode) baseCnt++;
-    var baselineRate = trainN>0?baseCnt/trainN*100:0;
-    // 平均賠率（該 thenCode）
-    var sumOdds=0,cntOdds=0;
-    for(var oi=0;oi<trainN;oi++){
-      if(trainResult[oi]!==3){
-        sumOdds += trainOdds[oi*3+def.thenCode];
-        cntOdds++;
-      }
-    }
-    var avgOdds = cntOdds>0 ? sumOdds/cntOdds : 0;
-    var breakEven = avgOdds>0 ? 100/avgOdds*100 : 100;
-
-    var bestRow=null;
-    for(var li=0;li<ladder.length;li++){
-      var thr=ladder[li];
-      var bs=getCondBS(fi,def.op,thr);
-      var cnt=bsCount(bs);
-      if(cnt<MIN_SAMPLES) continue;
-      var h=hitOfBS(bs,def.thenCode);
-      var wr=cnt>0?(h.wins/cnt*100):0;
-      var prof=profitOfBS(bs,def.thenCode);
-      var row={thr:thr,cnt:cnt,wins:h.wins,winRate:wr,profit:prof};
-      rows.push(row);
-      // ★ 按盈利選最佳，不是命中率
-      if(prof>0 && (!bestRow || prof > bestRow.profit)) bestRow=row;
-    }
-    result[def.id]={
-      def:def,
-      rows:rows,
-      baseline:baselineRate,
-      avgOdds:avgOdds,
-      breakEven:breakEven,
-      bestRow:bestRow
-    };
-    pushLog(nowTime()+'   '+def.icon+' '+def.title+'：'+
-            (bestRow?'最佳 ≥'+bestRow.thr+' → +'+bestRow.profit+'（'+bestRow.wins+'/'+bestRow.cnt+'）':'無盈利信號'),'scan');
-    if(shouldYield()) await yieldUI();
-  }
-  return result;
-}
-
-/* ============================================================
-   階段 1b：全部變化特徵掃描
-   ============================================================ */
-async function scanAllChanges(){
-  pushLog(nowTime()+' 📊 全部變化特徵掃描...','scan');
-  var results=[];
-  for(var fi=0;fi<CHANGE_END;fi++){
+async function generatePool(){
+  pushLog(nowTime()+' 📦 生成極限候選池...','scan');
+  var pool=[];
+  var rawCandidates=[];
+  
+  // 1. 遍歷所有特徵與閾值
+  for(var fi=0;fi<FCOUNT;fi++){
     var ths=getThresholds(fi);
-    var best=null;
     for(var op=0;op<4;op++){
       for(var k=0;k<ths.length;k++){
         var thr=ths[k];
         var bs=getCondBS(fi,op,thr);
         var cnt=bsCount(bs);
-        if(cnt<MIN_SAMPLES||cnt>trainN*0.85) continue;
-        var bestTc=-1,bestP=0,bestWins=0;
+        if(cnt<MIN_SAMPLES) continue;
+        
+        // 找最佳 thenCode
+        var bestTc=-1, bestP=-99999;
         for(var tc=0;tc<3;tc++){
           var p=profitOfBS(bs,tc);
-          if(p>bestP){
-            bestP=p; bestTc=tc;
-            var h=hitOfBS(bs,tc);
-            bestWins=h.wins;
-          }
+          if(p>bestP){ bestP=p; bestTc=tc; }
         }
-        if(bestTc<0||bestP<=0) continue;
-        var wr=cnt>0?(bestWins/cnt*100):0;
-        if(!best||bestP>best.profit){
-          best={fi:fi,op:op,thr:thr,cnt:cnt,thenCode:bestTc,profit:bestP,wins:bestWins,winRate:wr};
+        if(bestP>0){
+          rawCandidates.push({
+            conds:[[fi,op,thr]],
+            bs:bs,
+            thenCode:bestTc,
+            profit:bestP,
+            cnt:cnt
+          });
         }
       }
     }
-    if(best) results.push(best);
-    if(fi%8===0&&shouldYield()) await yieldUI();
   }
-  results.sort(function(a,b){ return b.profit-a.profit; });
-  pushLog(nowTime()+'   變化特徵盈利信號：'+results.length+' 個','scan');
-  return results;
-}
+  
+  // 按利潤排序，保留前 150 個單條件
+  rawCandidates.sort(function(a,b){ return b.profit-a.profit; });
+  var topSingles = rawCandidates.slice(0, 150);
+  pool = pool.concat(topSingles);
+  pushLog(nowTime()+'   單條件：'+topSingles.length+' 條','scan');
 
-/* ============================================================
-   階段 2：候選池
-   ============================================================ */
-async function generatePool(scanRes){
-  pushLog(nowTime()+' 📦 生成候選池...','pool');
-  var pool=[];
-  var top=scanRes.slice(0,50);
-  for(var i=0;i<top.length;i++){
-    var s=top[i];
-    if(s.fi>=CHANGE_END) continue;
-    var bs=getCondBS(s.fi,s.op,s.thr);
-    pool.push({conds:[[s.fi,s.op,s.thr]],bs:bs,thenCode:s.thenCode,profit:s.profit,cnt:s.cnt});
-  }
-  pushLog(nowTime()+'   單變化條件：'+pool.length+' 條','pool');
-
-  var doubles=[];
-  var changes=top.filter(function(s){ return s.fi<CHANGE_END; });
-  var lim=Math.min(changes.length,40);
-  for(var i=0;i<lim;i++){
-    for(var j=i+1;j<lim;j++){
-      if(changes[i].fi===changes[j].fi) continue;
-      var cbs=bsAnd(changes[i].bs,changes[j].bs);
-      var cnt=bsCount(cbs);
-      if(cnt<MIN_SAMPLES||cnt>trainN*0.6) continue;
-      var bestTc=-1,bestP=0;
-      for(var tc=0;tc<3;tc++){
-        var p=profitOfBS(cbs,tc);
-        if(p>bestP){ bestP=p; bestTc=tc; }
+  // 2. 兩兩組合（只組合前 60 個，防止爆炸）
+  var limit = Math.min(topSingles.length, 60);
+  var doubles = [];
+  for(var i=0;i<limit;i++){
+    for(var j=i+1;j<limit;j++){
+      if(topSingles[i].conds[0][0] === topSingles[j].conds[0][0]) continue;
+      var cbs = bsAnd(topSingles[i].bs, topSingles[j].bs);
+      var cnt2 = bsCount(cbs);
+      if(cnt2 < MIN_SAMPLES) continue;
+      
+      var bestTc2=-1, bestP2=-99999;
+      for(var tc2=0;tc2<3;tc2++){
+        var p2 = profitOfBS(cbs,tc2);
+        if(p2>bestP2){ bestP2=p2; bestTc2=tc2; }
       }
-      if(bestTc<0||bestP<=0) continue;
-      doubles.push({
-        conds:[changes[i].conds[0],changes[j].conds[0]],
-        bs:cbs,thenCode:bestTc,profit:bestP,cnt:cnt
-      });
+      if(bestP2>0){
+        doubles.push({
+          conds:[topSingles[i].conds[0], topSingles[j].conds[0]],
+          bs:cbs, thenCode:bestTc2, profit:bestP2, cnt:cnt2
+        });
+      }
     }
-    if(i%8===0&&shouldYield()) await yieldUI();
   }
-  pushLog(nowTime()+'   雙變化條件：'+doubles.length+' 條','pool');
   doubles.sort(function(a,b){ return b.profit-a.profit; });
-  pool=pool.concat(doubles.slice(0,250));
+  pool = pool.concat(doubles.slice(0, 150));
+  pushLog(nowTime()+'   雙條件：'+doubles.length+' 條','scan');
 
-  var mixed=[];
-  for(var i=0;i<Math.min(changes.length,25);i++){
-    for(var oi=0;oi<FCOUNT;oi++){
-      if(oi<CHANGE_END) continue;
-      var ths2=getThresholds(oi);
-      for(var oi2=0;oi2<ths2.length;oi2+=2){
-        var thr2=ths2[oi2];
-        for(var op2=0;op2<2;op2++){
-          var auxBS=getCondBS(oi,op2,thr2);
-          var auxCnt=bsCount(auxBS);
-          if(auxCnt<MIN_SAMPLES||auxCnt>trainN*0.9) continue;
-          var combBS=bsAnd(changes[i].bs,auxBS);
-          var combCnt=bsCount(combBS);
-          if(combCnt<MIN_SAMPLES||combCnt>trainN*0.4) continue;
-          var bestTc3=-1,bestP3=0;
-          for(var tc3=0;tc3<3;tc3++){
-            var p3=profitOfBS(combBS,tc3);
-            if(p3>bestP3){ bestP3=p3; bestTc3=tc3; }
-          }
-          if(bestTc3>=0&&bestP3>0){
-            mixed.push({
-              conds:[changes[i].conds[0],[oi,op2,thr2]],
-              bs:combBS,thenCode:bestTc3,profit:bestP3,cnt:combCnt
-            });
-          }
-        }
-      }
-    }
-    if(i%5===0&&shouldYield()) await yieldUI();
-  }
-  pushLog(nowTime()+'   混合條件：'+mixed.length+' 條','pool');
-  mixed.sort(function(a,b){ return b.profit-a.profit; });
-  pool=pool.concat(mixed.slice(0,200));
-
-  var seen={},unique=[];
+  // 去重
+  var seen={}, unique=[];
   for(var u=0;u<pool.length;u++){
     var cs=pool[u].conds.slice().sort(function(a,b){ return a[0]-b[0]; });
     var key='';
@@ -795,115 +483,177 @@ async function generatePool(scanRes){
     seen[key]=1;
     unique.push(pool[u]);
   }
-  pushLog(nowTime()+' ✅ 候選池：'+unique.length+' 條','pool');
+  pushLog(nowTime()+' ✅ 候選池總計：'+unique.length+' 條','scan');
   return unique;
 }
 
 /* ============================================================
-   階段 3：貪心選擇
+   階段 2：束搜索 (Beam Search) 尋找最優路徑
    ============================================================ */
-async function greedySelect(pool,maxRules){
-  pushLog(nowTime()+' 🎯 貪心選擇...','greedy');
-  var rules=[];
-  var matched=bsNew(trainN);
-  for(var step=0;step<maxRules;step++){
-    if(!running) break;
-    var best=null,bestMarg=0;
-    for(var i=0;i<pool.length;i++){
-      var c=pool[i];
-      var only=bsAndNot(c.bs,matched);
-      var cnt=bsCount(only);
-      if(cnt<MIN_SAMPLES) continue;
-      var marg=profitOfBS(only,c.thenCode);
-      if(marg>bestMarg){ bestMarg=marg; best={cand:c,cnt:cnt}; }
-    }
-    if(!best) break;
-    var nr={
-      on:1,then:RESULTS[best.cand.thenCode],thenCode:best.cand.thenCode,
-      groups:[best.cand.conds.map(function(c){ return [c[0],c[1],c[2]]; })],
-      _marg:bestMarg,_cnt:best.cnt
+async function beamSearch(pool, maxRules, beamWidth) {
+  pushLog(nowTime()+' 🌊 開始束搜索（寬度 '+beamWidth+'，最多 '+maxRules+' 層）...','scan');
+  
+  // 路徑狀態：{ rules: [], matched: 位圖, profit: number }
+  var beams = [{ rules: [], matched: bsNew(trainN), profit: 0 }];
+  
+  // 為了加速，預先計算好每條規則的 bs
+  var poolRules = pool.map(function(c){
+    return {
+      on: 1, then: RESULTS[c.thenCode], thenCode: c.thenCode,
+      conds: c.conds, bs: c.bs, profit: c.profit
     };
-    rules.push(nr);
-    bsOrInPlace(matched,best.cand.bs);
-    pickedCount++;
-    pushLog(nowTime()+'   第 '+(step+1)+' 條：'+fmtRule(nr)+'（邊際 +'+bestMarg+'）','greedy');
+  });
+
+  for(var step=0; step<maxRules; step++){
+    if(!running) break;
+    var nextBeams = [];
+    
+    for(var b=0; b<beams.length; b++){
+      var beam = beams[b];
+      var usedConds = {};
+      for(var r=0; r<beam.rules.length; r++){
+        // 避免重複添加完全一樣的規則（簡單防護）
+        usedConds[beam.rules[r].conds[0][0]+'_'+beam.rules[r].thenCode] = true;
+      }
+      
+      // 嘗試將池中每一條規則作為「下一層」
+      for(var p=0; p<poolRules.length; p++){
+        var cand = poolRules[p];
+        // 快速跳過：如果這條規則在當前未覆蓋的樣本上完全沒有正利潤，就不加
+        // (但為了防止前面攔截導致後面虧錢，這裡還是算精確的邊際利潤)
+        var only = bsAndNot(cand.bs, beam.matched);
+        var cnt = bsCount(only);
+        if(cnt < 1) continue; // 完全被覆蓋的不要
+        
+        var marg = profitOfBS(only, cand.thenCode);
+        // 我們允許加入微虧的規則嗎？為了防止干擾，這裡只取邊際 > 0 的
+        // 其實在首次匹配中，前面的規則不能虧，否則總利潤必降
+        if(marg <= 0) continue; 
+        
+        var newMatched = new Uint32Array(beam.matched);
+        bsOrInPlace(newMatched, cand.bs);
+        
+        nextBeams.push({
+          rules: beam.rules.concat([cand]),
+          matched: newMatched,
+          profit: beam.profit + marg
+        });
+      }
+    }
+    
+    if(nextBeams.length === 0) break;
+    
+    // 排序並保留 top K
+    nextBeams.sort(function(a,b){ return b.profit - a.profit; });
+    beams = nextBeams.slice(0, beamWidth);
+    
+    pushLog(nowTime()+'   第 '+(step+1)+' 層：擴展了 '+nextBeams.length+' 條路徑，保留前 '+beams.length+' 名（最高利潤 '+beams[0].profit+'）','scan');
     if(shouldYield()) await yieldUI();
   }
-  return rules;
+  
+  // 取結果最好的 beam
+  beams.sort(function(a,b){ return b.profit - a.profit; });
+  return beams;
 }
 
 /* ============================================================
-   階段 4：局部搜索
+   階段 3：局部交換優化 (2-opt)
+   如果兩條規則互換位置能帶來更高利潤，就交換！
    ============================================================ */
-async function localSearch(rules,maxIter){
-  pushLog(nowTime()+' 🔍 局部搜索...','local');
-  var cur=cloneRules(rules);
-  if(cur.length===0) return cur;
-  var curFit=fitness(cur);
-  for(var iter=0;iter<maxIter;iter++){
-    if(!running) break;
-    var improved=false;
-    for(var i=0;i<cur.length;i++){
-      if(!cur[i].on) continue;
-      cur[i].on=0; markDirty(cur[i]);
-      var f=fitness(cur);
-      if(f>curFit){ curFit=f; improved=true; deletedCount++;
-        pushLog(nowTime()+'   🗑 刪除 R'+(i+1),'local');
-      } else { cur[i].on=1; markDirty(cur[i]); }
-      if(shouldYield()) await yieldUI();
+async function optimizeOrder(rules) {
+  pushLog(nowTime()+' 🔄 局部順序交換優化 (2-opt)...','scan');
+  var curRules = rules.slice();
+  var curStats = calcRulesStats(curRules);
+  var curProfit = curStats.totalProfit;
+  var improved = true;
+  var iter = 0;
+  
+  while(improved && iter < 20) {
+    improved = false;
+    iter++;
+    for(var i=0; i<curRules.length-1; i++){
+      for(var j=i+1; j<curRules.length; j++){
+        // 交換 i 和 j
+        var temp = curRules[i];
+        curRules[i] = curRules[j];
+        curRules[j] = temp;
+        
+        var testStats = calcRulesStats(curRules);
+        if(testStats.totalProfit > curProfit) {
+          // 交換成功，保留！
+          curProfit = testStats.totalProfit;
+          curStats = testStats;
+          improved = true;
+          pushLog(nowTime()+'     交換 R'+(i+1)+' ↔ R'+(j+1)+' → 利潤提升至 '+curProfit,'scan');
+        } else {
+          // 換回來
+          var temp2 = curRules[i];
+          curRules[i] = curRules[j];
+          curRules[j] = temp2;
+        }
+        if(shouldYield()) await yieldUI();
+      }
     }
-    for(var j=0;j<cur.length-1;j++){
-      if(!cur[j].on||!cur[j+1].on) continue;
-      var tmp=cur[j]; cur[j]=cur[j+1]; cur[j+1]=tmp;
-      var f2=fitness(cur);
-      if(f2>curFit){ curFit=f2; improved=true; swapCount++;
-        pushLog(nowTime()+'   🔄 交換 '+(j+1)+'↔'+(j+2),'local');
-      } else { var t2=cur[j]; cur[j]=cur[j+1]; cur[j+1]=t2; }
-      if(shouldYield()) await yieldUI();
-    }
-    if(!improved) break;
   }
-  return cur;
+  
+  pushLog(nowTime()+' ✅ 2-opt 完成，最終利潤：'+curProfit,'scan');
+  return curRules;
 }
 
 /* ============================================================
-   格式化
+   格式化與輸出
    ============================================================ */
 function fmtCond(c){
   return FEATURE_NAMES[c[0]]+OPS[c[1]]+(Math.round(c[2]*100)/100);
 }
 function fmtRule(r){
-  if(!r.groups||r.groups.length===0) return '(空)';
-  var parts=[];
-  for(var g=0;g<r.groups.length;g++) parts.push(r.groups[g].map(fmtCond).join(' & '));
-  return parts.join(' | ')+' → '+r.then;
+  if(!r.conds || r.conds.length===0) return '(空)';
+  return r.conds.map(fmtCond).join(' & ')+' → '+r.then;
 }
-function renderRuleTable(rules,stats){
-  var html='<table><thead><tr><th>順序</th><th>條件</th><th>→</th><th>邊際</th><th>命中</th><th>贏</th><th>輸</th><th>命中率</th><th>盈利</th></tr></thead><tbody>';
+function renderRuleTable(rules, stats){
+  var html='<table><thead><tr><th>順序</th><th>條件</th><th>→</th><th>命中</th><th>贏</th><th>輸</th><th>命中率</th><th>盈利</th></tr></thead><tbody>';
   for(var i=0;i<rules.length;i++){
     var r=rules[i];
-    if(!r.on) continue;
     var rs=stats.ruleStats[i];
     var ss=fmtRule(r);
     if(ss.length>110) ss=ss.slice(0,107)+'...';
     var pcls=rs.profit>0?'profit-pos':(rs.profit<0?'profit-neg':'');
     var thenClass=r.thenCode===0?'tag-h':(r.thenCode===1?'tag-d':(r.thenCode===2?'tag-a':''));
     var thenTag='<span class="'+thenClass+'">'+r.then+'</span>';
-    var marg=r._marg!==undefined?('+'+r._marg):'-';
     var wr=rs.hit>0?(rs.wins/rs.hit*100).toFixed(1)+'%':'-';
-    html+='<tr><td>第 '+(i+1)+'</td>'+
-      '<td style="text-align:left;font-size:10px">'+ss+'</td><td>'+thenTag+'</td>'+
-      '<td>'+marg+'</td><td>'+rs.hit+'</td><td>'+rs.wins+'</td><td>'+rs.losses+'</td>'+
-      '<td style="color:#7c3aed;font-weight:bold">'+wr+'</td>'+
-      '<td class="'+pcls+'">'+rs.profit+'</td></tr>';
+    
+    // 墊底 skip 顯示
+    if(i === rules.length-1 && r.then === 'skip') {
+      html+='<tr><td>墊底</td><td style="text-align:left;color:#666">其餘全部</td><td><span class="tag-d">skip</span></td><td>'+stats.skips+'</td><td>-</td><td>-</td><td>-</td><td>0</td></tr>';
+    } else {
+      html+='<tr><td>第 '+(i+1)+'</td>'+
+        '<td style="text-align:left;font-size:10px">'+ss+'</td><td>'+thenTag+'</td>'+
+        '<td>'+rs.hit+'</td><td>'+rs.wins+'</td><td>'+rs.losses+'</td>'+
+        '<td style="color:#7c3aed;font-weight:bold">'+wr+'</td>'+
+        '<td class="'+pcls+'">'+rs.profit+'</td></tr>';
+    }
   }
   html+='</tbody></table>';
   document.getElementById('ruleTable').innerHTML=html;
 }
 
-/* ============================================================
-   公式生成
-   ============================================================ */
+function renderTopPaths(paths){
+  var html='';
+  for(var i=0; i<Math.min(paths.length, 5); i++){
+    var p = paths[i];
+    var stats = calcRulesStats(p.rules);
+    html += '<div class="path-card">'+
+      '<div class="path-header"><span>路徑 #'+(i+1)+'</span> <span class="path-profit">+'+stats.totalProfit+'</span></div>';
+    for(var j=0; j<p.rules.length; j++){
+      var r = p.rules[j];
+      html += '<div class="path-rule">L'+(j+1)+': '+fmtRule(r)+'</div>';
+    }
+    html += '</div>';
+  }
+  document.getElementById('pathGrid').innerHTML = html;
+}
+
+/* ========== 公式生成 ========== */
 function featToExpr(fi){
   var A='A2:A',B='B2:B',C='C2:C',D='D2:D',E='E2:E',F='F2:F';
   var fn=FEATURES[fi];
@@ -928,24 +678,17 @@ function featToExpr(fi){
     case 'A-D-(C-F)':return '(('+A+'-'+D+')-('+C+'-'+F+'))';
     case 'A-D-(B-E)':return '(('+A+'-'+D+')-('+B+'-'+E+'))';
     case 'C-F-(B-E)':return '(('+C+'-'+F+')-('+B+'-'+E+'))';
-    case '(A-C)-(D-F)':return '(('+A+'-'+C+')-('+D+'-'+F+'))';
-    case '(B-E)-(A-D)':return '(('+B+'-'+E+')-('+A+'-'+D+'))';
-    case 'DirA':return 'IF('+D+'<'+A+',1,IF('+D+'>'+A+',-1,0))';
-    case 'DirB':return 'IF('+E+'<'+B+',1,IF('+E+'>'+B+',-1,0))';
-    case 'DirC':return 'IF('+F+'<'+C+',1,IF('+F+'>'+C+',-1,0))';
-    case '|A-D|':return 'ABS('+A+'-'+D+')';
-    case '|B-E|':return 'ABS('+B+'-'+E+')';
-    case '|C-F|':return 'ABS('+C+'-'+F+')';
-    case 'TotChange':return '(('+A+'+'+B+'+'+C+')-('+D+'+'+E+'+'+F+'))';
-    case 'TotAbsChange':return '(ABS('+A+'-'+D+')+ABS('+B+'-'+E+')+ABS('+C+'-'+F+'))';
+    case '(A-D)+(F-C)':return '(('+A+'-'+D+')+('+F+'-'+C+'))';
+    case '(C-F)+(D-A)':return '(('+C+'-'+F+')+('+D+'-'+A+'))';
     case 'A-C':return '('+A+'-'+C+')';
     case 'D-F':return '('+D+'-'+F+')';
     case 'MaxABC':return 'MAX('+A+','+B+','+C+')';
     case 'MinABC':return 'MIN('+A+','+B+','+C+')';
-    case 'MaxDEF':return 'MAX('+D+','+E+','+F+')';
-    case 'MinDEF':return 'MIN('+D+','+E+','+F+')';
-    case 'RkABC(A)':return '((('+A+'>'+B+')+('+A+'>'+C+'))+1)';
-    case 'RkDEF(D)':return '((('+D+'>'+E+')+('+D+'>'+F+'))+1)';
+    case 'DirA':return 'IF('+D+'<'+A+',1,IF('+D+'>'+A+',-1,0))';
+    case 'DirB':return 'IF('+E+'<'+B+',1,IF('+E+'>'+B+',-1,0))';
+    case 'DirC':return 'IF('+F+'<'+C+',1,IF('+F+'>'+C+',-1,0))';
+    case 'A/C':return 'IF('+C+'=0,0,'+A+'/'+C+')';
+    case 'D/F':return 'IF('+F+'=0,0,'+D+'/'+F+')';
     default:return '0';
   }
 }
@@ -956,84 +699,21 @@ function buildCondSheet(c){
   return '('+expr+op+v+')';
 }
 function buildRuleSheet(r){
-  if(!r.groups.length) return 'FALSE';
-  var parts=[];
-  for(var g=0;g<r.groups.length;g++) parts.push(r.groups[g].map(buildCondSheet).join('*'));
-  return parts.length===1?parts[0]:'('+parts.map(function(p){return '('+p+')';}).join('+')+')';
+  if(!r.conds.length) return 'FALSE';
+  return r.conds.map(buildCondSheet).join('*');
 }
 function genFormula(rules){
-  var active=[];
-  for(var i=0;i<rules.length;i++) if(rules[i].on) active.push(rules[i]);
-  if(!active.length) return '=ARRAYFORMULA(IF(A2:A="","","skip"))';
   var body='';
-  for(var i=0;i<active.length;i++){
-    body+='IF('+buildRuleSheet(active[i])+',"'+active[i].then+'",';
+  for(var i=0;i<rules.length;i++){
+    if(rules[i].then === 'skip') continue;
+    body+='IF('+buildRuleSheet(rules[i])+',"'+rules[i].then+'",';
   }
   body+='"skip"';
-  for(var j=0;j<active.length;j++) body+=')';
+  for(var j=0;j<rules.length-1;j++) body+=')'; // 最後一條是 skip，所以少一個括號
   return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",'+body+'))';
 }
 
-/* ============================================================
-   方向卡片渲染（盈利優先）
-   ============================================================ */
-function renderDirectionCards(dirAnalysis){
-  var html='';
-  for(var d=0;d<DIRECTION_DEFS.length;d++){
-    var def=DIRECTION_DEFS[d];
-    var data=dirAnalysis[def.id];
-    if(!data||data.rows.length===0){
-      html+='<div class="dir-card cold"><div class="dir-header"><span><span class="icon">'+def.icon+'</span>'+def.title+'</span><span class="badge badge-cold">無數據</span></div></div>';
-      continue;
-    }
-    var rows=data.rows;
-    var best=data.bestRow;
-    var baseline=data.baseline;
-    var breakEven=data.breakEven;
-    var cardClass='dir-card';
-    var badgeClass='badge-cold';
-    var badgeText='無盈利信號';
-    if(best){
-      if(best.profit>=800){ cardClass+=' hot2'; badgeClass='badge-strong'; badgeText='⭐⭐ 極強盈利'; }
-      else if(best.profit>=400){ cardClass+=' hot'; badgeClass='badge-hot'; badgeText='⭐ 強盈利'; }
-      else if(best.profit>=100){ cardClass+=' hot'; badgeClass='badge-hot'; badgeText='✨ 有盈利'; }
-      else { badgeClass='badge-cold'; badgeText='微弱'; }
-    }
-    html+='<div class="'+cardClass+'">';
-    html+='<div class="dir-header"><span><span class="icon">'+def.icon+'</span>'+def.title+'</span><span class="badge '+badgeClass+'">'+badgeText+'</span></div>';
-    html+='<div style="font-size:10px;color:#888;margin-bottom:6px">'+def.desc+'</div>';
-    html+='<div style="display:flex;justify-content:space-between;font-size:9px;color:#9ca3af;padding:2px 8px;font-weight:bold"><span>閾值</span><span>命中率</span><span>盈利</span><span>樣本</span></div>';
-    // 每行展示：阈值 | 命中率 | 盈利 | 樣本
-    var sorted=rows.slice().sort(function(a,b){ return a.thr-b.thr; });
-    for(var i=0;i<sorted.length;i++){
-      var row=sorted[i];
-      var rowClass='dir-row';
-      var rateClass='dir-rate';
-      var profitClass = row.profit>0?'profit-pos':'profit-neg';
-      if(best&&row.thr===best.thr){ rowClass+=' thr-best'; rateClass+=' awesome'; }
-      else if(row.winRate>=breakEven+15){ rowClass+=' thr-strong'; rateClass+=' great'; }
-      else if(row.winRate>=breakEven+5){ rateClass+=' good'; }
-      html+='<div class="'+rowClass+'">'+
-        '<span class="dir-thr">≥ '+row.thr+'</span>'+
-        '<span class="'+rateClass+'">'+row.winRate.toFixed(1)+'%</span>'+
-        '<span class="dir-profit '+profitClass+'">'+(row.profit>=0?'+':'')+row.profit+'</span>'+
-        '<span class="dir-cnt">'+row.wins+'/'+row.cnt+'</span>'+
-        '</div>';
-    }
-    html+='<div class="dir-summary">平均賠率 '+data.avgOdds.toFixed(0)+'　平衡線 '+breakEven.toFixed(1)+'%　總 '+rows.length+' 階</div>';
-    if(best){
-      html+='<div class="best-pick'+(best.profit>=800?' strong':'')+'">'+
-        '💰 最佳：≥'+best.thr+' → 淨盈利 <b>+'+best.profit+'</b>（'+best.wins+'/'+best.cnt+' = '+best.winRate.toFixed(1)+'%）'+
-        '</div>';
-    }
-    html+='</div>';
-  }
-  document.getElementById('dirGrid').innerHTML=html;
-}
-
-/* ============================================================
-   UI
-   ============================================================ */
+/* ========== UI ========== */
 function nowTime(){
   if(!startTime) return '[00:00.000]';
   var ms=Date.now()-startTime;
@@ -1073,13 +753,12 @@ function updateProgress(){
   document.getElementById('progbar').style.width=pct.toFixed(1)+'%';
   document.getElementById('progText').textContent=pct.toFixed(1)+'%';
   var el=document.getElementById('progPhase');
-  var names=['準備中','變化掃描','生成候選','貪心選擇','局部搜索'];
+  var names=['準備中','生成候選','束搜索排列','順序優化'];
   el.textContent=names[currentPhase]||'完成';
 }
 function updateStats(){
-  document.getElementById('stat-scan').innerHTML='📊 掃描信號: <b>'+scanResults.length+'</b>';
   document.getElementById('stat-pool').innerHTML='📦 候選池: <b>'+poolSize+'</b>';
-  document.getElementById('stat-greedy').innerHTML='🎯 選中: <b>'+pickedCount+'</b>';
+  document.getElementById('stat-greedy').innerHTML='🌊 束搜索: <b>'+pickedCount+'</b> 層';
   document.getElementById('stat-win').innerHTML='🎲 命中率: <b>'+bestWinRate.toFixed(1)+'%</b>';
   document.getElementById('stat-train').innerHTML='📊 場次: <b>'+bestGames+'</b>';
   document.getElementById('stat-total').innerHTML='💵 總盈利: <b>'+bestTotal+'</b>';
@@ -1093,9 +772,151 @@ function yieldUI(){
 }
 function shouldYield(){ return Date.now()-lastYieldTime>25; }
 
-/* ============================================================
-   資料解析 / 特徵
-   ============================================================ */
+/* ========== 主流程 ========== */
+async function start(){
+  var parsed=parseData(document.getElementById('input').value);
+  if(parsed.rows.length===0){ alert('沒有有效數據'); return; }
+
+  running=true; startTime=Date.now(); evalCount=0;
+  poolSize=0; pickedCount=0;
+  bestTotal=0; bestWinRate=0; bestGames=0;
+  topPaths=[];
+  currentPhase=0; totalPhases=3;
+  lastYieldTime=0;
+  featureValueCache={};
+  clearCondCache();
+
+  document.getElementById('btnRun').disabled=true;
+  document.getElementById('btnStop').disabled=false;
+  document.getElementById('diag').style.display='none';
+  document.getElementById('best').style.display='none';
+  document.getElementById('liveStats').style.display='flex';
+  document.getElementById('progbar').style.width='0%';
+  document.getElementById('progText').textContent='0.0%';
+  updateStats(); clearLog();
+
+  var maxRules=parseInt(document.getElementById('maxRules').value);
+  var beamWidth=parseInt(document.getElementById('beamWidth').value);
+  MIN_SAMPLES=parseInt(document.getElementById('minSamples').value);
+  PAYOUT_MODE=document.getElementById('payoutMode').value;
+
+  pushLog('═══════════════════════════════════════════════════════════','head');
+  pushLog('🚀 v43.0 — 順序極限利潤版','head');
+  pushLog('═══════════════════════════════════════════════════════════','head');
+  pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
+  pushLog(nowTime()+' 結算：'+(PAYOUT_MODE==='initial'?'初盤 A/B/C':'尾盤 D/E/F'),'info');
+  pushLog(nowTime()+' 最少樣本：'+MIN_SAMPLES+'（放棄過擬合保護，極限榨取利潤）','info');
+  await yieldUI();
+
+  var allRows=parsed.rows.slice();
+  trainN=allRows.length;
+  trainFeat=extractFeatures(allRows);
+  var meta=extractMeta(allRows,PAYOUT_MODE);
+  trainResult=meta.codes; trainOdds=meta.odds;
+  
+  await yieldUI();
+
+  // 階段 1
+  currentPhase=1; updateProgress();
+  pushLog('');
+  pushLog('═══════════════════════════════════════════════════════════','head');
+  pushLog(nowTime()+' 階段 1/3：生成極限候選池','head');
+  pushLog('═══════════════════════════════════════════════════════════','head');
+  await yieldUI();
+  var pool=await generatePool();
+  poolSize=pool.length;
+  updateStats();
+  await yieldUI();
+
+  // 階段 2
+  currentPhase=2; updateProgress();
+  pushLog('');
+  pushLog('═══════════════════════════════════════════════════════════','head');
+  pushLog(nowTime()+' 階段 2/3：束搜索尋找最優層數','head');
+  pushLog('═══════════════════════════════════════════════════════════','head');
+  await yieldUI();
+  var beams = await beamSearch(pool, maxRules, beamWidth);
+  
+  if(beams.length === 0) {
+    pushLog('❌ 找不到有盈利的規則組合！', 'warn');
+    running = false;
+    return;
+  }
+
+  topPaths = beams.slice(0, 5); // 保留前 5 名用於展示
+  var bestBeam = beams[0];
+  pickedCount = bestBeam.rules.length;
+
+  // 階段 3
+  currentPhase=3; updateProgress();
+  pushLog('');
+  pushLog('═══════════════════════════════════════════════════════════','head');
+  pushLog(nowTime()+' 階段 3/3：局部順序交換優化','head');
+  pushLog('═══════════════════════════════════════════════════════════','head');
+  await yieldUI();
+  
+  var optimizedRules = await optimizeOrder(bestBeam.rules);
+
+  // 加上墊底 skip
+  optimizedRules.push({on:1, then:'skip', thenCode:3, conds:[]});
+  
+  var finalStats = calcRulesStats(optimizedRules);
+  bestTotal = finalStats.totalProfit;
+  bestWinRate = finalStats.winRate;
+  bestGames = finalStats.games;
+
+  // 輸出結果
+  var formula=genFormula(optimizedRules);
+  var activeCount = optimizedRules.length - 1;
+
+  pushLog('');
+  pushLog('═══════════════════════════════════════════════════════════','final');
+  pushLog('🏆 極限優化完成！','best');
+  pushLog('═══════════════════════════════════════════════════════════','final');
+  pushLog('   🎯 總盈利：'+bestTotal,'best');
+  pushLog('   📊 啟用層數：'+activeCount+' 條','info');
+  pushLog('   🎲 命中率：'+bestWinRate.toFixed(1)+'%（'+finalStats.wins+'/'+finalStats.games+'）','info');
+  pushLog('   📏 公式字元：'+formula.length,'info');
+  pushLog('═══════════════════════════════════════════════════════════','final');
+
+  document.getElementById('best').style.display='block';
+  document.getElementById('summary').innerHTML=
+    '<div style="font-size:28px;color:#0a7a0a;font-weight:bold;margin-bottom:8px">💰 極限總盈利：'+bestTotal+'</div>'+
+    '<div style="font-size:14px;color:#333;line-height:1.9">'+
+    '命中率 <b style="color:#7c3aed">'+bestWinRate.toFixed(2)+'%</b>（'+finalStats.wins+'/'+finalStats.games+'）　'+
+    '啟用 <b>'+activeCount+'</b> 條規則　skip <b>'+finalStats.skips+'</b> 場</div>';
+
+  document.getElementById('rPool').textContent=poolSize;
+  document.getElementById('rPicked').textContent=activeCount;
+  document.getElementById('rGames').textContent=finalStats.games;
+  document.getElementById('rWin').textContent=bestWinRate.toFixed(1)+'%';
+  document.getElementById('resultInfo').innerHTML=
+    '🎚️ 最少樣本：<b>'+MIN_SAMPLES+'</b>　'+
+    '結算：<b>'+(PAYOUT_MODE==='initial'?'初盤':'尾盤')+'</b>';
+
+  renderTopPaths(topPaths);
+
+  document.getElementById('charInfo').innerHTML='字符數：<b>'+formula.length+'</b>';
+  document.getElementById('txtOut').value=formula;
+
+  renderRuleTable(optimizedRules, finalStats);
+  document.getElementById('diag').style.display='block';
+
+  running=false;
+  document.getElementById('btnRun').disabled=false;
+  document.getElementById('btnStop').disabled=true;
+  updateStats(); updateProgress();
+  flushNow();
+}
+
+function stop(){
+  running=false;
+  document.getElementById('btnStop').disabled=true;
+  pushLog('⏹ 使用者手動停止','warn');
+  flushNow();
+}
+
+/* ========== 解析工具 ========== */
 function parseData(text){
   var rows=[],seen={},dups=0,total=0;
   var lines=text.split('\n');
@@ -1115,7 +936,6 @@ function parseData(text){
   }
   return {rows:rows,total:total,dups:dups};
 }
-function rankOf(v,a,b){ return (v>a?1:0)+(v>b?1:0)+1; }
 function extractFeatures(rows){
   var N=rows.length;
   var mat=new Array(N);
@@ -1144,25 +964,21 @@ function extractFeatures(rows){
     f[15]=(A-D)-(C-F);
     f[16]=(A-D)-(B-E);
     f[17]=(C-F)-(B-E);
-    f[18]=(A-C)-(D-F);
-    f[19]=(B-E)-(A-D);
-    f[20]=D<A?1:(D>A?-1:0);
-    f[21]=E<B?1:(E>B?-1:0);
-    f[22]=F<C?1:(F>C?-1:0);
-    f[23]=Math.abs(A-D);
-    f[24]=Math.abs(B-E);
-    f[25]=Math.abs(C-F);
-    f[26]=(A+B+C)-(D+E+F);
-    f[27]=Math.abs(A-D)+Math.abs(B-E)+Math.abs(C-F);
-    f[28]=A;f[29]=B;f[30]=C;f[31]=D;f[32]=E;f[33]=F;
-    f[34]=A-C;
-    f[35]=D-F;
-    f[36]=Math.max(A,B,C);
-    f[37]=Math.min(A,B,C);
-    f[38]=Math.max(D,E,F);
-    f[39]=Math.min(D,E,F);
-    f[40]=rankOf(A,B,C);
-    f[41]=rankOf(D,E,F);
+    f[18]=(A-D)+(F-C);
+    f[19]=(C-F)+(D-A);
+    
+    f[19]=A; f[20]=B; f[21]=C;
+    f[22]=D; f[23]=E; f[24]=F;
+    
+    f[25]=A-C; f[26]=D-F;
+    f[27]=Math.max(A,B,C); f[28]=Math.min(A,B,C);
+    
+    f[29]=D<A?1:(D>A?-1:0);
+    f[30]=E<B?1:(E>B?-1:0);
+    f[31]=F<C?1:(F>C?-1:0);
+    
+    f[32]=C===0?0:A/C;
+    f[33]=F===0?0:D/F;
     mat[i]=f;
   }
   return mat;
@@ -1179,200 +995,6 @@ function extractMeta(rows,payoutMode){
   return {codes:codes,odds:odds};
 }
 
-/* ============================================================
-   主流程
-   ============================================================ */
-async function start(){
-  var parsed=parseData(document.getElementById('input').value);
-  if(parsed.rows.length===0){ alert('沒有有效數據'); return; }
-
-  running=true; startTime=Date.now(); evalCount=0;
-  poolSize=0; pickedCount=0; deletedCount=0; swapCount=0;
-  bestTotal=0; bestWinRate=0; bestGames=0;
-  scanResults=[]; directionAnalysis={};
-  currentPhase=0; totalPhases=4;
-  lastYieldTime=0;
-  featureValueCache={};
-  clearCondCache();
-
-  document.getElementById('btnRun').disabled=true;
-  document.getElementById('btnStop').disabled=false;
-  document.getElementById('diag').style.display='none';
-  document.getElementById('best').style.display='none';
-  document.getElementById('liveStats').style.display='flex';
-  document.getElementById('progbar').style.width='0%';
-  document.getElementById('progText').textContent='0.0%';
-  updateStats(); clearLog();
-
-  var maxRules=parseInt(document.getElementById('maxRules').value);
-  MIN_SAMPLES_MODE=document.getElementById('minSamples').value;
-  PAYOUT_MODE=document.getElementById('payoutMode').value;
-  OBJECTIVE=document.getElementById('objective').value;
-
-  pushLog('═══════════════════════════════════════════════════════════','head');
-  pushLog('🚀 v41.0 — 盈利優先規則發現器','head');
-  pushLog('═══════════════════════════════════════════════════════════','head');
-  pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆（去重 '+parsed.dups+'）','success');
-  pushLog(nowTime()+' 結算：'+(PAYOUT_MODE==='initial'?'初盤 A/B/C':'尾盤 D/E/F'),'info');
-  pushLog(nowTime()+' 目標：'+OBJECTIVE+'（盈利為王）','info');
-  await yieldUI();
-
-  var allRows=parsed.rows.slice();
-  for(var i=allRows.length-1;i>0;i--){
-    var j=Math.floor(Math.random()*(i+1));
-    var tmp=allRows[i]; allRows[i]=allRows[j]; allRows[j]=tmp;
-  }
-
-  trainN=allRows.length;
-  trainFeat=extractFeatures(allRows);
-  var meta=extractMeta(allRows,PAYOUT_MODE);
-  trainResult=meta.codes; trainOdds=meta.odds;
-  pushLog(nowTime()+' ✅ 訓練=全數據（'+trainN+' 筆）','success');
-  await yieldUI();
-
-  var cH=0,cD=0,cA=0;
-  for(var ci=0;ci<trainN;ci++){
-    if(trainResult[ci]===0) cH++;
-    else if(trainResult[ci]===1) cD++;
-    else if(trainResult[ci]===2) cA++;
-  }
-  var maxClass=Math.max(cH,cD,cA);
-  if(MIN_SAMPLES_MODE==='auto'){
-    MIN_SAMPLES=calcMinSamples(trainN,maxClass);
-  } else {
-    MIN_SAMPLES=parseInt(MIN_SAMPLES_MODE);
-  }
-  pushLog(nowTime()+' 🎚️ 最少樣本：'+MIN_SAMPLES+'（H='+cH+' D='+cD+' A='+cA+'）','adapt');
-  updateStats();
-  await yieldUI();
-
-  // 小數據警告
-  if(trainN<50){
-    var warnEl=document.getElementById('smallDataWarn');
-    warnEl.style.display='block';
-    warnEl.innerHTML='⚠️ <b>數據量只有 '+trainN+' 場</b>：規則可能過擬合。建議至少 100 場以上再使用。目前結果僅供參考。';
-  } else {
-    document.getElementById('smallDataWarn').style.display='none';
-  }
-
-  // 階段 1
-  currentPhase=1; updateProgress();
-  pushLog('');
-  pushLog('═══════════════════════════════════════════════════════════','head');
-  pushLog(nowTime()+' 階段 1/4：變化掃描（按盈利選擇最佳）','head');
-  pushLog('═══════════════════════════════════════════════════════════','head');
-  await yieldUI();
-  var t0=Date.now();
-  directionAnalysis=await scanDirections();
-  scanResults=await scanAllChanges();
-  pushLog(nowTime()+' ✅ 掃描完成（'+(Date.now()-t0)+' ms）','scan');
-  updateStats();
-  await yieldUI();
-
-  // 階段 2
-  currentPhase=2; updateProgress();
-  pushLog('');
-  pushLog('═══════════════════════════════════════════════════════════','head');
-  pushLog(nowTime()+' 階段 2/4：生成候選池','head');
-  pushLog('═══════════════════════════════════════════════════════════','head');
-  await yieldUI();
-  var pool=await generatePool(scanResults);
-  poolSize=pool.length;
-  updateStats();
-  await yieldUI();
-
-  // 階段 3
-  currentPhase=3; updateProgress();
-  pushLog('');
-  pushLog('═══════════════════════════════════════════════════════════','head');
-  pushLog(nowTime()+' 階段 3/4：貪心選擇','head');
-  pushLog('═══════════════════════════════════════════════════════════','head');
-  await yieldUI();
-  var greedyRules=await greedySelect(pool,maxRules);
-  var gs=calcRulesStats(greedyRules);
-  bestTotal=gs.totalProfit; bestWinRate=gs.winRate; bestGames=gs.games;
-  pushLog(nowTime()+' ✅ 貪心完成：'+pickedCount+' 條，盈利 '+gs.totalProfit+
-          '，命中率 '+gs.winRate.toFixed(1)+'%','greedy');
-  updateStats();
-  await yieldUI();
-
-  // 階段 4
-  currentPhase=4; updateProgress();
-  pushLog('');
-  pushLog('═══════════════════════════════════════════════════════════','head');
-  pushLog(nowTime()+' 階段 4/4：局部搜索','head');
-  pushLog('═══════════════════════════════════════════════════════════','head');
-  await yieldUI();
-  var finalRules=await localSearch(greedyRules,8);
-  var fs=calcRulesStats(finalRules);
-  bestTotal=fs.totalProfit; bestWinRate=fs.winRate; bestGames=fs.games;
-  pushLog(nowTime()+' ✅ 完成：盈利 '+fs.totalProfit+
-          '，命中率 '+fs.winRate.toFixed(1)+'%','local');
-  updateStats();
-  await yieldUI();
-
-  // 三大押注對比
-  payoutStats=calcPayoutStats();
-
-  // 輸出
-  var elapsed=((Date.now()-startTime)/1000).toFixed(1);
-  var formula=genFormula(finalRules);
-  var activeCount=finalRules.filter(function(r){ return r.on; }).length;
-
-  pushLog('');
-  pushLog('═══════════════════════════════════════════════════════════','final');
-  pushLog('🏆 完成！','best');
-  pushLog('═══════════════════════════════════════════════════════════','final');
-  pushLog('   💰 三大押注（全數據無腦）：','info');
-  pushLog('      押H：'+payoutStats.H.profit+'（'+payoutStats.H.wins+'/'+payoutStats.H.games+'）','info');
-  pushLog('      押D：'+payoutStats.D.profit+'（'+payoutStats.D.wins+'/'+payoutStats.D.games+'）','info');
-  pushLog('      押A：'+payoutStats.A.profit+'（'+payoutStats.A.wins+'/'+payoutStats.A.games+'）','info');
-  pushLog('   🎯 系統選中規則盈利：'+fs.totalProfit,'best');
-  pushLog('   📊 啟用：'+activeCount+' 條，命中 '+fs.wins+'/'+fs.games+'（'+fs.winRate.toFixed(1)+'%）','greedy');
-  pushLog('   ⏱️ 耗時：'+elapsed+' 秒','info');
-  pushLog('═══════════════════════════════════════════════════════════','final');
-
-  document.getElementById('best').style.display='block';
-  document.getElementById('summary').innerHTML=
-    '<div style="font-size:28px;color:#0a7a0a;font-weight:bold;margin-bottom:8px">💰 系統總盈利：'+fs.totalProfit+'</div>'+
-    '<div style="font-size:14px;color:#333;line-height:1.9">'+
-    '命中率 <b style="color:#7c3aed">'+fs.winRate.toFixed(2)+'%</b>（'+fs.wins+'/'+fs.games+'）　'+
-    '啟用 <b>'+activeCount+'</b> 條規則　skip <b>'+fs.skips+'</b> 場</div>';
-
-  document.getElementById('rPool').textContent=poolSize;
-  document.getElementById('rPicked').textContent=pickedCount;
-  document.getElementById('rGames').textContent=fs.games;
-  document.getElementById('rWin').textContent=fs.winRate.toFixed(1)+'%';
-  document.getElementById('resultInfo').innerHTML=
-    '🎚️ 最少樣本：<b>'+MIN_SAMPLES+'</b>（'+(MIN_SAMPLES_MODE==='auto'?'自動':'手動')+'）　'+
-    '結算：<b>'+(PAYOUT_MODE==='initial'?'初盤':'尾盤')+'</b>　'+
-    '目標：<b>'+OBJECTIVE+'</b>';
-
-  // 渲染三大押注對比
-  renderPayoutComparison(payoutStats);
-
-  // 渲染六大方向
-  renderDirectionCards(directionAnalysis);
-
-  document.getElementById('charInfo').innerHTML='字符數：<b>'+formula.length+'</b>';
-  document.getElementById('txtOut').value=formula;
-
-  renderRuleTable(finalRules,fs);
-  document.getElementById('diag').style.display='block';
-
-  running=false;
-  document.getElementById('btnRun').disabled=false;
-  document.getElementById('btnStop').disabled=true;
-  updateStats(); updateProgress();
-  flushNow();
-}
-
-function stop(){
-  running=false;
-  document.getElementById('btnStop').disabled=true;
-  pushLog('⏹ 使用者手動停止','warn');
-  flushNow();
-}
 function copyIt(id){
   var el=document.getElementById(id);
   if(!el) return;
