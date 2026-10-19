@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v87.2 — 雙模式 + 條件上限版</title>
+<title>🚀 v87.3 — 雙模式 + 條件上限 + 勝利門檻</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -81,11 +81,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v87.2 — 雙模式 + 條件上限版</h2>
+<h2>🚀 v87.3 — 雙模式 + 條件上限 + 勝利門檻</h2>
 
 <div class="warn-banner">
-  <b>🎯 雙模式 + 📐 條件上限：</b>可選「盈利/命中」模式，並限制每條規則的條件數量（1/2/3/無限）。<br>
-  條件越少 → 規則越簡潔、抗過擬合；條件越多 → 擬合能力越強。
+  <b>🎯 雙模式 + 📐 條件上限 + 🛡️ 勝利門檻：</b>可選「盈利/命中」模式、限制每條規則的條件數量（1/2/3/無限），並設定規則至少要贏多少場才算合格。<br>
+  條件越少 → 規則越簡潔、抗過擬合；條件越多 → 擬合能力越強。勝利門檻越高 → 抗過擬合越強。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -110,6 +110,15 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
     <option value="1">1 個條件</option>
     <option value="2">2 個條件</option>
     <option value="3">3 個條件</option>
+  </select>
+
+  <label>🛡️ 勝利門檻：</label>
+  <select id="minHitsPct">
+    <option value="0" selected>關閉（預設）</option>
+    <option value="0.05">5%</option>
+    <option value="0.10">10%</option>
+    <option value="0.15">15%</option>
+    <option value="0.20">20%</option>
   </select>
 
   <label>🔄 搜索次數：</label>
@@ -226,6 +235,7 @@ var currentPhase=0,totalPhases=100;
 var poolSize=0,currentRun=0;
 var optMode='profit';               // 'profit' 或 'hitrate'
 var maxCondsLimit=0;                // 0 = 無限；1/2/3 = 每條規則最多幾個條件
+var minWinsRequired=0;              // 0 = 關閉；>0 = 每條規則至少贏多少場
 var globalBestScore=-Infinity;
 var globalBestProfit=-Infinity;
 var globalBestWinRate=0;
@@ -417,7 +427,7 @@ function getThresholds(fi){
 }
 
 /* ============================================================
-   核心引擎：單次爬山變異搜索（雙模式 + 條件上限）
+   核心引擎：單次爬山變異搜索（雙模式 + 條件上限 + 勝利門檻）
    ============================================================ */
 async function runSingleEngine() {
   featureValueCache={};
@@ -429,7 +439,7 @@ async function runSingleEngine() {
   trainN = rawRowsData.length;
   trainFeat = extractFeatures(rawRowsData);
   
-  // 1. 生成單條件零件
+  // 1. 生成單條件零件（套用勝利門檻）
   var singles = [];
   for(var fi=0;fi<FCOUNT;fi++){
     var ths=getThresholds(fi);
@@ -441,8 +451,12 @@ async function runSingleEngine() {
         if(total === 0) continue;
         
         for(var tc=0;tc<3;tc++){
+          var w = getWins(bs, tc);
+          
+          // 勝利門檻檢查
+          if(minWinsRequired > 0 && w < minWinsRequired) continue;
+          
           if(optMode === 'hitrate'){
-            var w = getWins(bs, tc);
             if(w * 100 > total * 33){
               singles.push({ fi: fi, cond: [fi,op,thr], bs:bs, thenCode:tc, profit: profitOfBS(bs, tc) });
             }
@@ -526,6 +540,9 @@ async function runSingleEngine() {
       }
       
       if(!newBS || bsCount(newBS) === 0) continue;
+      
+      // 勝利門檻檢查
+      if(minWinsRequired > 0 && getWins(newBS, tc) < minWinsRequired) continue;
       
       var newScore = metricOfBS(newBS, tc, optMode);
       
@@ -795,8 +812,13 @@ async function start(){
     optMode = document.getElementById('optMode').value;
     maxCondsLimit = parseInt(document.getElementById('maxConds').value) || 0;
     
+    // ★ 讀取勝利門檻
+    var gatePct = parseFloat(document.getElementById('minHitsPct').value) || 0;
+    minWinsRequired = gatePct > 0 ? Math.ceil(rawRowsData.length * gatePct) : 0;
+    
     var modeLabel = (optMode === 'hitrate') ? '🎯 命中模式（最高命中率）' : '💰 盈利模式（最高利潤）';
     var condLabel = (maxCondsLimit === 0) ? '無限' : (maxCondsLimit + ' 個條件');
+    var gateLabel = (minWinsRequired === 0) ? '關閉' : (Math.round(gatePct*100)+'% (至少贏 '+minWinsRequired+' 場)');
     
     var selectedRuns = parseInt(document.getElementById('runCount').value);
     totalPhases = selectedRuns;
@@ -819,10 +841,11 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v87.2 — 雙模式 + 條件上限版','head');
+    pushLog('🚀 v87.3 — 雙模式 + 條件上限 + 勝利門檻','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
-    pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，尾盤結算，預計執行 '+totalPhases+' 次','info');
+    pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，勝利門檻：'+gateLabel,'info');
+    pushLog(nowTime()+' 尾盤結算，預計執行 '+totalPhases+' 次','info');
     await yieldUI();
 
     for(var run=1; run<=totalPhases; run++){
@@ -879,6 +902,7 @@ async function start(){
     pushLog('   📊 啟用層數：'+activeCount+' 條','info');
     pushLog('   🎯 命中率：'+bestWinRate.toFixed(1)+'%（'+finalStats.wins+'/'+finalStats.games+'）','info');
     pushLog('   💵 總盈利：'+bestTotal,'info');
+    pushLog('   🛡️ 勝利門檻：'+gateLabel,'info');
     pushLog('═══════════════════════════════════════════════════════════','final');
 
     document.getElementById('best').style.display='block';
@@ -887,14 +911,14 @@ async function start(){
       document.getElementById('summary').innerHTML=
         '<div style="font-size:28px;color:#4ade80;font-weight:bold;margin-bottom:8px">🎯 歷史最高命中率：'+bestWinRate.toFixed(2)+'%</div>'+
         '<div style="font-size:14px;color:#cbd5e1;line-height:1.9">'+
-        '結算模式：<b>尾盤 D/E/F</b>　條件上限：<b>'+condLabel+'</b><br>'+
+        '結算模式：<b>尾盤 D/E/F</b>　條件上限：<b>'+condLabel+'</b>　勝利門檻：<b>'+gateLabel+'</b><br>'+
         '總盈利 <b style="color:#fde68a">'+bestTotal+'</b>（'+finalStats.wins+'/'+finalStats.games+'）　'+
         '啟用 <b>'+activeCount+'</b> 條規則</div>';
     } else {
       document.getElementById('summary').innerHTML=
         '<div style="font-size:28px;color:#4ade80;font-weight:bold;margin-bottom:8px">💰 歷史最高總盈利：'+bestTotal+'</div>'+
         '<div style="font-size:14px;color:#cbd5e1;line-height:1.9">'+
-        '結算模式：<b>尾盤 D/E/F</b>　條件上限：<b>'+condLabel+'</b><br>'+
+        '結算模式：<b>尾盤 D/E/F</b>　條件上限：<b>'+condLabel+'</b>　勝利門檻：<b>'+gateLabel+'</b><br>'+
         '命中率 <b style="color:#c084fc">'+bestWinRate.toFixed(2)+'%</b>（'+finalStats.wins+'/'+finalStats.games+'）　'+
         '啟用 <b>'+activeCount+'</b> 條規則</div>';
     }
@@ -905,8 +929,7 @@ async function start(){
     document.getElementById('rWin').textContent=bestWinRate.toFixed(1)+'%';
     document.getElementById('resultInfo').innerHTML=
       '模式：<b>'+modeLabel+'</b>　條件上限：<b>'+condLabel+'</b><br>'+
-      '結算：<b>尾盤</b>　'+
-      '搜索次數：<b>'+totalPhases+' 次</b>';
+      '勝利門檻：<b>'+gateLabel+'</b>　結算：<b>尾盤</b>　搜索次數：<b>'+totalPhases+' 次</b>';
 
     renderCompareTable(finalStats, rawRowsData, 'final');
     document.getElementById('txtH').value=formulaH;
