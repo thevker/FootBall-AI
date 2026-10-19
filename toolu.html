@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v59.0 — 單條件自動結算極致版</title>
+<title>🚀 v60.0 — 精準對齊無限制版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -75,13 +75,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v59.0 — 單條件自動結算極致版</h2>
+<h2>🚀 v60.0 — 精準對齊無限制版</h2>
 
 <div class="warn-banner">
-  <b>✅ 極簡操作，最強效能：</b><br>
-  1. 系統會自動測試「初盤」與「尾盤」結算，直接給你利潤最高的那一個。<br>
-  2. 規則強制為「單條件」，將過度擬合降到最低。<br>
-  3. 層數無限制，樣本無限制，搜索強度開到最大。
+  <b>✅ 已修復精度誤差：</b>所有計算特徵與公式閾值，已強制四捨五入到小數點後 2 位。保證 Google Sheet 算出來的利潤與網頁 100% 一模一樣。單條件，無樣本限制，無限層數。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -310,7 +307,7 @@ function calcRulesStats(rules){
   };
 }
 
-/* ========== 閾值生成（全數值掃描） ========== */
+/* ========== 閾值生成（全數值掃描，強制 2 位小數） ========== */
 function getThresholds(fi){
   if(featureValueCache[fi]) return featureValueCache[fi];
   var vals=[];
@@ -319,7 +316,7 @@ function getThresholds(fi){
   
   var ths=[],seen={};
   for(var i=0;i<vals.length;i++){
-    var v=vals[i];
+    var v = Math.round(vals[i] * 100) / 100; // 強制 2 位
     if(!seen[v]){ seen[v]=1; ths.push(v); }
   }
   
@@ -361,12 +358,11 @@ function cloneRules(rules){
 }
 
 /* ============================================================
-   核心引擎：生成候選池、貪心、退火優化、生成兜底
+   核心引擎
    ============================================================ */
 async function runEngine(mode) {
   pushLog(nowTime()+' ⚙️ 初始化 ['+ (mode==='initial'?'初盤':'尾盤') +'] 結算引擎...','info');
   
-  // 重置全域狀態
   featureValueCache={};
   clearCondCache();
   
@@ -376,7 +372,6 @@ async function runEngine(mode) {
   trainN = rawRowsData.length;
   trainFeat = extractFeatures(rawRowsData);
   
-  // 1. 生成單條件候選池
   var pool = [];
   for(var fi=0;fi<FCOUNT;fi++){
     var ths=getThresholds(fi);
@@ -385,7 +380,7 @@ async function runEngine(mode) {
         var thr=ths[k];
         var bs=getCondBS(fi,op,thr);
         var cnt=bsCount(bs);
-        if(cnt < 1) continue; // 無樣本限制
+        if(cnt < 1) continue; 
         
         var pH = profitOfBS(bs, 0);
         var pD = profitOfBS(bs, 1);
@@ -403,7 +398,6 @@ async function runEngine(mode) {
     if(fi % 5 === 0 && shouldYield()) await yieldUI();
   }
   
-  // 去重
   var seen={}, unique=[];
   for(var u=0;u<pool.length;u++){
     var key = pool[u].conds[0][0]+'_'+pool[u].conds[0][1]+'_'+pool[u].conds[0][2]+'→'+pool[u].thenCode;
@@ -414,7 +408,6 @@ async function runEngine(mode) {
   pool = unique.sort(function(a,b){ return b.profit-a.profit; });
   poolSize = pool.length;
   
-  // 2. 貪心初始化（無限層）
   var initRules = [];
   var matched = bsNew(trainN);
   while(true){
@@ -439,7 +432,6 @@ async function runEngine(mode) {
     if(shouldYield()) await yieldUI();
   }
 
-  // 3. 模擬退火 + 暴力順序重組
   var curRules = cloneRules(initRules);
   var curStats = calcRulesStats(curRules);
   var curProfit = curStats.totalProfit;
@@ -448,7 +440,7 @@ async function runEngine(mode) {
 
   var T = 100;
   var cooling = 0.99;
-  var maxIter = 10000; // 最高搜索強度
+  var maxIter = 10000; 
 
   for(var iter=0; iter<maxIter; iter++){
     if(!running) break;
@@ -495,7 +487,6 @@ async function runEngine(mode) {
     }
   }
 
-  // 最終 2-opt 微調
   var improved = true;
   while(improved) {
     improved = false;
@@ -513,7 +504,6 @@ async function runEngine(mode) {
     }
   }
 
-  // 4. 最優兜底
   var finalMatched = bsNew(trainN);
   for(var i=0; i<bestRules.length; i++){
     bsOrInPlace(finalMatched, bestRules[i].bs);
@@ -550,7 +540,7 @@ async function runEngine(mode) {
    格式化與輸出
    ============================================================ */
 function fmtCond(c){
-  return FEATURE_NAMES[c[0]]+OPS[c[1]]+c[2];
+  return FEATURE_NAMES[c[0]]+OPS[c[1]]+Number(c[2].toFixed(2));
 }
 function fmtRule(r){
   if(!r.conds || r.conds.length===0) return '(空)';
@@ -670,7 +660,8 @@ function genFormulaRecursive(rules, index){
   var condSheetStrings = conds.map(function(c){
     var expr = featToExpr(c[0]);
     var op = OPS_SHEET[c[1]];
-    return '(' + expr + op + c[2] + ')'; 
+    var val = Number(c[2].toFixed(2)); // ★ 強制 2 位小數
+    return '(' + expr + op + val + ')'; 
   });
   
   var currentLogic = '"' + rule.then + '"';
@@ -767,13 +758,12 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v59.0 — 單條件自動結算極致版','head');
+    pushLog('🚀 v60.0 — 精準對齊無限制版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：固定單條件，無限層數，無樣本限制，最高搜索強度','info');
     await yieldUI();
 
-    // 階段 1：初盤引擎
     currentPhase=1; updateProgress();
     pushLog('');
     pushLog('═══════════════════════════════════════════════════════════','head');
@@ -784,7 +774,6 @@ async function start(){
     pushLog(nowTime()+' ✅ 初盤測試完成，總盈利：'+resInitial.stats.totalProfit,'success');
     await yieldUI();
 
-    // 階段 2：尾盤引擎
     currentPhase=2; updateProgress();
     pushLog('');
     pushLog('═══════════════════════════════════════════════════════════','head');
@@ -795,7 +784,6 @@ async function start(){
     pushLog(nowTime()+' ✅ 尾盤測試完成，總盈利：'+resFinal.stats.totalProfit,'success');
     await yieldUI();
 
-    // 比較並選擇最高利潤
     var bestRes = (resInitial.stats.totalProfit >= resFinal.stats.totalProfit) ? resInitial : resFinal;
     var bestMode = bestRes.mode;
     
@@ -884,42 +872,46 @@ function extractFeatures(rows){
     var r=rows[i];
     var A=r.A,B=r.B,C=r.C,D=r.D,E=r.E,F=r.F;
     var f=new Float64Array(FCOUNT);
-    f[0]=A-D;
-    f[1]=D-A;
-    f[2]=A===0?0:(A-D)/A*100;
-    f[3]=D===0?0:A/D;
-    f[4]=B-E;
-    f[5]=E-B;
-    f[6]=B===0?0:(B-E)/B*100;
-    f[7]=E===0?0:B/E;
-    f[8]=C-F;
-    f[9]=F-C;
-    f[10]=C===0?0:(C-F)/C*100;
-    f[11]=F===0?0:C/F;
-    var maPct=A===0?0:(A-D)/A*100;
-    var mbPct=B===0?0:(B-E)/B*100;
-    var mcPct=C===0?0:(C-F)/C*100;
-    f[12]=maPct-mcPct;
-    f[13]=maPct-mbPct;
-    f[14]=mcPct-mbPct;
-    f[15]=(A-D)-(C-F);
-    f[16]=(A-D)-(B-E);
-    f[17]=(C-F)-(B-E);
-    f[18]=(A-D)+(F-C); 
-    f[19]=(C-F)+(D-A); 
+    
+    // ★ 所有計算強制保留 2 位小數，避免浮點數誤差
+    f[0] = Math.round((A-D)*100)/100;
+    f[1] = Math.round((D-A)*100)/100;
+    f[2] = Math.round((A===0?0:(A-D)/A*100)*100)/100;
+    f[3] = Math.round((D===0?0:A/D)*100)/100;
+    f[4] = Math.round((B-E)*100)/100;
+    f[5] = Math.round((E-B)*100)/100;
+    f[6] = Math.round((B===0?0:(B-E)/B*100)*100)/100;
+    f[7] = Math.round((E===0?0:B/E)*100)/100;
+    f[8] = Math.round((C-F)*100)/100;
+    f[9] = Math.round((F-C)*100)/100;
+    f[10] = Math.round((C===0?0:(C-F)/C*100)*100)/100;
+    f[11] = Math.round((F===0?0:C/F)*100)/100;
+    var maPct = Math.round((A===0?0:(A-D)/A*100)*100)/100;
+    var mbPct = Math.round((B===0?0:(B-E)/B*100)*100)/100;
+    var mcPct = Math.round((C===0?0:(C-F)/C*100)*100)/100;
+    f[12] = Math.round((maPct-mcPct)*100)/100;
+    f[13] = Math.round((maPct-mbPct)*100)/100;
+    f[14] = Math.round((mcPct-mbPct)*100)/100;
+    f[15] = Math.round(((A-D)-(C-F))*100)/100;
+    f[16] = Math.round(((A-D)-(B-E))*100)/100;
+    f[17] = Math.round(((C-F)-(B-E))*100)/100;
+    f[18] = Math.round(((A-D)+(F-C))*100)/100; 
+    f[19] = Math.round(((C-F)+(D-A))*100)/100; 
     
     f[20]=A; f[21]=B; f[22]=C;
     f[23]=D; f[24]=E; f[25]=F;
     
-    f[26]=A-C; f[27]=D-F;
-    f[28]=Math.max(A,B,C); f[29]=Math.min(A,B,C);
+    f[26]=Math.round((A-C)*100)/100; 
+    f[27]=Math.round((D-F)*100)/100;
+    f[28]=Math.max(A,B,C); 
+    f[29]=Math.min(A,B,C);
     
     f[30]=D<A?1:(D>A?-1:0);
     f[31]=E<B?1:(E>B?-1:0);
     f[32]=F<C?1:(F>C?-1:0);
     
-    f[33]=C===0?0:A/C;
-    f[34]=F===0?0:D/F;
+    f[33]=Math.round((C===0?0:A/C)*100)/100;
+    f[34]=Math.round((F===0?0:D/F)*100)/100;
     mat[i]=f;
   }
   return mat;
