@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v84.0 — 百次極致進化版 (5%門檻)</title>
+<title>🚀 v85.0 — 極限次數自選版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -30,6 +30,7 @@ button.copy{background:#2563eb}
 .label{font-weight:bold;font-size:13px;margin-bottom:6px;color:#333}
 .out{width:100%;height:260px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto;resize:vertical}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
+select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px;font-weight:bold}
 #msg{margin-top:8px;font-weight:bold;font-size:13px;display:none;padding:8px;border-radius:4px}
 .ok{background:#d4edda;color:#155724}.err{background:#f8d7da;color:#721c24}
 table{border-collapse:collapse;width:100%;font-size:11px;margin-top:8px;background:#fff}
@@ -76,10 +77,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v84.0 — 百次極致進化版 (5%門檻)</h2>
+<h2>🚀 v85.0 — 極限次數自選版</h2>
 
 <div class="warn-banner">
-  <b>🔥 釋放最深潛力：</b>勝場門檻放寬至 5%，一鍵執行 100 次隨機爬山搜索。這能完美繞過貪婪陷阱，找回最高 9400 級別的利潤！
+  <b>🔥 終極算力解放：</b>可自選 100 ~ 10000 次搜索。次數越多，越有機會跳出局部最優，找到真正的最高利潤（但耗時會成倍增加）。門檻已設為 5% 勝場。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -88,9 +89,18 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 138	410	610	159	390	500	H"></textarea>
 
 <div class="row">
-  <button id="btnRun" class="hero" onclick="start()">🚀 啟動百次極致進化</button>
+  <button id="btnRun" class="hero" onclick="start()">🚀 啟動極致進化</button>
   <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
   <button id="btnCopy" class="copy" onclick="copyIt('txtH')">📋 複製 H2 公式</button>
+
+  <label>搜索次數：</label>
+  <select id="runCount">
+    <option value="100" selected>100 次 (快速)</option>
+    <option value="500">500 次</option>
+    <option value="1000">1000 次</option>
+    <option value="5000">5000 次 (耗時)</option>
+    <option value="10000">10000 次 (極致耗時)</option>
+  </select>
 </div>
 
 <div class="progress-row">
@@ -103,7 +113,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 <div class="stats" id="liveStats" style="display:none">
   <div class="stat pool-stat" id="stat-pool">📦 候選池: 0</div>
-  <div class="stat greedy-stat" id="stat-greedy">🌡️ 當前輪次: 0 / 100</div>
+  <div class="stat greedy-stat" id="stat-greedy">🌡️ 當前輪次: 0 / -</div>
   <div class="stat win-stat" id="stat-win">🎲 全局最高命中率: -</div>
   <div class="stat train-stat" id="stat-train">📊 全局最高場次: -</div>
   <div class="stat total-stat" id="stat-total">💵 全局最高盈利: -</div>
@@ -738,12 +748,16 @@ async function start(){
     
     // ★ 門檻降為 5%
     minWinsRequired = Math.ceil(rawRowsData.length * 0.05);
+    
+    // ★ 讀取自選次數
+    var selectedRuns = parseInt(document.getElementById('runCount').value);
+    totalPhases = selectedRuns;
+    
     pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。 5% 勝利門檻 = 至少贏 '+minWinsRequired+' 場。','info');
 
     running=true; startTime=Date.now(); evalCount=0;
     poolSize=0; currentRun=0;
     globalBestProfit=-Infinity; globalBestWinRate=0; globalBestGames=0;
-    totalPhases=100;
     lastYieldTime=0;
 
     document.getElementById('btnRun').disabled=true;
@@ -756,16 +770,16 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v84.0 — 百次極致進化版 (5%門檻)','head');
+    pushLog('🚀 v85.0 — 極限次數自選版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
-    pushLog(nowTime()+' 模式：尾盤結算，勝場 ≥ '+minWinsRequired+'，一鍵執行 100 次','info');
+    pushLog(nowTime()+' 模式：尾盤結算，勝場 ≥ '+minWinsRequired+'，預計執行 '+totalPhases+' 次','info');
     await yieldUI();
 
     for(var run=1; run<=totalPhases; run++){
       if(!running) break;
       currentRun = run;
-      pushLog(nowTime()+' 🏃 正在執行第 '+run+'/100 輪搜索...','info');
+      pushLog(nowTime()+' 🏃 正在執行第 '+run+'/'+totalPhases+' 輪搜索...','info');
       updateProgress();
       await yieldUI();
       
@@ -790,7 +804,7 @@ async function start(){
 
     pushLog('');
     pushLog('═══════════════════════════════════════════════════════════','final');
-    pushLog('🏆 百次搜索全部完成！','best');
+    pushLog('🏆 全部 '+totalPhases+' 次搜索完成！','best');
     pushLog('═══════════════════════════════════════════════════════════','final');
 
     var optimizedRules = globalBestRules;
@@ -823,7 +837,7 @@ async function start(){
     document.getElementById('resultInfo').innerHTML=
       '🛡️ 勝利場次門檻：<b>至少 '+minWinsRequired+' 場 (5%)</b><br>'+
       '結算：<b>尾盤</b>　'+
-      '條件限制：<b>無限疊加</b>';
+      '搜索次數：<b>'+totalPhases+' 次</b>';
 
     renderCompareTable(finalStats, rawRowsData, 'final');
     document.getElementById('txtH').value=formulaH;
