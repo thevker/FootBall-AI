@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v79.0 — 10%勝場防護完美版</title>
+<title>🚀 v81.0 — 百次重啟終極版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -13,6 +13,7 @@ button{padding:12px 24px;font-size:16px;margin:8px 6px 8px 0;cursor:pointer;back
 button:hover{background:#0056b3}
 button:disabled{background:#999;cursor:not-allowed}
 button.hero{padding:14px 36px;font-size:17px;background:linear-gradient(135deg,#16a34a,#22c55e)}
+button.stop{background:#dc3545}
 button.copy{background:#2563eb}
 #log{background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:14px;margin-top:12px;height:260px;overflow-y:auto;font-family:Consolas,monospace;font-size:12px;white-space:pre;line-height:1.5;border:1px solid #222}
 #log::-webkit-scrollbar{width:10px}
@@ -75,10 +76,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v79.0 — 10%勝場防護完美版</h2>
+<h2>🚀 v81.0 — 百次重啟終極版</h2>
 
 <div class="warn-banner">
-  <b>🛡️ 科學防護機制：</b>系統現在強制要求每條規則的**「勝場數」必須 ≥ 總場次的 10%**。這能完美過濾掉極端巧合，只保留具有大數法則支撐的最強規則！
+  <b>🔥 100 次全自動搜索：</b>按下按鈕後，系統會在背景自動執行 100 次不同的爬山搜索。它會自動保留利潤最高的那一次結果，保證為你找出真正的最強規則！(可能需要幾分鐘，請保持頁面開啟)
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -87,7 +88,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 138	410	610	159	390	500	H"></textarea>
 
 <div class="row">
-  <button id="btnRun" class="hero" onclick="start()">🚀 啟動完美進化</button>
+  <button id="btnRun" class="hero" onclick="start()">🚀 啟動百次極致進化</button>
+  <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
   <button id="btnCopy" class="copy" onclick="copyIt('txtH')">📋 複製 H2 公式</button>
 </div>
 
@@ -101,10 +103,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 <div class="stats" id="liveStats" style="display:none">
   <div class="stat pool-stat" id="stat-pool">📦 候選池: 0</div>
-  <div class="stat greedy-stat" id="stat-greedy">🌡️ 搜索次數: 0</div>
-  <div class="stat win-stat" id="stat-win">🎲 命中率: -</div>
-  <div class="stat train-stat" id="stat-train">📊 場次: -</div>
-  <div class="stat total-stat" id="stat-total">💵 總盈利: -</div>
+  <div class="stat greedy-stat" id="stat-greedy">🌡️ 當前輪次: 0 / 100</div>
+  <div class="stat win-stat" id="stat-win">🎲 全局最高命中率: -</div>
+  <div class="stat train-stat" id="stat-train">📊 全局最高場次: -</div>
+  <div class="stat total-stat" id="stat-total">💵 全局最高盈利: -</div>
 </div>
 
 <div class="best" id="best">
@@ -190,10 +192,14 @@ var trainN=0;
 var running=false,startTime=0,evalCount=0;
 var logBuffer=[],logTimer=null,LOG_MAX=5000;
 var lastYieldTime=0;
-var currentPhase=0,totalPhases=4;
+var currentPhase=0,totalPhases=100;
 
-var poolSize=0,pickedCount=0;
-var bestTotal=0,bestWinRate=0,bestGames=0;
+var poolSize=0,currentRun=0;
+var globalBestProfit=-Infinity;
+var globalBestWinRate=0;
+var globalBestGames=0;
+var globalBestRules=null;
+var globalBestStats=null;
 
 var featureValueCache={};
 var condBSCache={};
@@ -362,21 +368,19 @@ function getThresholds(fi){
 }
 
 /* ============================================================
-   核心引擎：爬山變異 + 10% 勝場限制
+   核心引擎：單次爬山變異搜索
    ============================================================ */
-async function runEngine(mode) {
-  pushLog(nowTime()+' ⚙️ 初始化 [尾盤] 引擎，尋找各目標最高利潤單一規則...','info');
-  
+async function runSingleEngine() {
   featureValueCache={};
   clearCondCache();
   
-  var meta = extractMeta(rawRowsData, mode);
+  var meta = extractMeta(rawRowsData, 'final'); // 固定尾盤
   trainResult = meta.codes; 
   trainOdds = meta.odds;
   trainN = rawRowsData.length;
   trainFeat = extractFeatures(rawRowsData);
   
-  // 1. 生成單條件零件 (過濾勝場 < 10% 的)
+  // 1. 生成單條件零件
   var singles = [];
   for(var fi=0;fi<FCOUNT;fi++){
     var ths=getThresholds(fi);
@@ -384,7 +388,7 @@ async function runEngine(mode) {
       for(var k=0;k<ths.length;k++){
         var thr=ths[k];
         var bs=getCondBS(fi,op,thr);
-        if(bsCount(bs) < minWinsRequired) continue; // 基礎覆蓋場次也要大於10%
+        if(bsCount(bs) < minWinsRequired) continue; 
         
         for(var tc=0;tc<3;tc++){
           var p = profitOfBS(bs, tc);
@@ -395,34 +399,34 @@ async function runEngine(mode) {
         }
       }
     }
-    if(fi % 5 === 0 && shouldYield()) await yieldUI();
   }
+  if(singles.length === 0) return { rules:[], stats:{totalProfit:0, winRate:0, games:0} };
   
-  pushLog(nowTime()+'   合格單條件零件：'+singles.length+' 條','scan');
+  poolSize = singles.length;
 
-  // 2. 針對三個目標分別進行 20 萬次爬山變異
+  // 2. 針對三個目標分別進行 5 萬次爬山變異 (因要跑100次，單次降低為5萬次以保證總時長)
   var bestRules = [null, null, null];
 
   for(var tc=0; tc<3; tc++){
-    pushLog(nowTime()+'   開始深度搜索目標 '+RESULTS[tc]+'...','info');
     var tcSingles = singles.filter(function(s){ return s.thenCode === tc; });
     if(tcSingles.length === 0) continue;
     
     var current = {
-      conds: [tcSingles[0].cond],
-      bs: tcSingles[0].bs,
-      profit: tcSingles[0].profit
+      conds: [tcSingles[Math.floor(Math.random() * tcSingles.length)].cond],
+      bs: null,
+      profit: -Infinity
     };
+    // 初始化 bs
+    var cond0 = current.conds[0];
+    current.bs = getCondBS(cond0[0], cond0[1], cond0[2]);
+    current.profit = profitOfBS(current.bs, tc);
+    
     var globalBest = { conds: current.conds.slice(), bs: current.bs, profit: current.profit };
     
-    var maxIter = 200000; 
+    var maxIter = 50000; 
     
     for(var iter=0; iter<maxIter; iter++){
-      if(iter % 5000 === 0) {
-        pickedCount = iter;
-        updateStats();
-        if(shouldYield()) await yieldUI();
-      }
+      if(!running) break;
       
       var moveType = Math.random();
       var testConds = current.conds.slice();
@@ -469,7 +473,6 @@ async function runEngine(mode) {
       
       if(newProfit > current.profit) {
         current = { conds: testConds, bs: newBS, profit: newProfit };
-        
         if(newProfit > globalBest.profit) {
           var w = getWins(newBS, tc);
           if(w >= minWinsRequired) {
@@ -477,19 +480,16 @@ async function runEngine(mode) {
           }
         }
       }
+      
+      if(iter % 500 === 0 && shouldYield()) await yieldUI();
     }
     
     bestRules[tc] = globalBest;
-    var finalWins = getWins(globalBest.bs, tc);
-    pushLog(nowTime()+'   目標 '+RESULTS[tc]+' 最佳利潤：'+globalBest.profit+'（'+globalBest.conds.length+' 條件，'+finalWins+' 勝）','success');
   }
-  
-  poolSize = singles.length;
 
   // 3. 測試 6 種順序組合
   var bestTotalProfit = -Infinity;
   var finalRules = [];
-  var bestOrder = [];
   
   var orders = [
     [0,1,2], [0,2,1], 
@@ -515,22 +515,16 @@ async function runEngine(mode) {
       }
     }
     
-    // 兜底 skip
     tempRules.push({on:1, then:'skip', thenCode:3, conds:[], bs:bsNew(trainN)});
-    
     var stats = calcRulesStats(tempRules);
     if(stats.totalProfit > bestTotalProfit){
       bestTotalProfit = stats.totalProfit;
       finalRules = tempRules;
-      bestOrder = order;
     }
   }
-  
-  pushLog(nowTime()+' ✅ 最佳組合順序：'+RESULTS[bestOrder[0]]+' -> '+RESULTS[bestOrder[1]]+' -> '+RESULTS[bestOrder[2]],'success');
-  pushLog(nowTime()+' ✅ 最高總利潤：'+bestTotalProfit,'success');
 
   var cleanStats = calcRulesStats(finalRules);
-  return { rules: finalRules, stats: cleanStats, mode: mode };
+  return { rules: finalRules, stats: cleanStats };
 }
 
 /* ============================================================
@@ -709,20 +703,19 @@ function clearLog(){
   logEl.innerHTML=''; logEl.dataset.started='1'; logBuffer=[];
 }
 function updateProgress(){
-  var pct=(currentPhase/totalPhases)*100;
+  var pct=(currentRun/totalPhases)*100;
   if(!running&&startTime>0&&document.getElementById('best').style.display==='block') pct=100;
   document.getElementById('progbar').style.width=pct.toFixed(1)+'%';
   document.getElementById('progText').textContent=pct.toFixed(1)+'%';
   var el=document.getElementById('progPhase');
-  var names=['準備中','生成候選','爬山變異優化','完成'];
-  el.textContent=names[currentPhase]||'完成';
+  el.textContent='第 '+currentRun+' / '+totalPhases+' 輪'+(running?' 搜索中':' 完成');
 }
 function updateStats(){
   document.getElementById('stat-pool').innerHTML='📦 候選池: <b>'+poolSize+'</b>';
-  document.getElementById('stat-greedy').innerHTML='🌡️ 搜索次數: <b>'+pickedCount+'</b>';
-  document.getElementById('stat-win').innerHTML='🎲 命中率: <b>'+bestWinRate.toFixed(1)+'%</b>';
-  document.getElementById('stat-train').innerHTML='📊 場次: <b>'+bestGames+'</b>';
-  document.getElementById('stat-total').innerHTML='💵 總盈利: <b>'+bestTotal+'</b>';
+  document.getElementById('stat-greedy').innerHTML='🌡️ 當前輪次: <b>'+currentRun+' / '+totalPhases+'</b>';
+  document.getElementById('stat-win').innerHTML='🎲 全局最高命中率: <b>'+globalBestWinRate.toFixed(1)+'%</b>';
+  document.getElementById('stat-train').innerHTML='📊 全局最高場次: <b>'+globalBestGames+'</b>';
+  document.getElementById('stat-total').innerHTML='💵 全局最高盈利: <b>'+globalBestProfit+'</b>';
 }
 var lastYieldTime=0;
 function yieldUI(){
@@ -747,12 +740,13 @@ async function start(){
     pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。 10% 勝利門檻 = 至少贏 '+minWinsRequired+' 場。','info');
 
     running=true; startTime=Date.now(); evalCount=0;
-    poolSize=0; pickedCount=0;
-    bestTotal=0; bestWinRate=0; bestGames=0;
-    currentPhase=0; totalPhases=3;
+    poolSize=0; currentRun=0;
+    globalBestProfit=-Infinity; globalBestWinRate=0; globalBestGames=0;
+    totalPhases=100;
     lastYieldTime=0;
 
     document.getElementById('btnRun').disabled=true;
+    document.getElementById('btnStop').disabled=false;
     document.getElementById('diag').style.display='none';
     document.getElementById('best').style.display='none';
     document.getElementById('liveStats').style.display='flex';
@@ -761,32 +755,45 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v79.0 — 10%勝場防護完美版','head');
+    pushLog('🚀 v81.0 — 百次重啟終極版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
-    pushLog(nowTime()+' 模式：尾盤結算，強制勝場 ≥ '+minWinsRequired+' 場','info');
+    pushLog(nowTime()+' 模式：尾盤結算，勝場 ≥ '+minWinsRequired+'，一鍵執行 100 次','info');
     await yieldUI();
 
-    currentPhase=1; updateProgress();
-    pushLog('');
-    pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog(nowTime()+' 開始極致優化 [尾盤 D/E/F] 結算...','head');
-    pushLog('═══════════════════════════════════════════════════════════','head');
-    await yieldUI();
+    for(var run=1; run<=totalPhases; run++){
+      if(!running) break;
+      currentRun = run;
+      pushLog(nowTime()+' 🏃 正在執行第 '+run+'/100 輪搜索...','info');
+      updateProgress();
+      await yieldUI();
+      
+      var res = await runSingleEngine();
+      
+      if(res.stats.totalProfit > globalBestProfit){
+        globalBestProfit = res.stats.totalProfit;
+        globalBestWinRate = res.stats.winRate;
+        globalBestGames = res.stats.games;
+        globalBestRules = res.rules;
+        globalBestStats = res.stats;
+        pushLog(nowTime()+' 🌟 [第 '+run+' 輪] 打破紀錄！新最高利潤：'+globalBestProfit,'best');
+      } else {
+        pushLog(nowTime()+'    [第 '+run+' 輪] 利潤：'+res.stats.totalProfit+'（未打破紀錄）','dim');
+      }
+      
+      updateStats();
+      await yieldUI();
+    }
     
-    var resFinal = await runEngine('final');
-    
-    currentPhase=3; updateProgress();
-    pushLog(nowTime()+' ✅ 測試完成，最終乾淨利潤：'+resFinal.stats.totalProfit,'success');
-    await yieldUI();
+    if(!running) return; // 被手動停止
 
     pushLog('');
     pushLog('═══════════════════════════════════════════════════════════','final');
-    pushLog('🏆 優化完成！','best');
+    pushLog('🏆 百次搜索全部完成！','best');
     pushLog('═══════════════════════════════════════════════════════════','final');
 
-    var optimizedRules = resFinal.rules;
-    var finalStats = resFinal.stats;
+    var optimizedRules = globalBestRules;
+    var finalStats = globalBestStats;
     
     bestTotal = finalStats.totalProfit;
     bestWinRate = finalStats.winRate;
@@ -795,14 +802,14 @@ async function start(){
     var formulaH = genHFormula(optimizedRules);
     var activeCount = optimizedRules.length - 1;
 
-    pushLog('   🎯 總盈利：'+bestTotal,'best');
+    pushLog('   🎯 歷史最高總盈利：'+bestTotal,'best');
     pushLog('   📊 啟用層數：'+activeCount+' 條','info');
     pushLog('   🎲 命中率：'+bestWinRate.toFixed(1)+'%（'+finalStats.wins+'/'+finalStats.games+'）','info');
     pushLog('═══════════════════════════════════════════════════════════','final');
 
     document.getElementById('best').style.display='block';
     document.getElementById('summary').innerHTML=
-      '<div style="font-size:28px;color:#0a7a0a;font-weight:bold;margin-bottom:8px">💰 總盈利：'+bestTotal+'</div>'+
+      '<div style="font-size:28px;color:#0a7a0a;font-weight:bold;margin-bottom:8px">💰 歷史最高總盈利：'+bestTotal+'</div>'+
       '<div style="font-size:14px;color:#333;line-height:1.9">'+
       '結算模式：<b>尾盤 D/E/F</b><br>'+
       '命中率 <b style="color:#7c3aed">'+bestWinRate.toFixed(2)+'%</b>（'+finalStats.wins+'/'+finalStats.games+'）　'+
@@ -825,15 +832,24 @@ async function start(){
 
     running=false;
     document.getElementById('btnRun').disabled=false;
+    document.getElementById('btnStop').disabled=true;
     updateStats(); updateProgress();
     flushNow();
   } catch(e) {
     pushLog('❌ 發生錯誤：' + e.message + '\n' + e.stack, 'error');
     running = false;
     document.getElementById('btnRun').disabled=false;
+    document.getElementById('btnStop').disabled=true;
     updateStats(); updateProgress();
     flushNow();
   }
+}
+
+function stop(){
+  running=false;
+  document.getElementById('btnStop').disabled=true;
+  pushLog('⏹ 使用者手動停止','warn');
+  flushNow();
 }
 
 /* ========== 解析工具 ========== */
