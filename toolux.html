@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v83.0 — 確定性深度搜索版</title>
+<title>🚀 v84.0 — 百次極致進化版 (5%門檻)</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -76,10 +76,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v83.0 — 確定性深度搜索版</h2>
+<h2>🚀 v84.0 — 百次極致進化版 (5%門檻)</h2>
 
 <div class="warn-banner">
-  <b>🧠 徹底告別隨機：</b>導入「優先隊列最佳優先搜索」。系統會永遠優先擴展當前利潤最高的規則，並嘗試疊加所有新條件。不放過任何一個能提升利潤的組合，保證穩定輸出逼近理論極限的最強公式！
+  <b>🔥 釋放最深潛力：</b>勝場門檻放寬至 5%，一鍵執行 100 次隨機爬山搜索。這能完美繞過貪婪陷阱，找回最高 9400 級別的利潤！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -88,7 +88,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 138	410	610	159	390	500	H"></textarea>
 
 <div class="row">
-  <button id="btnRun" class="hero" onclick="start()">🚀 啟動確定性搜索</button>
+  <button id="btnRun" class="hero" onclick="start()">🚀 啟動百次極致進化</button>
   <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
   <button id="btnCopy" class="copy" onclick="copyIt('txtH')">📋 複製 H2 公式</button>
 </div>
@@ -103,7 +103,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 <div class="stats" id="liveStats" style="display:none">
   <div class="stat pool-stat" id="stat-pool">📦 候選池: 0</div>
-  <div class="stat greedy-stat" id="stat-greedy">🌡️ 探索節點: 0</div>
+  <div class="stat greedy-stat" id="stat-greedy">🌡️ 當前輪次: 0 / 100</div>
   <div class="stat win-stat" id="stat-win">🎲 全局最高命中率: -</div>
   <div class="stat train-stat" id="stat-train">📊 全局最高場次: -</div>
   <div class="stat total-stat" id="stat-total">💵 全局最高盈利: -</div>
@@ -194,7 +194,7 @@ var logBuffer=[],logTimer=null,LOG_MAX=5000;
 var lastYieldTime=0;
 var currentPhase=0,totalPhases=100;
 
-var poolSize=0,exploredNodes=0;
+var poolSize=0,currentRun=0;
 var globalBestProfit=-Infinity;
 var globalBestWinRate=0;
 var globalBestGames=0;
@@ -206,52 +206,8 @@ var featureValueCache={};
 var condBSCache={};
 var condBSCacheSize=0;
 var COND_CACHE_MAX=300000; 
-var minWinsRequired = 0;
 
-/* ========== 優先隊列 (Max-Heap) ========== */
-class PriorityQueue {
-  constructor() {
-    this.heap = [];
-  }
-  push(item) {
-    this.heap.push(item);
-    this._bubbleUp(this.heap.length - 1);
-  }
-  pop() {
-    if (this.heap.length === 0) return null;
-    if (this.heap.length === 1) return this.heap.pop();
-    const top = this.heap[0];
-    this.heap[0] = this.heap.pop();
-    this._sinkDown(0);
-    return top;
-  }
-  _bubbleUp(idx) {
-    while (idx > 0) {
-      let parentIdx = Math.floor((idx - 1) / 2);
-      if (this.heap[parentIdx].profit >= this.heap[idx].profit) break;
-      let tmp = this.heap[parentIdx];
-      this.heap[parentIdx] = this.heap[idx];
-      this.heap[idx] = tmp;
-      idx = parentIdx;
-    }
-  }
-  _sinkDown(idx) {
-    let len = this.heap.length;
-    while (true) {
-      let left = 2 * idx + 1;
-      let right = 2 * idx + 2;
-      let largest = idx;
-      if (left < len && this.heap[left].profit > this.heap[largest].profit) largest = left;
-      if (right < len && this.heap[right].profit > this.heap[largest].profit) largest = right;
-      if (largest === idx) break;
-      let tmp = this.heap[idx];
-      this.heap[idx] = this.heap[largest];
-      this.heap[largest] = tmp;
-      idx = largest;
-    }
-  }
-  size() { return this.heap.length; }
-}
+var minWinsRequired = 0; // 5% 勝場門檻
 
 /* ========== 位圖 ========== */
 function bsWords(N){ return (N+31)>>5; }
@@ -413,9 +369,9 @@ function getThresholds(fi){
 }
 
 /* ============================================================
-   核心引擎：確定性最佳優先搜索 (Best-First Search)
+   核心引擎：單次爬山變異搜索
    ============================================================ */
-async function runDeterministicEngine() {
+async function runSingleEngine() {
   featureValueCache={};
   clearCondCache();
   
@@ -448,95 +404,87 @@ async function runDeterministicEngine() {
   if(singles.length === 0) return { rules:[], stats:{totalProfit:0, winRate:0, games:0} };
   
   poolSize = singles.length;
-  exploredNodes = 0;
+
+  // 2. 針對三個目標分別進行 5 萬次爬山變異
   var bestRules = [null, null, null];
 
   for(var tc=0; tc<3; tc++){
     var tcSingles = singles.filter(function(s){ return s.thenCode === tc; });
     if(tcSingles.length === 0) continue;
     
-    var pq = new PriorityQueue();
-    var visited = new Set(); // 紀錄已經探索過的條件組合，避免重複
+    var current = {
+      conds: [tcSingles[Math.floor(Math.random() * tcSingles.length)].cond],
+      bs: null,
+      profit: -Infinity
+    };
+    var cond0 = current.conds[0];
+    current.bs = getCondBS(cond0[0], cond0[1], cond0[2]);
+    current.profit = profitOfBS(current.bs, tc);
     
-    // 將所有單品推入優先隊列
-    for(var i=0; i<tcSingles.length; i++){
-      var s = tcSingles[i];
-      var key = s.fi.toString(); // 單品特徵key
-      if(!visited.has(key)){
-        visited.add(key);
-        pq.push({
-          conds: [s.cond],
-          usedFeats: [s.fi],
-          bs: s.bs,
-          profit: s.profit
-        });
-      }
-    }
+    var globalBest = { conds: current.conds.slice(), bs: current.bs, profit: current.profit };
     
-    var globalBest = { conds: [], bs: null, profit: -Infinity };
+    var maxIter = 50000; 
     
-    // 開始確定性搜索
-    while(pq.size() > 0) {
+    for(var iter=0; iter<maxIter; iter++){
       if(!running) break;
       
-      var current = pq.pop();
-      exploredNodes++;
+      var moveType = Math.random();
+      var testConds = current.conds.slice();
+      var changed = false;
       
-      if(exploredNodes % 200 === 0) {
-        updateStats();
-        if(shouldYield()) await yieldUI();
-      }
-      
-      // 更新最高利潤
-      if(current.profit > globalBest.profit) {
-        var w = getWins(current.bs, tc);
-        if(w >= minWinsRequired) {
-          globalBest = { conds: current.conds.slice(), bs: current.bs, profit: current.profit };
+      if(moveType < 0.6) {
+        var cand = tcSingles[Math.floor(Math.random() * tcSingles.length)];
+        var overlap = false;
+        for(var c=0; c<testConds.length; c++){
+          if(testConds[c][0] === cand.fi) { overlap = true; break; }
+        }
+        if(!overlap) {
+          testConds.push(cand.cond);
+          changed = true;
+        }
+      } else if(moveType < 0.85 && testConds.length > 1) {
+        var idx = Math.floor(Math.random() * testConds.length);
+        testConds.splice(idx, 1);
+        changed = true;
+      } else if(testConds.length > 0) {
+        var idx2 = Math.floor(Math.random() * testConds.length);
+        var cand2 = tcSingles[Math.floor(Math.random() * tcSingles.length)];
+        var overlap2 = false;
+        for(var c2=0; c2<testConds.length; c2++){
+          if(c2 !== idx2 && testConds[c2][0] === cand2.fi) { overlap2 = true; break; }
+        }
+        if(!overlap2) {
+          testConds[idx2] = cand2.cond;
+          changed = true;
         }
       }
       
-      // 嘗試擴展：加入一個從未使用過的特徵條件
-      for(var j=0; j<tcSingles.length; j++){
-        var cand = tcSingles[j];
-        
-        // 如果該特徵已經用過，跳過
-        if(current.usedFeats.indexOf(cand.fi) !== -1) continue;
-        
-        var newBS = bsAnd(current.bs, cand.bs);
-        var newCnt = bsCount(newBS);
-        
-        // 樣本數必須 >= 10%
-        if(newCnt < minWinsRequired) continue;
-        
-        var newProfit = profitOfBS(newBS, tc);
-        
-        // 只有利潤變大才放入隊列（貪婪剪枝）
-        if(newProfit > current.profit) {
-          var newUsed = current.usedFeats.concat([cand.fi]).sort(function(a,b){ return a-b; });
-          var key2 = newUsed.join('_');
-          
-          if(!visited.has(key2)) {
-            visited.add(key2);
-            pq.push({
-              conds: current.conds.concat([cand.cond]),
-              usedFeats: newUsed,
-              bs: newBS,
-              profit: newProfit
-            });
+      if(!changed) continue;
+      
+      var newBS = null;
+      for(var c3=0; c3<testConds.length; c3++){
+        var condBS = getCondBS(testConds[c3][0], testConds[c3][1], testConds[c3][2]);
+        newBS = newBS === null ? condBS : bsAnd(newBS, condBS);
+      }
+      
+      if(!newBS || bsCount(newBS) < minWinsRequired) continue;
+      
+      var newProfit = profitOfBS(newBS, tc);
+      
+      if(newProfit > current.profit) {
+        current = { conds: testConds, bs: newBS, profit: newProfit };
+        if(newProfit > globalBest.profit) {
+          var w = getWins(newBS, tc);
+          if(w >= minWinsRequired) {
+            globalBest = { conds: testConds.slice(), bs: newBS, profit: newProfit };
           }
         }
       }
       
-      // 防止無限運行，設定安全上限
-      if(exploredNodes > 50000) {
-         // 如果太多，說明這條線索太深，跳出當前目標的搜索
-         break;
-      }
+      if(iter % 500 === 0 && shouldYield()) await yieldUI();
     }
     
     bestRules[tc] = globalBest;
-    var finalWins = getWins(globalBest.bs, tc);
-    pushLog(nowTime()+'   目標 '+RESULTS[tc]+' 確定性搜索完成，最佳利潤：'+globalBest.profit+'（'+globalBest.conds.length+' 條件，'+finalWins+' 勝）','success');
   }
 
   // 3. 測試 6 種順序組合
@@ -755,14 +703,16 @@ function clearLog(){
   logEl.innerHTML=''; logEl.dataset.started='1'; logBuffer=[];
 }
 function updateProgress(){
-  document.getElementById('progbar').style.width='100%';
-  document.getElementById('progText').textContent='100%';
+  var pct=(currentRun/totalPhases)*100;
+  if(!running&&startTime>0&&document.getElementById('best').style.display==='block') pct=100;
+  document.getElementById('progbar').style.width=pct.toFixed(1)+'%';
+  document.getElementById('progText').textContent=pct.toFixed(1)+'%';
   var el=document.getElementById('progPhase');
-  el.textContent=running?'搜索中...':'完成';
+  el.textContent='第 '+currentRun+' / '+totalPhases+' 輪'+(running?' 搜索中':' 完成');
 }
 function updateStats(){
   document.getElementById('stat-pool').innerHTML='📦 候選池: <b>'+poolSize+'</b>';
-  document.getElementById('stat-greedy').innerHTML='🌡️ 探索節點: <b>'+exploredNodes+'</b>';
+  document.getElementById('stat-greedy').innerHTML='🌡️ 當前輪次: <b>'+currentRun+' / '+totalPhases+'</b>';
   document.getElementById('stat-win').innerHTML='🎲 全局最高命中率: <b>'+globalBestWinRate.toFixed(1)+'%</b>';
   document.getElementById('stat-train').innerHTML='📊 全局最高場次: <b>'+globalBestGames+'</b>';
   document.getElementById('stat-total').innerHTML='💵 全局最高盈利: <b>'+globalBestProfit+'</b>';
@@ -786,12 +736,14 @@ async function start(){
     }
     rawRowsData = parsed.rows;
     
-    minWinsRequired = Math.ceil(rawRowsData.length * 0.10);
-    pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。 10% 勝利門檻 = 至少贏 '+minWinsRequired+' 場。','info');
+    // ★ 門檻降為 5%
+    minWinsRequired = Math.ceil(rawRowsData.length * 0.05);
+    pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。 5% 勝利門檻 = 至少贏 '+minWinsRequired+' 場。','info');
 
     running=true; startTime=Date.now(); evalCount=0;
-    poolSize=0; exploredNodes=0;
+    poolSize=0; currentRun=0;
     globalBestProfit=-Infinity; globalBestWinRate=0; globalBestGames=0;
+    totalPhases=100;
     lastYieldTime=0;
 
     document.getElementById('btnRun').disabled=true;
@@ -800,31 +752,49 @@ async function start(){
     document.getElementById('best').style.display='none';
     document.getElementById('liveStats').style.display='flex';
     document.getElementById('progbar').style.width='0%';
-    document.getElementById('progText').textContent='0%';
+    document.getElementById('progText').textContent='0.0%';
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v83.0 — 確定性深度搜索版','head');
+    pushLog('🚀 v84.0 — 百次極致進化版 (5%門檻)','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
-    pushLog(nowTime()+' 模式：尾盤結算，勝場 ≥ '+minWinsRequired+'，確定性優先隊列','info');
+    pushLog(nowTime()+' 模式：尾盤結算，勝場 ≥ '+minWinsRequired+'，一鍵執行 100 次','info');
     await yieldUI();
 
-    pushLog(nowTime()+' 🏃 正在執行確定性搜索...','info');
-    updateProgress();
-    await yieldUI();
-    
-    var res = await runDeterministicEngine();
+    for(var run=1; run<=totalPhases; run++){
+      if(!running) break;
+      currentRun = run;
+      pushLog(nowTime()+' 🏃 正在執行第 '+run+'/100 輪搜索...','info');
+      updateProgress();
+      await yieldUI();
+      
+      var res = await runSingleEngine();
+      
+      if(res.stats.totalProfit > globalBestProfit){
+        globalBestProfit = res.stats.totalProfit;
+        globalBestWinRate = res.stats.winRate;
+        globalBestGames = res.stats.games;
+        globalBestRules = res.rules;
+        globalBestStats = res.stats;
+        pushLog(nowTime()+' 🌟 [第 '+run+' 輪] 打破紀錄！新最高利潤：'+globalBestProfit,'best');
+      } else {
+        pushLog(nowTime()+'    [第 '+run+' 輪] 利潤：'+res.stats.totalProfit+'（未打破紀錄）','dim');
+      }
+      
+      updateStats();
+      await yieldUI();
+    }
     
     if(!running) return; // 被手動停止
 
     pushLog('');
     pushLog('═══════════════════════════════════════════════════════════','final');
-    pushLog('🏆 確定性搜索全部完成！','best');
+    pushLog('🏆 百次搜索全部完成！','best');
     pushLog('═══════════════════════════════════════════════════════════','final');
 
-    var optimizedRules = res.rules;
-    var finalStats = res.stats;
+    var optimizedRules = globalBestRules;
+    var finalStats = globalBestStats;
     
     bestTotal = finalStats.totalProfit;
     bestWinRate = finalStats.winRate;
@@ -851,7 +821,7 @@ async function start(){
     document.getElementById('rGames').textContent=finalStats.games;
     document.getElementById('rWin').textContent=bestWinRate.toFixed(1)+'%';
     document.getElementById('resultInfo').innerHTML=
-      '🛡️ 勝利場次門檻：<b>至少 '+minWinsRequired+' 場 (10%)</b><br>'+
+      '🛡️ 勝利場次門檻：<b>至少 '+minWinsRequired+' 場 (5%)</b><br>'+
       '結算：<b>尾盤</b>　'+
       '條件限制：<b>無限疊加</b>';
 
