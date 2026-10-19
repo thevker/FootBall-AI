@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v64.1 — 無限條件實戰版 (10%防護)</title>
+<title>🚀 v65.1 — 嚴格 10% 動態瘦身 (兜底豁免)</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -76,13 +76,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v64.1 — 無限條件實戰版 (10%防護)</h2>
+<h2>🚀 v65.1 — 嚴格 10% 動態瘦身 (兜底豁免)</h2>
 
 <div class="warn-banner">
-  <b>🛡️ 全新實戰防護機制：</b><br>
-  1. <b>數據量檢查：</b>少於 100 場直接報錯跳出。<br>
-  2. <b>10% 覆蓋率門檻：</b>任何規則命中場次必須 ≥ 總場次的 10%，否則直接丟棄。（例如 100 場需至少命中 10 場）。<br>
-  3. <b>無限條件生成：</b>系統會自動疊加條件，直到利潤無法上升或覆蓋率跌破 10%。
+  <b>🧹 動態瘦身機制：</b>系統在排出最終順序後，會嚴格檢查每一條規則的「真實貢獻命中數」。只要發現低於 10%，就會被無情刪除。<b>但請放心，最後那條兜底規則（無條件全押/skip）享有絕對豁免權，永遠不會被刪除！</b>
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -210,7 +207,7 @@ var minHitsRequired = 0; // 10% 門檻
 function bsWords(N){ return (N+31)>>5; }
 function bsNew(N){ return new Uint32Array(bsWords(N)); }
 function bsAnd(a,b){ var n=a.length,o=new Uint32Array(n); for(var i=0;i<n;i++) o[i]=a[i]&b[i]; return o; }
-function bsAndNot(a,b){ var n=a.length,o=new Uint32Array(n); for(var i=0;i<n;i++) o[i]=a[i]&~b[i]; return o; }
+function bsAndNot(a,b){ var n=a.length,o=new Uint32Array])(n); for(var i=0;i<n;i++) o[i]=a[i]&~b[i]; return o; }
 function bsOrInPlace(a,b){ for(var i=0;i<a.length;i++) a[i]|=b[i]; }
 function bsCount(bs){
   var c=0;
@@ -315,7 +312,7 @@ function calcRulesStats(rules){
 
 /* ========== 閾值生成 ========== */
 function getThresholds(fi){
-  if(featureValueCache[fi]) return featureValueCache[fi];
+  if(featureValueCache[fi return featureValueCache[fi];
   var vals=[];
   for(var i=0;i<trainN;i++) vals.push(trainFeat[i][fi]);
   vals.sort(function(a,b){return a-b;});
@@ -364,7 +361,7 @@ function cloneRules(rules){
 }
 
 /* ============================================================
-   核心引擎：無限條件 + 遺傳演算法
+   核心引擎：無限條件 + 遺傳演算法 + 嚴格 10% 瘦身
    ============================================================ */
 async function runEngine(mode) {
   pushLog(nowTime()+' ⚙️ 初始化 [尾盤] 引擎，10% 門檻：'+minHitsRequired+' 場...','info');
@@ -388,7 +385,6 @@ async function runEngine(mode) {
         var bs=getCondBS(fi,op,thr);
         var cnt=bsCount(bs);
         
-        // ★ 10% 防護限制
         if(cnt < minHitsRequired) continue; 
         
         var pH = profitOfBS(bs, 0);
@@ -409,7 +405,7 @@ async function runEngine(mode) {
   singles.sort(function(a,b){ return b.profit-a.profit; });
   pushLog(nowTime()+'   合格單條件零件：'+singles.length+' 條','scan');
 
-  // 2. 無限條件生長 (Greedy Growth)
+  // 2. 無限條件生長
   pushLog(nowTime()+' 🌱 開始無限條件生長...','scan');
   var pool = [];
   var seen = {};
@@ -419,7 +415,7 @@ async function runEngine(mode) {
     if(!seen[key]) { seen[key]=1; pool.push(singles[i]); }
   }
 
-  var growthBase = singles.slice(0, 100); 
+         var growthBase = for singles.slice(0, 100); 
   for(var g=0; g<growthBase.length; g++){
     var currentRule = growthBase[g];
     var added = true;
@@ -432,7 +428,7 @@ async function runEngine(mode) {
         var cand = singles[j];
         
         var overlap = false;
-        for(var c=0; c<currentRule.conds.length; c++){
+(var c=0; c<currentRule.conds.length; c++){
           if(currentRule.conds[c][0] === cand.conds[0][0]) { overlap = true; break; }
         }
         if(overlap) continue;
@@ -440,7 +436,6 @@ async function runEngine(mode) {
         var newBS = bsAnd(currentRule.bs, cand.bs);
         var newCnt = bsCount(newBS);
         
-        // ★ 10% 防護限制
         if(newCnt < minHitsRequired) continue;
         
         var newProfit = profitOfBS(newBS, cand.thenCode);
@@ -603,10 +598,40 @@ async function runEngine(mode) {
   }
   
   pushLog(nowTime()+' ✅ 進化完成，最高利潤：'+globalBest.profit,'success');
-  var finalRules = globalBest.rules;
-  var finalStats = calcRulesStats(finalRules);
   
-  return { rules: finalRules, stats: finalStats, mode: mode };
+  // ★ 終極瘦身：嚴格檢查真實命中數，但【豁免兜底規則】
+  var finalRules = globalBest.rules;
+  var cleanupIter = 0;
+  while(true) {
+    var originalStats = calcRulesStats(finalRules);
+    var removed = false;
+    var worstIdx = -1;
+    
+    for(var i=0; i<finalRules.length; i++) { 
+      // 如果是有條件的規則 (conds.length > 0)，且真實命中數 < 10%，則標記為待刪除
+      if(finalRules[i].conds.length > 0 && originalStats.ruleStats[i].hit < minHitsRequired) {
+        worstIdx = i;
+        break; 
+      }
+    }
+    
+    if(worstIdx >= 0) {
+      pushLog(nowTime()+'   🗑️ 刪除無效規則：命中僅 '+originalStats.ruleStats[worstIdx].hit+' 場 (< '+minHitsRequired+')','scan');
+      finalRules.splice(worstIdx, 1);
+      cleanupIter++;
+    } else {
+      break; // 沒有找到需要刪除的規則，結束瘦身
+    }
+  }
+  
+  if(cleanupIter > 0) {
+    pushLog(nowTime()+' ✂️ 瘦身完成：總共刪除了 '+cleanupIter+' 條殭屍規則！','success');
+  } else {
+    pushLog(nowTime()+' ✂️ 瘦身完成：沒有發現無效規則！','success');
+  }
+
+  var cleanStats = calcRulesStats(finalRules);
+  return { rules: finalRules, stats: cleanStats, mode: mode };
 }
 
 /* ============================================================
@@ -790,7 +815,7 @@ function updateProgress(){
   document.getElementById('progbar').style.width=pct.toFixed(1)+'%';
   document.getElementById('progText').textContent=pct.toFixed(1)+'%';
   var el=document.getElementById('progPhase');
-  var names=['準備中','生成候選','遺傳進化','完成'];
+  var names=['準備中','生成候選','遺傳進化','動態瘦身','完成'];
   el.textContent=names[currentPhase]||'完成';
 }
 function updateStats(){
@@ -819,14 +844,13 @@ async function start(){
     }
     rawRowsData = parsed.rows;
     
-    // ★ 計算 10% 門檻
     minHitsRequired = Math.ceil(rawRowsData.length * 0.10);
     pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。 10% 門檻 = 至少命中 '+minHitsRequired+' 場。','info');
 
     running=true; startTime=Date.now(); evalCount=0;
     poolSize=0; pickedCount=0;
     bestTotal=0; bestWinRate=0; bestGames=0;
-    currentPhase=0; totalPhases=3;
+    currentPhase=0; totalPhases=4;
     lastYieldTime=0;
 
     document.getElementById('btnRun').disabled=true;
@@ -838,7 +862,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v64.1 — 無限條件實戰版 (10%防護)','head');
+    pushLog('🚀 v65.1 — 嚴格 10% 動態瘦身 (兜底豁免)','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：尾盤結算，無限條件疊加，遺傳演算法','info');
@@ -852,10 +876,11 @@ async function start(){
     await yieldUI();
     
     var resFinal = await runEngine('final');
-    pushLog(nowTime()+' ✅ 測試完成，總盈利：'+resFinal.stats.totalProfit,'success');
+    
+    currentPhase=4; updateProgress();
+    pushLog(nowTime()+' ✅ 測試完成，最終乾淨利潤：'+resFinal.stats.totalProfit,'success');
     await yieldUI();
 
-    currentPhase=3; updateProgress();
     pushLog('');
     pushLog('═══════════════════════════════════════════════════════════','final');
     pushLog('🏆 優化完成！','best');
