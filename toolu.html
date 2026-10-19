@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v63.0 — 遺傳演算法終極版</title>
+<title>🚀 v64.0 — 無限條件實戰版 (5%防護)</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -76,10 +76,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v63.0 — 遺傳演算法終極版</h2>
+<h2>🚀 v64.0 — 無限條件實戰版 (5%防護)</h2>
 
 <div class="warn-banner">
-  <b>🧬 終極算力解放：</b>導入遺傳演算法與 3 條件支持，取消所有候選池截斷。系統會花 10~30 秒進行 50,000 次進化與變異，只為了逼近絕對的最高利潤！
+  <b>🛡️ 全新實戰防護機制：</b><br>
+  1. <b>數據量檢查：</b>少於 100 場直接報錯跳出。<br>
+  2. <b>5% 覆蓋率門檻：</b>任何規則命中場次必須 ≥ 總場次的 5%，否則直接丟棄。<br>
+  3. <b>無限條件生成：</b>系統會自動疊加條件（1個、2個、3個...），直到利潤無法上升或覆蓋率跌破 5%。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -88,14 +91,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 138	410	610	159	390	500	H"></textarea>
 
 <div class="row">
-  <button id="btnRun" class="hero" onclick="start()">🚀 啟動終極進化</button>
+  <button id="btnRun" class="hero" onclick="start()">🚀 啟動極致進化</button>
   <button id="btnCopy" class="copy" onclick="copyIt('txtH')">📋 複製 H2 公式</button>
-
-  <label>條件上限：</label>
-  <select id="condLimit">
-    <option value="2" selected>1~2 條件 (推薦穩健)</option>
-    <option value="3">1~3 條件 (極限挑戰)</option>
-  </select>
 </div>
 
 <div class="progress-row">
@@ -206,6 +203,8 @@ var featureValueCache={};
 var condBSCache={};
 var condBSCacheSize=0;
 var COND_CACHE_MAX=300000; 
+
+var minHitsRequired = 0; // 5% 門檻
 
 /* ========== 位圖 ========== */
 function bsWords(N){ return (N+31)>>5; }
@@ -365,10 +364,10 @@ function cloneRules(rules){
 }
 
 /* ============================================================
-   核心引擎：遺傳演算法
+   核心引擎：無限條件 + 遺傳演算法
    ============================================================ */
-async function runEngine(mode, condLimit) {
-  pushLog(nowTime()+' ⚙️ 初始化 [尾盤] 結算引擎，條件上限：'+condLimit+'...','info');
+async function runEngine(mode) {
+  pushLog(nowTime()+' ⚙️ 初始化 [尾盤] 引擎，5% 門檻：'+minHitsRequired+' 場...','info');
   
   featureValueCache={};
   clearCondCache();
@@ -388,7 +387,9 @@ async function runEngine(mode, condLimit) {
         var thr=ths[k];
         var bs=getCondBS(fi,op,thr);
         var cnt=bsCount(bs);
-        if(cnt < 1) continue; 
+        
+        // ★ 5% 防護限制
+        if(cnt < minHitsRequired) continue; 
         
         var pH = profitOfBS(bs, 0);
         var pD = profitOfBS(bs, 1);
@@ -406,110 +407,97 @@ async function runEngine(mode, condLimit) {
     if(fi % 5 === 0 && shouldYield()) await yieldUI();
   }
   singles.sort(function(a,b){ return b.profit-a.profit; });
-  pushLog(nowTime()+'   單條件零件：'+singles.length+' 條','scan');
+  pushLog(nowTime()+'   合格單條件零件：'+singles.length+' 條','scan');
 
-  // 2. 生成雙條件零件
-  var topSinglesForCombo = singles.slice(0, 150); // 放寬到 150
-  var doubles = [];
-  for(var i=0;i<topSinglesForCombo.length;i++){
-    for(var j=i+1;j<topSinglesForCombo.length;j++){
-      if(topSinglesForCombo[i].conds[0][0] === topSinglesForCombo[j].conds[0][0]) continue;
-      var cbs = bsAnd(topSinglesForCombo[i].bs, topSinglesForCombo[j].bs);
-      var cnt2 = bsCount(cbs);
-      if(cnt2 < 1) continue;
-      
-      var pH2 = profitOfBS(cbs, 0);
-      var pD2 = profitOfBS(cbs, 1);
-      var pA2 = profitOfBS(cbs, 2);
-      var bestP2 = Math.max(pH2, pD2, pA2);
-      
-      if(bestP2 > 0){
-        var bestTc2 = (bestP2 === pH2) ? 0 : (bestP2 === pD2 ? 1 : 2);
-        doubles.push({ conds:[topSinglesForCombo[i].conds[0], topSinglesForCombo[j].conds[0]], bs:cbs, thenCode:bestTc2, profit:bestP2, cnt:cnt2 });
-      } else {
-        doubles.push({ conds:[topSinglesForCombo[i].conds[0], topSinglesForCombo[j].conds[0]], bs:cbs, thenCode:3, profit:0, cnt:cnt2 });
-      }
-    }
-    if(i % 10 === 0 && shouldYield()) await yieldUI();
+  // 2. 無限條件生長 (Greedy Growth)
+  pushLog(nowTime()+' 🌱 開始無限條件生長...','scan');
+  var pool = [];
+  var seen = {};
+  
+  // 將所有單條件放入池中
+  for(var i=0; i<singles.length; i++) {
+    var key = singles[i].conds[0][0]+'_'+singles[i].conds[0][1]+'_'+singles[i].conds[0][2]+'→'+singles[i].thenCode;
+    if(!seen[key]) { seen[key]=1; pool.push(singles[i]); }
   }
-  doubles.sort(function(a,b){ return b.profit-a.profit; });
-  pushLog(nowTime()+'   雙條件零件：'+doubles.length+' 條','scan');
 
-  // 生成三條件零件（如果允許）
-  var triples = [];
-  if(condLimit === '3') {
-    var topDoublesForCombo = doubles.slice(0, 100);
-    var topSinglesForTriple = singles.slice(0, 100);
-    for(var i=0;i<topDoublesForCombo.length;i++){
-      var d = topDoublesForCombo[i];
-      for(var j=0;j<topSinglesForTriple.length;j++){
-        var s = topSinglesForTriple[j];
+  var growthBase = singles.slice(0, 100); // 取前 100 名單條件作為生長起點
+  for(var g=0; g<growthBase.length; g++){
+    var currentRule = growthBase[g];
+    var added = true;
+    
+    // 只要還能加條件，且不超過 10 個條件（防止死循環），就繼續
+    while(added && currentRule.conds.length < 10) {
+      added = false;
+      var bestAdd = null;
+      
+      // 嘗試從前 50 名的單條件中找附加條件
+      for(var j=0; j<Math.min(50, singles.length); j++){
+        var cand = singles[j];
+        
+        // 檢查特徵是否重複
         var overlap = false;
-        for(var c=0;c<d.conds.length;c++){
-          if(d.conds[c][0] === s.conds[0][0]) { overlap = true; break; }
+        for(var c=0; c<currentRule.conds.length; c++){
+          if(currentRule.conds[c][0] === cand.conds[0][0]) { overlap = true; break; }
         }
         if(overlap) continue;
         
-        var cbs3 = bsAnd(d.bs, s.bs);
-        var cnt3 = bsCount(cbs3);
-        if(cnt3 < 1) continue;
+        var newBS = bsAnd(currentRule.bs, cand.bs);
+        var newCnt = bsCount(newBS);
         
-        var pH3 = profitOfBS(cbs3, 0);
-        var pD3 = profitOfBS(cbs3, 1);
-        var pA3 = profitOfBS(cbs3, 2);
-        var bestP3 = Math.max(pH3, pD3, pA3);
+        // ★ 5% 防護限制
+        if(newCnt < minHitsRequired) continue;
         
-        if(bestP3 > 0){
-          var bestTc3 = (bestP3 === pH3) ? 0 : (bestP3 === pD3 ? 1 : 2);
-          triples.push({ conds: d.conds.concat([s.conds[0]]), bs:cbs3, thenCode:bestTc3, profit:bestP3, cnt:cnt3 });
-        } else {
-          triples.push({ conds: d.conds.concat([s.conds[0]]), bs:cbs3, thenCode:3, profit:0, cnt:cnt3 });
+        var newProfit = profitOfBS(newBS, cand.thenCode);
+        
+        // 如果疊加後利潤更高（且為正），就記錄為最佳附加
+        if(newProfit > currentRule.profit && newProfit > 0){
+          if(!bestAdd || newProfit > bestAdd.profit) {
+            bestAdd = { conds: currentRule.conds.concat([cand.conds[0]]), bs:newBS, thenCode:cand.thenCode, profit:newProfit, cnt:newCnt };
+          }
         }
       }
-      if(i % 10 === 0 && shouldYield()) await yieldUI();
+      
+      if(bestAdd) {
+        currentRule = bestAdd;
+        added = true;
+        
+        // 將這條新生成的無限條件規則加入池中
+        var newKey = '';
+        var cs = currentRule.conds.slice().sort(function(a,b){ return a[0]-b[0]; });
+        for(var c=0; c<cs.length; c++) newKey += cs[c][0]+'_'+cs[c][1]+'_'+cs[c][2]+'|';
+        newKey += '→'+currentRule.thenCode;
+        
+        if(!seen[newKey]) {
+          seen[newKey] = 1;
+          pool.push(currentRule);
+        }
+      }
+      if(shouldYield()) await yieldUI();
     }
-    triples.sort(function(a,b){ return b.profit-a.profit; });
-    pushLog(nowTime()+'   三條件零件：'+triples.length+' 條','scan');
   }
-
-  // 混合池
-  var pool = singles.concat(doubles);
-  if(condLimit === '3') pool = pool.concat(triples);
   
-  var seen={}, unique=[];
-  for(var u=0;u<pool.length;u++){
-    var key='';
-    var cs = pool[u].conds.slice().sort(function(a,b){ return a[0]-b[0]; });
-    for(var c=0;c<cs.length;c++) key += cs[c][0]+'_'+cs[c][1]+'_'+cs[c][2]+'|';
-    key += '→'+pool[u].thenCode;
-    if(seen[key]) continue;
-    seen[key]=1;
-    unique.push(pool[u]);
-  }
-  pool = unique;
+  pool.sort(function(a,b){ return b.profit-a.profit; });
   poolSize = pool.length;
+  pushLog(nowTime()+'   生成多條件零件：'+(poolSize - singles.length)+' 條','scan');
   
-  // 3. 遺傳演算法
-  pushLog(nowTime()+' 🧬 啟動遺傳演算法（進化世代：50000）...','info');
+  // 3. 遺傳演算法優化
+  pushLog(nowTime()+' 🧬 啟動遺傳演算法（進化世代：30000）...','info');
   
-  var POP_SIZE = 30; // 種群大小
-  var MAX_GEN = 50000; // 總迭代次數 (遺傳+變異)
+  var POP_SIZE = 30; 
+  var MAX_GEN = 30000; 
   
-  // 初始化種群
   var population = [];
   for(var p=0; p<POP_SIZE; p++){
-    // 每個個體隨機建立一條初始公式 (基於貪心)
     var rules = [];
     var matched = bsNew(trainN);
     while(true){
       var bestCand = null;
       var bestMarg = 0;
-      // 隨機挑選池子裡的一些來比對，增加多樣性
       for(var i=0; i<Math.min(50, pool.length); i++){
         var cand = pool[Math.floor(Math.random() * pool.length)];
         var only = bsAndNot(cand.bs, matched);
         var cnt = bsCount(only);
-        if(cnt < 1) continue;
+        if(cnt < minHitsRequired) continue; // 5% 防護限制
         var marg = profitOfBS(only, cand.thenCode);
         if(marg > bestMarg){
           bestMarg = marg;
@@ -523,7 +511,6 @@ async function runEngine(mode, condLimit) {
       bsOrInPlace(matched, bestCand.bs);
     }
     
-    // 加上兜底
     var finalMatched = bsNew(trainN);
     for(var i=0; i<rules.length; i++) bsOrInPlace(finalMatched, rules[i].bs);
     var unmatched = bsAndNot(bsNew(trainN).fill(~0), finalMatched);
@@ -551,54 +538,41 @@ async function runEngine(mode, condLimit) {
     if(!running) break;
     
     var nextGen = [];
-    
-    // 1. 菁英保留 (保留前 20%)
     var eliteCount = Math.floor(POP_SIZE * 0.2);
-    for(var i=0; i<eliteCount; i++){
-      nextGen.push(population[i]);
-    }
+    for(var i=0; i<eliteCount; i++) nextGen.push(population[i]);
     
-    // 2. 繁衍 (交叉 + 變異)
     while(nextGen.length < POP_SIZE) {
-      // 選擇父母 (錦標賽)
       var p1 = population[Math.floor(Math.random() * 15)];
       var p2 = population[Math.floor(Math.random() * 15)];
       
-      // 交叉 (Crossover)
       var childRules = [];
       var cut1 = Math.floor(Math.random() * p1.rules.length);
       var cut2 = Math.floor(Math.random() * p2.rules.length);
       
-      // 取前半段
       for(var i=0; i<cut1; i++) childRules.push(p1.rules[i]);
-      // 取後半段
       for(var i=cut2; i<p2.rules.length; i++) {
-        // 簡單去重（防止完全一樣的條件）
         var c = p2.rules[i];
-        if(c.conds.length === 0) continue; // 兜底最後再加
+        if(c.conds.length === 0) continue;
         childRules.push(c);
       }
       
-      // 變異 (Mutation)
       if(Math.random() < 0.3 && childRules.length > 0) {
         var moveType = Math.random();
         if(moveType < 0.3 && childRules.length > 1) {
-          // 換位
           var i1 = Math.floor(Math.random() * childRules.length);
           var i2 = Math.floor(Math.random() * childRules.length);
           var tmp = childRules[i1]; childRules[i1] = childRules[i2]; childRules[i2] = tmp;
         } else if(moveType < 0.6 && childRules.length > 1) {
-          // 刪除
           childRules.splice(Math.floor(Math.random() * childRules.length), 1);
         } else {
-          // 增加
           var randCand = pool[Math.floor(Math.random() * pool.length)];
-          childRules.push({ on:1, then:RESULTS[randCand.thenCode], thenCode:randCand.thenCode, conds:randCand.conds, bs:randCand.bs });
+          // 確保加入的規則不會導致 0 命中
+          if(randCand.cnt >= minHitsRequired) {
+            childRules.push({ on:1, then:RESULTS[randCand.thenCode], thenCode:randCand.thenCode, conds:randCand.conds, bs:randCand.bs });
+          }
         }
       }
       
-      // 重新計算這條公式的利潤並加上兜底
-      // 為了速度，這裡不再深拷貝，直接傳入計算
       var finalMatched = bsNew(trainN);
       for(var i=0; i<childRules.length; i++) bsOrInPlace(finalMatched, childRules[i].bs);
       var unmatched = bsAndNot(bsNew(trainN).fill(~0), finalMatched);
@@ -636,15 +610,10 @@ async function runEngine(mode, condLimit) {
   }
   
   pushLog(nowTime()+' ✅ 進化完成，最高利潤：'+globalBest.profit,'success');
-
   var finalRules = globalBest.rules;
   var finalStats = calcRulesStats(finalRules);
   
-  return {
-    rules: finalRules,
-    stats: finalStats,
-    mode: mode
-  };
+  return { rules: finalRules, stats: finalStats, mode: mode };
 }
 
 /* ============================================================
@@ -851,8 +820,15 @@ function shouldYield(){ return Date.now()-lastYieldTime>25; }
 async function start(){
   try {
     var parsed=parseData(document.getElementById('input').value);
-    if(parsed.rows.length===0){ alert('沒有有效數據'); return; }
+    if(parsed.rows.length < 100){ 
+      alert('⚠️ 數據不足！\n目前只有 ' + parsed.rows.length + ' 場。\n為了確保統計學意義，請提供至少 100 場數據。');
+      return; 
+    }
     rawRowsData = parsed.rows;
+    
+    // ★ 計算 5% 門檻
+    minHitsRequired = Math.ceil(rawRowsData.length * 0.05);
+    pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。 5% 門檻 = 至少命中 '+minHitsRequired+' 場。','info');
 
     running=true; startTime=Date.now(); evalCount=0;
     poolSize=0; pickedCount=0;
@@ -869,10 +845,10 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v63.0 — 遺傳演算法終極版','head');
+    pushLog('🚀 v64.0 — 無限條件實戰版 (5%防護)','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
-    pushLog(nowTime()+' 模式：尾盤結算，時間無限制，極致運算','info');
+    pushLog(nowTime()+' 模式：尾盤結算，無限條件疊加，遺傳演算法','info');
     await yieldUI();
 
     currentPhase=1; updateProgress();
@@ -882,8 +858,7 @@ async function start(){
     pushLog('═══════════════════════════════════════════════════════════','head');
     await yieldUI();
     
-    var condLimit = document.getElementById('condLimit').value;
-    var resFinal = await runEngine('final', condLimit);
+    var resFinal = await runEngine('final');
     pushLog(nowTime()+' ✅ 測試完成，總盈利：'+resFinal.stats.totalProfit,'success');
     await yieldUI();
 
@@ -921,9 +896,9 @@ async function start(){
     document.getElementById('rGames').textContent=finalStats.games;
     document.getElementById('rWin').textContent=bestWinRate.toFixed(1)+'%';
     document.getElementById('resultInfo').innerHTML=
-      '🎚️ 最少樣本：<b>無限制</b>　'+
+      '🛡️ 覆蓋率門檻：<b>5% ('+minHitsRequired+' 場)</b><br>'+
       '結算：<b>尾盤</b>　'+
-      '條件限制：<b>1~'+condLimit+' 條件</b>';
+      '條件限制：<b>無限疊加</b>';
 
     renderCompareTable(finalStats, rawRowsData, 'final');
     document.getElementById('txtH').value=formulaH;
