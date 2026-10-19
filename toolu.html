@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v53.0 — 穩定秒出極限利潤版</title>
+<title>🚀 v54.0 — 幽靈過濾與最優兜底版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -29,7 +29,6 @@ button.hero{padding:14px 36px;font-size:17px;background:linear-gradient(135deg,#
 .box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
 .label{font-weight:bold;font-size:13px;margin-bottom:6px;color:#333}
 .out{width:100%;height:260px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto;resize:vertical}
-.out-short{height:60px !important}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
 select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px}
 #msg{margin-top:8px;font-weight:bold;font-size:13px;display:none;padding:8px;border-radius:4px}
@@ -67,7 +66,6 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .result-cell{background:#fff;padding:10px;border-radius:4px;text-align:center;border:1px solid #fbcfe8}
 .result-cell .num{font-size:22px;font-weight:bold;color:#be185d}
 .result-cell .lbl{font-size:10px;color:#666}
-/* 對賬表滾動容器 */
 .scroll-container { max-height: 400px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd; border-radius: 4px; }
 .compare-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:0;}
 .compare-table th,.compare-table td{border:1px solid #ddd;padding:6px;text-align:center;white-space:nowrap;}
@@ -79,10 +77,12 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v53.0 — 穩定秒出極限利潤版</h2>
+<h2>🚀 v54.0 — 幽靈過濾與最優兜底版</h2>
 
 <div class="warn-banner">
-  <b>✅ 已解決卡死問題：</b>精簡了搜尋演算法，現在能秒出結果。同時採用「全數值掃描」，保證加入任何極端新數據都不會破壞原本的高利潤組合，系統會自動進化！
+  <b>✅ 終極優化功能：</b>
+  1. <b>支持 Skip 規則</b>：系統會自動找出「押任何結果都虧」的毒藥局，生成 `skip` 規則將其過濾。
+  2. <b>最優兜底</b>：墊底不再是死板的 `skip`，系統會自動計算未被覆蓋的場次全押 H/D/A 哪個最賺錢，自動設為墊底規則。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -159,17 +159,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   </div>
 
   <div class="section" style="background:#f0fdf4;border-color:#bbf7d0">
-    <h3 style="color:#166534">📌 1. H2 預測公式（複製到 H2）</h3>
+    <h3 style="color:#166534">📌 H2 預測公式（複製到 H2）</h3>
     <div style="font-size:11px;color:#166534;margin-bottom:6px">已完美解決 MAX/MIN 的 ArrayFormula 問題。</div>
     <button class="txt" onclick="copyIt('txtH')">📋 複製 H2 公式</button>
     <textarea id="txtH" class="out" readonly wrap="off" style="margin-top:6px"></textarea>
-  </div>
-
-  <div class="section" style="background:#eff6ff;border-color:#bfdbfe;margin-top:8px">
-    <h3 style="color:#1e40af">💰 2. I 列盈利公式（複製到 I2）</h3>
-    <div style="font-size:11px;color:#1e3a8a;margin-bottom:6px">⚠️ 必須使用這裡生成的公式，確保結算賠率一致。</div>
-    <button class="txt" onclick="copyIt('txtI')">📋 複製 I2 公式</button>
-    <textarea id="txtI" class="out out-short" readonly wrap="off" style="margin-top:6px"></textarea>
   </div>
   
   <div id="msg"></div>
@@ -281,7 +274,7 @@ function clearCondCache(){ condBSCache={}; condBSCacheSize=0; }
 
 /* ========== 盈利計算 ========== */
 function profitOfBS(bs,thenCode){
-  if(thenCode===3) return 0;
+  if(thenCode===3) return 0; // Skip 本身不產生盈虧
   var total=0;
   for(var w=0;w<bs.length;w++){
     var x=bs[w], base=w<<5;
@@ -356,13 +349,11 @@ function getThresholds(fi){
   
   var ths=[],seen={};
   
-  // 直接取所有不重複的數值作為閾值
   for(var i=0;i<vals.length;i++){
     var v=vals[i];
     if(!seen[v]){ seen[v]=1; ths.push(v); }
   }
   
-  // 補齊整數網格
   var fn=FEATURES[fi];
   var isChangeAmount = (fn.indexOf('-')>=0 || fn.indexOf('+')>=0);
   if(isChangeAmount){
@@ -385,10 +376,10 @@ function getThresholds(fi){
 }
 
 /* ============================================================
-   階段 1：生成無限制極大候選池
+   階段 1：生成候選池（支持 Skip 規則）
    ============================================================ */
 async function generatePool(){
-  pushLog(nowTime()+' 📦 生成無限制候選池...','scan');
+  pushLog(nowTime()+' 📦 生成候選池（包含 Skip 過濾器）...','scan');
   var pool=[];
   var rawCandidates=[];
   
@@ -401,12 +392,15 @@ async function generatePool(){
         var cnt=bsCount(bs);
         if(cnt<MIN_SAMPLES) continue;
         
-        var bestTc=-1, bestP=-99999;
-        for(var tc=0;tc<3;tc++){
-          var p=profitOfBS(bs,tc);
-          if(p>bestP){ bestP=p; bestTc=tc; }
-        }
-        if(bestP>0){
+        // 計算押 H, D, A 的利潤
+        var pH = profitOfBS(bs, 0);
+        var pD = profitOfBS(bs, 1);
+        var pA = profitOfBS(bs, 2);
+        var bestP = Math.max(pH, pD, pA);
+        
+        if(bestP > 0){
+          // 有正利潤，選擇最佳投注方向
+          var bestTc = (bestP === pH) ? 0 : (bestP === pD ? 1 : 2);
           rawCandidates.push({
             conds:[[fi,op,thr]],
             bs:bs,
@@ -414,16 +408,24 @@ async function generatePool(){
             profit:bestP,
             cnt:cnt
           });
+        } else {
+          // ★ 全部虧損，生成 Skip 規則（用來過濾毒藥局）
+          rawCandidates.push({
+            conds:[[fi,op,thr]],
+            bs:bs,
+            thenCode:3, // 3 = skip
+            profit:0,
+            cnt:cnt
+          });
         }
       }
     }
   }
   
-  // 不截斷，直接保留所有正利潤單條件
   rawCandidates.sort(function(a,b){ return b.profit-a.profit; });
   var topSingles = rawCandidates.slice(0, 5000); 
   pool = pool.concat(topSingles);
-  pushLog(nowTime()+'   單條件：'+topSingles.length+' 條','scan');
+  pushLog(nowTime()+'   單條件：'+topSingles.length+' 條（含 Skip）','scan');
 
   // 雙條件：基於前 100 個最強的單條件進行組合
   var limit = Math.min(topSingles.length, 100);
@@ -435,15 +437,21 @@ async function generatePool(){
       var cnt2 = bsCount(cbs);
       if(cnt2 < MIN_SAMPLES) continue;
       
-      var bestTc2=-1, bestP2=-99999;
-      for(var tc2=0;tc2<3;tc2++){
-        var p2 = profitOfBS(cbs,tc2);
-        if(p2>bestP2){ bestP2=p2; bestTc2=tc2; }
-      }
-      if(bestP2>0){
+      var pH2 = profitOfBS(cbs, 0);
+      var pD2 = profitOfBS(cbs, 1);
+      var pA2 = profitOfBS(cbs, 2);
+      var bestP2 = Math.max(pH2, pD2, pA2);
+      
+      if(bestP2 > 0){
+        var bestTc2 = (bestP2 === pH2) ? 0 : (bestP2 === pD2 ? 1 : 2);
         doubles.push({
           conds:[topSingles[i].conds[0], topSingles[j].conds[0]],
           bs:cbs, thenCode:bestTc2, profit:bestP2, cnt:cnt2
+        });
+      } else {
+        doubles.push({
+          conds:[topSingles[i].conds[0], topSingles[j].conds[0]],
+          bs:cbs, thenCode:3, profit:0, cnt:cnt2
         });
       }
     }
@@ -491,7 +499,10 @@ async function beamSearch(pool, maxRules, beamWidth) {
         if(cnt < 1) continue; 
         
         var marg = profitOfBS(only, cand.thenCode);
-        if(marg <= 0) continue; 
+        
+        // ★ 這裡改為 marg < 0 才跳過。
+        // 如果 cand 是 skip (marg=0)，允許它加入，看它能不能遮罩後面的虧損局
+        if(marg < 0) continue; 
         
         var newMatched = new Uint32Array(beam.matched);
         bsOrInPlace(newMatched, cand.bs);
@@ -557,6 +568,42 @@ async function optimizeOrder(rules) {
 }
 
 /* ============================================================
+   階段 4：生成最優兜底規則
+   ============================================================ */
+function genOptimalBottom(rules){
+  var matched = bsNew(trainN);
+  for(var i=0; i<rules.length; i++){
+    var bs = getCondBS(rules[i].conds[0][0], rules[i].conds[0][1], rules[i].conds[0][2]);
+    if(rules[i].conds.length > 1) {
+       var bs2 = getCondBS(rules[i].conds[1][0], rules[i].conds[1][1], rules[i].conds[1][2]);
+       bs = bsAnd(bs, bs2);
+    }
+    bsOrInPlace(matched, bs);
+  }
+  
+  var unmatched = bsAndNot(bsNew(trainN).fill(~0), matched);
+  var cnt = bsCount(unmatched);
+  
+  if(cnt === 0) {
+    rules.push({on:1, then:'skip', thenCode:3, conds:[]});
+    return;
+  }
+  
+  // 測試全押 H/D/A 哪個利潤最高
+  var pH = profitOfBS(unmatched, 0);
+  var pD = profitOfBS(unmatched, 1);
+  var pA = profitOfBS(unmatched, 2);
+  
+  var bestTc = 3, bestP = 0;
+  if(pH > bestP){ bestP = pH; bestTc = 0; }
+  if(pD > bestP){ bestP = pD; bestTc = 1; }
+  if(pA > bestP){ bestP = pA; bestTc = 2; }
+  
+  rules.push({on:1, then:RESULTS[bestTc], thenCode:bestTc, conds:[]});
+  pushLog(nowTime()+' 🎯 智能墊底：剩餘 '+cnt+' 場全押 '+RESULTS[bestTc]+' (利潤 '+bestP+')','scan');
+}
+
+/* ============================================================
    格式化與輸出
    ============================================================ */
 function fmtCond(c){
@@ -574,12 +621,12 @@ function renderRuleTable(rules, stats){
     var ss=fmtRule(r);
     if(ss.length>110) ss=ss.slice(0,107)+'...';
     var pcls=rs.profit>0?'profit-pos':(rs.profit<0?'profit-neg':'');
-    var thenClass=r.thenCode===0?'tag-h':(r.thenCode===1?'tag-d':(r.thenCode===2?'tag-a':''));
+    var thenClass=r.thenCode===0?'tag-h':(r.thenCode===1?'tag-d':(r.thenCode===2?'tag-a':'tag-skip'));
     var thenTag='<span class="'+thenClass+'">'+r.then+'</span>';
     var wr=rs.hit>0?(rs.wins/rs.hit*100).toFixed(1)+'%':'-';
     
-    if(i === rules.length-1 && r.then === 'skip') {
-      html+='<tr><td>墊底</td><td style="text-align:left;color:#666">其餘全部</td><td><span class="tag-skip">skip</span></td><td>'+stats.skips+'</td><td>-</td><td>-</td><td>-</td><td>0</td></tr>';
+    if(r.conds.length === 0) {
+      html+='<tr><td>墊底</td><td style="text-align:left;color:#666">其餘全部</td><td>'+thenTag+'</td><td>'+rs.hit+'</td><td>'+rs.wins+'</td><td>'+rs.losses+'</td><td>'+wr+'</td><td class="'+pcls+'">'+rs.profit+'</td></tr>';
     } else {
       html+='<tr><td>第 '+(i+1)+'</td>'+
         '<td style="text-align:left;font-size:10px">'+ss+'</td><td>'+thenTag+'</td>'+
@@ -673,6 +720,11 @@ function genFormulaRecursive(rules, index){
   var nextIf = genFormulaRecursive(rules, index + 1);
   
   var conds = rule.conds;
+  // 如果是空條件（墊底），直接返回結果
+  if(conds.length === 0){
+    return '"' + rule.then + '"';
+  }
+  
   var condSheetStrings = conds.map(function(c){
     var expr = featToExpr(c[0]);
     var op = OPS_SHEET[c[1]];
@@ -687,22 +739,12 @@ function genFormulaRecursive(rules, index){
 }
 
 function genHFormula(rules){
-  var activeRules = rules.filter(function(r){ return r.conds.length > 0; });
-  if(activeRules.length === 0) return '=ARRAYFORMULA(IF((A2:A=""),"","skip"))';
+  // 包含墊底規則全部生成
+  if(rules.length === 0) return '=ARRAYFORMULA(IF((A2:A=""),"","skip"))';
   
-  var body = genFormulaRecursive(activeRules, 0);
+  var body = genFormulaRecursive(rules, 0);
   
   return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",' + body + '))';
-}
-
-function genIFormula(mode){
-  var pH, pD, pA;
-  if(mode === 'initial'){
-    pH = 'A2'; pD = 'B2'; pA = 'C2';
-  } else {
-    pH = 'D2'; pD = 'E2'; pA = 'F2';
-  }
-  return `=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""), "", IF(H2:H="skip", 0, IF((H2:H="H")*(G2:G="H"), ${pH}-100, IF((H2:H="D")*(G2:G="D"), ${pD}-100, IF((H2:H="A")*(G2:G="A"), ${pA}-100, -100))))))`;
 }
 
 /* ========== UI ========== */
@@ -745,7 +787,7 @@ function updateProgress(){
   document.getElementById('progbar').style.width=pct.toFixed(1)+'%';
   document.getElementById('progText').textContent=pct.toFixed(1)+'%';
   var el=document.getElementById('progPhase');
-  var names=['準備中','生成候選','束搜索排列','順序優化'];
+  var names=['準備中','生成候選','束搜索排列','順序優化','最優兜底'];
   el.textContent=names[currentPhase]||'完成';
 }
 function updateStats(){
@@ -776,7 +818,7 @@ async function start(){
     running=true; startTime=Date.now(); evalCount=0;
     poolSize=0; pickedCount=0;
     bestTotal=0; bestWinRate=0; bestGames=0;
-    currentPhase=0; totalPhases=3;
+    currentPhase=0; totalPhases=4;
     lastYieldTime=0;
     featureValueCache={};
     clearCondCache();
@@ -796,7 +838,7 @@ async function start(){
     PAYOUT_MODE=document.getElementById('payoutMode').value;
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v53.0 — 穩定秒出極限利潤版','head');
+    pushLog('🚀 v54.0 — 幽靈過濾與最優兜底版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 結算：'+(PAYOUT_MODE==='initial'?'初盤 A/B/C':'尾盤 D/E/F'),'info');
@@ -815,7 +857,7 @@ async function start(){
     currentPhase=1; updateProgress();
     pushLog('');
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog(nowTime()+' 階段 1/3：生成無限制候選池','head');
+    pushLog(nowTime()+' 階段 1/4：生成無限制候選池','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     await yieldUI();
     var pool=await generatePool();
@@ -827,7 +869,7 @@ async function start(){
     currentPhase=2; updateProgress();
     pushLog('');
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog(nowTime()+' 階段 2/3：束搜索尋找最優層數','head');
+    pushLog(nowTime()+' 階段 2/4：束搜索尋找最優層數','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     await yieldUI();
     var beams = await beamSearch(pool, maxRules, beamWidth);
@@ -845,13 +887,22 @@ async function start(){
     currentPhase=3; updateProgress();
     pushLog('');
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog(nowTime()+' 階段 3/3：局部順序交換優化','head');
+    pushLog(nowTime()+' 階段 3/4：局部順序交換優化','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     await yieldUI();
     
     var optimizedRules = await optimizeOrder(bestBeam.rules);
 
-    optimizedRules.push({on:1, then:'skip', thenCode:3, conds:[]});
+    // 階段 4
+    currentPhase=4; updateProgress();
+    pushLog('');
+    pushLog('═══════════════════════════════════════════════════════════','head');
+    pushLog(nowTime()+' 階段 4/4：生成智能墊底','head');
+    pushLog('═══════════════════════════════════════════════════════════','head');
+    await yieldUI();
+    
+    // ★ 自動挑選最優兜底（H/D/A/skip）
+    genOptimalBottom(optimizedRules);
     
     var finalStats = calcRulesStats(optimizedRules);
     bestTotal = finalStats.totalProfit;
@@ -859,7 +910,6 @@ async function start(){
     bestGames = finalStats.games;
 
     var formulaH = genHFormula(optimizedRules);
-    var formulaI = genIFormula(PAYOUT_MODE);
     var activeCount = optimizedRules.length - 1;
 
     pushLog('');
@@ -889,7 +939,6 @@ async function start(){
     renderCompareTable(finalStats, rawRowsData);
 
     document.getElementById('txtH').value=formulaH;
-    document.getElementById('txtI').value=formulaI;
 
     renderRuleTable(optimizedRules, finalStats);
     document.getElementById('diag').style.display='block';
