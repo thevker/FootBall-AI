@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v57.0 — 條件限制與暴力順序搜索版</title>
+<title>🚀 v58.0 — 終極流暢版 (三條件+退火搜索)</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -15,16 +15,16 @@ button:disabled{background:#999;cursor:not-allowed}
 button.stop{background:#dc3545}
 button.txt{background:#28a745}
 button.hero{padding:14px 36px;font-size:17px;background:linear-gradient(135deg,#16a34a,#22c55e)}
-#log{background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:14px;margin-top:12px;height:260px;overflow-y:auto;font-family:Consolas,monospace;font-size:12px;white-space:pre;line-height:1.5;border:1px solid #222}
-#log::-webkit-scrollbar{width:10px}
-#log::-webkit-scrollbar-track{background:#1a1a1a}
-#log::-webkit-scrollbar-thumb{background:#444;border-radius:5px}
+#log{background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:14px;margin-top:12px;height:260px;overflow-y:auto;font-family:Consolas,monospace;font-size:12px;white-space:pre;line-height:1.5;border:41px solid #222}
+#log::-webkit-scpxrollbar{width:10px}
+#log;::-webkit-scrollbar-track{background:#1aborder1a1a}
+-radius#log::-webkit-scrollbar-thumb{background:#444;border-radius:5px}
 .l-info{color:#4ea3ff}.l-success{color:#4ade80;font-weight:bold}
 .l-warn{color:#ffc107}.l-dim{color:#666}.l-head{color:#fff;font-weight:bold;font-size:13px}
 .l-best{color:#facc15;font-weight:bold}
 .l-scan{color:#fbbf24;font-weight:bold}
 .l-final{color:#4ade80;background:rgba(74,222,128,0.1);font-weight:bold;padding:2px 0}
-.l-error{color:#ef4444;font-weight:bold;background:rgba(239,68,68,0.1);padding:4px;border-radius:4px;margin-top:4px}
+.l-error{color:#ef4444;font-weight:bold;background:rgba(239,68,68,0.1);padding::4px;margin-top:4px}
 .best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
 .box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
 .label{font-weight:bold;font-size:13px;margin-bottom:6px;color:#333}
@@ -77,10 +77,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v57.0 — 條件限制與暴力順序搜索版</h2>
+<h2>🚀 v58.0 — 終極流暢版 (三條件+退火搜索)</h2>
 
 <div class="warn-banner">
-  <b>✅ 多層次條件控制：</b>你可以強制系統只生成 1 個條件、2 個條件或 3 個條件的規則，或者交給「自動」模式，讓系統混合搭配，找出利潤最高的組合。
+  <b>✅ 已解決卡死問題：</b>移除了極度消耗記憶體的深拷貝，並加入了 UI 讓步機制。你可以自由切換「自動 / 1條件 / 2條件 / 3條件」，系統會使用模擬退火演算法秒出最高利潤公式。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -102,8 +102,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
   <label>🎚️ 最少樣本：</label>
   <select id="minSamples">
-    <option // value=" 1" selected>1 (極限0暴力)</option>
-    <-option value="2">2</3option>
+    <option value="1" selected>1 (極限暴力)</option>
+    <option value="2">2</option>
     <option value="3">3</option>
     <option value="5">5</option>
   </select>
@@ -188,7 +188,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
    特徵庫
    ============================================================ */
 var FEATURES=[
-  'A-D','D-A','MA_PCT','A/D',           
+  'A-D','D-A','MA_PCT','A/D',            // 0-3
   'B-E','E-B','MB_PCT','B/E',            // 4-7
   'C-F','F-C','MC_PCT','C/F',            // 8-11
   'MA-MC','MA-MB','MC-MB',               // 12-14
@@ -381,6 +381,22 @@ function getThresholds(fi){
 }
 
 /* ============================================================
+   輕量級深拷貝
+   ============================================================ */
+function cloneRules(rules){
+  var out = new Array(rules.length);
+  for(var i=0; i<rules.length; i++){
+    var r = rules[i];
+    var c = new Array(r.conds.length);
+    for(var j=0; j<r.conds.length; j++){
+      c[j] = [r.conds[j][0], r.conds[j][1], r.conds[j][2]];
+    }
+    out[i] = { on: r.on, then: r.then, thenCode: r.thenCode, conds: c, bs: r.bs };
+  }
+  return out;
+}
+
+/* ============================================================
    階段 1：生成候選池（受條件限制控制）
    ============================================================ */
 async function generatePool(){
@@ -411,13 +427,14 @@ async function generatePool(){
         }
       }
     }
+    if(fi % 5 === 0 && shouldYield()) await yieldUI();
   }
   singles.sort(function(a,b){ return b.profit-a.profit; });
-  var topSingles = singles.slice(0, 200);
+  var topSingles = singles.slice(0, 150); // 保留前 150 名單條件
   pushLog(nowTime()+'   單條件基礎：'+singles.length+' 條','scan');
   
   // 2. 雙條件
-  var limit2 = Math.min(topSingles.length, 150);
+  var limit2 = Math.min(topSingles.length, 100);
   var doubles = [];
   for(var i=0;i<limit2;i++){
     for(var j=i+1;j<limit2;j++){
@@ -438,14 +455,15 @@ async function generatePool(){
         doubles.push({ conds:[topSingles[i].conds[0], topSingles[j].conds[0]], bs:cbs, thenCode:3, profit:0, cnt:cnt2 });
       }
     }
+    if(i % 10 === 0 && shouldYield()) await yieldUI();
   }
   doubles.sort(function(a,b){ return b.profit-a.profit; });
-  var topDoubles = doubles.slice(0, 150);
+  var topDoubles = doubles.slice(0, 100);
   pushLog(nowTime()+'   雙條件基礎：'+doubles.length+' 條','scan');
   
   // 3. 三條件
-  var limit3D = Math.min(topDoubles.length, 100);
-  var limit3S = Math.min(topSingles.length, 100);
+  var limit3D = Math.min(topDoubles.length, 50);
+  var limit3S = Math.min(topSingles.length, 50);
   var triples = [];
   for(var i=0;i<limit3D;i++){
     var d = topDoubles[i];
@@ -473,15 +491,16 @@ async function generatePool(){
         triples.push({ conds: d.conds.concat([s.conds[0]]), bs:cbs3, thenCode:3, profit:0, cnt:cnt3 });
       }
     }
+    if(i % 10 === 0 && shouldYield()) await yieldUI();
   }
   triples.sort(function(a,b){ return b.profit-a.profit; });
-  var topTriples = triples.slice(0, 100);
+  var topTriples = triples.slice(0, 50);
   pushLog(nowTime()+'   三條件基礎：'+triples.length+' 條','scan');
 
   // ★ 根據用戶選擇決定最終入池的規則
   var pool = [];
   if(condLimit === 'auto' || condLimit === '1'){
-    pool = pool.concat(singles.slice(0, 1000));
+    pool = pool.concat(singles.slice(0, 500)); // 自動模式只取前500單條件
   }
   if(condLimit === 'auto' || condLimit === '2'){
     pool = pool.concat(topDoubles);
@@ -549,10 +568,10 @@ async function initGreedy(pool, maxRules) {
 async function optimizeOrderGlobal(rules, maxIter) {
   pushLog(nowTime()+' 🔥 啟動全域暴力順序重組...','scan');
   
-  let curRules = JSON.parse(JSON.stringify(rules));
+  let curRules = cloneRules(rules);
   let curStats = calcRulesStats(curRules);
   let curProfit = curStats.totalProfit;
-  let bestRules = JSON.parse(JSON.stringify(curRules));
+  let bestRules = cloneRules(curRules);
   let bestProfit = curProfit;
 
   let T = 100;
@@ -562,7 +581,7 @@ async function optimizeOrderGlobal(rules, maxIter) {
     if(!running) break;
     
     let moveType = Math.random();
-    let testRules = JSON.parse(JSON.stringify(curRules));
+    let testRules = cloneRules(curRules);
     
     if(moveType < 0.6 && testRules.length > 1) {
       let fromIdx = Math.floor(Math.random() * testRules.length);
@@ -591,7 +610,7 @@ async function optimizeOrderGlobal(rules, maxIter) {
 
       if(curProfit > bestProfit) {
         bestProfit = curProfit;
-        bestRules = JSON.parse(JSON.stringify(curRules));
+        bestRules = cloneRules(curRules);
         pushLog(nowTime()+'     [突破] 找到更高利潤：'+bestProfit,'scan');
       }
     }
@@ -599,7 +618,7 @@ async function optimizeOrderGlobal(rules, maxIter) {
     T *= cooling;
     if(T < 0.1) T = 0.1;
 
-    if(iter % 100 === 0) {
+    if(iter % 50 === 0) {
       pickedCount = iter;
       updateStats();
       if(shouldYield()) await yieldUI();
@@ -612,7 +631,7 @@ async function optimizeOrderGlobal(rules, maxIter) {
     improved = false;
     for(let i=0; i<bestRules.length-1; i++) {
       for(let j=i+1; j<bestRules.length; j++) {
-        let testRules = JSON.parse(JSON.stringify(bestRules));
+        let testRules = cloneRules(bestRules);
         let temp = testRules[i]; testRules[i] = testRules[j]; testRules[j] = temp;
         let stats = calcRulesStats(testRules);
         if(stats.totalProfit > bestProfit) {
@@ -868,12 +887,11 @@ async function start(){
     rawRowsData = parsed.rows;
 
     running=true; startTime=Date.now(); evalCount=0;
-    pool';
-Size=0;    pickedCount=0;
-    bestTotal document=0; bestWinRate=0; best.getElementByIdGames=0;
-    currentPhase=0;(' totalPhases=3;
+    poolSize=0; pickedCount=0;
+    bestTotal=0; bestWinRate=0; bestGames=0;
+    currentPhase=0; totalPhases=3;
     lastYieldTime=0;
-    featureValueCache={summary').};
+    featureValueCache={};
     clearCondCache();
 
     document.getElementById('btnRun').disabled=true;
@@ -892,7 +910,7 @@ Size=0;    pickedCount=0;
     var condLimit=document.getElementById('condLimit').value;
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v57.0 — 條件限制與暴力順序搜索版','head');
+    pushLog('🚀 v58.0 — 終極流暢版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 結算：'+(PAYOUT_MODE==='initial'?'初盤 A/B/C':'尾盤 D/E/F'),'info');
@@ -967,7 +985,8 @@ Size=0;    pickedCount=0;
     pushLog('   🎲 命中率：'+bestWinRate.toFixed(1)+'%（'+finalStats.wins+'/'+finalStats.games+'）','info');
     pushLog('═══════════════════════════════════════════════════════════','final');
 
-    document.getElementById('best').style.display='blockinnerHTML=
+    document.getElementById('best').style.display='block';
+    document.getElementById('summary').innerHTML=
       '<div style="font-size:28px;color:#0a7a0a;font-weight:bold;margin-bottom:8px">💰 極限總盈利：'+bestTotal+'</div>'+
       '<div style="font-size:14px;color:#333;line-height:1.9">'+
       '命中率 <b style="color:#7c3aed">'+bestWinRate.toFixed(2)+'%</b>（'+finalStats.wins+'/'+finalStats.games+'）　'+
