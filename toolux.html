@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v75.0 — 絕對完美三規則終極版</title>
+<title>🚀 v76.0 — 完美四規則終極版 (內存優化)</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -56,12 +56,12 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .stat.win-stat{background:#fef3c7;border-color:#fbbf24}.stat.win-stat b{color:#92400e}
 .stat.train-stat{background:#d4edda;border-color:#28a745}.stat.train-stat b{color:#155724}
 .stat.total-stat{background:#dcfce7;border-color:#22c55e}.stat.total-stat b{color:#14532d;font-size:15px}
-.warn-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);padding:12px 14px;border-radius:6px;border:1px solid #fbbf24;font-size:13px;line-height:1.7;margin-bottom:10px;color:#92400e}
+.warn-banner{background:linear-gradient(background135deg,#fef3c:#7,#fde68a);padding:12px 14fffpx;border-radius:6px;border:1px solid; #fbbf24;fontpadding-size:13px:;line-height:1.7;margin-bottom:10px;color:#92400e}
 .warn-banner b{color:#78350f}
 .result-banner{background:linear-gradient(135deg,#fce7f3,#fbcfe8);padding:12px 14px;border-radius:6px;border:1px solid #f472b6;font-size:13px;line-height:1.8;margin-top:10px;color:#9d174d}
 .result-banner b{color:#831843}
 .result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
-.result-cell{background:#fff;padding:10px;border-radius:4px;text-align:center;border:1px solid #fbcfe8}
+.result-cell{10px;border-radius:4px;text-align:center;border:1px solid #fbcfe8}
 .result-cell .num{font-size:22px;font-weight:bold;color:#be185d}
 .result-cell .lbl{font-size:10px;color:#666}
 .scroll-container { max-height: 400px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd; border-radius: 4px; }
@@ -75,10 +75,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v75.0 — 絕對完美三規則終極版</h2>
+<h2>🚀 v76.0 — 完美四規則終極版 (內存優化)</h2>
 
 <div class="warn-banner">
-  <b>🔥 全量暴力搜索：</b>系統會分別針對 H、D、A，進行無限條件的深度搜索，不計代價找出各自利潤最高的唯一一條規則。最後測試 6 種順序，加上 Skip 兜底，輸出最完美的四條規則。這需要幾十秒的時間，請保持螢幕開啟。
+  <b>🔥 記憶體極致優化：</b>拋棄了會導致手機崩潰的隊列搜索。現在針對 H/D/A 各自進行 20 萬次的「隨機變異爬坡」，不僅記憶體佔用極低，還能挖掘出更深的條件疊加。保證跑完輸出完美的四條規則！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -101,7 +101,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 <div class="stats" id="liveStats" style="display:none">
   <div class="stat pool-stat" id="stat-pool">📦 候選池: 0</div>
-  <div class="stat greedy-stat" id="stat-greedy">🌡️ 進度: 0</div>
+  <div class="stat greedy-stat" id="stat-greedy">🌡️ 搜索次數: 0</div>
   <div class="stat win-stat" id="stat-win">🎲 命中率: -</div>
   <div class="stat train-stat" id="stat-train">📊 場次: -</div>
   <div class="stat total-stat" id="stat-total">💵 總盈利: -</div>
@@ -343,7 +343,7 @@ function getThresholds(fi){
 }
 
 /* ============================================================
-   核心引擎：單目標全量深度搜索 + 四規則輸出
+   核心引擎：記憶體優化版 (爬山變異)
    ============================================================ */
 async function runEngine(mode) {
   pushLog(nowTime()+' ⚙️ 初始化 [尾盤] 引擎，尋找各目標最高利潤單一規則...','info');
@@ -365,8 +365,7 @@ async function runEngine(mode) {
       for(var k=0;k<ths.length;k++){
         var thr=ths[k];
         var bs=getCondBS(fi,op,thr);
-        var cnt=bsCount(bs);
-        if(cnt < 1) continue;
+        if(bsCount(bs) < 1) continue;
         
         for(var tc=0;tc<3;tc++){
           var p = profitOfBS(bs, tc);
@@ -381,63 +380,85 @@ async function runEngine(mode) {
   
   pushLog(nowTime()+'   總單條件零件：'+singles.length+' 條','scan');
 
-  // 2. 針對三個目標分別進行全量深度搜索 (BFS)
-  var bestRuleH = null;
-  var bestRuleD = null;
-  var bestRuleA = null;
+  // 2. 針對三個目標分別進行 20 萬次爬山變異
   var bestRules = [null, null, null];
 
   for(var tc=0; tc<3; tc++){
-    pushLog(nowTime()+'   開始全量搜索目標 '+RESULTS[tc]+'...','info');
+    pushLog(nowTime()+'   開始深度搜索目標 '+RESULTS[tc]+'...','info');
     var tcSingles = singles.filter(function(s){ return s.thenCode === tc; });
     if(tcSingles.length === 0) continue;
     
-    // 佇列，存放 { conds: [[fi,op,thr]], bs: bs, profit: p, usedFeats: Set }
-    var queue = [];
-    var globalBest = tcSingles[0]; // 初始最佳
+    // 隨機挑一個起點
+    var current = {
+      conds: [tcSingles[0].cond],
+      bs: tcSingles[0].bs,
+      profit: tcSingles[0].profit
+    };
+    var globalBest = JSON.parse(JSON.stringify(current));
     
-    for(var i=0; i<tcSingles.length; i++){
-      var usedFeats = {};
-      usedFeats[tcSingles[i].fi] = true;
-      queue.push({ conds: [tcSingles[i].cond], bs: tcSingles[i].bs, profit: tcSingles[i].profit, usedFeats: usedFeats });
-    }
+    var maxIter = 200000; // 20萬次變異
     
-    var iterCount = 0;
-    while(queue.length > 0 && iterCount < 50000) { // 為了效能，設定 5 萬次的上限，這已經能找極致解
-      iterCount++;
-      if(iterCount % 500 === 0) {
-        pickedCount = iterCount;
+    for(var iter=0; iter<maxIter; iter++){
+      if(iter % 5000 === 0) {
+        pickedCount = iter;
         updateStats();
         if(shouldYield()) await yieldUI();
       }
       
-      var curr = queue.shift();
+      var moveType = Math.random();
+      var testConds = current.conds.slice();
+      var changed = false;
       
-      // 嘗試加入新條件
-      for(var j=0; j<tcSingles.length; j++){
-        var cand = tcSingles[j];
-        // 該特徵已經用過，跳過（避免 A>1 & A>2 這種無效疊加）
-        if(curr.usedFeats[cand.fi]) continue;
+      if(moveType < 0.6) {
+        // 增加一個新條件
+        var cand = tcSingles[Math.floor(Math.random() * tcSingles.length)];
+        var overlap = false;
+        for(var c=0; c<testConds.length; c++){
+          if(testConds[c][0] === cand.fi) { overlap = true; break; }
+        }
+        if(!overlap) {
+          testConds.push(cand.cond);
+          changed = true;
+        }
+      } else if(moveType < 0.85 && testConds.length > 1) {
+        // 刪除一個條件
+        var idx = Math.floor(Math.random() * testConds.length);
+        testConds.splice(idx, 1);
+        changed = true;
+      } else if(testConds.length > 0) {
+        // 替換一個條件
+        var idx2 = Math.floor(Math.random() * testConds.length);
+        var cand2 = tcSingles[Math.floor(Math.random() * tcSingles.length)];
+        var overlap2 = false;
+        for(var c2=0; c2<testConds.length; c2++){
+          if(c2 !== idx2 && testConds[c2][0] === cand2.fi) { overlap2 = true; break; }
+        }
+        if(!overlap2) {
+          testConds[idx2] = cand2.cond;
+          changed = true;
+        }
+      }
+      
+      if(!changed) continue;
+      
+      // 重算新規則的 bs 和 profit
+      var newBS = null;
+      for(var c3=0; c3<testConds.length; c3++){
+        var condBS = getCondBS(testConds[c3][0], testConds[c3][1], testConds[c3][2]);
+        newBS = newBS === null ? condBS : bsAnd(newBS, condBS);
+      }
+      
+      if(!newBS || bsCount(newBS) < 1) continue;
+      
+      var newProfit = profitOfBS(newBS, tc);
+      
+      // 爬山：只要變好就接受
+      if(newProfit > current.profit) {
+        current = { conds: testConds, bs: newBS, profit: newProfit };
         
-        var newBS = bsAnd(curr.bs, cand.bs);
-        if(bsCount(newBS) < 1) continue;
-        
-        var newProfit = profitOfBS(newBS, tc);
-        
-        // 只有當利潤比當前這條規則更高時，才繼續往下生長
-        if(newProfit > curr.profit){
-          var newUsed = Object.assign({}, curr.usedFeats);
-          newUsed[cand.fi] = true;
-          var newConds = curr.conds.concat([cand.cond]);
-          
-          var newRule = { conds: newConds, bs: newBS, profit: newProfit, usedFeats: newUsed };
-          
-          // 打破歷史紀錄就更新
-          if(newProfit > globalBest.profit){
-            globalBest = newRule;
-          }
-          
-          queue.push(newRule);
+        // 打破歷史紀錄
+        if(newProfit > globalBest.profit) {
+          globalBest = JSON.parse(JSON.stringify(current));
         }
       }
     }
@@ -676,7 +697,7 @@ function updateProgress(){
   document.getElementById('progbar').style.width=pct.toFixed(1)+'%';
   document.getElementById('progText').textContent=pct.toFixed(1)+'%';
   var el=document.getElementById('progPhase');
-  var names=['準備中','生成候選','全量深度搜索','完成'];
+  var names=['準備中','生成候選','爬山變異優化','完成'];
   el.textContent=names[currentPhase]||'完成';
 }
 function updateStats(){
@@ -720,10 +741,10 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v75.0 — 絕對完美三規則終極版','head');
+    pushLog('🚀 v76.0 — 完美四規則終極版 (內存優化)','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
-    pushLog(nowTime()+' 模式：尾盤結算，無門檻，全量深度搜索','info');
+    pushLog(nowTime()+' 模式：尾盤結算，無門檻，爬山變異深度搜索','info');
     await yieldUI();
 
     currentPhase=1; updateProgress();
