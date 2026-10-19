@@ -84,7 +84,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 <h2>🚀 v87.0 — 終極暗黑版</h2>
 
 <div class="warn-banner">
-  <b>🔥 全面自訂 (暗黑模式)：</b>可自選「搜索次數」；勝場門檻固定為 1%（最少 1 場），不再提供 3%/5%/7%/9% 選項。
+  <b>🔥 全面自訂 (暗黑模式)：</b>可自選「搜索次數」。勝場門檻已完全移除，所有符合條件的零件皆可參與進化。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -104,11 +104,6 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
     <option value="1000">1000 次</option>
     <option value="5000">5000 次</option>
     <option value="10000">10000 次</option>
-  </select>
-
-  <label>🛡️ 勝場門檻：</label>
-  <select id="minHitsPct">
-    <option value="0.01" selected>1%</option>
   </select>
 </div>
 
@@ -163,7 +158,6 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
     <h3>📋 最終規則順序（第 1 條優先匹配）</h3>
     <div class="diag" id="ruleTable"></div>
   </div>
- 
 </div>
 
 <script>
@@ -202,11 +196,11 @@ var OPS=['>','>=','<','<=','==','!='];
 var OPS_SHEET=['>','>=','<','<=','=','<>'];
 var RESULTS=['H','D','A','skip'];
 var RESULT_CODES={H:0,D:1,A:2,skip:3};
-var RESULT_NAME=['H','D','     A'];
+var RESULT_NAME=['H','D','A'];
 
-/* ========== 全域 details ========== */
+/* ========== 全域 ========== */
 var rawRowsData = [];
-var trainFe.pushat=null,trainResult=null,trainOdds=null;
+var trainFeat=null,trainResult=null,trainOdds=null;
 var trainN=0;
 
 var running=false,startTime=0,evalCount=0;
@@ -226,8 +220,6 @@ var featureValueCache={};
 var condBSCache={};
 var condBSCacheSize=0;
 var COND_CACHE_MAX=300000; 
-
-var minWinsRequired = 0; // 動態勝場門檻
 
 /* ========== 位圖 ========== */
 function bsWords(N){ return (N+31)>>5; }
@@ -295,8 +287,8 @@ function getWins(bs, thenCode){
     while(x){
       var low=x&-x;
       var pos=31-Math.clz32(low);
-      var idx=base+({pos;
-      if(idx<trainidxN){
+      var idx=base+pos;
+      if(idx<trainN){
         if(trainResult[idx]===thenCode) wins++;
       }
       x^=low;
@@ -328,7 +320,8 @@ function calcRulesStats(rules){
     var profit = 0;
     
     if(pred<0||pred===3){ 
-      skips++;: i, pred: 'skip', actual: actualResult, profit: 0});
+      skips++; 
+      details.push({idx: i, pred: 'skip', actual: actualResult, profit: 0});
       continue; 
     }
     
@@ -389,17 +382,10 @@ function getThresholds(fi){
 
 /* ============================================================
    核心引擎：單次爬山變異搜索
+   注意：trainFeat / trainResult / trainOdds / trainN 已由 start() 預先準備，
+         特徵快取與條件位圖快取皆跨輪保留，不重置，以大幅提速。
    ============================================================ */
 async function runSingleEngine() {
-  featureValueCache={};
-  clearCondCache();
-  
-  var meta = extractMeta(rawRowsData, 'final'); // 固定尾盤
-  trainResult = meta.codes; 
-  trainOdds = meta.odds;
-  trainN = rawRowsData.length;
-  trainFeat = extractFeatures(rawRowsData);
-  
   // 1. 生成單條件零件
   var singles = [];
   for(var fi=0;fi<FCOUNT;fi++){
@@ -408,12 +394,12 @@ async function runSingleEngine() {
       for(var k=0;k<ths.length;k++){
         var thr=ths[k];
         var bs=getCondBS(fi,op,thr);
-        if(bsCount(bs) < minWinsRequired) continue; 
+        if(!bs) continue;
+        if(bsCount(bs) < 1) continue; 
         
         for(var tc=0;tc<3;tc++){
           var p = profitOfBS(bs, tc);
-          var w = getWins(bs, tc);
-          if(p > 0 && w >= minWinsRequired){
+          if(p > 0){
             singles.push({ fi: fi, cond: [fi,op,thr], bs:bs, thenCode:tc, profit:p });
           }
         }
@@ -486,17 +472,14 @@ async function runSingleEngine() {
         newBS = newBS === null ? condBS : bsAnd(newBS, condBS);
       }
       
-      if(!newBS || bsCount(newBS) < minWinsRequired) continue;
+      if(!newBS || bsCount(newBS) < 1) continue;
       
       var newProfit = profitOfBS(newBS, tc);
       
       if(newProfit > current.profit) {
         current = { conds: testConds, bs: newBS, profit: newProfit };
         if(newProfit > globalBest.profit) {
-          var w = getWins(newBS, tc);
-          if(w >= minWinsRequired) {
-            globalBest = { conds: testConds.slice(), bs: newBS, profit: newProfit };
-          }
+          globalBest = { conds: testConds.slice(), bs: newBS, profit: newProfit };
         }
       }
       
@@ -750,25 +733,27 @@ async function start(){
   try {
     var parsed=parseData(document.getElementById('input').value);
     if(parsed.rows.length < 100){ 
+      pushLog('═══════════════════════════════════════════════════════════','head');
+      pushLog('❌ 數據不足','error');
+      pushLog('   目前只有 ' + parsed.rows.length + ' 場數據（已去重）','error');
+      pushLog('   為了確保統計學意義，請提供至少 100 場數據','error');
+      pushLog('   提示：貼上你的資料後再點擊「🚀 啟動極致進化」','warn');
+      pushLog('═══════════════════════════════════════════════════════════','head');
+      flushNow();
       alert('⚠️ 數據不足！\n目前只有 ' + parsed.rows.length + ' 場。\n為了確保統計學意義，請提供至少 100 場數據。');
       return; 
     }
     rawRowsData = parsed.rows;
     
-    // ★ 動態讀取 UI 門檻與次數
-    var pctStr = document.getElementById('minHitsPct').value;
-    var pct = parseFloat(pctStr);
-    minWinsRequired = Math.ceil(rawRowsData.length * pct);
-    if(minWinsRequired < 1) minWinsRequired = 1; // 確保至少 1 場
-    
     var selectedRuns = parseInt(document.getElementById('runCount').value);
     totalPhases = selectedRuns;
     
-    pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。 '+(pct*100)+'% 勝利門檻 = 至少贏 '+minWinsRequired+' 場。','info');
+    pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。','info');
 
     running=true; startTime=Date.now(); evalCount=0;
     poolSize=0; currentRun=0;
     globalBestProfit=-Infinity; globalBestWinRate=0; globalBestGames=0;
+    globalBestRules=null; globalBestStats=null;
     lastYieldTime=0;
 
     document.getElementById('btnRun').disabled=true;
@@ -784,8 +769,17 @@ async function start(){
     pushLog('🚀 v87.0 — 終極暗黑版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
-    pushLog(nowTime()+' 模式：尾盤結算，勝場 ≥ '+minWinsRequired+'，預計執行 '+totalPhases+' 次','info');
+    pushLog(nowTime()+' 模式：尾盤結算，勝場門檻已移除，預計執行 '+totalPhases+' 次','info');
     await yieldUI();
+
+    // 一次性準備特徵與結果（跨輪重用）
+    var meta = extractMeta(rawRowsData, 'final');
+    trainResult = meta.codes;
+    trainOdds = meta.odds;
+    trainN = rawRowsData.length;
+    trainFeat = extractFeatures(rawRowsData);
+    featureValueCache = {};
+    clearCondCache();
 
     for(var run=1; run<=totalPhases; run++){
       if(!running) break;
@@ -811,22 +805,25 @@ async function start(){
       await yieldUI();
     }
     
-    if(!running) return; // 被手動停止
+    if(!running) {
+      flushNow();
+      return;
+    }
 
     pushLog('');
     pushLog('═══════════════════════════════════════════════════════════','final');
     pushLog('🏆 全部 '+totalPhases+' 次搜索完成！','best');
     pushLog('═══════════════════════════════════════════════════════════','final');
 
-    var optimizedRules = globalBestRules;
-    var finalStats = globalBestStats;
+    var optimizedRules = globalBestRules || [];
+    var finalStats = globalBestStats || {totalProfit:0, winRate:0, games:0, wins:0, ruleStats:[], details:[]};
     
     bestTotal = finalStats.totalProfit;
     bestWinRate = finalStats.winRate;
     bestGames = finalStats.games;
 
     var formulaH = genHFormula(optimizedRules);
-    var activeCount = optimizedRules.length - 1;
+    var activeCount = Math.max(0, optimizedRules.length - 1);
 
     pushLog('   🎯 歷史最高總盈利：'+bestTotal,'best');
     pushLog('   📊 啟用層數：'+activeCount+' 條','info');
@@ -846,7 +843,7 @@ async function start(){
     document.getElementById('rGames').textContent=finalStats.games;
     document.getElementById('rWin').textContent=bestWinRate.toFixed(1)+'%';
     document.getElementById('resultInfo').innerHTML=
-      '🛡️ 勝利場次門檻：<b>至少 '+minWinsRequired+' 場 ('+(pct*100)+'%)</b><br>'+
+      '🛡️ 勝場門檻：<b>已移除</b><br>'+
       '結算：<b>尾盤</b>　'+
       '搜索次數：<b>'+totalPhases+' 次</b>';
 
@@ -862,7 +859,8 @@ async function start(){
     updateStats(); updateProgress();
     flushNow();
   } catch(e) {
-    pushLog('❌ 發生錯誤：' + e.message + '\n' + e.stack, 'error');
+    pushLog('❌ 發生錯誤：' + e.message, 'error');
+    if(e.stack) pushLog(e.stack, 'error');
     running = false;
     document.getElementById('btnRun').disabled=false;
     document.getElementById('btnStop').disabled=true;
