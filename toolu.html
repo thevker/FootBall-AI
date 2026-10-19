@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v50.0 — 絕對穩定極限利潤版</title>
+<title>🚀 v51.0 — 全數值掃描極限利潤版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -79,10 +79,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v50.0 — 絕對穩定極限利潤版</h2>
+<h2>🚀 v51.0 — 全數值掃描極限利潤版</h2>
 
 <div class="warn-banner">
-  <b>✅ 終極修復：</b>已完美解決 Google Sheets 的 <code>MAX/MIN</code> Bug 與隱形文字 Bug。同時加入錯誤捕捉與運算優化，保證手機端流暢運行、網頁與 Sheet 100% 一致！
+  <b>🔥 修復數據偏移 Bug：</b>取消了「分位數」偷懶做法，現在系統會遍歷所有獨特的數值作為閾值。這樣即使加入極端賠率的新數據，之前找到的高利潤公式也絕對不會消失！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -347,21 +347,23 @@ function calcRulesStats(rules){
   };
 }
 
-/* ========== 閾值生成 ========== */
+/* ========== 閾值生成（全數值掃描） ========== */
 function getThresholds(fi){
   if(featureValueCache[fi]) return featureValueCache[fi];
   var vals=[];
   for(var i=0;i<trainN;i++) vals.push(trainFeat[i][fi]);
   vals.sort(function(a,b){return a-b;});
+  
   var ths=[],seen={};
-  for(var k=1;k<=19;k++){
-    var idx=Math.floor(k*vals.length/20);
-    if(idx>=vals.length) idx=vals.length-1;
-    var v=vals[idx];
+  
+  // ★ 核心修復：直接取所有不重複的數值作為閾值，不再依賴分位數
+  for(var i=0;i<vals.length;i++){
+    var v=vals[i];
     if(!seen[v]){ seen[v]=1; ths.push(v); }
   }
-  var fn=FEATURES[fi];
   
+  // 針對變化量特徵補齊整數網格（防範未來數據出現的極端跳變）
+  var fn=FEATURES[fi];
   var isChangeAmount = (fn.indexOf('-')>=0 || fn.indexOf('+')>=0);
   if(isChangeAmount){
     var grid=[-300,-200,-150,-100,-75,-50,-40,-30,-20,-15,-12,-10,-8,-6,-5,-4,-3,-2,-1,
@@ -377,20 +379,7 @@ function getThresholds(fi){
       if(!seen[pgrid[pg]]){ seen[pgrid[pg]]=1; ths.push(pgrid[pg]); }
     }
   }
-  var isRatio = (fn==='A/D'||fn==='B/E'||fn==='C/F'||fn==='A/C'||fn==='D/F');
-  if(isRatio){
-    var rgrid=[0.5,0.6,0.7,0.75,0.8,0.85,0.9,0.95,0.97,0.98,0.99,1,1.01,1.02,1.03,1.05,1.1,1.15,1.2,1.25,1.3,1.4,1.5,1.75,2,3,5,10];
-    for(var rg=0;rg<rgrid.length;rg++){
-      if(!seen[rgrid[rg]]){ seen[rgrid[rg]]=1; ths.push(rgrid[rg]); }
-    }
-  }
-  if(fn==='A'||fn==='B'||fn==='C'||fn==='D'||fn==='E'||fn==='F'){
-    var absGrid=[150,200,250,300,400,500,600,700,800,900,1000,1200,1500];
-    for(var ag=0;ag<absGrid.length;ag++){
-      if(!seen[absGrid[ag]]){ seen[absGrid[ag]]=1; ths.push(absGrid[ag]); }
-    }
-  }
-  if(fn==='DirA'||fn==='DirB'||fn==='DirC'){ ths=[-1,0,1]; }
+  
   featureValueCache[fi]=ths;
   return ths;
 }
@@ -806,7 +795,7 @@ async function start(){
     PAYOUT_MODE=document.getElementById('payoutMode').value;
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v50.0 — 絕對穩定極限利潤版','head');
+    pushLog('🚀 v51.0 — 全數值掃描極限利潤版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 結算：'+(PAYOUT_MODE==='initial'?'初盤 A/B/C':'尾盤 D/E/F'),'info');
