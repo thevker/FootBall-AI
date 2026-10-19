@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v43.0 — 順序極限利潤版</title>
+<title>🚀 v44.0 — 順序極限利潤 (對賬版)</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -28,6 +28,7 @@ button.hero{padding:14px 36px;font-size:17px;background:linear-gradient(135deg,#
 .box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
 .label{font-weight:bold;font-size:13px;margin-bottom:6px;color:#333}
 .out{width:100%;height:230px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto;resize:vertical}
+.out-short{height:60px !important}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
 select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px}
 #msg{margin-top:8px;font-weight:bold;font-size:13px;display:none;padding:8px;border-radius:4px}
@@ -41,6 +42,7 @@ td:nth-child(1),td:nth-child(2){text-align:left}
 .tag-h{background:#16a34a;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold}
 .tag-d{background:#2563eb;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold}
 .tag-a{background:#dc2626;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold}
+.tag-skip{background:#94a3b8;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold}
 .section{background:#fff;padding:12px;border-radius:6px;border:1px solid #ddd;margin-top:12px}
 h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .progress-row{display:flex;align-items:center;gap:12px;margin-top:12px}
@@ -56,29 +58,36 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .stat.win-stat{background:#fef3c7;border-color:#fbbf24}.stat.win-stat b{color:#92400e}
 .stat.train-stat{background:#d4edda;border-color:#28a745}.stat.train-stat b{color:#155724}
 .stat.total-stat{background:#dcfce7;border-color:#22c55e}.stat.total-stat b{color:#14532d;font-size:15px}
-.warn-banner{background:linear-gradient(135deg,#dcfce7,#bbf7d0);padding:12px 14px;border-radius:6px;border:1px solid #22c55e;font-size:13px;line-height:1.7;margin-bottom:10px}
-.warn-banner b{color:#166534}
+.warn-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);padding:12px 14px;border-radius:6px;border:1px solid #fbbf24;font-size:13px;line-height:1.7;margin-bottom:10px;color:#92400e}
+.warn-banner b{color:#78350f}
 .result-banner{background:linear-gradient(135deg,#fce7f3,#fbcfe8);padding:12px 14px;border-radius:6px;border:1px solid #f472b6;font-size:13px;line-height:1.8;margin-top:10px;color:#9d174d}
 .result-banner b{color:#831843}
 .result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
 .result-cell{background:#fff;padding:10px;border-radius:4px;text-align:center;border:1px solid #fbcfe8}
 .result-cell .num{font-size:22px;font-weight:bold;color:#be185d}
 .result-cell .lbl{font-size:10px;color:#666}
-.check-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);padding:12px 14px;border-radius:6px;border:1px solid #fbbf24;font-size:12px;line-height:1.8;margin-top:10px;color:#92400e}
+.check-banner{background:linear-gradient(135deg,#e0f2fe,#bae6fd);padding:12px 14px;border-radius:6px;border:1px solid #38bdf8;font-size:12px;line-height:1.8;margin-top:10px;color:#0369a1}
 /* 路徑卡片 */
 .path-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:12px;margin-top:10px}
 .path-card{background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
 .path-header{font-weight:bold;color:#1e293b;font-size:13px;margin-bottom:6px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;display:flex;justify-content:space-between}
 .path-profit{color:#16a34a}
 .path-rule{font-size:11px;color:#475569;margin-bottom:4px;font-family:monospace;line-height:1.3}
+/* 對賬表 */
+.compare-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:11px}
+.compare-table th,.compare-table td{border:1px solid #ddd;padding:6px;text-align:center}
+.compare-table th{background:#f1f5f9;color:#475569}
+.compare-table tr:nth-child(even){background:#f8fafc}
+.compare-table .hit{color:#16a34a;font-weight:bold}
+.compare-table .miss{color:#dc2626}
 </style>
 </head>
 <body>
 
-<h2>🚀 v43.0 — 順序極限利潤版</h2>
+<h2>🚀 v44.0 — 順序極限利潤 (對賬版)</h2>
 
 <div class="warn-banner">
-  <b>🎯 核心邏輯：</b>放棄過擬合保護，放棄最少樣本限制。採用「束搜索 (Beam Search)」尋找能帶來最高總利潤的**層數排列組合**。確保高利潤的規則不會被前面的低利潤規則攔截。
+  <b>⚠️ 重要更新：</b>為解決網頁與 Google Sheet 盈利對不上的問題，現在會根據你選擇的結算方式，<b>自動生成對應的 I 列公式</b>，請一併替換！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -108,7 +117,6 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
     <option value="10">10</option>
     <option value="15" selected>15</option>
     <option value="20">20</option>
-    <option value="30">30</option>
   </select>
   <label>🌊 束搜索寬度：</label>
   <select id="beamWidth">
@@ -149,23 +157,31 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   </div>
 
   <div class="section">
+    <h3>📋 網頁 vs Sheet 對賬表（前 15 場）</h3>
+    <div style="font-size:11px;color:#666;margin-bottom:8px">請對照這裡的「預測結果」與「盈利」，確認 Sheet 算出的結果是否一致。</div>
+    <div style="overflow-x:auto">
+      <table class="compare-table" id="compareTable"></table>
+    </div>
+  </div>
+
+  <div class="section" style="background:#f0fdf4;border-color:#bbf7d0">
+    <h3 style="color:#166534">📌 1. H2 預測公式（複製到 H2）</h3>
+    <button class="txt" onclick="copyIt('txtH')">📋 複製 H2 公式</button>
+    <textarea id="txtH" class="out out-short" readonly wrap="off" style="margin-top:6px"></textarea>
+  </div>
+
+  <div class="section" style="background:#eff6ff;border-color:#bfdbfe;margin-top:8px">
+    <h3 style="color:#1e40af">💰 2. I 列盈利公式（複製到 I2）</h3>
+    <div style="font-size:11px;color:#1e3a8a;margin-bottom:6px">⚠️ 必須使用這裡生成的公式，因為它與你選擇的結算方式（初盤/尾盤）一致！</div>
+    <button class="txt" onclick="copyIt('txtI')">📋 複製 I2 公式</button>
+    <textarea id="txtI" class="out out-short" readonly wrap="off" style="margin-top:6px"></textarea>
+  </div>
+
+  <div class="section">
     <h3>🔍 前 5 名路徑（不同層數組合的利潤對比）</h3>
-    <div style="font-size:11px;color:#666;margin-bottom:8px">比較不同「層數排列」對總利潤的影響。</div>
     <div class="path-grid" id="pathGrid"></div>
   </div>
-
-  <div class="check-banner">
-    <b>📌 I 列盈利公式</b>
-    <div style="font-family:monospace;font-size:11px;margin-top:6px;background:#fff;padding:8px;border-radius:4px;white-space:pre-wrap">
-=IF(H2="skip",0,IF(AND(H2="H",G2="H"),A2-100,IF(AND(H2="D",G2="D"),B2-100,IF(AND(H2="A",G2="A"),C2-100,-100))))</div>
-  </div>
-
-  <div class="box">
-    <div class="label">🟢 H2 公式（直接貼到 Google Sheets）</div>
-    <div style="font-size:11px;color:#666;margin-bottom:6px" id="charInfo"></div>
-    <button class="txt" onclick="copyIt('txtOut')">📋 複製公式</button>
-    <textarea id="txtOut" class="out" readonly wrap="off"></textarea>
-  </div>
+  
   <div id="msg"></div>
 </div>
 
@@ -180,7 +196,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 'use strict';
 
 /* ============================================================
-   特徵庫（豐富的變化與絕對值特徵）
+   特徵庫
    ============================================================ */
 var FEATURES=[
   'A-D','D-A','MA_PCT','A/D',
@@ -207,9 +223,6 @@ var FEATURE_NAMES=[
   'A/C','D/F'
 ];
 var FCOUNT=FEATURES.length;
-var CHANGE_END=19;
-var ABS_START=19;
-var ABS_END=25;
 
 var OPS=['>','>=','<','<=','==','!='];
 var OPS_SHEET=['>','>=','<','<=','=','<>'];
@@ -318,6 +331,8 @@ function calcRulesStats(rules){
   var matched=bsNew(trainN);
   var games=0,wins=0,skips=0,totalProfit=0;
   var ruleStats=[];
+  var details=[]; // 用於對賬
+  
   for(var r=0;r<rules.length;r++) ruleStats.push({hit:0,wins:0,losses:0,profit:0});
   
   for(var i=0;i<trainN;i++){
@@ -331,21 +346,34 @@ function calcRulesStats(rules){
       }
       if(ok){ pred=rules[j].thenCode; hr=j; break; }
     }
-    if(pred<0||pred===3){ skips++; continue; }
+    
+    var actualResult = trainResult[i];
+    var profit = 0;
+    
+    if(pred<0||pred===3){ 
+      skips++; 
+      details.push({idx: i, pred: 'skip', actual: actualResult, profit: 0});
+      continue; 
+    }
+    
     games++;
     ruleStats[hr].hit++;
-    if(trainResult[i]===pred){
+    if(actualResult===pred){
       wins++; ruleStats[hr].wins++;
-      var p=trainOdds[i*3+pred]-100;
-      totalProfit+=p; ruleStats[hr].profit+=p;
+      profit = trainOdds[i*3+pred]-100;
+      totalProfit+=profit; ruleStats[hr].profit+=profit;
     } else {
       ruleStats[hr].losses++; totalProfit-=100; ruleStats[hr].profit-=100;
+      profit = -100;
     }
+    details.push({idx: i, pred: pred, actual: actualResult, profit: profit});
   }
+  
   return {
     games:games,wins:wins,skips:skips,totalProfit:totalProfit,
     winRate:games>0?(wins/games*100):0,
-    ruleStats:ruleStats
+    ruleStats:ruleStats,
+    details:details
   };
 }
 
@@ -410,7 +438,6 @@ async function generatePool(){
   var pool=[];
   var rawCandidates=[];
   
-  // 1. 遍歷所有特徵與閾值
   for(var fi=0;fi<FCOUNT;fi++){
     var ths=getThresholds(fi);
     for(var op=0;op<4;op++){
@@ -420,7 +447,6 @@ async function generatePool(){
         var cnt=bsCount(bs);
         if(cnt<MIN_SAMPLES) continue;
         
-        // 找最佳 thenCode
         var bestTc=-1, bestP=-99999;
         for(var tc=0;tc<3;tc++){
           var p=profitOfBS(bs,tc);
@@ -439,13 +465,11 @@ async function generatePool(){
     }
   }
   
-  // 按利潤排序，保留前 150 個單條件
   rawCandidates.sort(function(a,b){ return b.profit-a.profit; });
   var topSingles = rawCandidates.slice(0, 150);
   pool = pool.concat(topSingles);
   pushLog(nowTime()+'   單條件：'+topSingles.length+' 條','scan');
 
-  // 2. 兩兩組合（只組合前 60 個，防止爆炸）
   var limit = Math.min(topSingles.length, 60);
   var doubles = [];
   for(var i=0;i<limit;i++){
@@ -472,7 +496,6 @@ async function generatePool(){
   pool = pool.concat(doubles.slice(0, 150));
   pushLog(nowTime()+'   雙條件：'+doubles.length+' 條','scan');
 
-  // 去重
   var seen={}, unique=[];
   for(var u=0;u<pool.length;u++){
     var cs=pool[u].conds.slice().sort(function(a,b){ return a[0]-b[0]; });
@@ -488,20 +511,13 @@ async function generatePool(){
 }
 
 /* ============================================================
-   階段 2：束搜索 (Beam Search) 尋找最優路徑
+   階段 2：束搜索
    ============================================================ */
 async function beamSearch(pool, maxRules, beamWidth) {
   pushLog(nowTime()+' 🌊 開始束搜索（寬度 '+beamWidth+'，最多 '+maxRules+' 層）...','scan');
-  
-  // 路徑狀態：{ rules: [], matched: 位圖, profit: number }
   var beams = [{ rules: [], matched: bsNew(trainN), profit: 0 }];
-  
-  // 為了加速，預先計算好每條規則的 bs
   var poolRules = pool.map(function(c){
-    return {
-      on: 1, then: RESULTS[c.thenCode], thenCode: c.thenCode,
-      conds: c.conds, bs: c.bs, profit: c.profit
-    };
+    return { on: 1, then: RESULTS[c.thenCode], thenCode: c.thenCode, conds: c.conds, bs: c.bs, profit: c.profit };
   });
 
   for(var step=0; step<maxRules; step++){
@@ -510,24 +526,14 @@ async function beamSearch(pool, maxRules, beamWidth) {
     
     for(var b=0; b<beams.length; b++){
       var beam = beams[b];
-      var usedConds = {};
-      for(var r=0; r<beam.rules.length; r++){
-        // 避免重複添加完全一樣的規則（簡單防護）
-        usedConds[beam.rules[r].conds[0][0]+'_'+beam.rules[r].thenCode] = true;
-      }
       
-      // 嘗試將池中每一條規則作為「下一層」
       for(var p=0; p<poolRules.length; p++){
         var cand = poolRules[p];
-        // 快速跳過：如果這條規則在當前未覆蓋的樣本上完全沒有正利潤，就不加
-        // (但為了防止前面攔截導致後面虧錢，這裡還是算精確的邊際利潤)
         var only = bsAndNot(cand.bs, beam.matched);
         var cnt = bsCount(only);
-        if(cnt < 1) continue; // 完全被覆蓋的不要
+        if(cnt < 1) continue; 
         
         var marg = profitOfBS(only, cand.thenCode);
-        // 我們允許加入微虧的規則嗎？為了防止干擾，這裡只取邊際 > 0 的
-        // 其實在首次匹配中，前面的規則不能虧，否則總利潤必降
         if(marg <= 0) continue; 
         
         var newMatched = new Uint32Array(beam.matched);
@@ -543,22 +549,19 @@ async function beamSearch(pool, maxRules, beamWidth) {
     
     if(nextBeams.length === 0) break;
     
-    // 排序並保留 top K
     nextBeams.sort(function(a,b){ return b.profit - a.profit; });
     beams = nextBeams.slice(0, beamWidth);
     
-    pushLog(nowTime()+'   第 '+(step+1)+' 層：擴展了 '+nextBeams.length+' 條路徑，保留前 '+beams.length+' 名（最高利潤 '+beams[0].profit+'）','scan');
+    pushLog(nowTime()+'   第 '+(step+1)+' 層：保留前 '+beams.length+' 名（最高利潤 '+beams[0].profit+'）','scan');
     if(shouldYield()) await yieldUI();
   }
   
-  // 取結果最好的 beam
   beams.sort(function(a,b){ return b.profit - a.profit; });
   return beams;
 }
 
 /* ============================================================
    階段 3：局部交換優化 (2-opt)
-   如果兩條規則互換位置能帶來更高利潤，就交換！
    ============================================================ */
 async function optimizeOrder(rules) {
   pushLog(nowTime()+' 🔄 局部順序交換優化 (2-opt)...','scan');
@@ -573,20 +576,17 @@ async function optimizeOrder(rules) {
     iter++;
     for(var i=0; i<curRules.length-1; i++){
       for(var j=i+1; j<curRules.length; j++){
-        // 交換 i 和 j
         var temp = curRules[i];
         curRules[i] = curRules[j];
         curRules[j] = temp;
         
         var testStats = calcRulesStats(curRules);
         if(testStats.totalProfit > curProfit) {
-          // 交換成功，保留！
           curProfit = testStats.totalProfit;
           curStats = testStats;
           improved = true;
           pushLog(nowTime()+'     交換 R'+(i+1)+' ↔ R'+(j+1)+' → 利潤提升至 '+curProfit,'scan');
         } else {
-          // 換回來
           var temp2 = curRules[i];
           curRules[i] = curRules[j];
           curRules[j] = temp2;
@@ -595,7 +595,6 @@ async function optimizeOrder(rules) {
       }
     }
   }
-  
   pushLog(nowTime()+' ✅ 2-opt 完成，最終利潤：'+curProfit,'scan');
   return curRules;
 }
@@ -622,9 +621,8 @@ function renderRuleTable(rules, stats){
     var thenTag='<span class="'+thenClass+'">'+r.then+'</span>';
     var wr=rs.hit>0?(rs.wins/rs.hit*100).toFixed(1)+'%':'-';
     
-    // 墊底 skip 顯示
     if(i === rules.length-1 && r.then === 'skip') {
-      html+='<tr><td>墊底</td><td style="text-align:left;color:#666">其餘全部</td><td><span class="tag-d">skip</span></td><td>'+stats.skips+'</td><td>-</td><td>-</td><td>-</td><td>0</td></tr>';
+      html+='<tr><td>墊底</td><td style="text-align:left;color:#666">其餘全部</td><td><span class="tag-skip">skip</span></td><td>'+stats.skips+'</td><td>-</td><td>-</td><td>-</td><td>0</td></tr>';
     } else {
       html+='<tr><td>第 '+(i+1)+'</td>'+
         '<td style="text-align:left;font-size:10px">'+ss+'</td><td>'+thenTag+'</td>'+
@@ -636,7 +634,6 @@ function renderRuleTable(rules, stats){
   html+='</tbody></table>';
   document.getElementById('ruleTable').innerHTML=html;
 }
-
 function renderTopPaths(paths){
   var html='';
   for(var i=0; i<Math.min(paths.length, 5); i++){
@@ -645,12 +642,35 @@ function renderTopPaths(paths){
     html += '<div class="path-card">'+
       '<div class="path-header"><span>路徑 #'+(i+1)+'</span> <span class="path-profit">+'+stats.totalProfit+'</span></div>';
     for(var j=0; j<p.rules.length; j++){
-      var r = p.rules[j];
-      html += '<div class="path-rule">L'+(j+1)+': '+fmtRule(r)+'</div>';
+      html += '<div class="path-rule">L'+(j+1)+': '+fmtRule(p.rules[j])+'</div>';
     }
     html += '</div>';
   }
   document.getElementById('pathGrid').innerHTML = html;
+}
+function renderCompareTable(stats, rawRows){
+  var html = '<thead><tr><th>場次</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>結果</th><th>預測</th><th>盈利</th></tr></thead><tbody>';
+  var details = stats.details;
+  var limit = Math.min(15, details.length);
+  
+  for(var i=0; i<limit; i++){
+    var d = details[i];
+    var raw = rawRows[d.idx];
+    var predStr = d.pred === 'skip' ? '<span style="color:#94a3b8">skip</span>' : (d.pred===0?'H':(d.pred===1?'D':'A'));
+    var predClass = d.pred === 'skip' ? '' : (d.pred === d.actual ? 'hit' : 'miss');
+    var profitStr = d.profit >= 0 ? '<span class="profit-pos">+'+d.profit+'</span>' : '<span class="profit-neg">'+d.profit+'</span>';
+    
+    html += '<tr>'+
+      '<td>'+(i+1)+'</td>'+
+      '<td>'+raw.A+'</td><td>'+raw.B+'</td><td>'+raw.C+'</td>'+
+      '<td>'+raw.D+'</td><td>'+raw.E+'</td><td>'+raw.F+'</td>'+
+      '<td><b>'+raw.result+'</b></td>'+
+      '<td class="'+predClass+'">'+predStr+'</td>'+
+      '<td>'+profitStr+'</td>'+
+    '</tr>';
+  }
+  html += '</tbody>';
+  document.getElementById('compareTable').innerHTML = html;
 }
 
 /* ========== 公式生成 ========== */
@@ -660,12 +680,9 @@ function featToExpr(fi){
   switch(fn){
     case 'A':return A; case 'B':return B; case 'C':return C;
     case 'D':return D; case 'E':return E; case 'F':return F;
-    case 'A-D':return '('+A+'-'+D+')';
-    case 'D-A':return '('+D+'-'+A+')';
-    case 'B-E':return '('+B+'-'+E+')';
-    case 'E-B':return '('+E+'-'+B+')';
-    case 'C-F':return '('+C+'-'+F+')';
-    case 'F-C':return '('+F+'-'+C+')';
+    case 'A-D':return '('+A+'-'+D+')'; case 'D-A':return '('+D+'-'+A+')';
+    case 'B-E':return '('+B+'-'+E+')'; case 'E-B':return '('+E+'-'+B+')';
+    case 'C-F':return '('+C+'-'+F+')'; case 'F-C':return '('+F+'-'+C+')';
     case 'MA_PCT':return 'IF('+A+'=0,0,('+A+'-'+D+')/'+A+'*100)';
     case 'MB_PCT':return 'IF('+B+'=0,0,('+B+'-'+E+')/'+B+'*100)';
     case 'MC_PCT':return 'IF('+C+'=0,0,('+C+'-'+F+')/'+C+'*100)';
@@ -680,8 +697,7 @@ function featToExpr(fi){
     case 'C-F-(B-E)':return '(('+C+'-'+F+')-('+B+'-'+E+'))';
     case '(A-D)+(F-C)':return '(('+A+'-'+D+')+('+F+'-'+C+'))';
     case '(C-F)+(D-A)':return '(('+C+'-'+F+')+('+D+'-'+A+'))';
-    case 'A-C':return '('+A+'-'+C+')';
-    case 'D-F':return '('+D+'-'+F+')';
+    case 'A-C':return '('+A+'-'+C+')'; case 'D-F':return '('+D+'-'+F+')';
     case 'MaxABC':return 'MAX('+A+','+B+','+C+')';
     case 'MinABC':return 'MIN('+A+','+B+','+C+')';
     case 'DirA':return 'IF('+D+'<'+A+',1,IF('+D+'>'+A+',-1,0))';
@@ -702,15 +718,24 @@ function buildRuleSheet(r){
   if(!r.conds.length) return 'FALSE';
   return r.conds.map(buildCondSheet).join('*');
 }
-function genFormula(rules){
+function genHFormula(rules){
   var body='';
   for(var i=0;i<rules.length;i++){
     if(rules[i].then === 'skip') continue;
     body+='IF('+buildRuleSheet(rules[i])+',"'+rules[i].then+'",';
   }
   body+='"skip"';
-  for(var j=0;j<rules.length-1;j++) body+=')'; // 最後一條是 skip，所以少一個括號
+  for(var j=0;j<rules.length-1;j++) body+=')';
   return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",'+body+'))';
+}
+function genIFormula(mode){
+  var pH, pD, pA;
+  if(mode === 'initial'){
+    pH = 'A2'; pD = 'B2'; pA = 'C2';
+  } else {
+    pH = 'D2'; pD = 'E2'; pA = 'F2';
+  }
+  return `=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""), "", IF(H2:H="skip", 0, IF((H2:H="H")*(G2:G="H"), ${pH}-100, IF((H2:H="D")*(G2:G="D"), ${pD}-100, IF((H2:H="A")*(G2:G="A"), ${pA}-100, -100))))))`;
 }
 
 /* ========== UI ========== */
@@ -773,9 +798,12 @@ function yieldUI(){
 function shouldYield(){ return Date.now()-lastYieldTime>25; }
 
 /* ========== 主流程 ========== */
+var rawRowsData = [];
+
 async function start(){
   var parsed=parseData(document.getElementById('input').value);
   if(parsed.rows.length===0){ alert('沒有有效數據'); return; }
+  rawRowsData = parsed.rows;
 
   running=true; startTime=Date.now(); evalCount=0;
   poolSize=0; pickedCount=0;
@@ -801,11 +829,11 @@ async function start(){
   PAYOUT_MODE=document.getElementById('payoutMode').value;
 
   pushLog('═══════════════════════════════════════════════════════════','head');
-  pushLog('🚀 v43.0 — 順序極限利潤版','head');
+  pushLog('🚀 v44.0 — 順序極限利潤 (對賬版)','head');
   pushLog('═══════════════════════════════════════════════════════════','head');
   pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
   pushLog(nowTime()+' 結算：'+(PAYOUT_MODE==='initial'?'初盤 A/B/C':'尾盤 D/E/F'),'info');
-  pushLog(nowTime()+' 最少樣本：'+MIN_SAMPLES+'（放棄過擬合保護，極限榨取利潤）','info');
+  pushLog(nowTime()+' 最少樣本：'+MIN_SAMPLES,'info');
   await yieldUI();
 
   var allRows=parsed.rows.slice();
@@ -843,7 +871,7 @@ async function start(){
     return;
   }
 
-  topPaths = beams.slice(0, 5); // 保留前 5 名用於展示
+  topPaths = beams.slice(0, 5);
   var bestBeam = beams[0];
   pickedCount = bestBeam.rules.length;
 
@@ -857,7 +885,6 @@ async function start(){
   
   var optimizedRules = await optimizeOrder(bestBeam.rules);
 
-  // 加上墊底 skip
   optimizedRules.push({on:1, then:'skip', thenCode:3, conds:[]});
   
   var finalStats = calcRulesStats(optimizedRules);
@@ -865,8 +892,8 @@ async function start(){
   bestWinRate = finalStats.winRate;
   bestGames = finalStats.games;
 
-  // 輸出結果
-  var formula=genFormula(optimizedRules);
+  var formulaH = genHFormula(optimizedRules);
+  var formulaI = genIFormula(PAYOUT_MODE);
   var activeCount = optimizedRules.length - 1;
 
   pushLog('');
@@ -876,7 +903,6 @@ async function start(){
   pushLog('   🎯 總盈利：'+bestTotal,'best');
   pushLog('   📊 啟用層數：'+activeCount+' 條','info');
   pushLog('   🎲 命中率：'+bestWinRate.toFixed(1)+'%（'+finalStats.wins+'/'+finalStats.games+'）','info');
-  pushLog('   📏 公式字元：'+formula.length,'info');
   pushLog('═══════════════════════════════════════════════════════════','final');
 
   document.getElementById('best').style.display='block';
@@ -894,10 +920,11 @@ async function start(){
     '🎚️ 最少樣本：<b>'+MIN_SAMPLES+'</b>　'+
     '結算：<b>'+(PAYOUT_MODE==='initial'?'初盤':'尾盤')+'</b>';
 
+  renderCompareTable(finalStats, rawRowsData);
   renderTopPaths(topPaths);
 
-  document.getElementById('charInfo').innerHTML='字符數：<b>'+formula.length+'</b>';
-  document.getElementById('txtOut').value=formula;
+  document.getElementById('txtH').value=formulaH;
+  document.getElementById('txtI').value=formulaI;
 
   renderRuleTable(optimizedRules, finalStats);
   document.getElementById('diag').style.display='block';
