@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v66.0 — 極速穩定版 (10%瘦身+無限條件)</title>
+<title>🚀 v68.0 — 百萬進化無限制版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -29,7 +29,6 @@ button.copy{background:#2563eb}
 .label{font-weight:bold;font-size:13px;margin-bottom:6px;color:#333}
 .out{width:100%;height:260px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto;resize:vertical}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
-select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px}
 #msg{margin-top:8px;font-weight:bold;font-size:13px;display:none;padding:8px;border-radius:4px}
 .ok{background:#d4edda;color:#155724}.err{background:#f8d7da;color:#721c24}
 table{border-collapse:collapse;width:100%;font-size:11px;margin-top:8px;background:#fff}
@@ -76,10 +75,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v66.0 — 極速穩定版 (10%瘦身+無限條件)</h2>
+<h2>🚀 v68.0 — 百萬進化無限制版</h2>
 
 <div class="warn-banner">
-  <b>✅ 已修復卡死問題：</b>將運算核心換回「貪心+模擬退火」，保證秒出結果。同時完美保留了「無限條件疊加」、「10%覆蓋率限制」、「嚴格瘦身」與「兜底豁免」。
+  <b>🔥 算力全開：</b>模擬退火次數已解鎖至 <b>1,000,000 次</b>，且「解除條件數量限制」。這需要幾分鐘的時間，請保持頁面開啟，系統會徹底遍歷各種排列組合，為你榨出最高利潤。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -102,7 +101,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
 <div class="stats" id="liveStats" style="display:none">
   <div class="stat pool-stat" id="stat-pool">📦 候選池: 0</div>
-  <div class="stat greedy-stat" id="stat-greedy">🌡️ 退火迭代: 0</div>
+  <div class="stat greedy-stat" id="stat-greedy">🌡️ 進度: 0</div>
   <div class="stat win-stat" id="stat-win">🎲 命中率: -</div>
   <div class="stat train-stat" id="stat-train">📊 場次: -</div>
   <div class="stat total-stat" id="stat-total">💵 總盈利: -</div>
@@ -191,7 +190,7 @@ var trainN=0;
 var running=false,startTime=0,evalCount=0;
 var logBuffer=[],logTimer=null,LOG_MAX=5000;
 var lastYieldTime=0;
-var currentPhase=0,totalPhases=3;
+var currentPhase=0,totalPhases=4;
 
 var poolSize=0,pickedCount=0;
 var bestTotal=0,bestWinRate=0,bestGames=0;
@@ -361,7 +360,7 @@ function cloneRules(rules){
 }
 
 /* ============================================================
-   核心引擎：無限條件 + 貪心 + 模擬退火
+   核心引擎：無限條件 + 貪心 + 模擬退火 (100萬次)
    ============================================================ */
 async function runEngine(mode) {
   pushLog(nowTime()+' ⚙️ 初始化 [尾盤] 引擎，10% 門檻：'+minHitsRequired+' 場...','info');
@@ -405,7 +404,7 @@ async function runEngine(mode) {
   singles.sort(function(a,b){ return b.profit-a.profit; });
   pushLog(nowTime()+'   合格單條件零件：'+singles.length+' 條','scan');
 
-  // 2. 無限條件生長
+  // 2. 無限條件生長 (無條件數量限制)
   pushLog(nowTime()+' 🌱 開始無限條件生長...','scan');
   var pool = [];
   var seen = {};
@@ -420,7 +419,8 @@ async function runEngine(mode) {
     var currentRule = growthBase[g];
     var added = true;
     
-    while(added && currentRule.conds.length < 10) {
+    // 這裡移除了 10 個條件的限制，只要利潤上升且覆蓋率夠就繼續疊加
+    while(added) {
       added = false;
       var bestAdd = null;
       
@@ -518,11 +518,11 @@ async function runEngine(mode) {
   var bestRules = cloneRules(curRules);
   var bestProfit = curProfit;
 
-  // 4. 模擬退火微調
-  pushLog(nowTime()+' 🌡️ 啟動模擬退火優化...','info');
+  // 4. 模擬退火微調 (100萬次)
+  pushLog(nowTime()+' 🌡️ 啟動模擬退火優化（100萬次迭代）...','info');
   var T = 100;
-  var cooling = 0.99;
-  var maxIter = 10000; 
+  var cooling = 0.9999; // 因為次數變多，降溫要變慢
+  var maxIter = 1000000; 
 
   for(var iter=0; iter<maxIter; iter++){
     if(!running) break;
@@ -589,20 +589,19 @@ async function runEngine(mode) {
     T *= cooling;
     if(T < 0.1) T = 0.1;
 
-    if(iter % 200 === 0) {
+    if(iter % 5000 === 0) { // 百萬次時，每5000次更新一次UI
       pickedCount = iter;
       updateStats();
       if(shouldYield()) await yieldUI();
     }
   }
   
-  pushLog(nowTime()+' ✅ 進化完成，最高利潤：'+bestProfit,'success');
+  pushLog(nowTime()+' ✅ 百萬次進化完成，最高利潤：'+bestProfit,'success');
   
   // 5. 終極瘦身：嚴格檢查真實命中數，【豁免兜底規則】
   var finalRules = bestRules;
   var cleanupIter = 0;
   
-  // 先找出所有的有條件規則進行清理
   var cleanRulesList = [];
   var bottomRule = null;
   
@@ -850,12 +849,12 @@ function updateProgress(){
   document.getElementById('progbar').style.width=pct.toFixed(1)+'%';
   document.getElementById('progText').textContent=pct.toFixed(1)+'%';
   var el=document.getElementById('progPhase');
-  var names=['準備中','生成候選','退火重組','動態瘦身','完成'];
+  var names=['準備中','生成候選','百萬進化','動態瘦身','完成'];
   el.textContent=names[currentPhase]||'完成';
 }
 function updateStats(){
   document.getElementById('stat-pool').innerHTML='📦 候選池: <b>'+poolSize+'</b>';
-  document.getElementById('stat-greedy').innerHTML='🌡️ 退火迭代: <b>'+pickedCount+'</b>';
+  document.getElementById('stat-greedy').innerHTML='🌡️ 進度: <b>'+pickedCount+'</b>';
   document.getElementById('stat-win').innerHTML='🎲 命中率: <b>'+bestWinRate.toFixed(1)+'%</b>';
   document.getElementById('stat-train').innerHTML='📊 場次: <b>'+bestGames+'</b>';
   document.getElementById('stat-total').innerHTML='💵 總盈利: <b>'+bestTotal+'</b>';
@@ -897,10 +896,10 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v66.0 — 極速穩定版 (10%瘦身+無限條件)','head');
+    pushLog('🚀 v68.0 — 百萬進化無限制版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
-    pushLog(nowTime()+' 模式：尾盤結算，無限條件疊加，模擬退火','info');
+    pushLog(nowTime()+' 模式：尾盤結算，無限條件疊加，百萬次退火','info');
     await yieldUI();
 
     currentPhase=1; updateProgress();
