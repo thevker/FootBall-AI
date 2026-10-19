@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v77.0 — 完美四規則終極版 (Bug 修復)</title>
+<title>🚀 v79.0 — 10%勝場防護完美版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -75,10 +75,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v77.0 — 完美四規則終極版 (Bug 修復)</h2>
+<h2>🚀 v79.0 — 10%勝場防護完美版</h2>
 
 <div class="warn-banner">
-  <b>✅ 已修復歸零 Bug：</b>之前因為 JavaScript 的物件深拷貝導致位圖失效，利潤才會變成 0。現在已完美修復，保證能輸出最高的總利潤！
+  <b>🛡️ 科學防護機制：</b>系統現在強制要求每條規則的**「勝場數」必須 ≥ 總場次的 10%**。這能完美過濾掉極端巧合，只保留具有大數法則支撐的最強規則！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -200,6 +200,8 @@ var condBSCache={};
 var condBSCacheSize=0;
 var COND_CACHE_MAX=300000; 
 
+var minWinsRequired = 0; // 10% 勝場門檻
+
 /* ========== 位圖 ========== */
 function bsWords(N){ return (N+31)>>5; }
 function bsNew(N){ return new Uint32Array(bsWords(N)); }
@@ -257,6 +259,23 @@ function profitOfBS(bs,thenCode){
     }
   }
   return total;
+}
+function getWins(bs, thenCode){
+  if(thenCode===3) return 0;
+  var wins = 0;
+  for(var w=0;w<bs.length;w++){
+    var x=bs[w], base=w<<5;
+    while(x){
+      var low=x&-x;
+      var pos=31-Math.clz32(low);
+      var idx=base+pos;
+      if(idx<trainN){
+        if(trainResult[idx]===thenCode) wins++;
+      }
+      x^=low;
+    }
+  }
+  return wins;
 }
 
 function calcRulesStats(rules){
@@ -343,7 +362,7 @@ function getThresholds(fi){
 }
 
 /* ============================================================
-   核心引擎：記憶體優化版 (爬山變異)
+   核心引擎：爬山變異 + 10% 勝場限制
    ============================================================ */
 async function runEngine(mode) {
   pushLog(nowTime()+' ⚙️ 初始化 [尾盤] 引擎，尋找各目標最高利潤單一規則...','info');
@@ -357,7 +376,7 @@ async function runEngine(mode) {
   trainN = rawRowsData.length;
   trainFeat = extractFeatures(rawRowsData);
   
-  // 1. 生成單條件零件
+  // 1. 生成單條件零件 (過濾勝場 < 10% 的)
   var singles = [];
   for(var fi=0;fi<FCOUNT;fi++){
     var ths=getThresholds(fi);
@@ -365,11 +384,12 @@ async function runEngine(mode) {
       for(var k=0;k<ths.length;k++){
         var thr=ths[k];
         var bs=getCondBS(fi,op,thr);
-        if(bsCount(bs) < 1) continue;
+        if(bsCount(bs) < minWinsRequired) continue; // 基礎覆蓋場次也要大於10%
         
         for(var tc=0;tc<3;tc++){
           var p = profitOfBS(bs, tc);
-          if(p > 0){
+          var w = getWins(bs, tc);
+          if(p > 0 && w >= minWinsRequired){
             singles.push({ fi: fi, cond: [fi,op,thr], bs:bs, thenCode:tc, profit:p });
           }
         }
@@ -378,7 +398,7 @@ async function runEngine(mode) {
     if(fi % 5 === 0 && shouldYield()) await yieldUI();
   }
   
-  pushLog(nowTime()+'   總單條件零件：'+singles.length+' 條','scan');
+  pushLog(nowTime()+'   合格單條件零件：'+singles.length+' 條','scan');
 
   // 2. 針對三個目標分別進行 20 萬次爬山變異
   var bestRules = [null, null, null];
@@ -443,7 +463,7 @@ async function runEngine(mode) {
         newBS = newBS === null ? condBS : bsAnd(newBS, condBS);
       }
       
-      if(!newBS || bsCount(newBS) < 1) continue;
+      if(!newBS || bsCount(newBS) < minWinsRequired) continue;
       
       var newProfit = profitOfBS(newBS, tc);
       
@@ -451,13 +471,17 @@ async function runEngine(mode) {
         current = { conds: testConds, bs: newBS, profit: newProfit };
         
         if(newProfit > globalBest.profit) {
-          globalBest = { conds: testConds.slice(), bs: newBS, profit: newProfit };
+          var w = getWins(newBS, tc);
+          if(w >= minWinsRequired) {
+            globalBest = { conds: testConds.slice(), bs: newBS, profit: newProfit };
+          }
         }
       }
     }
     
     bestRules[tc] = globalBest;
-    pushLog(nowTime()+'   目標 '+RESULTS[tc]+' 最佳利潤：'+globalBest.profit+'（'+globalBest.conds.length+' 條件）','success');
+    var finalWins = getWins(globalBest.bs, tc);
+    pushLog(nowTime()+'   目標 '+RESULTS[tc]+' 最佳利潤：'+globalBest.profit+'（'+globalBest.conds.length+' 條件，'+finalWins+' 勝）','success');
   }
   
   poolSize = singles.length;
@@ -718,6 +742,9 @@ async function start(){
       return; 
     }
     rawRowsData = parsed.rows;
+    
+    minWinsRequired = Math.ceil(rawRowsData.length * 0.10);
+    pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。 10% 勝利門檻 = 至少贏 '+minWinsRequired+' 場。','info');
 
     running=true; startTime=Date.now(); evalCount=0;
     poolSize=0; pickedCount=0;
@@ -734,10 +761,10 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v77.0 — 完美四規則終極版 (Bug 修復)','head');
+    pushLog('🚀 v79.0 — 10%勝場防護完美版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
-    pushLog(nowTime()+' 模式：尾盤結算，無門檻，爬山變異深度搜索','info');
+    pushLog(nowTime()+' 模式：尾盤結算，強制勝場 ≥ '+minWinsRequired+' 場','info');
     await yieldUI();
 
     currentPhase=1; updateProgress();
@@ -786,7 +813,7 @@ async function start(){
     document.getElementById('rGames').textContent=finalStats.games;
     document.getElementById('rWin').textContent=bestWinRate.toFixed(1)+'%';
     document.getElementById('resultInfo').innerHTML=
-      '🛡️ 勝利場次門檻：<b>無限制</b><br>'+
+      '🛡️ 勝利場次門檻：<b>至少 '+minWinsRequired+' 場 (10%)</b><br>'+
       '結算：<b>尾盤</b>　'+
       '條件限制：<b>無限疊加</b>';
 
