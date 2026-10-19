@@ -2,85 +2,89 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v86.0 — 終極全控版 (次數+門檻自選)</title>
+<title>🚀 v87.0 — 終極暗黑版</title>
 <style>
 *{box-sizing:border-box}
-body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
-h2{margin:0 0 8px 0}
-textarea{width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #ccc;border-radius:4px}
+body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
+h2{margin:0 0 8px 0;color:#f8fafc}
+textarea{width:100%;font-family:monospace;font-size:12px;padding:8px;border:1px solid #334155;border-radius:4px;background:#1e293b;color:#e2e8f0}
 #input{height:160px}
-button{padding:12px 24px;font-size:16px;margin:8px 6px 8px 0;cursor:pointer;background:#007bff;color:#fff;border:none;border-radius:5px;font-weight:bold}
-button:hover{background:#0056b3}
-button:disabled{background:#999;cursor:not-allowed}
-button.hero{padding:14px 36px;font-size:17px;background:linear-gradient(135deg,#16a34a,#22c55e)}
-button.stop{background:#dc3545}
-button.copy{background:#2563eb}
-#log{background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:14px;margin-top:12px;height:260px;overflow-y:auto;font-family:Consolas,monospace;font-size:12px;white-space:pre;line-height:1.5;border:1px solid #222}
+button{padding:12px 24px;font-size:16px;margin:8px 6px 8px 0;cursor:pointer;background:#2563eb;color:#fff;border:none;border-radius:5px;font-weight:bold;transition:background 0.2s}
+button:hover{background:#1d4ed8}
+button:disabled{background:#475569;cursor:not-allowed}
+button.hero{padding:14px 36px;font-size:17px;background:linear-gradient(135deg,#15803d,#22c55e)}
+button.hero:hover{background:linear-gradient(135deg,#166534,#16a34a)}
+button.stop{background:#dc2626}
+button.stop:hover{background:#b91c1c}
+button.copy{background:#4f46e5}
+button.copy:hover{background:#4338ca}
+#log{background:#020617;color:#cbd5e1;border-radius:6px;padding:14px;margin-top:12px;height:260px;overflow-y:auto;font-family:Consolas,monospace;font-size:12px;white-space:pre;line-height:1.5;border:1px solid #1e293b}
 #log::-webkit-scrollbar{width:10px}
-#log::-webkit-scrollbar-track{background:#1a1a1a}
-#log::-webkit-scrollbar-thumb{background:#444;border-radius:5px}
-.l-info{color:#4ea3ff}.l-success{color:#4ade80;font-weight:bold}
-.l-warn{color:#ffc107}.l-dim{color:#666}.l-head{color:#fff;font-weight:bold;font-size:13px}
+#log::-webkit-scrollbar-track{background:#0f172a}
+#log::-webkit-scrollbar-thumb{background:#334155;border-radius:5px}
+.l-info{color:#38bdf8}.l-success{color:#4ade80;font-weight:bold}
+.l-warn{color:#fbbf24}.l-dim{color:#64748b}.l-head{color:#f8fafc;font-weight:bold;font-size:13px}
 .l-best{color:#facc15;font-weight:bold}
 .l-scan{color:#fbbf24;font-weight:bold}
 .l-final{color:#4ade80;background:rgba(74,222,128,0.1);font-weight:bold;padding:2px 0}
-.l-error{color:#ef4444;font-weight:bold;background:rgba(239,68,68,0.1);padding:4px;border-radius:4px;margin-top:4px}
-.best{background:#d4edda;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #c3e6cb;display:none}
-.box{background:#fff;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #ddd}
-.label{font-weight:bold;font-size:13px;margin-bottom:6px;color:#333}
-.out{width:100%;height:260px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto;resize:vertical}
+.l-error{color:#f87171;font-weight:bold;background:rgba(239,68,68,0.1);padding:4px;border-radius:4px;margin-top:4px}
+.best{background:#1e293b;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #334155;display:none}
+.box{background:#1e293b;padding:10px;border-radius:4px;margin-top:10px;border:1px solid #334155}
+.label{font-weight:bold;font-size:13px;margin-bottom:6px;color:#cbd5e1}
+.out{width:100%;height:260px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #334155;border-radius:4px;background:#0f172a;color:#e2e8f0;white-space:pre;overflow:auto;resize:vertical}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
-select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px;font-weight:bold}
+.row label{color:#94a3b8}
+select{padding:6px;border-radius:4px;border:1px solid #334155;font-size:14px;font-weight:bold;background:#1e293b;color:#e2e8f0}
 #msg{margin-top:8px;font-weight:bold;font-size:13px;display:none;padding:8px;border-radius:4px}
-.ok{background:#d4edda;color:#155724}.err{background:#f8d7da;color:#721c24}
-table{border-collapse:collapse;width:100%;font-size:11px;margin-top:8px;background:#fff}
-th,td{border:1px solid #ccc;padding:5px 6px;text-align:right}
-th{background:#e9ecef;text-align:center;position:sticky;top:0;z-index:10}
+.ok{background:#064e3b;color:#6ee7b7;border:1px solid #047857}.err{background:#7f1d1d;color:#fca5a5;border:1px solid #b91c1c}
+table{border-collapse:collapse;width:100%;font-size:11px;margin-top:8px;background:#1e293b}
+th,td{border:1px solid #334155;padding:5px 6px;text-align:right;color:#cbd5e1}
+th{background:#0f172a;text-align:center;position:sticky;top:0;z-index:10;color:#94a3b8}
 td:nth-child(1),td:nth-child(2){text-align:left}
-.diag{max-height:420px;overflow:auto;border:1px solid #ccc;border-radius:4px;margin-top:10px}
-.profit-pos{color:#0a7a0a;font-weight:bold}.profit-neg{color:#c00;font-weight:bold}
+.diag{max-height:420px;overflow:auto;border:1px solid #334155;border-radius:4px;margin-top:10px}
+.profit-pos{color:#4ade80;font-weight:bold}.profit-neg{color:#f87171;font-weight:bold}
 .tag-h{background:#16a34a;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold}
 .tag-d{background:#2563eb;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold}
 .tag-a{background:#dc2626;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold}
-.tag-skip{background:#94a3b8;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold}
-.section{background:#fff;padding:12px;border-radius:6px;border:1px solid #ddd;margin-top:12px}
-h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
+.tag-skip{background:#475569;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold}
+.section{background:#1e293b;padding:12px;border-radius:6px;border:1px solid #334155;margin-top:12px}
+h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 .progress-row{display:flex;align-items:center;gap:12px;margin-top:12px}
-.progress{flex:1;height:26px;background:#ddd;border-radius:4px;overflow:hidden}
-#progbar{height:100%;width:0%;background:linear-gradient(90deg,#16a34a,#22c55e);transition:width 0.2s}
-#progText{font-weight:bold;font-size:15px;color:#16a34a;min-width:80px;text-align:right;font-family:monospace}
-#progPhase{font-size:12px;color:#666;min-width:180px;font-family:monospace}
+.progress{flex:1;height:26px;background:#334155;border-radius:4px;overflow:hidden}
+#progbar{height:100%;width:0%;background:linear-gradient(90deg,#3b82f6,#06b6d4);transition:width 0.2s}
+#progText{font-weight:bold;font-size:15px;color:#38bdf8;min-width:80px;text-align:right;font-family:monospace}
+#progPhase{font-size:12px;color:#94a3b8;min-width:180px;font-family:monospace}
 .stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:12px}
-.stat{background:#fff;padding:6px 10px;border-radius:4px;border:1px solid #ddd}
-.stat b{color:#007bff}
-.stat.pool-stat{background:#e0f2fe;border-color:#38bdf8}.stat.pool-stat b{color:#075985}
-.stat.greedy-stat{background:#fce7f3;border-color:#f472b6}.stat.greedy-stat b{color:#9d174d}
-.stat.win-stat{background:#fef3c7;border-color:#fbbf24}.stat.win-stat b{color:#92400e}
-.stat.train-stat{background:#d4edda;border-color:#28a745}.stat.train-stat b{color:#155724}
-.stat.total-stat{background:#dcfce7;border-color:#22c55e}.stat.total-stat b{color:#14532d;font-size:15px}
-.warn-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);padding:12px 14px;border-radius:6px;border:1px solid #fbbf24;font-size:13px;line-height:1.7;margin-bottom:10px;color:#92400e}
-.warn-banner b{color:#78350f}
-.result-banner{background:linear-gradient(135deg,#fce7f3,#fbcfe8);padding:12px 14px;border-radius:6px;border:1px solid #f472b6;font-size:13px;line-height:1.8;margin-top:10px;color:#9d174d}
-.result-banner b{color:#831843}
+.stat{background:#1e293b;padding:6px 10px;border-radius:4px;border:1px solid #334155;color:#94a3b8}
+.stat b{color:#e2e8f0}
+.stat.pool-stat{background:#172554;border-color:#1e3a8a}.stat.pool-stat b{color:#93c5fd}
+.stat.greedy-stat{background:#4c1d95;border-color:#5b21b6}.stat.greedy-stat b{color:#ddd6fe}
+.stat.win-stat{background:#78350f;border-color:#92400e}.stat.win-stat b{color:#fde68a}
+.stat.train-stat{background:#064e3b;border-color:#047857}.stat.train-stat b{color:#a7f3d0}
+.stat.total-stat{background:#14532d;border-color:#166534}.stat.total-stat b{color:#bbf7d0;font-size:15px}
+.warn-banner{background:linear-gradient(135deg,#831843,#4c0519);padding:12px 14px;border-radius:6px;border:1px solid #be185d;font-size:13px;line-height:1.7;margin-bottom:10px;color:#fbcfe8}
+.warn-banner b{color:#f472b6}
+.result-banner{background:linear-gradient(135deg,#4c1d95,#2e1065);padding:12px 14px;border-radius:6px;border:1px solid #6d28d9;font-size:13px;line-height:1.8;margin-top:10px;color:#ddd6fe}
+.result-banner b{color:#c084fc}
 .result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
-.result-cell{background:#fff;padding:10px;border-radius:4px;text-align:center;border:1px solid #fbcfe8}
-.result-cell .num{font-size:22px;font-weight:bold;color:#be185d}
-.result-cell .lbl{font-size:10px;color:#666}
-.scroll-container { max-height: 400px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd; border-radius: 4px; }
+.result-cell{background:#1e293b;padding:10px;border-radius:4px;text-align:center;border:1px solid #334155}
+.result-cell .num{font-size:22px;font-weight:bold;color:#e2e8f0}
+.result-cell .lbl{font-size:10px;color:#94a3b8}
+.scroll-container { max-height: 400px; overflow-y: auto; overflow-x: auto; border: 1px solid #334155; border-radius: 4px; }
 .compare-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:0;}
-.compare-table th,.compare-table td{border:1px solid #ddd;padding:6px;text-align:center;white-space:nowrap;}
-.compare-table th{background:#f1f5f9;color:#475569;}
-.compare-table tr:nth-child(even){background:#f8fafc}
-.compare-table .hit{color:#16a34a;font-weight:bold}
-.compare-table .miss{color:#dc2626}
+.compare-table th,.compare-table td{border:1px solid #334155;padding:6px;text-align:center;white-space:nowrap;}
+.compare-table th{background:#0f172a;color:#94a3b8;}
+.compare-table tr:nth-child(even){background:#0f172a;}
+.compare-table .hit{color:#4ade80;font-weight:bold}
+.compare-table .miss{color:#f87171}
 </style>
 </head>
 <body>
 
-<h2>🚀 v86.0 — 終極全控版 (次數+門檻自選)</h2>
+<h2>🚀 v87.0 — 終極暗黑版</h2>
 
 <div class="warn-banner">
-  <b>🔥 全面自訂：</b>你可以自由選擇「搜索次數」（100~10000次）與「勝場門檻」（5%~20%）。這能完美平衡「利潤最大化」與「抗過擬合」的需求！
+  <b>🔥 全面自訂 (暗黑模式)：</b>可自選「搜索次數」與「勝場門檻 (1%~9%)」。這能完美平衡「利潤最大化」與「抗過擬合」的需求！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -104,10 +108,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
   <label>🛡️ 勝場門檻：</label>
   <select id="minHitsPct">
+    <option value="0.01">1%</option>
+    <option value="0.03">3%</option>
     <option value="0.05" selected>5% (推薦)</option>
-    <option value="0.10">10%</option>
-    <option value="0.15">15%</option>
-    <option value="0.20">20%</option>
+    <option value="0.07">7%</option>
+    <option value="0.09">9%</option>
   </select>
 </div>
 
@@ -143,14 +148,14 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 
   <div class="section">
     <h3>📋 全場次模擬明細（請上下滾動對賬）</h3>
-    <div style="font-size:11px;color:#666;margin-bottom:8px">拉到最底部的「累計盈虧」，必定與上方總盈利一致。</div>
+    <div style="font-size:11px;color:#94a3b8;margin-bottom:8px">拉到最底部的「累計盈虧」，必定與上方總盈利一致。</div>
     <div class="scroll-container">
       <table class="compare-table" id="compareTable"></table>
     </div>
   </div>
 
-  <div class="section" style="background:#f0fdf4;border-color:#bbf7d0">
-    <h3 style="color:#166534">📌 H2 預測公式（可直接點擊上方按鈕複製）</h3>
+  <div class="section" style="background:#1e293b;border-color:#334155">
+    <h3 style="color:#cbd5e1">📌 H2 預測公式（可直接點擊上方按鈕複製）</h3>
     <textarea id="txtH" class="out" readonly wrap="off" style="margin-top:6px"></textarea>
   </div>
   
@@ -568,12 +573,12 @@ function renderRuleTable(rules, stats){
     var wr=rs.hit>0?(rs.wins/rs.hit*100).toFixed(1)+'%':'-';
     
     if(r.conds.length === 0) {
-      html+='<tr><td>兜底</td><td style="text-align:left;color:#666">其餘全部</td><td>'+thenTag+'</td><td>'+rs.hit+'</td><td>'+rs.wins+'</td><td>'+rs.losses+'</td><td>'+wr+'</td><td class="'+pcls+'">'+rs.profit+'</td></tr>';
+      html+='<tr><td>兜底</td><td style="text-align:left;color:#94a3b8">其餘全部</td><td>'+thenTag+'</td><td>'+rs.hit+'</td><td>'+rs.wins+'</td><td>'+rs.losses+'</td><td>'+wr+'</td><td class="'+pcls+'">'+rs.profit+'</td></tr>';
     } else {
       html+='<tr><td>第 '+(i+1)+'</td>'+
         '<td style="text-align:left;font-size:10px">'+ss+'</td><td>'+thenTag+'</td>'+
         '<td>'+rs.hit+'</td><td>'+rs.wins+'</td><td>'+rs.losses+'</td>'+
-        '<td style="color:#7c3aed;font-weight:bold">'+wr+'</td>'+
+        '<td style="color:#c084fc;font-weight:bold">'+wr+'</td>'+
         '<td class="'+pcls+'">'+rs.profit+'</td></tr>';
     }
   }
@@ -589,7 +594,7 @@ function renderCompareTable(stats, rawRows, payoutMode){
   for(var i=0; i<details.length; i++){
     var d = details[i];
     var raw = rawRows[d.idx];
-    var predStr = d.pred === 'skip' ? '<span style="color:#94a3b8">skip</span>' : (d.pred===0?'H':(d.pred===1?'D':'A'));
+    var predStr = d.pred === 'skip' ? '<span style="color:#64748b">skip</span>' : (d.pred===0?'H':(d.pred===1?'D':'A'));
     var predClass = d.pred === 'skip' ? '' : (d.pred === d.actual ? 'hit' : 'miss');
     
     var profitStr = d.profit > 0 ? '<span class="profit-pos">+'+d.profit+'</span>' : (d.profit < 0 ? '<span class="profit-neg">'+d.profit+'</span>' : '0');
@@ -610,7 +615,7 @@ function renderCompareTable(stats, rawRows, payoutMode){
       '<td class="'+predClass+'">'+predStr+'</td>'+
       '<td>'+oddsUsed+'</td>'+
       '<td>'+profitStr+'</td>'+
-      '<td style="font-weight:bold;background:#f8fafc">'+cumStr+'</td>'+
+      '<td style="font-weight:bold;background:#0f172a">'+cumStr+'</td>'+
     '</tr>';
   }
   html += '</tbody>';
@@ -758,6 +763,7 @@ async function start(){
     var pctStr = document.getElementById('minHitsPct').value;
     var pct = parseFloat(pctStr);
     minWinsRequired = Math.ceil(rawRowsData.length * pct);
+    if(minWinsRequired < 1) minWinsRequired = 1; // 確保至少 1 場
     
     var selectedRuns = parseInt(document.getElementById('runCount').value);
     totalPhases = selectedRuns;
@@ -779,7 +785,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v86.0 — 終極全控版','head');
+    pushLog('🚀 v87.0 — 終極暗黑版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：尾盤結算，勝場 ≥ '+minWinsRequired+'，預計執行 '+totalPhases+' 次','info');
@@ -833,10 +839,10 @@ async function start(){
 
     document.getElementById('best').style.display='block';
     document.getElementById('summary').innerHTML=
-      '<div style="font-size:28px;color:#0a7a0a;font-weight:bold;margin-bottom:8px">💰 歷史最高總盈利：'+bestTotal+'</div>'+
-      '<div style="font-size:14px;color:#333;line-height:1.9">'+
+      '<div style="font-size:28px;color:#4ade80;font-weight:bold;margin-bottom:8px">💰 歷史最高總盈利：'+bestTotal+'</div>'+
+      '<div style="font-size:14px;color:#cbd5e1;line-height:1.9">'+
       '結算模式：<b>尾盤 D/E/F</b><br>'+
-      '命中率 <b style="color:#7c3aed">'+bestWinRate.toFixed(2)+'%</b>（'+finalStats.wins+'/'+finalStats.games+'）　'+
+      '命中率 <b style="color:#c084fc">'+bestWinRate.toFixed(2)+'%</b>（'+finalStats.wins+'/'+finalStats.games+'）　'+
       '啟用 <b>'+activeCount+'</b> 條規則</div>';
 
     document.getElementById('rPool').textContent=poolSize;
