@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v69.0 — 彈性門檻百萬進化版</title>
+<title>🚀 v70.0 — 勝利次數純化版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -76,10 +76,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v69.0 — 彈性門檻百萬進化版</h2>
+<h2>🚀 v70.0 — 勝利次數純化版</h2>
 
 <div class="warn-banner">
-  <b>🛡️ 實戰防護機制：</b>數據量必須 ≥ 100 場。你可以自訂覆蓋率門檻，系統將嚴格執行 100 萬次進化，並在最後自動刪除命中率不達標的殭屍規則（兜底豁免）。
+  <b>🛡️ 全新防護機制：</b>只計算「贏」的次數！一條規則的**勝利場次**必須大於總場次的指定百分比（預設 10%），否則將直接被淘汰。這能完美過濾掉「靠高賠率勉強拉回利潤，但勝率極低」的危險規則。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -91,13 +91,12 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   <button id="btnRun" class="hero" onclick="start()">🚀 啟動極致進化</button>
   <button id="btnCopy" class="copy" onclick="copyIt('txtH')">📋 複製 H2 公式</button>
 
-  <label>🛡️ 覆蓋率門檻：</label>
+  <label>🛡️ 勝利場次門檻：</label>
   <select id="minHitsPct">
     <option value="0.05">5% (寬鬆)</option>
     <option value="0.10" selected>10% (推薦)</option>
     <option value="0.15">15% (嚴格)</option>
     <option value="0.20">20% (極嚴)</option>
-    <option value="0.25">25% (變態)</option>
   </select>
 </div>
 
@@ -210,7 +209,7 @@ var condBSCache={};
 var condBSCacheSize=0;
 var COND_CACHE_MAX=300000; 
 
-var minHitsRequired = 0; // 動態門檻
+var minHitsRequired = 0; // 勝利場次門檻
 
 /* ========== 位圖 ========== */
 function bsWords(N){ return (N+31)>>5; }
@@ -270,6 +269,25 @@ function profitOfBS(bs,thenCode){
   }
   return total;
 }
+// ★ 新增：計算指定投注方向的勝利場次
+function getWins(bs, thenCode){
+  if(thenCode===3) return 0;
+  var wins = 0;
+  for(var w=0;w<bs.length;w++){
+    var x=bs[w], base=w<<5;
+    while(x){
+      var low=x&-x;
+      var pos=31-Math.clz32(low);
+      var idx=base+pos;
+      if(idx<trainN){
+        if(trainResult[idx]===thenCode) wins++;
+      }
+      x^=low;
+    }
+  }
+  return wins;
+}
+
 function calcRulesStats(rules){
   var games=0,wins=0,skips=0,totalProfit=0;
   var ruleStats=[];
@@ -373,7 +391,7 @@ function cloneRules(rules){
    核心引擎：無限條件 + 貪心 + 模擬退火 (100萬次)
    ============================================================ */
 async function runEngine(mode) {
-  pushLog(nowTime()+' ⚙️ 初始化 [尾盤] 引擎，門檻：'+minHitsRequired+' 場...','info');
+  pushLog(nowTime()+' ⚙️ 初始化 [尾盤] 引擎，勝利場次門檻：'+minHitsRequired+' 勝...','info');
   
   featureValueCache={};
   clearCondCache();
@@ -394,7 +412,7 @@ async function runEngine(mode) {
         var bs=getCondBS(fi,op,thr);
         var cnt=bsCount(bs);
         
-        if(cnt < minHitsRequired) continue; 
+        if(cnt < minHitsRequired) continue; // 基礎覆蓋場次也不能太少
         
         var pH = profitOfBS(bs, 0);
         var pD = profitOfBS(bs, 1);
@@ -403,9 +421,14 @@ async function runEngine(mode) {
         
         if(bestP > 0){
           var bestTc = (bestP === pH) ? 0 : (bestP === pD ? 1 : 2);
-          singles.push({ conds:[[fi,op,thr]], bs:bs, thenCode:bestTc, profit:bestP, cnt:cnt });
+          
+          // ★ 檢查勝利場次是否達標
+          var winCount = getWins(bs, bestTc);
+          if(winCount < minHitsRequired) continue;
+          
+          singles.push({ conds:[[fi,op,thr]], bs:bs, thenCode:bestTc, profit:bestP, cnt:cnt, wins:winCount });
         } else {
-          singles.push({ conds:[[fi,op,thr]], bs:bs, thenCode:3, profit:0, cnt:cnt });
+          singles.push({ conds:[[fi,op,thr]], bs:bs, thenCode:3, profit:0, cnt:cnt, wins:0 });
         }
       }
     }
@@ -450,8 +473,13 @@ async function runEngine(mode) {
         var newProfit = profitOfBS(newBS, cand.thenCode);
         
         if(newProfit > currentRule.profit && newProfit > 0){
+          
+          // ★ 檢查勝利場次
+          var winCount = getWins(newBS, cand.thenCode);
+          if(winCount < minHitsRequired) continue;
+          
           if(!bestAdd || newProfit > bestAdd.profit) {
-            bestAdd = { conds: currentRule.conds.concat([cand.conds[0]]), bs:newBS, thenCode:cand.thenCode, profit:newProfit, cnt:newCnt };
+            bestAdd = { conds: currentRule.conds.concat([cand.conds[0]]), bs:newBS, thenCode:cand.thenCode, profit:newProfit, cnt:newCnt, wins:winCount };
           }
         }
       }
@@ -603,7 +631,7 @@ async function runEngine(mode) {
   
   pushLog(nowTime()+' ✅ 百萬次進化完成，最高利潤：'+bestProfit,'success');
   
-  // 5. 終極瘦身：嚴格檢查真實命中數，【豁免兜底規則】
+  // 5. 終極瘦身：嚴格檢查真實【勝利場次】，【豁免兜底規則】
   var finalRules = bestRules;
   var cleanupIter = 0;
   
@@ -627,14 +655,15 @@ async function runEngine(mode) {
     var worstIdx = -1;
     
     for(var i=0; i<cleanRulesList.length; i++) { 
-      if(originalStats.ruleStats[i].hit < minHitsRequired) {
+      // ★ 檢查勝利場次 (wins) 而不是覆蓋場次 (hit)
+      if(originalStats.ruleStats[i].wins < minHitsRequired) {
         worstIdx = i;
         break; 
       }
     }
     
     if(worstIdx >= 0) {
-      pushLog(nowTime()+'   🗑️ 刪除無效規則：命中僅 '+originalStats.ruleStats[worstIdx].hit+' 場 (< '+minHitsRequired+')','scan');
+      pushLog(nowTime()+'   🗑️ 刪除勝場不足規則：僅贏 '+originalStats.ruleStats[worstIdx].wins+' 場 (< '+minHitsRequired+')','scan');
       cleanRulesList.splice(worstIdx, 1);
       cleanupIter++;
     } else {
@@ -643,9 +672,9 @@ async function runEngine(mode) {
   }
   
   if(cleanupIter > 0) {
-    pushLog(nowTime()+' ✂️ 瘦身完成：總共刪除了 '+cleanupIter+' 條殭屍規則！','success');
+    pushLog(nowTime()+' ✂️ 瘦身完成：總共刪除了 '+cleanupIter+' 條勝場不足的規則！','success');
   } else {
-    pushLog(nowTime()+' ✂️ 瘦身完成：沒有發現無效規則！','success');
+    pushLog(nowTime()+' ✂️ 瘦身完成：沒有發現勝場不足的規則！','success');
   }
   
   // 重新組裝最終規則
@@ -883,12 +912,11 @@ async function start(){
     }
     rawRowsData = parsed.rows;
     
-    // ★ 動態讀取 UI 門檻
     var pctStr = document.getElementById('minHitsPct').value;
     var pct = parseFloat(pctStr);
     minHitsRequired = Math.ceil(rawRowsData.length * pct);
     
-    pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。 '+(pct*100)+'% 門檻 = 至少命中 '+minHitsRequired+' 場。','info');
+    pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。 '+(pct*100)+'% 勝利門檻 = 至少贏 '+minHitsRequired+' 場。','info');
 
     running=true; startTime=Date.now(); evalCount=0;
     poolSize=0; pickedCount=0;
@@ -905,7 +933,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v69.0 — 彈性門檻百萬進化版','head');
+    pushLog('🚀 v70.0 — 勝利次數純化版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：尾盤結算，無限條件疊加，百萬次退火','info');
@@ -957,7 +985,7 @@ async function start(){
     document.getElementById('rGames').textContent=finalStats.games;
     document.getElementById('rWin').textContent=bestWinRate.toFixed(1)+'%';
     document.getElementById('resultInfo').innerHTML=
-      '🛡️ 覆蓋率門檻：<b>'+(pct*100)+'% ('+minHitsRequired+' 場)</b><br>'+
+      '🛡️ 勝利場次門檻：<b>'+(pct*100)+'% ('+minHitsRequired+' 場)</b><br>'+
       '結算：<b>尾盤</b>　'+
       '條件限制：<b>無限疊加</b>';
 
