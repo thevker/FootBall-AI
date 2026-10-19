@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v47.0 — 絕對防漏對齊版 (完美還原)</title>
+<title>🚀 v48.0 — 全明細對賬版 (完美還原)</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -15,7 +15,7 @@ button:disabled{background:#999;cursor:not-allowed}
 button.stop{background:#dc3545}
 button.txt{background:#28a745}
 button.hero{padding:14px 36px;font-size:17px;background:linear-gradient(135deg,#16a34a,#22c55e)}
-#log{background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:14px;margin-top:12px;height:300px;overflow-y:auto;font-family:Consolas,monospace;font-size:12px;white-space:pre;line-height:1.5;border:1px solid #222}
+#log{background:#0c0c0c;color:#d4d4d4;border-radius:6px;padding:14px;margin-top:12px;height:260px;overflow-y:auto;font-family:Consolas,monospace;font-size:12px;white-space:pre;line-height:1.5;border:1px solid #222}
 #log::-webkit-scrollbar{width:10px}
 #log::-webkit-scrollbar-track{background:#1a1a1a}
 #log::-webkit-scrollbar-thumb{background:#444;border-radius:5px}
@@ -35,7 +35,7 @@ select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px}
 .ok{background:#d4edda;color:#155724}.err{background:#f8d7da;color:#721c24}
 table{border-collapse:collapse;width:100%;font-size:11px;margin-top:8px;background:#fff}
 th,td{border:1px solid #ccc;padding:5px 6px;text-align:right}
-th{background:#e9ecef;text-align:center;position:sticky;top:0}
+th{background:#e9ecef;text-align:center;position:sticky;top:0;z-index:10}
 td:nth-child(1),td:nth-child(2){text-align:left}
 .diag{max-height:420px;overflow:auto;border:1px solid #ccc;border-radius:4px;margin-top:10px}
 .profit-pos{color:#0a7a0a;font-weight:bold}.profit-neg{color:#c00;font-weight:bold}
@@ -66,10 +66,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 .result-cell{background:#fff;padding:10px;border-radius:4px;text-align:center;border:1px solid #fbcfe8}
 .result-cell .num{font-size:22px;font-weight:bold;color:#be185d}
 .result-cell .lbl{font-size:10px;color:#666}
-/* 對賬表 */
-.compare-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:11px}
-.compare-table th,.compare-table td{border:1px solid #ddd;padding:6px;text-align:center}
-.compare-table th{background:#f1f5f9;color:#475569}
+/* 對賬表滾動容器 */
+.scroll-container { max-height: 400px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd; border-radius: 4px; }
+.compare-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:0;}
+.compare-table th,.compare-table td{border:1px solid #ddd;padding:6px;text-align:center;white-space:nowrap;}
+.compare-table th{background:#f1f5f9;color:#475569;}
 .compare-table tr:nth-child(even){background:#f8fafc}
 .compare-table .hit{color:#16a34a;font-weight:bold}
 .compare-table .miss{color:#dc2626}
@@ -77,10 +78,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v47.0 — 絕對防漏對齊版 (完美還原)</h2>
+<h2>🚀 v48.0 — 全明細對賬版 (完美還原)</h2>
 
 <div class="warn-banner">
-  <b>✅ 徹底修復邊界與等號 Bug：</b>為防止 Google Sheet 將數字誤判為文字，公式已加上 <code>*1</code> 強制轉為數值。並取消了所有四捨五入，確保 <code>&lt;</code> 和 <code>&lt;=</code> 的判定與網頁 100% 完美一致！
+  <b>✅ 數據已強制對齊：</b>修正了 Google Sheet 的隱形字串 Bug 與四捨五入誤差。下方對賬表明細已改為「顯示全部場次」，可上下滾動，你可以直接拉到最底下對比累計盈虧。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -149,23 +150,23 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
   </div>
 
   <div class="section">
-    <h3>📋 網頁 vs Sheet 對賬表（前 15 場）</h3>
-    <div style="font-size:11px;color:#666;margin-bottom:8px">請對照這裡的「預測結果」與「盈利」，確認 Sheet 算出的結果是否一致。</div>
-    <div style="overflow-x:auto">
+    <h3>📋 全場次模擬明細（請上下滾動對賬）</h3>
+    <div style="font-size:11px;color:#666;margin-bottom:8px">拉到最底部的「累計盈虧」，它必定與網頁最上方的「極限總盈利」一模一樣。</div>
+    <div class="scroll-container">
       <table class="compare-table" id="compareTable"></table>
     </div>
   </div>
 
   <div class="section" style="background:#f0fdf4;border-color:#bbf7d0">
     <h3 style="color:#166534">📌 1. H2 預測公式（複製到 H2）</h3>
-    <div style="font-size:11px;color:#166534;margin-bottom:6px">已加入 <code>*1</code> 強制數值化與嵌套 IF，絕對不會算錯。</div>
+    <div style="font-size:11px;color:#166534;margin-bottom:6px">已加入 <code>*1</code> 強制數值化與完美嵌套 IF。</div>
     <button class="txt" onclick="copyIt('txtH')">📋 複製 H2 公式</button>
     <textarea id="txtH" class="out" readonly wrap="off" style="margin-top:6px"></textarea>
   </div>
 
   <div class="section" style="background:#eff6ff;border-color:#bfdbfe;margin-top:8px">
     <h3 style="color:#1e40af">💰 2. I 列盈利公式（複製到 I2）</h3>
-    <div style="font-size:11px;color:#1e3a8a;margin-bottom:6px">⚠️ 必須使用這裡生成的公式，它會根據你選的結算方式自動匹配。</div>
+    <div style="font-size:11px;color:#1e3a8a;margin-bottom:6px">⚠️ 必須使用這裡生成的公式，確保結算賠率一致。</div>
     <button class="txt" onclick="copyIt('txtI')">📋 複製 I2 公式</button>
     <textarea id="txtI" class="out out-short" readonly wrap="off" style="margin-top:6px"></textarea>
   </div>
@@ -597,25 +598,38 @@ function renderRuleTable(rules, stats){
   html+='</tbody></table>';
   document.getElementById('ruleTable').innerHTML=html;
 }
+
 function renderCompareTable(stats, rawRows){
-  var html = '<thead><tr><th>場次</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>結果</th><th>預測</th><th>盈利</th></tr></thead><tbody>';
+  var html = '<thead><tr><th>場次</th><th>A主初</th><th>B和初</th><th>C客初</th><th>D主尾</th><th>E和尾</th><th>F客尾</th><th>賽果</th><th>預測</th><th>結算賠率</th><th>盈虧</th><th>累計盈虧</th></tr></thead><tbody>';
   var details = stats.details;
-  var limit = Math.min(15, details.length);
+  var cumProfit = 0;
   
-  for(var i=0; i<limit; i++){
+  // 顯示全部數據
+  for(var i=0; i<details.length; i++){
     var d = details[i];
     var raw = rawRows[d.idx];
     var predStr = d.pred === 'skip' ? '<span style="color:#94a3b8">skip</span>' : (d.pred===0?'H':(d.pred===1?'D':'A'));
     var predClass = d.pred === 'skip' ? '' : (d.pred === d.actual ? 'hit' : 'miss');
-    var profitStr = d.profit >= 0 ? '<span class="profit-pos">+'+d.profit+'</span>' : '<span class="profit-neg">'+d.profit+'</span>';
     
+    var profitStr = d.profit > 0 ? '<span class="profit-pos">+'+d.profit+'</span>' : (d.profit < 0 ? '<span class="profit-neg">'+d.profit+'</span>' : '0');
+    cumProfit += d.profit;
+    var cumStr = cumProfit > 0 ? '<span class="profit-pos">+'+cumProfit+'</span>' : (cumProfit < 0 ? '<span class="profit-neg">'+cumProfit+'</span>' : '0');
+    
+    var oddsUsed = '-';
+    if(d.pred !== 'skip'){
+        if(PAYOUT_MODE === 'initial') oddsUsed = (d.pred===0?raw.A:(d.pred===1?raw.B:raw.C));
+        else oddsUsed = (d.pred===0?raw.D:(d.pred===1?raw.E:raw.F));
+    }
+
     html += '<tr>'+
       '<td>'+(i+1)+'</td>'+
       '<td>'+raw.A+'</td><td>'+raw.B+'</td><td>'+raw.C+'</td>'+
       '<td>'+raw.D+'</td><td>'+raw.E+'</td><td>'+raw.F+'</td>'+
       '<td><b>'+raw.result+'</b></td>'+
       '<td class="'+predClass+'">'+predStr+'</td>'+
+      '<td>'+oddsUsed+'</td>'+
       '<td>'+profitStr+'</td>'+
+      '<td style="font-weight:bold;background:#f8fafc">'+cumStr+'</td>'+
     '</tr>';
   }
   html += '</tbody>';
@@ -792,7 +806,7 @@ async function start(){
   PAYOUT_MODE=document.getElementById('payoutMode').value;
 
   pushLog('═══════════════════════════════════════════════════════════','head');
-  pushLog('🚀 v47.0 — 絕對防漏對齊版 (完美還原)','head');
+  pushLog('🚀 v48.0 — 全明細對賬版 (完美還原)','head');
   pushLog('═══════════════════════════════════════════════════════════','head');
   pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
   pushLog(nowTime()+' 結算：'+(PAYOUT_MODE==='initial'?'初盤 A/B/C':'尾盤 D/E/F'),'info');
