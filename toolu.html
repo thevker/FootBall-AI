@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v68.0 — 百萬進化無限制版</title>
+<title>🚀 v69.0 — 彈性門檻百萬進化版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -29,6 +29,7 @@ button.copy{background:#2563eb}
 .label{font-weight:bold;font-size:13px;margin-bottom:6px;color:#333}
 .out{width:100%;height:260px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f8f9fa;white-space:pre;overflow:auto;resize:vertical}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
+select{padding:6px;border-radius:4px;border:1px solid #ccc;font-size:14px;font-weight:bold}
 #msg{margin-top:8px;font-weight:bold;font-size:13px;display:none;padding:8px;border-radius:4px}
 .ok{background:#d4edda;color:#155724}.err{background:#f8d7da;color:#721c24}
 table{border-collapse:collapse;width:100%;font-size:11px;margin-top:8px;background:#fff}
@@ -75,10 +76,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v68.0 — 百萬進化無限制版</h2>
+<h2>🚀 v69.0 — 彈性門檻百萬進化版</h2>
 
 <div class="warn-banner">
-  <b>🔥 算力全開：</b>模擬退火次數已解鎖至 <b>1,000,000 次</b>，且「解除條件數量限制」。這需要幾分鐘的時間，請保持頁面開啟，系統會徹底遍歷各種排列組合，為你榨出最高利潤。
+  <b>🛡️ 實戰防護機制：</b>數據量必須 ≥ 100 場。你可以自訂覆蓋率門檻，系統將嚴格執行 100 萬次進化，並在最後自動刪除命中率不達標的殭屍規則（兜底豁免）。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -89,6 +90,15 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 <div class="row">
   <button id="btnRun" class="hero" onclick="start()">🚀 啟動極致進化</button>
   <button id="btnCopy" class="copy" onclick="copyIt('txtH')">📋 複製 H2 公式</button>
+
+  <label>🛡️ 覆蓋率門檻：</label>
+  <select id="minHitsPct">
+    <option value="0.05">5% (寬鬆)</option>
+    <option value="0.10" selected>10% (推薦)</option>
+    <option value="0.15">15% (嚴格)</option>
+    <option value="0.20">20% (極嚴)</option>
+    <option value="0.25">25% (變態)</option>
+  </select>
 </div>
 
 <div class="progress-row">
@@ -200,7 +210,7 @@ var condBSCache={};
 var condBSCacheSize=0;
 var COND_CACHE_MAX=300000; 
 
-var minHitsRequired = 0; // 10% 門檻
+var minHitsRequired = 0; // 動態門檻
 
 /* ========== 位圖 ========== */
 function bsWords(N){ return (N+31)>>5; }
@@ -363,7 +373,7 @@ function cloneRules(rules){
    核心引擎：無限條件 + 貪心 + 模擬退火 (100萬次)
    ============================================================ */
 async function runEngine(mode) {
-  pushLog(nowTime()+' ⚙️ 初始化 [尾盤] 引擎，10% 門檻：'+minHitsRequired+' 場...','info');
+  pushLog(nowTime()+' ⚙️ 初始化 [尾盤] 引擎，門檻：'+minHitsRequired+' 場...','info');
   
   featureValueCache={};
   clearCondCache();
@@ -419,7 +429,6 @@ async function runEngine(mode) {
     var currentRule = growthBase[g];
     var added = true;
     
-    // 這裡移除了 10 個條件的限制，只要利潤上升且覆蓋率夠就繼續疊加
     while(added) {
       added = false;
       var bestAdd = null;
@@ -521,7 +530,7 @@ async function runEngine(mode) {
   // 4. 模擬退火微調 (100萬次)
   pushLog(nowTime()+' 🌡️ 啟動模擬退火優化（100萬次迭代）...','info');
   var T = 100;
-  var cooling = 0.9999; // 因為次數變多，降溫要變慢
+  var cooling = 0.9999; 
   var maxIter = 1000000; 
 
   for(var iter=0; iter<maxIter; iter++){
@@ -530,7 +539,6 @@ async function runEngine(mode) {
     var moveType = Math.random();
     var testRules = cloneRules(curRules);
     
-    // 隨機拔出一條/交換/加入
     if(moveType < 0.5 && testRules.length > 1) {
       var fromIdx = Math.floor(Math.random() * testRules.length);
       var toIdx = Math.floor(Math.random() * testRules.length);
@@ -544,20 +552,17 @@ async function runEngine(mode) {
       var temp = testRules[i2]; testRules[i2] = testRules[j2]; testRules[j2] = temp;
     } else if(testRules.length > 1) {
       var i3 = Math.floor(Math.random() * testRules.length);
-      // 不要刪除兜底
       if(testRules[i3].conds.length > 0) {
           testRules.splice(i3, 1);
       }
     }
 
-    // 每次變動後，重新計算兜底（因為樣本覆蓋改變了）
     var matchedTemp = bsNew(trainN);
     for(var i=0; i<testRules.length; i++) {
         if(testRules[i].conds.length > 0) bsOrInPlace(matchedTemp, testRules[i].bs);
     }
     var unmatchedTemp = bsAndNot(bsNew(trainN).fill(~0), matchedTemp);
     
-    // 移除舊兜底，加入新兜底
     var tempNoBottom = testRules.filter(function(r){ return r.conds.length > 0; });
     if(bsCount(unmatchedTemp) > 0) {
         var pH = profitOfBS(unmatchedTemp, 0);
@@ -589,7 +594,7 @@ async function runEngine(mode) {
     T *= cooling;
     if(T < 0.1) T = 0.1;
 
-    if(iter % 5000 === 0) { // 百萬次時，每5000次更新一次UI
+    if(iter % 5000 === 0) {
       pickedCount = iter;
       updateStats();
       if(shouldYield()) await yieldUI();
@@ -878,8 +883,12 @@ async function start(){
     }
     rawRowsData = parsed.rows;
     
-    minHitsRequired = Math.ceil(rawRowsData.length * 0.10);
-    pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。 10% 門檻 = 至少命中 '+minHitsRequired+' 場。','info');
+    // ★ 動態讀取 UI 門檻
+    var pctStr = document.getElementById('minHitsPct').value;
+    var pct = parseFloat(pctStr);
+    minHitsRequired = Math.ceil(rawRowsData.length * pct);
+    
+    pushLog('🛡️ 數據量符合要求：'+rawRowsData.length+' 場。 '+(pct*100)+'% 門檻 = 至少命中 '+minHitsRequired+' 場。','info');
 
     running=true; startTime=Date.now(); evalCount=0;
     poolSize=0; pickedCount=0;
@@ -896,7 +905,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v68.0 — 百萬進化無限制版','head');
+    pushLog('🚀 v69.0 — 彈性門檻百萬進化版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：尾盤結算，無限條件疊加，百萬次退火','info');
@@ -948,7 +957,7 @@ async function start(){
     document.getElementById('rGames').textContent=finalStats.games;
     document.getElementById('rWin').textContent=bestWinRate.toFixed(1)+'%';
     document.getElementById('resultInfo').innerHTML=
-      '🛡️ 覆蓋率門檻：<b>10% ('+minHitsRequired+' 場)</b><br>'+
+      '🛡️ 覆蓋率門檻：<b>'+(pct*100)+'% ('+minHitsRequired+' 場)</b><br>'+
       '結算：<b>尾盤</b>　'+
       '條件限制：<b>無限疊加</b>';
 
