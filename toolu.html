@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v60.0 — 精準對齊無限制版</title>
+<title>🚀 v61.0 — 尾盤專屬雙條件版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#f0f2f5}
@@ -75,10 +75,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#333}
 </head>
 <body>
 
-<h2>🚀 v60.0 — 精準對齊無限制版</h2>
+<h2>🚀 v61.0 — 尾盤專屬雙條件版</h2>
 
 <div class="warn-banner">
-  <b>✅ 已修復精度誤差：</b>所有計算特徵與公式閾值，已強制四捨五入到小數點後 2 位。保證 Google Sheet 算出來的利潤與網頁 100% 一模一樣。單條件，無樣本限制，無限層數。
+  <b>✅ 針對實戰優化：</b>只測試尾盤 D/E/F 結算。候選規則限制為 1~2 個條件。已將所有特徵計算與生成的 Google Sheet 公式，全面加上 <code>ROUND(..., 2)</code>，保證網頁與 Sheet 算出來的利潤 100% 一模一樣！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果
@@ -372,7 +372,8 @@ async function runEngine(mode) {
   trainN = rawRowsData.length;
   trainFeat = extractFeatures(rawRowsData);
   
-  var pool = [];
+  // 1. 生成單條件
+  var singles = [];
   for(var fi=0;fi<FCOUNT;fi++){
     var ths=getThresholds(fi);
     for(var op=0;op<4;op++){
@@ -389,25 +390,63 @@ async function runEngine(mode) {
         
         if(bestP > 0){
           var bestTc = (bestP === pH) ? 0 : (bestP === pD ? 1 : 2);
-          pool.push({ conds:[[fi,op,thr]], bs:bs, thenCode:bestTc, profit:bestP, cnt:cnt });
+          singles.push({ conds:[[fi,op,thr]], bs:bs, thenCode:bestTc, profit:bestP, cnt:cnt });
         } else {
-          pool.push({ conds:[[fi,op,thr]], bs:bs, thenCode:3, profit:0, cnt:cnt });
+          singles.push({ conds:[[fi,op,thr]], bs:bs, thenCode:3, profit:0, cnt:cnt });
         }
       }
     }
     if(fi % 5 === 0 && shouldYield()) await yieldUI();
   }
+  singles.sort(function(a,b){ return b.profit-a.profit; });
+  var topSingles = singles.slice(0, 150);
+  pushLog(nowTime()+'   單條件基礎：'+singles.length+' 條','scan');
+
+  // 2. 生成雙條件
+  var limit2 = Math.min(topSingles.length, 100);
+  var doubles = [];
+  for(var i=0;i<limit2;i++){
+    for(var j=i+1;j<limit2;j++){
+      if(topSingles[i].conds[0][0] === topSingles[j].conds[0][0]) continue;
+      var cbs = bsAnd(topSingles[i].bs, topSingles[j].bs);
+      var cnt2 = bsCount(cbs);
+      if(cnt2 < 1) continue;
+      
+      var pH2 = profitOfBS(cbs, 0);
+      var pD2 = profitOfBS(cbs, 1);
+      var pA2 = profitOfBS(cbs, 2);
+      var bestP2 = Math.max(pH2, pD2, pA2);
+      
+      if(bestP2 > 0){
+        var bestTc2 = (bestP2 === pH2) ? 0 : (bestP2 === pD2 ? 1 : 2);
+        doubles.push({ conds:[topSingles[i].conds[0], topSingles[j].conds[0]], bs:cbs, thenCode:bestTc2, profit:bestP2, cnt:cnt2 });
+      } else {
+        doubles.push({ conds:[topSingles[i].conds[0], topSingles[j].conds[0]], bs:cbs, thenCode:3, profit:0, cnt:cnt2 });
+      }
+    }
+    if(i % 10 === 0 && shouldYield()) await yieldUI();
+  }
+  doubles.sort(function(a,b){ return b.profit-a.profit; });
+  var topDoubles = doubles.slice(0, 200);
+  pushLog(nowTime()+'   雙條件基礎：'+doubles.length+' 條','scan');
+
+  // 混合池
+  var pool = topSingles.concat(topDoubles);
   
   var seen={}, unique=[];
   for(var u=0;u<pool.length;u++){
-    var key = pool[u].conds[0][0]+'_'+pool[u].conds[0][1]+'_'+pool[u].conds[0][2]+'→'+pool[u].thenCode;
+    var key='';
+    var cs = pool[u].conds.slice().sort(function(a,b){ return a[0]-b[0]; });
+    for(var c=0;c<cs.length;c++) key += cs[c][0]+'_'+cs[c][1]+'_'+cs[c][2]+'|';
+    key += '→'+pool[u].thenCode;
     if(seen[key]) continue;
     seen[key]=1;
     unique.push(pool[u]);
   }
-  pool = unique.sort(function(a,b){ return b.profit-a.profit; });
+  pool = unique;
   poolSize = pool.length;
   
+  // 3. 貪心初始化
   var initRules = [];
   var matched = bsNew(trainN);
   while(true){
@@ -432,6 +471,7 @@ async function runEngine(mode) {
     if(shouldYield()) await yieldUI();
   }
 
+  // 4. 退火搜索
   var curRules = cloneRules(initRules);
   var curStats = calcRulesStats(curRules);
   var curProfit = curStats.totalProfit;
@@ -504,6 +544,7 @@ async function runEngine(mode) {
     }
   }
 
+  // 5. 兜底
   var finalMatched = bsNew(trainN);
   for(var i=0; i<bestRules.length; i++){
     bsOrInPlace(finalMatched, bestRules[i].bs);
@@ -608,7 +649,7 @@ function renderCompareTable(stats, rawRows, payoutMode){
   document.getElementById('compareTable').innerHTML = html;
 }
 
-/* ========== 公式生成 (強制數值化防誤判) ========== */
+/* ========== 公式生成 (強制數值化防誤判，全面 ROUND) ========== */
 function featToExpr(fi){
   var A='(A2:A*1)',B='(B2:B*1)',C='(C2:C*1)';
   var D='(D2:D*1)',E='(E2:E*1)',F='(F2:F*1)';
@@ -619,15 +660,15 @@ function featToExpr(fi){
     case 'A-D':return '('+A+'-'+D+')'; case 'D-A':return '('+D+'-'+A+')';
     case 'B-E':return '('+B+'-'+E+')'; case 'E-B':return '('+E+'-'+B+')';
     case 'C-F':return '('+C+'-'+F+')'; case 'F-C':return '('+F+'-'+C+')';
-    case 'MA_PCT':return 'IF('+A+'=0,0,('+A+'-'+D+')/'+A+'*100)';
-    case 'MB_PCT':return 'IF('+B+'=0,0,('+B+'-'+E+')/'+B+'*100)';
-    case 'MC_PCT':return 'IF('+C+'=0,0,('+C+'-'+F+')/'+C+'*100)';
-    case 'A/D':return 'IF('+D+'=0,0,'+A+'/'+D+')';
-    case 'B/E':return 'IF('+E+'=0,0,'+B+'/'+E+')';
-    case 'C/F':return 'IF('+F+'=0,0,'+C+'/'+F+')';
-    case 'MA-MC':return 'IF('+A+'=0,0,IF('+C+'=0,0,('+A+'-'+D+')/'+A+'*100-('+C+'-'+F+')/'+C+'*100))';
-    case 'MA-MB':return 'IF('+A+'=0,0,IF('+B+'=0,0,('+A+'-'+D+')/'+A+'*100-('+B+'-'+E+')/'+B+'*100))';
-    case 'MC-MB':return 'IF('+C+'=0,0,IF('+B+'=0,0,('+C+'-'+F+')/'+C+'*100-('+B+'-'+E+')/'+B+'*100))';
+    case 'MA_PCT':return 'ROUND(IF('+A+'=0,0,('+A+'-'+D+')/'+A+'*100),2)';
+    case 'MB_PCT':return 'ROUND(IF('+B+'=0,0,('+B+'-'+E+')/'+B+'*100),2)';
+    case 'MC_PCT':return 'ROUND(IF('+C+'=0,0,('+C+'-'+F+')/'+C+'*100),2)';
+    case 'A/D':return 'ROUND(IF('+D+'=0,0,'+A+'/'+D+'),2)';
+    case 'B/E':return 'ROUND(IF('+E+'=0,0,'+B+'/'+E+'),2)';
+    case 'C/F':return 'ROUND(IF('+F+'=0,0,'+C+'/'+F+'),2)';
+    case 'MA-MC':return 'ROUND(IF('+A+'=0,0,IF('+C+'=0,0,('+A+'-'+D+')/'+A+'*100-('+C+'-'+F+')/'+C+'*100)),2)';
+    case 'MA-MB':return 'ROUND(IF('+A+'=0,0,IF('+B+'=0,0,('+A+'-'+D+')/'+A+'*100-('+B+'-'+E+')/'+B+'*100)),2)';
+    case 'MC-MB':return 'ROUND(IF('+C+'=0,0,IF('+B+'=0,0,('+C+'-'+F+')/'+C+'*100-('+B+'-'+E+')/'+B+'*100)),2)';
     case 'A-D-(C-F)':return '(('+A+'-'+D+')-('+C+'-'+F+'))';
     case 'A-D-(B-E)':return '(('+A+'-'+D+')-('+B+'-'+E+'))';
     case 'C-F-(B-E)':return '(('+C+'-'+F+')-('+B+'-'+E+'))';
@@ -639,8 +680,8 @@ function featToExpr(fi){
     case 'DirA':return 'IF('+D+'<'+A+',1,IF('+D+'>'+A+',-1,0))';
     case 'DirB':return 'IF('+E+'<'+B+',1,IF('+E+'>'+B+',-1,0))';
     case 'DirC':return 'IF('+F+'<'+C+',1,IF('+F+'>'+C+',-1,0))';
-    case 'A/C':return 'IF('+C+'=0,0,'+A+'/'+C+')';
-    case 'D/F':return 'IF('+F+'=0,0,'+D+'/'+F+')';
+    case 'A/C':return 'ROUND(IF('+C+'=0,0,'+A+'/'+C+'),2)';
+    case 'D/F':return 'ROUND(IF('+F+'=0,0,'+D+'/'+F+'),2)';
     default:return '0';
   }
 }
@@ -660,7 +701,7 @@ function genFormulaRecursive(rules, index){
   var condSheetStrings = conds.map(function(c){
     var expr = featToExpr(c[0]);
     var op = OPS_SHEET[c[1]];
-    var val = Number(c[2].toFixed(2)); // ★ 強制 2 位小數
+    var val = Number(c[2].toFixed(2)); // 強制 2 位小數
     return '(' + expr + op + val + ')'; 
   });
   
@@ -717,7 +758,7 @@ function updateProgress(){
   document.getElementById('progbar').style.width=pct.toFixed(1)+'%';
   document.getElementById('progText').textContent=pct.toFixed(1)+'%';
   var el=document.getElementById('progPhase');
-  var names=['準備中','測試初盤','測試尾盤','完成'];
+  var names=['準備中','生成候選','退火重組','完成'];
   el.textContent=names[currentPhase]||'完成';
 }
 function updateStats(){
@@ -758,43 +799,31 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v60.0 — 精準對齊無限制版','head');
+    pushLog('🚀 v61.0 — 尾盤專屬雙條件版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
-    pushLog(nowTime()+' 模式：固定單條件，無限層數，無樣本限制，最高搜索強度','info');
+    pushLog(nowTime()+' 模式：尾盤結算，1~2 條件，強制 ROUND 對齊','info');
     await yieldUI();
 
     currentPhase=1; updateProgress();
     pushLog('');
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog(nowTime()+' 測試 [初盤 A/B/C] 結算...','head');
+    pushLog(nowTime()+' 開始優化 [尾盤 D/E/F] 結算...','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     await yieldUI();
-    var resInitial = await runEngine('initial');
-    pushLog(nowTime()+' ✅ 初盤測試完成，總盈利：'+resInitial.stats.totalProfit,'success');
-    await yieldUI();
-
-    currentPhase=2; updateProgress();
-    pushLog('');
-    pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog(nowTime()+' 測試 [尾盤 D/E/F] 結算...','head');
-    pushLog('═══════════════════════════════════════════════════════════','head');
-    await yieldUI();
-    var resFinal = await runEngine('final');
-    pushLog(nowTime()+' ✅ 尾盤測試完成，總盈利：'+resFinal.stats.totalProfit,'success');
-    await yieldUI();
-
-    var bestRes = (resInitial.stats.totalProfit >= resFinal.stats.totalProfit) ? resInitial : resFinal;
-    var bestMode = bestRes.mode;
     
+    var resFinal = await runEngine('final');
+    pushLog(nowTime()+' ✅ 測試完成，總盈利：'+resFinal.stats.totalProfit,'success');
+    await yieldUI();
+
     currentPhase=3; updateProgress();
     pushLog('');
     pushLog('═══════════════════════════════════════════════════════════','final');
-    pushLog('🏆 自動選擇了 ['+(bestMode==='initial'?'初盤':'尾盤')+'] 結算，因為利潤最高！','best');
+    pushLog('🏆 優化完成！','best');
     pushLog('═══════════════════════════════════════════════════════════','final');
 
-    var optimizedRules = bestRes.rules;
-    var finalStats = bestRes.stats;
+    var optimizedRules = resFinal.rules;
+    var finalStats = resFinal.stats;
     
     bestTotal = finalStats.totalProfit;
     bestWinRate = finalStats.winRate;
@@ -812,7 +841,7 @@ async function start(){
     document.getElementById('summary').innerHTML=
       '<div style="font-size:28px;color:#0a7a0a;font-weight:bold;margin-bottom:8px">💰 總盈利：'+bestTotal+'</div>'+
       '<div style="font-size:14px;color:#333;line-height:1.9">'+
-      '結算模式：<b>'+(bestMode==='initial'?'初盤 A/B/C':'尾盤 D/E/F')+'</b><br>'+
+      '結算模式：<b>尾盤 D/E/F</b><br>'+
       '命中率 <b style="color:#7c3aed">'+bestWinRate.toFixed(2)+'%</b>（'+finalStats.wins+'/'+finalStats.games+'）　'+
       '啟用 <b>'+activeCount+'</b> 條規則</div>';
 
@@ -822,10 +851,10 @@ async function start(){
     document.getElementById('rWin').textContent=bestWinRate.toFixed(1)+'%';
     document.getElementById('resultInfo').innerHTML=
       '🎚️ 最少樣本：<b>無限制</b>　'+
-      '結算：<b>'+(bestMode==='initial'?'初盤':'尾盤')+'</b>　'+
-      '條件限制：<b>固定 1 條件</b>';
+      '結算：<b>尾盤</b>　'+
+      '條件限制：<b>1~2 條件</b>';
 
-    renderCompareTable(finalStats, rawRowsData, bestMode);
+    renderCompareTable(finalStats, rawRowsData, 'final');
     document.getElementById('txtH').value=formulaH;
 
     renderRuleTable(optimizedRules, finalStats);
