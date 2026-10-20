@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v92.3 — 精準門檻版（每條規則必達標）</title>
+<title>🚀 v92.4 — 嚴格命中門檻版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -63,10 +63,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v92.3 — 精準門檻版</h2>
+<h2>🚀 v92.4 — 嚴格命中門檻版</h2>
 
 <div class="warn-banner">
-  <b>🔥 精準控制每條規則的「實際生效勝場」：</b>現在系統在組裝最終公式時，會嚴格計算這條規則在「剩餘場次」裡還能贏多少場。如果贏的場次低於設定的勝利門檻（例如 5% = 23 場），該規則將被直接淘汰，絕不混入最終名單！
+  <b>🎯 精準「命中次數」限制：</b>現在系統會嚴格要求每一條規則，在生效時所覆蓋的「總場次（不論輸贏）」，都必須大於等於你設定的門檻。例如 5% (23場)，如果一條規則最終只能抓到 5 場，它將被直接淘汰，絕不出現在最終名單。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -92,7 +92,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
     <option value="0">無限</option>
   </select>
 
-  <label>🛡️ 勝利門檻：</label>
+  <label>🎯 命中門檻：</label>
   <select id="minHitsPct">
     <option value="0" selected>關閉</option>
     <option value="0.05">5%</option>
@@ -201,7 +201,7 @@ var currentPhase=0,totalPhases=100;
 var poolSize=0,currentRun=0;
 var optMode='profit';
 var maxCondsLimit=0;
-var minWinsRequired=0;
+var minHitsRequired=0; // ★ 改名為 minHitsRequired
 
 var globalBestScore=-Infinity;
 var globalBestProfit=-Infinity;
@@ -395,11 +395,13 @@ async function runSingleEngine() {
         var thr=ths[k];
         var bs=getCondBS(fi,op,thr);
         var total=bsCount(bs);
-        if(total === 0) continue;
+        
+        // ★ 在單條件生成時，檢查「總觸發場次」是否達標
+        if(total === 0 || (minHitsRequired > 0 && total < minHitsRequired)) continue;
+        
         for(var tc=0;tc<3;tc++){
-          var w = getWins(bs, tc);
-          if(minWinsRequired > 0 && w < minWinsRequired) continue;
           if(optMode === 'hitrate'){
+            var w = getWins(bs, tc);
             if(w * 100 > total * 33) singles.push({ fi: fi, cond: [fi,op,thr], bs:bs, thenCode:tc, profit: profitOfBS(bs, tc) });
           } else {
             var p = profitOfBS(bs, tc);
@@ -457,8 +459,9 @@ async function runSingleEngine() {
           var condBS = getCondBS(testConds[c3][0], testConds[c3][1], testConds[c3][2]);
           newBS = newBS === null ? condBS : bsAnd(newBS, condBS);
         }
-        if(!newBS || bsCount(newBS) === 0) continue;
-        if(minWinsRequired > 0 && getWins(newBS, tc) < minWinsRequired) continue;
+        
+        // ★ 爬山組合後，也必須檢查「總觸發場次」達標
+        if(!newBS || bsCount(newBS) < (minHitsRequired > 0 ? minHitsRequired : 1)) continue;
         
         var newScore = metricOfBS(newBS, tc, optMode);
         if(newScore > current.score) {
@@ -490,16 +493,14 @@ async function runSingleEngine() {
       
       var only = bsAndNot(rule.bs, covered);
       var cnt = bsCount(only);
-      if (cnt === 0) continue; 
       
-      var newWins = getWins(only, rule.thenCode);
-      
-      // ★ 核心修改：在剩餘場次中，實際能贏的場次必須 >= 勝利門檻
-      if (minWinsRequired > 0 && newWins < minWinsRequired) continue;
+      // ★ 核心修改：在剩餘場次中，能觸發的次數(cnt)必須 >= 命中門檻
+      if (cnt === 0 || (minHitsRequired > 0 && cnt < minHitsRequired)) continue; 
 
       var inc = profitOfBS(only, rule.thenCode); 
       if (optMode === 'hitrate') {
-        inc = (cnt > 0) ? (newWins / cnt) * 100 : -Infinity;
+        var w = getWins(only, rule.thenCode);
+        inc = (w / cnt) * 100;
       }
       
       if (inc > maxIncrement) {
@@ -730,11 +731,12 @@ async function start(){
     maxCondsLimit = parseInt(document.getElementById('maxConds').value) || 0;
     
     var gatePct = parseFloat(document.getElementById('minHitsPct').value) || 0;
-    minWinsRequired = gatePct > 0 ? Math.ceil(rawRowsData.length * gatePct) : 0;
+    // ★ 這裡計算的是需要達標的總觸發場次
+    minHitsRequired = gatePct > 0 ? Math.ceil(rawRowsData.length * gatePct) : 0;
     
     var modeLabel = (optMode === 'hitrate') ? '🎯 命中模式（最高命中率）' : '💰 盈利模式（最高利潤）';
     var condLabel = (maxCondsLimit === 0) ? '無限' : (maxCondsLimit + ' 個條件');
-    var gateLabel = (minWinsRequired === 0) ? '關閉' : (Math.round(gatePct*100)+'% (至少贏 '+minWinsRequired+' 場)');
+    var gateLabel = (minHitsRequired === 0) ? '關閉' : (Math.round(gatePct*100)+'% (至少觸發 '+minHitsRequired+' 場)');
     
     var selectedRuns = parseInt(document.getElementById('runCount').value);
     totalPhases = selectedRuns;
@@ -756,10 +758,10 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v92.3 — 精準門檻版','head');
+    pushLog('🚀 v92.4 — 嚴格命中門檻版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
-    pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，勝利門檻：'+gateLabel,'info');
+    pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，命中門檻：'+gateLabel,'info');
     pushLog(nowTime()+' 尾盤結算，預計執行 '+totalPhases+' 次','info');
     await yieldUI();
 
@@ -828,7 +830,7 @@ async function start(){
       earnStatus + '（' + (bestTotal > 0 ? '+' : '') + bestTotal + ' 單位）' +
       '</div>'+
       '<div style="font-size:14px;color:#cbd5e1;line-height:1.9">'+
-      '結算模式：<b>尾盤 D/E/F</b>　條件上限：<b>'+condLabel+'</b>　勝利門檻：<b>'+gateLabel+'</b><br>'+
+      '結算模式：<b>尾盤 D/E/F</b>　條件上限：<b>'+condLabel+'</b>　命中門檻：<b>'+gateLabel+'</b><br>'+
       '命中率 <b style="color:#c084fc">'+bestWinRate.toFixed(2)+'%</b>（'+finalStats.wins+'/'+finalStats.games+'）　'+
       '共 <b>'+optimizedRules.length+'</b> 條規則（包含 Skip 兜底）</div>';
 
