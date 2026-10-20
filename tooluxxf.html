@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v94.3 — 方向兜底版（剩餘最高盈利）</title>
+<title>🚀 v94.4 — EV門控兜底版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -59,17 +59,20 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 .compare-table tr:nth-child(even){background:#0f172a;}
 .compare-table .hit{color:#4ade80;font-weight:bold}
 .compare-table .miss{color:#f87171}
+.fb-panel{background:rgba(0,0,0,0.25);border:1px solid #475569;border-radius:6px;padding:10px 12px;margin-top:10px;font-size:12px;line-height:1.9;color:#cbd5e1}
+.fb-panel b{color:#f8fafc}
 </style>
 </head>
 <body>
 
-<h2>🚀 v94.3 — 方向兜底版（剩餘最高盈利）</h2>
+<h2>🚀 v94.4 — EV門控兜底版</h2>
 
 <div class="warn-banner">
-  <b>🔥 本次修復重點：</b>
-  <br>① <code>MinABC / MaxABC</code> 用 <code>LET</code> 逐列變數 <code>mn_abc / mx_abc</code>，不再生成 <code>MIN(a,b,c)</code>（避免 <code>ARRAYFORMULA</code> 整列聚合）。
-  <br>② <code>a~f</code> 全部用 <code>IFERROR(...,0)</code> 包住，杜絕 <code>#VALUE!</code> 擴散。
-  <br>③ <b>兜底不再輸出 <code>skip</code></b>：對剩餘未覆蓋場次，在 H / D / A 三個方向中選盈利最高者作為無條件兜底，公式末尾變成 <code>"H"</code> / <code>"D"</code> / <code>"A"</code>。
+  <b>🔥 本次重點：</b>
+  <br>① <code>MinABC / MaxABC</code> 用 <code>LET</code> 逐列變數 <code>mn_abc / mx_abc</code>（不用 <code>MIN/MAX</code> 整列聚合）。
+  <br>② <code>a~f</code> 用 <code>IFERROR(...,0)</code> 包住，杜絕 <code>#VALUE!</code> 擴散。
+  <br>③ <b>兜底三模式</b>：<code>🧠 EV 門控</code>（默認）、<code>🎯 純 HDA</code>、<code>⏸ 純 Skip</code>。
+  <br>④ EV 門控 = 剩餘 ≥15 場 且 最高方向總盈利 > 門檻 → 押該方向；否則 skip。避免「純 HDA」在剩餘場次 EV 為負時送錢。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -113,6 +116,21 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
     <option value="100" selected>100 次</option>
     <option value="500">500 次</option>
     <option value="1000">1000 次</option>
+  </select>
+
+  <label>🛟 兜底策略：</label>
+  <select id="fallbackMode">
+    <option value="ev-gated" selected>🧠 EV 門控（推薦）</option>
+    <option value="always-hda">🎯 純 HDA（永遠押）</option>
+    <option value="skip">⏸ 純 Skip（不下注）</option>
+  </select>
+
+  <label>🛟 兜底 EV 門檻：</label>
+  <select id="fallbackEv">
+    <option value="0" selected>總盈利 &gt; 0</option>
+    <option value="50">總盈利 &gt; +50</option>
+    <option value="100">總盈利 &gt; +100</option>
+    <option value="200">總盈利 &gt; +200</option>
   </select>
 </div>
 
@@ -212,6 +230,11 @@ var optMode='profit';
 var maxCondsLimit=0;
 var minHitsRequired=0;
 
+// ★ 兜底設定
+var fallbackMode='ev-gated';        // 'ev-gated' | 'always-hda' | 'skip'
+var MIN_FALLBACK_SAMPLES=15;        // 剩餘場次 < 此值 → EV 門控直接 skip
+var fallbackEvThreshold=0;          // 最高方向總盈利 > 此值 → 才押
+
 var globalBestScore=-Infinity;
 var globalBestProfit=-Infinity;
 var globalBestWinRate=0;
@@ -225,7 +248,6 @@ var condBSCache={};
 var condBSCacheSize=0;
 var COND_CACHE_MAX=300000; 
 
-// ★ 核心修復：模擬 Google Sheets 的 ROUND 行為 (四捨五入遠離零)
 function rnd2(val) {
   if (!isFinite(val)) return 0;
   return Math.sign(val) * Math.round(Math.abs(val) * 100) / 100;
@@ -504,10 +526,8 @@ async function runSingleEngine() {
     
     for(var i=0; i<allCondRules.length; i++) {
       var rule = allCondRules[i];
-      
       var only = bsAndNot(rule.bs, covered);
       var cnt = bsCount(only);
-      
       if (cnt === 0 || (minHitsRequired > 0 && cnt < minHitsRequired)) continue; 
 
       var inc = profitOfBS(only, rule.thenCode); 
@@ -532,8 +552,7 @@ async function runSingleEngine() {
     }
   }
 
-  // ★ FIX（v94.3）：兜底不再 Skip
-  // 對「剩餘未覆蓋場次」在 H / D / A 三個方向中選盈利最高者，作為無條件兜底
+  // ★ v94.4 兜底：三模式 + EV 門控
   var fallbackInfo = null;
   var remainingBS = bsNew(trainN);
   for(var ri=0; ri<trainN; ri++) remainingBS[ri>>5] |= (1<<(ri&31));
@@ -541,18 +560,44 @@ async function runSingleEngine() {
   var remainCnt = bsCount(remainingBS);
 
   if(remainCnt > 0) {
+    // 計算三個方向 EV
+    var dirProfits = [];
     var bestDir = 0, bestDirProfit = -Infinity;
     for(var ftc=0; ftc<3; ftc++) {
       var pDir = profitOfBS(remainingBS, ftc);
+      dirProfits.push(pDir);
       if(pDir > bestDirProfit) { bestDirProfit = pDir; bestDir = ftc; }
     }
-    finalRules.push({on:1, then:RESULTS[bestDir], thenCode:bestDir, conds:[], bs:remainingBS});
-    fallbackInfo = {
-      remainCnt: remainCnt,
-      bestDir: RESULTS[bestDir],
-      bestDirCode: bestDir,
-      profit: bestDirProfit
-    };
+
+    var useFallbackHDA = false;
+    var reason = '';
+
+    if (fallbackMode === 'always-hda') {
+      useFallbackHDA = true;
+      reason = '強制純HDA';
+    } else if (fallbackMode === 'ev-gated') {
+      if (remainCnt < MIN_FALLBACK_SAMPLES) {
+        useFallbackHDA = false;
+        reason = '剩餘場次('+remainCnt+') < 樣本門檻('+MIN_FALLBACK_SAMPLES+')';
+      } else if (bestDirProfit <= fallbackEvThreshold) {
+        useFallbackHDA = false;
+        reason = '最高方向 '+RESULTS[bestDir]+' 盈利 '+bestDirProfit+' ≤ EV門檻 '+fallbackEvThreshold;
+      } else {
+        useFallbackHDA = true;
+        reason = 'EV門控通過：'+RESULTS[bestDir]+' 盈利 +'+bestDirProfit+' > 門檻 '+fallbackEvThreshold;
+      }
+    } else { // 'skip'
+      useFallbackHDA = false;
+      reason = '純Skip模式';
+    }
+
+    if (useFallbackHDA) {
+      finalRules.push({on:1, then:RESULTS[bestDir], thenCode:bestDir, conds:[], bs:remainingBS});
+      fallbackInfo = { remainCnt, bestDir:RESULTS[bestDir], bestDirCode:bestDir, profit:bestDirProfit, dirProfits, mode:'HDA', reason };
+    } else {
+      finalRules.push({on:1, then:'skip', thenCode:3, conds:[], bs:remainingBS});
+      fallbackInfo = { remainCnt, bestDir:RESULTS[bestDir], bestDirCode:bestDir, profit:bestDirProfit, dirProfits, mode:'skip', reason };
+    }
   }
 
   var cleanStats = calcRulesStats(finalRules);
@@ -574,7 +619,7 @@ function renderRuleTable(rules, stats){
     var isSkip = r.thenCode === 3;
     var isFallbackDir = (r.conds.length === 0 && r.thenCode !== 3);
     var ss;
-    if(isSkip) ss = '其餘全部';
+    if(isSkip) ss = '其餘全部（不下注）';
     else if(isFallbackDir) ss = '其餘全部（無條件押 '+r.then+'）';
     else ss = fmtRule(r);
     if(ss.length>110) ss=ss.slice(0,107)+'...';
@@ -637,7 +682,6 @@ function renderCompareTable(stats, rawRows, payoutMode){
   document.getElementById('compareTable').innerHTML = html;
 }
 
-// MinABC / MaxABC 引用逐列變數 mn_abc / mx_abc
 function featToExpr(fi){
   var fn=FEATURES[fi];
   switch(fn){
@@ -694,7 +738,6 @@ function genFormulaRecursive(rules, index){
   });
   
   var condLogic = condSheetStrings.join('*');
-  
   return 'IF((' + condLogic + '), "' + rule.then + '", ' + nextIf + ')';
 }
 
@@ -783,6 +826,12 @@ function yieldUI(){
 }
 function shouldYield(){ return Date.now()-lastYieldTime>25; }
 
+function fallbackModeLabel(m){
+  if(m==='ev-gated') return '🧠 EV 門控';
+  if(m==='always-hda') return '🎯 純 HDA';
+  return '⏸ 純 Skip';
+}
+
 async function start(){
   try {
     var parsed=parseData(document.getElementById('input').value);
@@ -794,6 +843,8 @@ async function start(){
     
     optMode = document.getElementById('optMode').value;
     maxCondsLimit = parseInt(document.getElementById('maxConds').value) || 0;
+    fallbackMode = document.getElementById('fallbackMode').value;
+    fallbackEvThreshold = parseFloat(document.getElementById('fallbackEv').value) || 0;
     
     var gatePct = parseFloat(document.getElementById('minHitsPct').value) || 0;
     minHitsRequired = gatePct > 0 ? Math.ceil(rawRowsData.length * gatePct) : 0;
@@ -801,6 +852,7 @@ async function start(){
     var modeLabel = (optMode === 'hitrate') ? '🎯 命中模式（最高命中率）' : '💰 盈利模式（最高利潤）';
     var condLabel = (maxCondsLimit === 0) ? '無限' : (maxCondsLimit + ' 個條件');
     var gateLabel = (minHitsRequired === 0) ? '關閉' : (Math.round(gatePct*100)+'% (至少觸發 '+minHitsRequired+' 場)');
+    var fbLabel = fallbackModeLabel(fallbackMode) + (fallbackMode==='ev-gated' ? ' (EV > '+fallbackEvThreshold+', 樣本 ≥ '+MIN_FALLBACK_SAMPLES+')' : '');
     
     var selectedRuns = parseInt(document.getElementById('runCount').value);
     totalPhases = selectedRuns;
@@ -823,11 +875,12 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v94.3 — 方向兜底版（剩餘最高盈利）','head');
+    pushLog('🚀 v94.4 — EV門控兜底版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，命中門檻：'+gateLabel,'info');
-    pushLog(nowTime()+' 尾盤結算，預計執行 '+totalPhases+' 次（兜底 = 剩餘場次最高盈利方向）','info');
+    pushLog(nowTime()+' 兜底：'+fbLabel,'info');
+    pushLog(nowTime()+' 尾盤結算，預計執行 '+totalPhases+' 次','info');
     await yieldUI();
 
     for(var run=1; run<=totalPhases; run++){
@@ -880,13 +933,18 @@ async function start(){
     var bestWinRate = finalStats.winRate;
     var formulaH = genHFormula(optimizedRules);
 
-    pushLog('   📊 最終產出 '+optimizedRules.length+' 條規則（含方向兜底）','info');
+    pushLog('   📊 最終產出 '+optimizedRules.length+' 條規則（含兜底）','info');
     pushLog('   🎯 命中率：'+bestWinRate.toFixed(1)+'%（'+finalStats.wins+'/'+finalStats.games+'）','info');
     pushLog('   💵 總盈利：'+bestTotal,'info');
     if(fallbackInfo) {
-      var fbCls = fallbackInfo.profit >= 0 ? 'info' : 'warn';
-      var fbSign = fallbackInfo.profit >= 0 ? '+' : '';
-      pushLog('   🎯 兜底：剩餘 '+fallbackInfo.remainCnt+' 場 → 無條件押 '+fallbackInfo.bestDir+'（盈利 '+fbSign+fallbackInfo.profit+'）', fbCls);
+      var fbLogCls = (fallbackInfo.mode==='HDA') ? 'info' : 'warn';
+      var dirList = 'H:'+fallbackInfo.dirProfits[0]+' / D:'+fallbackInfo.dirProfits[1]+' / A:'+fallbackInfo.dirProfits[2];
+      pushLog('   🛟 兜底：剩餘 '+fallbackInfo.remainCnt+' 場，三方向EV → '+dirList, 'dim');
+      if(fallbackInfo.mode==='HDA') {
+        pushLog('   🛟 決策：押 '+fallbackInfo.bestDir+'（'+fallbackInfo.reason+'）', fbLogCls);
+      } else {
+        pushLog('   🛟 決策：Skip（'+fallbackInfo.reason+'）', fbLogCls);
+      }
     } else {
       pushLog('   ✅ 所有場次已被規則完全覆蓋，無需兜底','info');
     }
@@ -896,7 +954,34 @@ async function start(){
     
     var earnStatus = bestTotal > 0 ? '🟢 長期賺錢' : '🔴 長期蝕本';
     var earnColor = bestTotal > 0 ? '#4ade80' : '#f87171';
-    var fbText = fallbackInfo ? ('兜底：無條件押 '+fallbackInfo.bestDir+'（剩餘 '+fallbackInfo.remainCnt+' 場）') : '兜底：無需（全覆蓋）';
+    
+    var fbPanelHtml = '';
+    if (fallbackInfo) {
+      var dirColors = ['#16a34a','#2563eb','#dc2626'];
+      var dirNames = ['H','D','A'];
+      var dirRows = '';
+      for(var di=0; di<3; di++){
+        var pv = fallbackInfo.dirProfits[di];
+        var pc = pv > 0 ? 'profit-pos' : (pv < 0 ? 'profit-neg' : '');
+        var isBest = (di === fallbackInfo.bestDirCode);
+        dirRows += '<span style="display:inline-block;margin-right:14px;'+(isBest?'font-weight:bold;':'')+'">'+
+          '<span class="tag-'+(di===0?'h':di===1?'d':'a')+'">'+dirNames[di]+'</span> '+
+          '<span class="'+pc+'">'+(pv>0?'+':'')+pv+'</span>'+
+          (isBest?' ←最高':'')+
+          '</span>';
+      }
+      var fbDecisionColor = (fallbackInfo.mode==='HDA') ? '#4ade80' : '#94a3b8';
+      var fbDecision = (fallbackInfo.mode==='HDA') ? ('押 '+fallbackInfo.bestDir) : 'Skip';
+      fbPanelHtml = 
+        '<div class="fb-panel">'+
+        '<b>🛟 兜底分析（剩餘 '+fallbackInfo.remainCnt+' 場）</b><br>'+
+        '三方向 EV：'+dirRows+'<br>'+
+        '決策：<b style="color:'+fbDecisionColor+'">'+fbDecision+'</b>　'+
+        '原因：<span style="color:#94a3b8">'+fallbackInfo.reason+'</span>'+
+        '</div>';
+    } else {
+      fbPanelHtml = '<div class="fb-panel"><b>🛟 兜底</b>：✅ 所有場次已被規則完全覆蓋，無需兜底</div>';
+    }
     
     document.getElementById('summary').innerHTML=
       '<div style="font-size:16px; color:#cbd5e1; margin-bottom:4px">基於所有歷史數據模擬：</div>' +
@@ -906,15 +991,16 @@ async function start(){
       '<div style="font-size:14px;color:#cbd5e1;line-height:1.9">'+
       '結算模式：<b>尾盤 D/E/F</b>　條件上限：<b>'+condLabel+'</b>　命中門檻：<b>'+gateLabel+'</b><br>'+
       '命中率 <b style="color:#c084fc">'+bestWinRate.toFixed(2)+'%</b>（'+finalStats.wins+'/'+finalStats.games+'）　'+
-      '共 <b>'+optimizedRules.length+'</b> 條規則　'+fbText+'</div>';
+      '共 <b>'+optimizedRules.length+'</b> 條規則</div>'+
+      fbPanelHtml;
 
     document.getElementById('resultInfo').innerHTML=
       '模式：<b>'+modeLabel+'</b><br>'+
+      '兜底：<b>'+fbLabel+'</b><br>'+
       '結算：<b>尾盤</b>　搜索次數：<b>'+totalPhases+' 次</b>';
 
     renderCompareTable(finalStats, rawRowsData, 'final');
     document.getElementById('txtH').value=formulaH;
-
     renderRuleTable(optimizedRules, finalStats);
 
     running=false;
