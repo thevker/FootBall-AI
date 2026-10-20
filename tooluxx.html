@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v90.0 — 純變幅率趨勢版</title>
+<title>🚀 v90.1 — 純變幅率趨勢版 + 勝利門檻</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -36,13 +36,13 @@ canvas {width:100%; height:auto; display:block;}
 </head>
 <body>
 
-<h2>🚀 v90.0 — 純變幅率趨勢版</h2>
+<h2>🚀 v90.1 — 純變幅率趨勢版 + 勝利門檻</h2>
 
 <div class="warn-banner" style="background:#1e293b; padding:12px; border-radius:6px; color:#cbd5e1; font-size:13px; margin-bottom:12px;">
   <b>💡 核心改動：</b><br>
   1. 徹底移除絕對數值，所有特徵改為「初盤到尾盤的變幅率 (%)」。<br>
   2. 尋找莊家資金流向與賠率變動的底層邏輯（例如主降 20%、客升 15%）。<br>
-  3. 條件數量無限，純利潤優先，尋找長期高值博率的投資機會。
+  3. 已加回「勝利門檻」過濾器，避免選出勝率過低的極端規則。
 </div>
 
 <textarea id="input" placeholder="請貼上歷史數據（A B C D E F 結果），至少 100 場。"></textarea>
@@ -50,6 +50,19 @@ canvas {width:100%; height:auto; display:block;}
 <div class="row">
   <button id="btnRun" class="hero" onclick="start()">🚀 啟動趨勢挖掘</button>
   <button id="btnCopy" class="copy" onclick="copyIt('txtH')">📋 複製 H2 公式</button>
+
+  <label>🛡️ 勝利門檻：</label>
+  <select id="minHitsPct">
+    <option value="0" selected>關閉</option>
+    <option value="0.05">5%</option>
+    <option value="0.10">10%</option>
+    <option value="0.15">15%</option>
+    <option value="0.20">20%</option>
+    <option value="0.25">25%</option>
+    <option value="0.30">30%</option>
+    <option value="0.35">35%</option>
+    <option value="0.40">40%</option>
+  </select>
 
   <label>🔄 搜索次數：</label>
   <select id="runCount">
@@ -109,13 +122,12 @@ canvas {width:100%; height:auto; display:block;}
 <script>
 'use strict';
 
-// ==== 全新特徵庫：純變幅率與其衍生組合 ====
 const FEATURES = [
-  'MA_PCT', 'MB_PCT', 'MC_PCT',        // 主降幅%, 和降幅%, 客降幅% (正數表示降, 負數表示升)
-  'MA-MB', 'MA-MC', 'MC-MB',           // 變幅差 (資金流向差異)
-  'MA+MB', 'MA+MC', 'MB+MC',           // 變幅和
-  'MA/MB', 'MA/MC', 'MC/MB',           // 變幅比例
-  'DirA', 'DirB', 'DirC'               // 方向 (1=降, -1=升, 0=平)
+  'MA_PCT', 'MB_PCT', 'MC_PCT',        
+  'MA-MB', 'MA-MC', 'MC-MB',           
+  'MA+MB', 'MA+MC', 'MB+MC',           
+  'MA/MB', 'MA/MC', 'MC/MB',           
+  'DirA', 'DirB', 'DirC'               
 ];
 
 const FEATURE_NAMES = [
@@ -135,6 +147,7 @@ let running = false;
 let trainDS, validDS, testDS;
 let tFeat, tRes, tOdds, tN;
 let bsCache = {};
+let minWinsRequired = 0;
 
 function getWinsAndProfit(bs, thenCode, res, odds, N) {
   let wins = 0, games = 0, profit = 0;
@@ -169,7 +182,6 @@ function prepareDataset(rows) {
     const r = rows[i];
     const A = r.A, B = r.B, C = r.C, D = r.D, E = r.E, F = r.F;
     
-    // 計算變幅率 (%)，正值代表降幅 (賠率變小)，負值代表升幅 (賠率變大)
     let maPct = A === 0 ? 0 : Math.round(((A - D) / A * 100) * 100) / 100;
     let mbPct = B === 0 ? 0 : Math.round(((B - E) / B * 100) * 100) / 100;
     let mcPct = C === 0 ? 0 : Math.round(((C - F) / C * 100) * 100) / 100;
@@ -262,7 +274,9 @@ async function searchForClass(tc, baseSingles) {
     }
     
     let nStats = getWinsAndProfit(newBS, tc, tRes, tOdds, tN);
-    if(nStats.games === 0) continue;
+    
+    // ★ 套用勝利門檻
+    if(nStats.games === 0 || (minWinsRequired > 0 && nStats.wins < minWinsRequired)) continue;
     
     let nScore = nStats.profit; 
     
@@ -305,12 +319,16 @@ async function start() {
     tFeat = trainDS.feat; tRes = trainDS.res; tOdds = trainDS.odds; tN = trainDS.N;
     bsCache = {};
     
+    // ★ 讀取最低勝場門檻
+    let gatePct = parseFloat(document.getElementById('minHitsPct').value) || 0;
+    minWinsRequired = gatePct > 0 ? Math.ceil(tN * gatePct) : 0;
+    
     let runs = parseInt(document.getElementById('runCount').value);
     
     running = true;
     document.getElementById('btnRun').disabled = true;
     document.getElementById('resultArea').style.display = 'none';
-    document.getElementById('log').innerHTML = `⏳ 正在生成變幅率特徵池...<br>`;
+    document.getElementById('log').innerHTML = `⏳ 正在生成變幅率特徵池（勝利門檻：${minWinsRequired > 0 ? '至少 '+minWinsRequired+' 場' : '關閉'}）...<br>`;
     
     await new Promise(r => setTimeout(r, 50));
     
@@ -320,9 +338,9 @@ async function start() {
       for(let i=0; i<tN; i++) vals.push(tFeat[i][f]);
       let sorted = [...new Set(vals)].sort((a,b)=>a-b);
       let step = Math.max(1, Math.floor(sorted.length / 15));
+      
       for(let k=0; k<sorted.length; k+=step) {
         let thr = Math.round(sorted[k] * 100) / 100;
-        // 專門為變幅率設計的網格閾值 (-30 到 30)
         if(f < 12) {
           for(let g=-30; g<=30; g+=5) {
             for(let op=0; op<4; op++) {
@@ -336,13 +354,14 @@ async function start() {
                if(count < 10) continue;
                for(let tc=0; tc<3; tc++) {
                  let st = getWinsAndProfit(bs, tc, tRes, tOdds, tN);
+                 // ★ 特徵池生成檢查門檻
+                 if(minWinsRequired > 0 && st.wins < minWinsRequired) continue;
                  if(st.profit > 0) baseSingles.push({ cond: [f, op, g], tc, bs });
                }
             }
           }
         }
         
-        // 加入真實分佈點
         for(let op=0; op<4; op++) {
           let bs = getBS(f, op, thr);
           let count = 0;
@@ -355,6 +374,8 @@ async function start() {
           
           for(let tc=0; tc<3; tc++) {
             let st = getWinsAndProfit(bs, tc, tRes, tOdds, tN);
+            // ★ 特徵池生成檢查門檻
+            if(minWinsRequired > 0 && st.wins < minWinsRequired) continue;
             if(st.profit > 0) baseSingles.push({ cond: [f, op, thr], tc, bs });
           }
         }
@@ -362,7 +383,6 @@ async function start() {
       await new Promise(r => setTimeout(r, 0));
     }
     
-    // 去除重複的單條件
     let uniqueSingles = [];
     let seen = new Set();
     for(let s of baseSingles) {
