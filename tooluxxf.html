@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v94.5 — 預計算加速版</title>
+<title>🚀 v94.6 — 預計算加速版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -65,13 +65,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v94.5 — 預計算加速版</h2>
+<h2>🚀 v94.6 — 預計算加速版</h2>
 
 <div class="warn-banner">
   <b>🔥 本次重點：</b>
   <br>① <b>預設值</b>：條件上限 = <b>無限</b>、兜底策略 = <b>純 Skip</b>。
   <br>② <b>性能修復</b>：<code>trainFeat</code> / <code>featureValueCache</code> / <code>condBSCache</code> / 候選池全部移到 <code>start()</code> 只計算一次。<code>runSingleEngine()</code> 每輪只做爬山 + 貪婪，不再重算不變的東西。
-  <br>③ <b>為何原本「有時快有時慢」</b>：原本每輪開頭 <code>clearCondCache()</code>，爬山時每次 <code>getCondBS()</code> 都要重新遍歷 N 場生成 bitset。隨機路徑若頻繁調用「新條件」→ 慢（10 秒）；若剛好命中 cache → 快（0.2 秒）。修復後 cache 跨輪共用，命中率 100%。
+  <br>③ <b>新增搜索次數選項</b>：10 / 50 / 5000 / 10000 次，預設保持 100 次。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -112,9 +112,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 
   <label>🔄 搜索次數：</label>
   <select id="runCount">
+    <option value="10">10 次</option>
+    <option value="50">50 次</option>
     <option value="100" selected>100 次</option>
     <option value="500">500 次</option>
     <option value="1000">1000 次</option>
+    <option value="5000">5000 次</option>
+    <option value="10000">10000 次</option>
   </select>
 
   <label>🛟 兜底策略：</label>
@@ -877,7 +881,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v94.5 — 預計算加速版','head');
+    pushLog('🚀 v94.6 — 預計算加速版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，命中門檻：'+gateLabel,'info');
