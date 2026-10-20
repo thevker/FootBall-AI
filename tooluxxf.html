@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v95.1 — 絕不卡死版（千分位對齊）</title>
+<title>🚀 v95.2 — 絕對對齊版（純淨）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -63,10 +63,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v95.1 — 絕不卡死版</h2>
+<h2>🚀 v95.2 — 絕對對齊版</h2>
 
 <div class="warn-banner">
-  <b>🔥 終極解決方案：</b>特徵提取保留原有快速 ROUND，網頁不會卡死。但在生成公式時，強制把變數和閾值乘以 1000（轉為整數）進行比較。這保證了 Google Sheets 絕對不會因為小數點精度而漏掉任何一場比賽！
+  <b>🔥 徹底解決數據脫節：</b>網頁端在提取特徵、判斷條件時，完全採用與 Google Sheets 公式相同的 ROUND 邏輯。生成公式時也不再進行二次放大，保證兩邊連一分錢都不差。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -221,7 +221,7 @@ var condBSCache={};
 var condBSCacheSize=0;
 var COND_CACHE_MAX=300000; 
 
-// ★ 恢復原本快速的 rnd2
+// 完全模擬 Google Sheets 的 ROUND 行為
 function rnd2(val) {
   if (!isFinite(val)) return 0;
   return Math.sign(val) * Math.round(Math.abs(val) * 100) / 100;
@@ -421,7 +421,6 @@ async function runSingleEngine() {
         }
       }
     }
-    // 每處理完一個特徵，讓瀏覽器喘口氣
     if (shouldYield()) await yieldUI();
   }
   if(singles.length === 0) return { rules:[], stats:{totalProfit:0, winRate:0, games:0} };
@@ -584,12 +583,11 @@ function genFormulaRecursive(rules, index){
   var conds = rule.conds;
   if(conds.length === 0) return '"' + rule.then + '"';
   
-  // ★ 核心：將變數與閾值都乘 1000 並 ROUND，轉為整數比較，絕對沒有浮點數誤差！
   var condSheetStrings = conds.map(function(c){
     var expr = featToExpr(c[0]);
     var op = OPS_SHEET[c[1]];
-    var val = Math.round(c[2] * 1000); 
-    return '(ROUND(' + expr + ' * 1000) ' + op + ' ' + val + ')'; 
+    var val = Number(c[2].toFixed(2)); 
+    return '(' + expr + op + val + ')'; 
   });
   
   var condLogic = condSheetStrings.join('*');
@@ -601,6 +599,7 @@ function genHFormula(rules){
   if(rules.length === 0) return '=ARRAYFORMULA(IF((A2:A=""),"",""))';
   var body = genFormulaRecursive(rules, 0);
   
+  // LET 中所有的變數運算全都與網頁端的 rnd2 邏輯一致
   var setup = 
     'a, A2:A*1, b, B2:B*1, c, C2:C*1, d, D2:D*1, e, E2:E*1, f, F2:F*1, ' +
     'ma, IFERROR(ROUND((a-d)/a*100, 2), 0), ' +
@@ -719,7 +718,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v95.1 — 絕不卡死版','head');
+    pushLog('🚀 v95.2 — 絕對對齊版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，命中門檻：'+gateLabel,'info');
@@ -842,6 +841,7 @@ function parseData(text){
   return {rows:rows,total:rows.length};
 }
 
+// 使用與 Google Sheets LET 完全相同之計算與 ROUND 邏輯
 function extractFeatures(rows){
   var N=rows.length;
   var mat=new Array(N);
@@ -850,18 +850,13 @@ function extractFeatures(rows){
     var A=r.A,B=r.B,C=r.C,D=r.D,E=r.E,F=r.F;
     var f=new Float64Array(FCOUNT);
     
-    f[0] = rnd2(A-D);
-    f[1] = rnd2(D-A);
-    f[2] = rnd2(A===0?0:(A-D)/A*100);
-    f[3] = rnd2(D===0?0:A/D);
-    f[4] = rnd2(B-E);
-    f[5] = rnd2(E-B);
-    f[6] = rnd2(B===0?0:(B-E)/B*100);
-    f[7] = rnd2(E===0?0:B/E);
-    f[8] = rnd2(C-F);
-    f[9] = rnd2(F-C);
-    f[10] = rnd2(C===0?0:(C-F)/C*100);
-    f[11] = rnd2(F===0?0:C/F);
+    // 1-19 差值類
+    f[0] = rnd2(A-D); f[1] = rnd2(D-A);
+    f[2] = rnd2(A===0?0:(A-D)/A*100); f[3] = rnd2(D===0?0:A/D);
+    f[4] = rnd2(B-E); f[5] = rnd2(E-B);
+    f[6] = rnd2(B===0?0:(B-E)/B*100); f[7] = rnd2(E===0?0:B/E);
+    f[8] = rnd2(C-F); f[9] = rnd2(F-C);
+    f[10] = rnd2(C===0?0:(C-F)/C*100); f[11] = rnd2(F===0?0:C/F);
     
     var maPct = rnd2(A===0?0:(A-D)/A*100);
     var mbPct = rnd2(B===0?0:(B-E)/B*100);
@@ -876,9 +871,11 @@ function extractFeatures(rows){
     f[18] = rnd2((A-D)+(F-C)); 
     f[19] = rnd2((C-F)+(D-A)); 
     
+    // 20-25 原始數值
     f[20]=A; f[21]=B; f[22]=C;
     f[23]=D; f[24]=E; f[25]=F;
     
+    // 26-34 其他
     f[26]=rnd2(A-C); 
     f[27]=rnd2(D-F);
     f[28]=Math.max(A,B,C); 
@@ -891,6 +888,7 @@ function extractFeatures(rows){
     f[33]=rnd2(C===0?0:A/C);
     f[34]=rnd2(F===0?0:D/F);
     
+    // 35-43 返還率與真實概率
     var sumA = (A===0?0:1/A) + (B===0?0:1/B) + (C===0?0:1/C);
     var sumD = (D===0?0:1/D) + (E===0?0:1/E) + (F===0?0:1/F);
     
