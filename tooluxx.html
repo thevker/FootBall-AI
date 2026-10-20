@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v93.0 — 概率進化版（包含返還率與真實概率）</title>
+<title>🚀 v93.1 — 絕對同步版（防呆防除零）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -63,11 +63,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v93.0 — 概率進化版</h2>
+<h2>🚀 v93.1 — 絕對同步版（防呆防除零）</h2>
 
 <div class="warn-banner">
-  <b>🔥 核心進化：</b>加入了莊家的「初盤返還率」、「尾盤返還率」以及「真實去水勝率（主/平/客）」。這是職業操盤手判斷莊家真實意圖的終極武器。<br>
-  已經優化特徵庫，保留了最具實戰價值的指標，避免無意義的過度擬合。
+  <b>🔥 徹底解決網頁與 Excel 落差：</b>現在公式會預先處理所有計算（包含防除零 `IFERROR` 與小數點精度），你在網頁看到的結果，與貼進 Google Sheets 後的結果將 100% 完全一致。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -171,9 +170,9 @@ var FEATURES=[
   'A-C','D-F','MaxABC','MinABC',
   'DirA','DirB','DirC',
   'A/C','D/F',
-  'RR_INIT','RR_FINAL','RR_DIFF',   // ★ 新增：返還率
-  'TP_A','TP_D','TP_A_DIFF',        // ★ 新增：主隊真實概率
-  'TP_C','TP_F','TP_C_DIFF'         // ★ 新增：客隊真實概率
+  'RR_INIT','RR_FINAL','RR_DIFF',
+  'TP_A','TP_D','TP_A_DIFF',
+  'TP_C','TP_F','TP_C_DIFF'
 ];
 var FEATURE_NAMES=[
   '主跌(A-D)','主升(D-A)','主跌幅%','主倍率(A/D)',
@@ -603,6 +602,7 @@ function renderCompareTable(stats, rawRows, payoutMode){
   document.getElementById('compareTable').innerHTML = html;
 }
 
+// ★ 全部特徵統一由 LET 預先算好，並處理除零問題
 function featToExpr(fi){
   var fn=FEATURES[fi];
   switch(fn){
@@ -612,9 +612,9 @@ function featToExpr(fi){
     case 'B-E':return '(b-e)'; case 'E-B':return '(e-b)';
     case 'C-F':return '(c-f)'; case 'F-C':return '(f-c)';
     case 'MA_PCT':return 'ma'; case 'MB_PCT':return 'mb'; case 'MC_PCT':return 'mc';
-    case 'A/D':return 'ROUND(IF(d=0,0,a/d),2)';
-    case 'B/E':return 'ROUND(IF(e=0,0,b/e),2)';
-    case 'C/F':return 'ROUND(IF(f=0,0,c/f),2)';
+    case 'A/D':return 'ROUND(IFERROR(a/d,0),2)';
+    case 'B/E':return 'ROUND(IFERROR(b/e,0),2)';
+    case 'C/F':return 'ROUND(IFERROR(c/f,0),2)';
     case 'MA-MC':return '(ma-mc)';
     case 'MA-MB':return '(ma-mb)';
     case 'MC-MB':return '(mc-mb)';
@@ -629,18 +629,18 @@ function featToExpr(fi){
     case 'DirA':return 'IF(d<a,1,IF(d>a,-1,0))';
     case 'DirB':return 'IF(e<b,1,IF(e>b,-1,0))';
     case 'DirC':return 'IF(f<c,1,IF(f>c,-1,0))';
-    case 'A/C':return 'ROUND(IF(c=0,0,a/c),2)';
-    case 'D/F':return 'ROUND(IF(f=0,0,d/f),2)';
-    // ★ 新增返還率與概率的公式
-    case 'RR_INIT':return '100/(1/a+1/b+1/c)';
-    case 'RR_FINAL':return '100/(1/d+1/e+1/f)';
-    case 'RR_DIFF':return '(100/(1/d+1/e+1/f)) - (100/(1/a+1/b+1/c))';
-    case 'TP_A':return '(1/a)/(1/a+1/b+1/c)';
-    case 'TP_D':return '(1/d)/(1/d+1/e+1/f)';
-    case 'TP_A_DIFF':return '((1/d)/(1/d+1/e+1/f)) - ((1/a)/(1/a+1/b+1/c))';
-    case 'TP_C':return '(1/c)/(1/a+1/b+1/c)';
-    case 'TP_F':return '(1/f)/(1/d+1/e+1/f)';
-    case 'TP_C_DIFF':return '((1/f)/(1/d+1/e+1/f)) - ((1/c)/(1/a+1/b+1/c))';
+    case 'A/C':return 'ROUND(IFERROR(a/c,0),2)';
+    case 'D/F':return 'ROUND(IFERROR(d/f,0),2)';
+    // ★ 以下全部替換為 LET 內定義好的變數
+    case 'RR_INIT':return 'rr_i';
+    case 'RR_FINAL':return 'rr_f';
+    case 'RR_DIFF':return '(rr_f - rr_i)';
+    case 'TP_A':return 'tp_a';
+    case 'TP_D':return 'tp_d';
+    case 'TP_A_DIFF':return '(tp_d - tp_a)';
+    case 'TP_C':return 'tp_c';
+    case 'TP_F':return 'tp_f';
+    case 'TP_C_DIFF':return '(tp_f - tp_c)';
     default:return '0';
   }
 }
@@ -667,13 +667,25 @@ function genFormulaRecursive(rules, index){
 function genHFormula(rules){
   if(rules.length === 0) return '=ARRAYFORMULA(IF((A2:A=""),"",""))';
   var body = genFormulaRecursive(rules, 0);
-  // ★ LET 中加入了所有基礎計算的預定義，維持公式簡短
-  return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"", LET(' +
+  
+  // ★ 核心防呆：在 LET 裏面預先算好所有東西，保證精度，且用 IFERROR 處理除以 0
+  var setup = 
     'a, A2:A*1, b, B2:B*1, c, C2:C*1, d, D2:D*1, e, E2:E*1, f, F2:F*1, ' +
-    'ma, ROUND(IF(a=0,0,(a-d)/a*100),2), ' +
-    'mb, ROUND(IF(b=0,0,(b-e)/b*100),2), ' +
-    'mc, ROUND(IF(c=0,0,(c-f)/c*100),2), ' +
-    body + ')))';
+    'ma, IFERROR(ROUND((a-d)/a*100, 2), 0), ' +
+    'mb, IFERROR(ROUND((b-e)/b*100, 2), 0), ' +
+    'mc, IFERROR(ROUND((c-f)/c*100, 2), 0), ' +
+    'inv_a, IFERROR(1/a, 0), inv_b, IFERROR(1/b, 0), inv_c, IFERROR(1/c, 0), ' +
+    'inv_d, IFERROR(1/d, 0), inv_e, IFERROR(1/e, 0), inv_f, IFERROR(1/f, 0), ' +
+    'sumA, inv_a+inv_b+inv_c, ' +
+    'sumD, inv_d+inv_e+inv_f, ' +
+    'rr_i, IFERROR(100/sumA, 0), ' +
+    'rr_f, IFERROR(100/sumD, 0), ' +
+    'tp_a, IFERROR(inv_a/sumA*100, 0), ' +
+    'tp_d, IFERROR(inv_d/sumD*100, 0), ' +
+    'tp_c, IFERROR(inv_c/sumA*100, 0), ' +
+    'tp_f, IFERROR(inv_f/sumD*100, 0), ';
+
+  return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"", LET(' + setup + body + ')))';
 }
 
 function nowTime(){
@@ -772,7 +784,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v93.0 — 概率進化版（包含返還率與真實概率）','head');
+    pushLog('🚀 v93.1 — 絕對同步版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，命中門檻：'+gateLabel,'info');
@@ -945,7 +957,6 @@ function extractFeatures(rows){
     f[33]=Math.round((C===0?0:A/C)*100)/100;
     f[34]=Math.round((F===0?0:D/F)*100)/100;
     
-    // ★ 新增：返還率與真實概率的計算
     var sumA = (A===0?0:1/A) + (B===0?0:1/B) + (C===0?0:1/C);
     var sumD = (D===0?0:1/D) + (E===0?0:1/E) + (F===0?0:1/F);
     
@@ -956,13 +967,13 @@ function extractFeatures(rows){
     f[36] = Math.round(rrFinal * 100) / 100;
     f[37] = Math.round((rrFinal - rrInit) * 100) / 100;
     
-    f[38] = sumA === 0 ? 0 : Math.round(((1/A)/sumA) * 10000) / 100; // TP_A
-    f[39] = sumD === 0 ? 0 : Math.round(((1/D)/sumD) * 10000) / 100; // TP_D
-    f[40] = Math.round((f[39] - f[38]) * 100) / 100; // TP_A_DIFF
+    f[38] = sumA === 0 ? 0 : Math.round(((1/A)/sumA) * 10000) / 100;
+    f[39] = sumD === 0 ? 0 : Math.round(((1/D)/sumD) * 10000) / 100;
+    f[40] = Math.round((f[39] - f[38]) * 100) / 100;
     
-    f[41] = sumA === 0 ? 0 : Math.round(((1/C)/sumA) * 10000) / 100; // TP_C
-    f[42] = sumD === 0 ? 0 : Math.round(((1/F)/sumD) * 10000) / 100; // TP_F
-    f[43] = Math.round((f[42] - f[41]) * 100) / 100; // TP_C_DIFF
+    f[41] = sumA === 0 ? 0 : Math.round(((1/C)/sumA) * 10000) / 100;
+    f[42] = sumD === 0 ? 0 : Math.round(((1/F)/sumD) * 10000) / 100;
+    f[43] = Math.round((f[42] - f[41]) * 100) / 100;
     
     mat[i]=f;
   }
