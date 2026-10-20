@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v89.0 — 終極實戰版（為長期賺錢而生）</title>
+<title>🚀 v89.1 — 終極實戰版（修復卡死）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -16,7 +16,7 @@ button.hero{padding:14px 36px;font-size:17px;background:linear-gradient(135deg,#
 button.hero:hover{background:linear-gradient(135deg,#166534,#16a34a)}
 button.copy{background:#4f46e5}
 button.copy:hover{background:#4338ca}
-#log{background:#020617;color:#cbd5e1;border-radius:6px;padding:14px;margin-top:12px;height:180px;overflow-y:auto;font-family:Consolas,monospace;font-size:12px;white-space:pre;line-height:1.5;border:1px solid #1e293b}
+#log{background:#020617;color:#cbd5e1;border-radius:6px;padding:14px;margin-top:12px;height:160px;overflow-y:auto;font-family:Consolas,monospace;font-size:12px;white-space:pre;line-height:1.5;border:1px solid #1e293b}
 .l-info{color:#38bdf8}.l-success{color:#4ade80;font-weight:bold}.l-best{color:#facc15;font-weight:bold}.l-error{color:#f87171;font-weight:bold}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
 .row label{color:#94a3b8}
@@ -30,7 +30,7 @@ th{background:#0f172a;color:#94a3b8}
 .card .num{font-size:28px;font-weight:bold;margin-top:8px}
 .card .lbl{font-size:12px;color:#94a3b8}
 .profit-pos{color:#4ade80}.profit-neg{color:#f87171}
-.chart-container {width:100%; height:200px; display:flex; align-items:flex-end; gap:2px; margin-top:16px; background:#020617; padding:16px; border-radius:6px;}
+.chart-container {width:100%; height:200px; display:flex; align-items:flex-end; gap:2px; margin-top:16px; background:#020617; padding:16px; border-radius:6px; overflow:hidden;}
 .bar {flex:1; background:#3b82f6; transition:height 0.3s;}
 .bar.pos {background:#22c55e;}
 .bar.neg {background:#ef4444;}
@@ -38,17 +38,16 @@ th{background:#0f172a;color:#94a3b8}
 </head>
 <body>
 
-<h2>🚀 v89.0 — 終極實戰版（為長期賺錢而生）</h2>
+<h2>🚀 v89.1 — 終極實戰版（修復卡死）</h2>
 
 <div class="warn-banner" style="background:#1e293b; padding:12px; border-radius:6px; color:#cbd5e1; font-size:13px; margin-bottom:12px;">
   <b>💡 實戰核心理念：</b><br>
-  1. 本版本使用**三集嚴格切分**（訓練60%、驗證20%、測試20%），測試集只評估一次。<br>
-  2. 加入了**凱利公式計算器**，告訴你每場該下注總資金的百分之幾。<br>
-  3. 展示**最大回撤 (MDD)** 與 **資金曲線**，確保策略不會讓你破產。<br>
-  4. 採用**三分法特徵**：強制部分特徵使用相對比例（如 C/F），降低「魔數」過擬合。
+  1. 嚴格三集切分（訓練60%、驗證20%、測試20%）。<br>
+  2. 加入了**凱利公式**，告訴你每場該下注總資金的百分之幾。<br>
+  3. 展示**最大回撤 (MDD)** 與 **資金曲線**，確保策略不會讓你破產。
 </div>
 
-<textarea id="input" placeholder="粘貼你的數據：A B C D E F 結果"></textarea>
+<textarea id="input" placeholder="請貼上歷史數據（A B C D E F 結果），至少 100 場。"></textarea>
 
 <div class="row">
   <button id="btnRun" class="hero" onclick="start()">🚀 啟動訓練與驗證</button>
@@ -60,9 +59,9 @@ th{background:#0f172a;color:#94a3b8}
   </select>
   <label>🔄 搜索次數：</label>
   <select id="runCount">
-    <option value="200">200 次</option>
-    <option value="500" selected>500 次</option>
-    <option value="1000">1000 次</option>
+    <option value="50">50 次 (極速)</option>
+    <option value="100" selected>100 次 (推薦)</option>
+    <option value="300">300 次 (深度)</option>
   </select>
 </div>
 
@@ -78,24 +77,19 @@ th{background:#0f172a;color:#94a3b8}
         <div class="card"><div class="lbl">最大回撤 (MDD)</div><div class="num profit-neg" id="resMDD">-</div></div>
         <div class="card"><div class="lbl">出擊次數</div><div class="num" id="resTestGames">-</div></div>
       </div>
-      <div style="margin-top:16px; font-size:13px; color:#94a3b8; line-height:1.6;">
-        * 測試集是完全未參與優化的未來數據。若利潤為正，代表策略具備真實預測力。<br>
-        * 最大回撤代表在最倒楣的時候，資金從最高點跌下來的幅度，這是抗風險的核心指標。
-      </div>
     </div>
 
     <div class="panel" style="border-left:4px solid #eab308;">
       <h3>💰 資金管理 (凱利公式)</h3>
       <div style="margin-top:16px; font-size:14px; line-height:2; color:#cbd5e1;">
-        基於你的測試集數據：<br>
+        基於測試集數據：<br>
         平均賠率：<b id="resAvgOdds">-</b> ｜ 勝率：<b id="resWinRate">-</b><br>
         <hr style="border-color:#334155; margin:12px 0;">
         <b>理論滿倉比例：</b> <span id="resKellyFull" style="color:#38bdf8; font-size:18px;">-</span><br>
         <b style="color:#facc15;">建議實戰倉位：</b> <span id="resKellyHalf" style="color:#facc15; font-size:24px; font-weight:bold;">-</span>
       </div>
-      <div style="margin-top:16px; font-size:13px; color:#94a3b8; line-height:1.6;">
-        * 理論滿倉比例是用來計算期望值的。<br>
-        * <b style="color:#facc15;">強烈建議使用半凱利倉位（理論值的一半）</b>，因為歷史勝率通常會高於未來，半凱利能有效防止破產，讓你能長期留在牌桌上。
+      <div style="margin-top:16px; font-size:12px; color:#94a3b8; line-height:1.6;">
+        * 強烈建議使用半凱利倉位，防範歷史勝率高估。
       </div>
     </div>
   </div>
@@ -119,13 +113,12 @@ th{background:#0f172a;color:#94a3b8}
 <script>
 'use strict';
 
-// ==== 核心特徵庫（壓縮精簡，專注高泛化特徵） ====
 const FEATURES = [
-  'A-D','B-E','C-F',            // 絕對差
-  'A/D','B/E','C/F',            // 倍率
-  '(C-F)/C*100','(A-D)/A*100',  // 百分比降幅
-  'A','B','C','D','E','F',      // 原始數字
-  'A-C','A-B','B-C',            // 初盤差
+  'A-D','B-E','C-F',
+  'A/D','B/E','C/F',
+  '(C-F)/C*100','(A-D)/A*100',
+  'A','B','C','D','E','F',
+  'A-C','A-B','B-C',
   'MaxABC','MinABC'
 ];
 const FEATURE_NAMES = [
@@ -142,33 +135,34 @@ const OPS_SHEET = ['>', '>=', '<', '<='];
 const RESULTS = ['H', 'D', 'A', 'skip'];
 const RESULT_CODES = {H:0, D:1, A:2, skip:3};
 
-// ==== 全局變量 ====
 let running = false;
 let trainDS, validDS, testDS;
-let currentRules = null;
-let featureThresholds = {};
-
-// 當前搜索環境
 let tFeat, tRes, tOdds, tN;
+let bsCache = {};
 
-// ==== 工具函數 ====
 function getWinsAndProfit(bs, thenCode, res, odds, N) {
   let wins = 0, games = 0, profit = 0;
-  for(let i=0; i<N; i++) {
-    if((bs[i>>5] >> (i&31)) & 1) {
-      games++;
-      if(res[i] === thenCode) {
-        wins++;
-        profit += (odds[i*3 + thenCode] - 100);
-      } else {
-        profit -= 100;
+  for(let w=0; w<bs.length; w++) {
+    let x = bs[w], base = w<<5;
+    while(x) {
+      let low = x & -x;
+      let pos = 31 - Math.clz32(low);
+      let idx = base + pos;
+      if(idx < N) {
+        games++;
+        if(res[idx] === thenCode) {
+          wins++;
+          profit += (odds[idx*3 + thenCode] - 100);
+        } else {
+          profit -= 100;
+        }
       }
+      x ^= low;
     }
   }
   return { wins, games, profit };
 }
 
-// ==== 生成數據集 ====
 function prepareDataset(rows) {
   const N = rows.length;
   const feat = [];
@@ -187,47 +181,59 @@ function prepareDataset(rows) {
     f[17] = Math.max(A,B,C); f[18] = Math.min(A,B,C);
     feat.push(f);
     res[i] = RESULT_CODES[r.result];
-    odds[i*3] = D; odds[i*3+1] = E; odds[i*3+2] = F; // 一律用尾盤賠率結算
+    odds[i*3] = D; odds[i*3+1] = E; odds[i*3+2] = F;
   }
   return { N, feat, res, odds, rows };
 }
 
-// ==== 爬山算法（針對單一類別 tc 搜索） ====
+function getBS(f, op, thr) {
+  let key = f+'_'+op+'_'+thr;
+  if(bsCache[key]) return bsCache[key];
+  let bs = new Uint32Array((tN+31)>>5);
+  for(let i=0; i<tN; i++) {
+    let val = tFeat[i][f];
+    let ok = false;
+    if(op===0) ok = val > thr;
+    else if(op===1) ok = val >= thr;
+    else if(op===2) ok = val < thr;
+    else if(op===3) ok = val <= thr;
+    if(ok) bs[i>>5] |= (1<<(i&31));
+  }
+  bsCache[key] = bs;
+  return bs;
+}
+
 async function searchForClass(tc, baseSingles, mode) {
-  // 如果沒有單條件，直接返回 null
   let classSingles = baseSingles.filter(s => s.tc === tc);
   if(classSingles.length === 0) return null;
   
+  let startCand = classSingles[Math.floor(Math.random()*classSingles.length)];
   let current = {
-    conds: [classSingles[Math.floor(Math.random()*classSingles.length)].cond],
-    bs: null, score: -Infinity
+    conds: [startCand.cond],
+    bs: new Uint32Array(startCand.bs),
+    score: -Infinity
   };
-  // 初始化 bs
-  let bs = new Uint32Array((tN+31)>>5);
-  let f = current.conds[0];
-  for(let i=0; i<tN; i++) if(evalCond(tFeat[i][f[0]], f[1], f[2])) bs[i>>5] |= (1<<(i&31));
-  current.bs = bs;
   
-  let stats = getWinsAndProfit(bs, tc, tRes, tOdds, tN);
-  current.score = mode === 'hitrate' ? (stats.games>0?stats.wins/stats.games*100:-999) : stats.profit;
+  let cStats = getWinsAndProfit(current.bs, tc, tRes, tOdds, tN);
+  current.score = mode === 'hitrate' ? (cStats.games>0?cStats.wins/cStats.games*100:-999) : cStats.profit;
   
   let globalBest = { conds: current.conds.slice(), bs: current.bs, score: current.score };
   
-  for(let iter=0; iter<20000; iter++) {
+  for(let iter=0; iter<5000; iter++) {
     if(!running) break;
     let moveType = Math.random();
     let testConds = current.conds.slice();
     let changed = false;
     
-    if(moveType < 0.5) { // 加條件
+    if(moveType < 0.5) {
       let cand = classSingles[Math.floor(Math.random()*classSingles.length)];
       let overlap = false;
       for(let c of testConds) if(c[0] === cand.cond[0]) { overlap = true; break; }
       if(!overlap) { testConds.push(cand.cond); changed = true; }
-    } else if(moveType < 0.8 && testConds.length > 1) { // 減條件
+    } else if(moveType < 0.8 && testConds.length > 1) {
       testConds.splice(Math.floor(Math.random()*testConds.length), 1);
       changed = true;
-    } else if(testConds.length > 0) { // 替換條件
+    } else if(testConds.length > 0) {
       let idx = Math.floor(Math.random()*testConds.length);
       let cand = classSingles[Math.floor(Math.random()*classSingles.length)];
       let overlap = false;
@@ -237,13 +243,10 @@ async function searchForClass(tc, baseSingles, mode) {
     
     if(!changed) continue;
     
-    // 計算新位圖
     let newBS = new Uint32Array((tN+31)>>5).fill(0xFFFFFFFF);
     for(let c of testConds) {
-      let f = c;
-      for(let i=0; i<tN; i++) {
-        if(!evalCond(tFeat[i][f[0]], f[1], f[2])) newBS[i>>5] &= ~(1<<(i&31));
-      }
+      let cBS = getBS(c[0], c[1], c[2]);
+      for(let j=0; j<newBS.length; j++) newBS[j] &= cBS[j];
     }
     
     let nStats = getWinsAndProfit(newBS, tc, tRes, tOdds, tN);
@@ -257,220 +260,212 @@ async function searchForClass(tc, baseSingles, mode) {
         globalBest = { conds: testConds.slice(), bs: newBS, score: nScore };
       }
     }
+    
+    if(iter % 500 === 0) await new Promise(r => setTimeout(r, 0));
   }
   return globalBest;
 }
 
-function evalCond(val, op, thr) {
-  switch(op) {
-    case 0: return val > thr;
-    case 1: return val >= thr;
-    case 2: return val < thr;
-    case 3: return val <= thr;
-  }
-  return false;
-}
-
-// ==== 主流程 ====
 async function start() {
-  let txt = document.getElementById('input').value.trim();
-  if(!txt) return alert('請輸入數據');
-  
-  let rows = [];
-  let lines = txt.split('\n');
-  for(let line of lines) {
-    let p = line.trim().split(/\s+/);
-    if(p.length >= 7) {
-      let r = { A:+p[0], B:+p[1], C:+p[2], D:+p[3], E:+p[4], F:+p[5], result:p[6].toUpperCase() };
-      if(['H','D','A'].includes(r.result)) rows.push(r);
+  try {
+    let txt = document.getElementById('input').value.trim();
+    if(!txt) return alert('請輸入數據！');
+    
+    let rows = [];
+    let lines = txt.split('\n');
+    for(let line of lines) {
+      let p = line.trim().split(/\s+/);
+      if(p.length >= 7) {
+        let r = { A:+p[0], B:+p[1], C:+p[2], D:+p[3], E:+p[4], F:+p[5], result:p[6].toUpperCase() };
+        if(['H','D','A'].includes(r.result) && !isNaN(r.A)) rows.push(r);
+      }
     }
-  }
-  
-  if(rows.length < 100) return alert('數據不足 100 場');
-  
-  // 1. 切分數據 (60% / 20% / 20%)
-  let n = rows.length;
-  let trainEnd = Math.floor(n*0.6);
-  let validEnd = Math.floor(n*0.8);
-  trainDS = prepareDataset(rows.slice(0, trainEnd));
-  validDS = prepareDataset(rows.slice(trainEnd, validEnd));
-  testDS = prepareDataset(rows.slice(validEnd));
-  
-  // 切換環境到訓練集
-  tFeat = trainDS.feat; tRes = trainDS.res; tOdds = trainDS.odds; tN = trainDS.N;
-  
-  let mode = document.getElementById('optMode').value;
-  let runs = parseInt(document.getElementById('runCount').value);
-  
-  running = true;
-  document.getElementById('btnRun').disabled = true;
-  document.getElementById('log').innerHTML = '正在尋找具備實戰泛化能力的特徵...\n';
-  
-  // 2. 生成單條件候選池 (簡化版)
-  let baseSingles = [];
-  // 為了速度，這裡只用部分閾值
-  for(let f=0; f<FEATURES.length; f++) {
-    let vals = [];
-    for(let i=0; i<tN; i++) vals.push(tFeat[i][f]);
-    let sorted = [...new Set(vals)].sort((a,b)=>a-b);
-    let step = Math.max(1, Math.floor(sorted.length / 20)); // 每個特徵取20個分位點
-    for(let k=0; k<sorted.length; k+=step) {
-      let thr = Math.round(sorted[k] * 100) / 100;
-      for(let op=0; op<4; op++) {
-        for(let tc=0; tc<3; tc++) {
-          // 只保留訓練集勝率 > 40% 或利潤 > 0 的條件
-          let bs = new Uint32Array((tN+31)>>5);
-          let wins = 0, games = 0, profit = 0;
-          for(let i=0; i<tN; i++) {
-            if(evalCond(tFeat[i][f], op, thr)) {
-              bs[i>>5] |= (1<<(i&31));
-              games++;
-              if(tRes[i] === tc) { wins++; profit += (tOdds[i*3+tc] - 100); }
-              else profit -= 100;
-            }
+    
+    if(rows.length < 100) return alert('有效數據不足 100 場，無法進行三集驗證！');
+    
+    let n = rows.length;
+    let trainEnd = Math.floor(n*0.6);
+    let validEnd = Math.floor(n*0.8);
+    trainDS = prepareDataset(rows.slice(0, trainEnd));
+    validDS = prepareDataset(rows.slice(trainEnd, validEnd));
+    testDS = prepareDataset(rows.slice(validEnd));
+    
+    tFeat = trainDS.feat; tRes = trainDS.res; tOdds = trainDS.odds; tN = trainDS.N;
+    bsCache = {};
+    
+    let mode = document.getElementById('optMode').value;
+    let runs = parseInt(document.getElementById('runCount').value);
+    
+    running = true;
+    document.getElementById('btnRun').disabled = true;
+    document.getElementById('resultArea').style.display = 'none';
+    document.getElementById('log').innerHTML = '⏳ 正在生成單條件特徵池...<br>';
+    
+    await new Promise(r => setTimeout(r, 50));
+    
+    let baseSingles = [];
+    for(let f=0; f<FEATURES.length; f++) {
+      let vals = [];
+      for(let i=0; i<tN; i++) vals.push(tFeat[i][f]);
+      let sorted = [...new Set(vals)].sort((a,b)=>a-b);
+      let step = Math.max(1, Math.floor(sorted.length / 15));
+      for(let k=0; k<sorted.length; k+=step) {
+        let thr = Math.round(sorted[k] * 100) / 100;
+        for(let op=0; op<4; op++) {
+          let bs = getBS(f, op, thr);
+          let count = 0;
+          for(let j=0; j<bs.length; j++) {
+            let x = bs[j];
+            x=x-((x>>1)&0x55555555); x=(x&0x33333333)+((x>>2)&0x33333333); x=(x+(x>>4))&0x0F0F0F0F;
+            count += (x*0x01010101)>>>24;
           }
-          if(games > 10 && (mode === 'hitrate' ? wins/games > 0.4 : profit > 0)) {
-            baseSingles.push({ cond: [f, op, thr], tc });
+          if(count < 10) continue;
+          
+          for(let tc=0; tc<3; tc++) {
+            let st = getWinsAndProfit(bs, tc, tRes, tOdds, tN);
+            if(mode === 'hitrate' ? (st.wins/st.games > 0.35) : (st.profit > 0)) {
+              baseSingles.push({ cond: [f, op, thr], tc, bs });
+            }
           }
         }
       }
     }
-  }
-  
-  document.getElementById('log').innerHTML += `候選池生成完畢：${baseSingles.length} 個單條件。\n開始搜索最優組合...\n`;
-  
-  let bestOverallRules = null;
-  let bestValidScore = -Infinity;
-  
-  for(let run=0; run<runs; run++) {
-    if(!running) break;
-    let tempRules = [];
-    for(let tc=0; tc<3; tc++) {
-      let bestForTc = await searchForClass(tc, baseSingles, mode);
-      if(bestForTc) {
-        tempRules.push({ on: 1, then: RESULTS[tc], thenCode: tc, conds: bestForTc.conds, bs: bestForTc.bs });
-      }
-    }
-    // 加兜底
-    tempRules.push({ on: 1, then: 'skip', thenCode: 3, conds: [], bs: new Uint32Array((tN+31)>>5).fill(0xFFFFFFFF) });
     
-    // 用驗證集評估
-    let vStats = evalRules(tempRules, validDS);
-    let vScore = mode === 'hitrate' ? (vStats.games>0?vStats.winRate:-999) : vStats.profit;
-    
-    if(vScore > bestValidScore) {
-      bestValidScore = vScore;
-      bestOverallRules = JSON.parse(JSON.stringify(tempRules)); // 深拷貝
-    }
+    document.getElementById('log').innerHTML += `✅ 特徵池生成完畢：${baseSingles.length} 個單條件。<br>⏳ 開始爬山搜索（共 ${runs} 輪）...<br>`;
     document.getElementById('log').scrollTop = 9999;
-  }
-  
-  // 3. 最終測試集評估
-  let testStats = evalRules(bestOverallRules, testDS);
-  
-  // 4. 算最大回撤與凱利
-  let cum = 0, peak = 0, maxDD = 0;
-  let winSumOdds = 0, winCount = 0;
-  
-  testStats.details.forEach(d => {
-    cum += d.profit;
-    if(cum > peak) peak = cum;
-    let dd = peak - cum;
-    if(dd > maxDD) maxDD = dd;
+    await new Promise(r => setTimeout(r, 50));
     
-    if(d.profit > 0) {
-      winSumOdds += (d.profit + 100);
-      winCount++;
+    let bestOverallRules = null;
+    let bestValidScore = -Infinity;
+    
+    for(let run=0; run<runs; run++) {
+      if(!running) break;
+      let tempRules = [];
+      for(let tc=0; tc<3; tc++) {
+        let bestForTc = await searchForClass(tc, baseSingles, mode);
+        if(bestForTc) {
+          tempRules.push({ on: 1, then: RESULTS[tc], thenCode: tc, conds: bestForTc.conds, bs: bestForTc.bs });
+        }
+      }
+      tempRules.push({ on: 1, then: 'skip', thenCode: 3, conds: [], bs: new Uint32Array((tN+31)>>5).fill(0xFFFFFFFF) });
+      
+      let vStats = evalRules(tempRules, validDS);
+      let vScore = mode === 'hitrate' ? (vStats.games>0?vStats.winRate:-999) : vStats.profit;
+      
+      if(vScore > bestValidScore) {
+        bestValidScore = vScore;
+        bestOverallRules = JSON.parse(JSON.stringify(tempRules));
+        document.getElementById('log').innerHTML += `🌟 第 ${run+1} 輪打破紀錄：驗證集利潤 ${vStats.profit}<br>`;
+        document.getElementById('log').scrollTop = 9999;
+      }
+      
+      if(run % 10 === 0) {
+        document.getElementById('log').innerHTML += `...已進行 ${run+1}/${runs} 輪<br>`;
+        document.getElementById('log').scrollTop = 9999;
+      }
+      await new Promise(r => setTimeout(r, 0));
     }
-  });
-  
-  let avgOdds = winCount > 0 ? (winSumOdds / winCount / 100) : 2.0; // 默認2.0
-  let winRate = testStats.games > 0 ? (testStats.wins / testStats.games) : 0;
-  
-  // 凱利公式：f* = (bp - q) / b  => 這裡 b=賠率-1, p=勝率, q=1-p
-  let b = avgOdds - 1;
-  let p = winRate;
-  let q = 1 - p;
-  let kellyFull = 0;
-  if (b > 0) kellyFull = (b * p - q) / b;
-  kellyFull = Math.max(0, kellyFull); // 如果算出來是負的，說明沒有優勢，倉位為0
-  
-  // 5. 更新 UI
-  document.getElementById('resTestProfit').textContent = (testStats.profit > 0 ? '+' : '') + testStats.profit;
-  document.getElementById('resTestWin').textContent = (winRate * 100).toFixed(1) + '%';
-  document.getElementById('resMDD').textContent = '-' + maxDD;
-  document.getElementById('resTestGames').textContent = testStats.games;
-  
-  document.getElementById('resAvgOdds').textContent = avgOdds.toFixed(2);
-  document.getElementById('resWinRate').textContent = (winRate * 100).toFixed(2) + '%';
-  document.getElementById('resKellyFull').textContent = (kellyFull * 100).toFixed(2) + '%';
-  
-  // 實戰建議使用 1/2 凱利
-  let practicalKelly = kellyFull * 0.5;
-  let kellyEl = document.getElementById('resKellyHalf');
-  if(practicalKelly > 0) {
-    kellyEl.textContent = (practicalKelly * 100).toFixed(2) + '%';
-    kellyEl.style.color = '#facc15';
-  } else {
-    kellyEl.textContent = '0% (不建議下注)';
-    kellyEl.style.color = '#ef4444';
-  }
-  
-  // 畫資金曲線
-  let chart = document.getElementById('equityChart');
-  chart.innerHTML = '';
-  let minCum = 0;
-  let c2 = 0;
-  testStats.details.forEach(d => {
-    c2 += d.profit;
-    if(c2 < minCum) minCum = c2;
-  });
-  
-  let range = peak - minCum;
-  if(range === 0) range = 1;
-  
-  let c3 = 0;
-  testStats.details.forEach(d => {
-    c3 += d.profit;
-    let bar = document.createElement('div');
-    bar.className = 'bar ' + (d.profit > 0 ? 'pos' : (d.profit < 0 ? 'neg' : ''));
-    // 高度映射：基準線在 (0 - minCum)/range 的位置
-    let hPercent = Math.abs(d.profit) / range * 100;
-    hPercent = Math.max(2, hPercent); // 最小高度
-    bar.style.height = hPercent + '%';
     
-    // 根據盈虧決定是往上長還是往下長
-    if(d.profit > 0) {
-      bar.style.alignSelf = 'flex-end';
-      bar.style.marginBottom = ((c3 - d.profit - minCum) / range * 100) + '%';
+    let testStats = evalRules(bestOverallRules, testDS);
+    
+    let cum = 0, peak = 0, maxDD = 0;
+    let winSumOdds = 0, winCount = 0;
+    
+    testStats.details.forEach(d => {
+      cum += d.profit;
+      if(cum > peak) peak = cum;
+      let dd = peak - cum;
+      if(dd > maxDD) maxDD = dd;
+      if(d.profit > 0) {
+        winSumOdds += (d.profit + 100);
+        winCount++;
+      }
+    });
+    
+    let avgOdds = winCount > 0 ? (winSumOdds / winCount / 100) : 2.0;
+    let winRate = testStats.games > 0 ? (testStats.wins / testStats.games) : 0;
+    
+    let b = avgOdds - 1;
+    let p = winRate;
+    let q = 1 - p;
+    let kellyFull = 0;
+    if (b > 0) kellyFull = (b * p - q) / b;
+    kellyFull = Math.max(0, kellyFull);
+    
+    document.getElementById('resTestProfit').textContent = (testStats.profit > 0 ? '+' : '') + testStats.profit;
+    document.getElementById('resTestWin').textContent = (winRate * 100).toFixed(1) + '%';
+    document.getElementById('resMDD').textContent = '-' + maxDD;
+    document.getElementById('resTestGames').textContent = testStats.games;
+    document.getElementById('resAvgOdds').textContent = avgOdds.toFixed(2);
+    document.getElementById('resWinRate').textContent = (winRate * 100).toFixed(2) + '%';
+    document.getElementById('resKellyFull').textContent = (kellyFull * 100).toFixed(2) + '%';
+    
+    let practicalKelly = kellyFull * 0.5;
+    let kellyEl = document.getElementById('resKellyHalf');
+    if(practicalKelly > 0) {
+      kellyEl.textContent = (practicalKelly * 100).toFixed(2) + '%';
+      kellyEl.style.color = '#facc15';
     } else {
-      bar.style.alignSelf = 'flex-start';
-      bar.style.marginTop = ((c3 - minCum) / range * 100) + '%';
+      kellyEl.textContent = '0% (不建議下注)';
+      kellyEl.style.color = '#ef4444';
     }
-    chart.appendChild(bar);
-  });
-  
-  // 渲染規則表
-  let tHtml = '<tr><th>順序</th><th>條件</th><th>預測</th><th>測試集場次</th><th>測試集勝率</th></tr>';
-  bestOverallRules.forEach((r, i) => {
-    let condStr = r.conds.length === 0 ? '其餘全部' : r.conds.map(c => FEATURE_NAMES[c[0]] + OPS[c[1]] + c[2]).join(' & ');
-    let rs = testStats.ruleStats[i];
-    tHtml += `<tr>
-      <td>${i+1}</td>
-      <td style="text-align:left; font-family:monospace;">${condStr}</td>
-      <td><b>${r.then}</b></td>
-      <td>${rs.hit}</td>
-      <td>${rs.hit>0 ? (rs.wins/rs.hit*100).toFixed(1)+'%' : '-'}</td>
-    </tr>`;
-  });
-  document.getElementById('ruleTable').innerHTML = tHtml;
-  
-  // 生成公式
-  document.getElementById('txtH').value = genFormula(bestOverallRules);
-  document.getElementById('resultArea').style.display = 'block';
-  document.getElementById('btnRun').disabled = false;
-  document.getElementById('log').innerHTML += '\n✅ 搜索與驗證完成！請看上方數據。';
-  running = false;
+    
+    let chart = document.getElementById('equityChart');
+    chart.innerHTML = '';
+    let minCum = 0;
+    let c2 = 0;
+    testStats.details.forEach(d => {
+      c2 += d.profit;
+      if(c2 < minCum) minCum = c2;
+    });
+    let range = peak - minCum;
+    if(range === 0) range = 1;
+    
+    let c3 = 0;
+    testStats.details.forEach(d => {
+      c3 += d.profit;
+      let bar = document.createElement('div');
+      bar.className = 'bar ' + (d.profit > 0 ? 'pos' : (d.profit < 0 ? 'neg' : ''));
+      let hPercent = Math.abs(d.profit) / range * 100;
+      hPercent = Math.max(2, hPercent);
+      bar.style.height = hPercent + '%';
+      
+      if(d.profit > 0) {
+        bar.style.alignSelf = 'flex-end';
+        bar.style.marginBottom = ((c3 - d.profit - minCum) / range * 100) + '%';
+      } else {
+        bar.style.alignSelf = 'flex-start';
+        bar.style.marginTop = ((c3 - minCum) / range * 100) + '%';
+      }
+      chart.appendChild(bar);
+    });
+    
+    let tHtml = '<tr><th>順序</th><th>條件</th><th>預測</th><th>測試集場次</th><th>測試集勝率</th></tr>';
+    bestOverallRules.forEach((r, i) => {
+      let condStr = r.conds.length === 0 ? '其餘全部' : r.conds.map(c => FEATURE_NAMES[c[0]] + OPS[c[1]] + c[2]).join(' & ');
+      let rs = testStats.ruleStats[i];
+      tHtml += `<tr>
+        <td>${i+1}</td>
+        <td style="text-align:left; font-family:monospace; font-size:11px;">${condStr}</td>
+        <td><b>${r.then}</b></td>
+        <td>${rs.hit}</td>
+        <td>${rs.hit>0 ? (rs.wins/rs.hit*100).toFixed(1)+'%' : '-'}</td>
+      </tr>`;
+    });
+    document.getElementById('ruleTable').innerHTML = tHtml;
+    
+    document.getElementById('txtH').value = genFormula(bestOverallRules);
+    document.getElementById('resultArea').style.display = 'block';
+    document.getElementById('btnRun').disabled = false;
+    document.getElementById('log').innerHTML += '\n✅ 搜索與驗證完成！請看上方數據。';
+    document.getElementById('log').scrollTop = 9999;
+    running = false;
+    
+  } catch(e) {
+    alert('發生錯誤：' + e.message);
+    document.getElementById('btnRun').disabled = false;
+    running = false;
+  }
 }
 
 function evalRules(rules, ds) {
@@ -484,7 +479,13 @@ function evalRules(rules, ds) {
       if(!rules[j].on) continue;
       let ok = true;
       for(let c of rules[j].conds) {
-        if(!evalCond(ds.feat[i][c[0]], c[1], c[2])) { ok = false; break; }
+        let val = ds.feat[i][c[0]], op = c[1], thr = c[2];
+        let match = false;
+        if(op===0) match = val > thr;
+        else if(op===1) match = val >= thr;
+        else if(op===2) match = val < thr;
+        else if(op===3) match = val <= thr;
+        if(!match) { ok = false; break; }
       }
       if(ok) { pred = rules[j].thenCode; hr = j; break; }
     }
@@ -542,15 +543,15 @@ function genFormula(rules) {
     }
     return logic;
   }
-  
   let body = rec(0);
   return `=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",${body}))`;
 }
 
 function copyIt(id) {
   let el = document.getElementById(id);
+  if(!el.value) return alert('目前沒有公式可複製！');
   el.select(); document.execCommand('copy');
-  alert('已複製到剪貼板！');
+  alert('✅ 已複製到剪貼板！');
 }
 </script>
 </body>
