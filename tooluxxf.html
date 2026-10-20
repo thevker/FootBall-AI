@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v95.0 — 三重防線強化版</title>
+<title>🚀 v95.1 — 三重防線強化版（修復）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -20,7 +20,7 @@ button.copy{background:#4f46e5}
 button.copy:hover{background:#4338ca}
 #log{background:#020617;color:#cbd5e1;border-radius:6px;padding:14px;margin-top:12px;height:260px;overflow-y:auto;font-family:Consolas,monospace;font-size:12px;white-space:pre;line-height:1.5;border:1px solid #1e293b}
 .l-info{color:#38bdf8}.l-success{color:#4ade80;font-weight:bold}
-.l-warn{color:#fbbf24}.l-dim{color:#64748b}.l-head{color:#f8fafc;font-weight:bold;font-size:13px}
+.l-warn;{color:#fbbf24font}.l-dim{color:#64748b}.l-weight-head{color:#f8fafc:bold;font-size:13px}
 .l-best{color:#facc15;font-weight:bold}
 .l-final{color:#4ade80;background:rgba(74,222,128,0.1);font-weight:bold;padding:2px 0}
 .l-error{color:#f87171;font-weight:bold;background:rgba(239,68,68,0.1);padding:4px;border-radius:4px;margin-top:4px}
@@ -63,7 +63,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v95.0 — 三重防線強化版</h2>
+<h2>🚀 v95.1 — 三重防線強化版</h2>
 
 <div class="warn-banner">
   <b>🛡️ 全新防線：</b><br>
@@ -324,7 +324,6 @@ function statsScore(stats, mode){
   return stats.totalProfit;
 }
 
-// 評估函數
 function evalRules(rules, ds) {
   let games=0, wins=0, skips=0, profit=0;
   let ruleStats = rules.map(()=>({hit:0, wins:0, losses:0, profit:0}));
@@ -384,6 +383,83 @@ function getThresholds(fi){
   }
   featureValueCache[fi]=ths;
   return ths;
+}
+
+// ★ 補回缺失的特徵提取函數
+function extractFeatures(rows){
+  var N=rows.length;
+  var mat=new Array(N);
+  for(var i=0;i<N;i++){
+    var r=rows[i];
+    var A=r.A,B=r.B,C=r.C,D=r.D,E=r.E,F=r.F;
+    var f=new Float64Array(FCOUNT);
+    
+    f[0] = rnd2(A-D);
+    f[1] = rnd2(D-A);
+    f[2] = rnd2(A===0?0:(A-D)/A*100);
+    f[3] = rnd2(D===0?0:A/D);
+    f[4] = rnd2(B-E);
+    f[5] = rnd2(E-B);
+    f[6] = rnd2(B===0?0:(B-E)/B*100);
+    f[7] = rnd2(E===0?0:B/E);
+    f[8] = rnd2(C-F);
+    f[9] = rnd2(F-C);
+    f[10] = rnd2(C===0?0:(C-F)/C*100);
+    f[11] = rnd2(F===0?0:C/F);
+    
+    var maPct = rnd2(A===0?0:(A-D)/A*100);
+    var mbPct = rnd2(B===0?0:(B-E)/B*100);
+    var mcPct = rnd2(C===0?0:(C-F)/C*100);
+    
+    f[12] = rnd2(maPct-mcPct);
+    f[13] = rnd2(maPct-mbPct);
+    f[14] = rnd2(mcPct-mbPct);
+    f[15] = rnd2((A-D)-(C-F));
+    f[16] = rnd2((A-D)-(B-E));
+    f[17] = rnd2((C-F)-(B-E));
+    f[18] = rnd2((A-D)+(F-C)); 
+    f[19] = rnd2((C-F)+(D-A)); 
+    
+    f[20]=A; f[21]=B; f[22]=C;
+    f[23]=D; f[24]=E; f[25]=F;
+    
+    f[26]=rnd2(A-C); 
+    f[27]=rnd2(D-F);
+    f[28]=Math.max(A,B,C); 
+    f[29]=Math.min(A,B,C);
+    
+    f[30]=D<A?1:(D>A?-1:0);
+    f[31]=E<B?1:(E>B?-1:0);
+    f[32]=F<C?1:(F>C?-1:0);
+    
+    f[33]=rnd2(C===0?0:A/C);
+    f[34]=rnd2(F===0?0:D/F);
+    
+    var sumA = (A===0?0:1/A) + (B===0?0:1/B) + (C===0?0:1/C);
+    var sumD = (D===0?0:1/D) + (E===0?0:1/E) + (F===0?0:1/F);
+    
+    var rrInit = sumA === 0 ? 0 : rnd2(100 / sumA);
+    var rrFinal = sumD === 0 ? 0 : rnd2(100 / sumD);
+    
+    f[35] = rrInit;
+    f[36] = rrFinal;
+    f[37] = rnd2(rrFinal - rrInit);
+    
+    var tpA = sumA === 0 ? 0 : rnd2(((1/A)/sumA) * 100);
+    var tpD = sumD === 0 ? 0 : rnd2(((1/D)/sumD) * 100);
+    f[38] = tpA;
+    f[39] = tpD;
+    f[40] = rnd2(tpD - tpA);
+    
+    var tpC = sumA === 0 ? 0 : rnd2(((1/C)/sumA) * 100);
+    var tpF = sumD === 0 ? 0 : rnd2(((1/F)/sumD) * 100);
+    f[41] = tpC;
+    f[42] = tpF;
+    f[43] = rnd2(tpF - tpC);
+    
+    mat[i]=f;
+  }
+  return mat;
 }
 
 async function runSingleEngine(validDS, testSeg1, testSeg2, testSeg3) {
@@ -754,7 +830,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v95.0 — 三重防線強化版','head');
+    pushLog('🚀 v95.1 — 三重防線強化版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 模式：'+modeLabel+'，命中門檻：'+gateLabel,'info');
     pushLog(nowTime()+' 尾盤結算，預計執行 '+totalPhases+' 次','info');
@@ -832,7 +908,6 @@ async function start(){
   }
 }
 
-// 輔助渲染函數
 function renderRuleTable(rules, stats){
   var html='<table><thead><tr><th>順序</th><th>條件</th><th>→</th><th>命中</th><th>贏</th><th>輸</th><th>命中率</th><th>盈利</th></tr></thead><tbody>';
   for(var i=0;i<rules.length;i++){
