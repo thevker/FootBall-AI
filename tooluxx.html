@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v89.4 — 終極實戰版（手機流暢優化）</title>
+<title>🚀 v90.0 — 純變幅率趨勢版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -36,38 +36,26 @@ canvas {width:100%; height:auto; display:block;}
 </head>
 <body>
 
-<h2>🚀 v89.4 — 終極實戰版</h2>
+<h2>🚀 v90.0 — 純變幅率趨勢版</h2>
 
 <div class="warn-banner" style="background:#1e293b; padding:12px; border-radius:6px; color:#cbd5e1; font-size:13px; margin-bottom:12px;">
-  <b>💡 手機流暢優化：</b><br>
-  已加入高效能異步讓步機制，解決運算卡死問題。若長時間無反應，請將「搜索次數」調低至 50 次。
+  <b>💡 核心改動：</b><br>
+  1. 徹底移除絕對數值，所有特徵改為「初盤到尾盤的變幅率 (%)」。<br>
+  2. 尋找莊家資金流向與賠率變動的底層邏輯（例如主降 20%、客升 15%）。<br>
+  3. 條件數量無限，純利潤優先，尋找長期高值博率的投資機會。
 </div>
 
 <textarea id="input" placeholder="請貼上歷史數據（A B C D E F 結果），至少 100 場。"></textarea>
 
 <div class="row">
-  <button id="btnRun" class="hero" onclick="start()">🚀 啟動訓練與驗證</button>
+  <button id="btnRun" class="hero" onclick="start()">🚀 啟動趨勢挖掘</button>
   <button id="btnCopy" class="copy" onclick="copyIt('txtH')">📋 複製 H2 公式</button>
-
-  <label>🛡️ 勝利門檻：</label>
-  <select id="minHitsPct">
-    <option value="0" selected>關閉</option>
-    <option value="0.05">5%</option>
-    <option value="0.10">10%</option>
-    <option value="0.15">15%</option>
-    <option value="0.20">20%</option>
-    <option value="0.25">25%</option>
-    <option value="0.30">30%</option>
-    <option value="0.35">35%</option>
-    <option value="0.40">40%</option>
-  </select>
 
   <label>🔄 搜索次數：</label>
   <select id="runCount">
-    <option value="30">30 次 (手機推薦)</option>
-    <option value="50">50 次 (快速)</option>
-    <option value="100" selected>100 次 (標準)</option>
-    <option value="300">300 次 (深度)</option>
+    <option value="30">30 次 (極速)</option>
+    <option value="50" selected>50 次 (推薦)</option>
+    <option value="100">100 次 (深度)</option>
   </select>
 </div>
 
@@ -86,7 +74,7 @@ canvas {width:100%; height:auto; display:block;}
     </div>
 
     <div class="panel" style="border-left:4px solid #eab308;">
-      <h3>💰 資金管理 (凱利公式)</h3>
+      <h3>💰 資金管理 (半凱利)</h3>
       <div style="margin-top:16px; font-size:14px; line-height:2; color:#cbd5e1;">
         基於測試集數據：<br>
         平均賠率：<b id="resAvgOdds">-</b> ｜ 勝率：<b id="resWinRate">-</b><br>
@@ -95,7 +83,7 @@ canvas {width:100%; height:auto; display:block;}
         <b style="color:#facc15;">建議實戰倉位：</b> <span id="resKellyHalf" style="color:#facc15; font-size:24px; font-weight:bold;">-</span>
       </div>
       <div style="margin-top:16px; font-size:12px; color:#94a3b8; line-height:1.6;">
-        * 強烈建議使用半凱利倉位，防範歷史勝率高估。
+        * 強烈建議使用半凱利（數值的一半），防範模型高估勝率。
       </div>
     </div>
   </div>
@@ -108,7 +96,7 @@ canvas {width:100%; height:auto; display:block;}
   </div>
 
   <div class="panel">
-    <h3>📋 最終規則順序</h3>
+    <h3>📋 最終規則順序 (趨勢組合)</h3>
     <table id="ruleTable"></table>
   </div>
 
@@ -121,21 +109,21 @@ canvas {width:100%; height:auto; display:block;}
 <script>
 'use strict';
 
+// ==== 全新特徵庫：純變幅率與其衍生組合 ====
 const FEATURES = [
-  'A-D','B-E','C-F',
-  'A/D','B/E','C/F',
-  '(C-F)/C*100','(A-D)/A*100',
-  'A','B','C','D','E','F',
-  'A-C','A-B','B-C',
-  'MaxABC','MinABC'
+  'MA_PCT', 'MB_PCT', 'MC_PCT',        // 主降幅%, 和降幅%, 客降幅% (正數表示降, 負數表示升)
+  'MA-MB', 'MA-MC', 'MC-MB',           // 變幅差 (資金流向差異)
+  'MA+MB', 'MA+MC', 'MB+MC',           // 變幅和
+  'MA/MB', 'MA/MC', 'MC/MB',           // 變幅比例
+  'DirA', 'DirB', 'DirC'               // 方向 (1=降, -1=升, 0=平)
 ];
+
 const FEATURE_NAMES = [
-  '主降(A-D)','和降(B-E)','客降(C-F)',
-  '主倍(A/D)','和倍(B/E)','客倍(C/F)',
-  '客降%','主降%',
-  '主初(A)','和初(B)','客初(C)','主尾(D)','和尾(E)','客尾(F)',
-  '主客差(A-C)','主和差(A-B)','和客差(B-C)',
-  '最大初盘','最小初盘'
+  '主變幅%', '和變幅%', '客變幅%',
+  '主變-和變', '主變-客變', '客變-和變',
+  '主變+和變', '主變+客變', '和變+客變',
+  '主變/和變', '主變/客變', '客變/和變',
+  '主方向', '和方向', '客方向'
 ];
 
 const OPS = ['>', '>=', '<', '<='];
@@ -147,7 +135,6 @@ let running = false;
 let trainDS, validDS, testDS;
 let tFeat, tRes, tOdds, tN;
 let bsCache = {};
-let minWinsRequired = 0;
 
 function getWinsAndProfit(bs, thenCode, res, odds, N) {
   let wins = 0, games = 0, profit = 0;
@@ -181,13 +168,29 @@ function prepareDataset(rows) {
   for(let i=0; i<N; i++) {
     const r = rows[i];
     const A = r.A, B = r.B, C = r.C, D = r.D, E = r.E, F = r.F;
+    
+    // 計算變幅率 (%)，正值代表降幅 (賠率變小)，負值代表升幅 (賠率變大)
+    let maPct = A === 0 ? 0 : Math.round(((A - D) / A * 100) * 100) / 100;
+    let mbPct = B === 0 ? 0 : Math.round(((B - E) / B * 100) * 100) / 100;
+    let mcPct = C === 0 ? 0 : Math.round(((C - F) / C * 100) * 100) / 100;
+
     const f = new Float64Array(FEATURES.length);
-    f[0] = A-D; f[1] = B-E; f[2] = C-F;
-    f[3] = D===0?0:A/D; f[4] = E===0?0:B/E; f[5] = F===0?0:C/F;
-    f[6] = C===0?0:(C-F)/C*100; f[7] = A===0?0:(A-D)/A*100;
-    f[8] = A; f[9] = B; f[10] = C; f[11] = D; f[12] = E; f[13] = F;
-    f[14] = A-C; f[15] = A-B; f[16] = B-C;
-    f[17] = Math.max(A,B,C); f[18] = Math.min(A,B,C);
+    f[0] = maPct; f[1] = mbPct; f[2] = mcPct;
+    f[3] = Math.round((maPct - mbPct) * 100) / 100;
+    f[4] = Math.round((maPct - mcPct) * 100) / 100;
+    f[5] = Math.round((mcPct - mbPct) * 100) / 100;
+    f[6] = Math.round((maPct + mbPct) * 100) / 100;
+    f[7] = Math.round((maPct + mcPct) * 100) / 100;
+    f[8] = Math.round((mbPct + mcPct) * 100) / 100;
+    
+    f[9] = mbPct === 0 ? 0 : Math.round((maPct / mbPct) * 100) / 100;
+    f[10] = mcPct === 0 ? 0 : Math.round((maPct / mcPct) * 100) / 100;
+    f[11] = mbPct === 0 ? 0 : Math.round((mcPct / mbPct) * 100) / 100;
+    
+    f[12] = maPct > 0 ? 1 : (maPct < 0 ? -1 : 0);
+    f[13] = mbPct > 0 ? 1 : (mbPct < 0 ? -1 : 0);
+    f[14] = mcPct > 0 ? 1 : (mcPct < 0 ? -1 : 0);
+
     feat.push(f);
     res[i] = RESULT_CODES[r.result];
     odds[i*3] = D; odds[i*3+1] = E; odds[i*3+2] = F;
@@ -228,19 +231,18 @@ async function searchForClass(tc, baseSingles) {
   
   let globalBest = { conds: current.conds.slice(), bs: current.bs, score: current.score };
   
-  // 降為 1500 次，減少卡頓
   for(let iter=0; iter<1500; iter++) {
     if(!running) break;
     let moveType = Math.random();
     let testConds = current.conds.slice();
     let changed = false;
     
-    if(moveType < 0.5) {
+    if(moveType < 0.6) {
       let cand = classSingles[Math.floor(Math.random()*classSingles.length)];
       let overlap = false;
       for(let c of testConds) if(c[0] === cand.cond[0]) { overlap = true; break; }
       if(!overlap) { testConds.push(cand.cond); changed = true; }
-    } else if(moveType < 0.8 && testConds.length > 1) {
+    } else if(moveType < 0.85 && testConds.length > 1) {
       testConds.splice(Math.floor(Math.random()*testConds.length), 1);
       changed = true;
     } else if(testConds.length > 0) {
@@ -260,8 +262,7 @@ async function searchForClass(tc, baseSingles) {
     }
     
     let nStats = getWinsAndProfit(newBS, tc, tRes, tOdds, tN);
-    
-    if(nStats.games === 0 || (minWinsRequired > 0 && nStats.wins < minWinsRequired)) continue;
+    if(nStats.games === 0) continue;
     
     let nScore = nStats.profit; 
     
@@ -272,7 +273,6 @@ async function searchForClass(tc, baseSingles) {
       }
     }
     
-    // ★ 每 20 次就讓出執行緒，確保 UI 流暢
     if(iter % 20 === 0) await new Promise(r => setTimeout(r, 0));
   }
   return globalBest;
@@ -293,7 +293,7 @@ async function start() {
       }
     }
     
-    if(rows.length < 100) return alert('有效數據不足 100 場，無法進行三集驗證！');
+    if(rows.length < 100) return alert('有效數據不足 100 場，無法進行驗證！');
     
     let n = rows.length;
     let trainEnd = Math.floor(n*0.6);
@@ -305,27 +305,44 @@ async function start() {
     tFeat = trainDS.feat; tRes = trainDS.res; tOdds = trainDS.odds; tN = trainDS.N;
     bsCache = {};
     
-    let gatePct = parseFloat(document.getElementById('minHitsPct').value) || 0;
-    minWinsRequired = gatePct > 0 ? Math.ceil(tN * gatePct) : 0;
-    
     let runs = parseInt(document.getElementById('runCount').value);
     
     running = true;
     document.getElementById('btnRun').disabled = true;
     document.getElementById('resultArea').style.display = 'none';
-    document.getElementById('log').innerHTML = `⏳ 正在生成特徵池（勝利門檻：${minWinsRequired > 0 ? '至少 '+minWinsRequired+' 場' : '關閉'}）...<br>`;
+    document.getElementById('log').innerHTML = `⏳ 正在生成變幅率特徵池...<br>`;
     
     await new Promise(r => setTimeout(r, 50));
     
     let baseSingles = [];
-    // 降低分段，減少初始生成卡頓
     for(let f=0; f<FEATURES.length; f++) {
       let vals = [];
       for(let i=0; i<tN; i++) vals.push(tFeat[i][f]);
       let sorted = [...new Set(vals)].sort((a,b)=>a-b);
-      let step = Math.max(1, Math.floor(sorted.length / 12)); 
+      let step = Math.max(1, Math.floor(sorted.length / 15));
       for(let k=0; k<sorted.length; k+=step) {
         let thr = Math.round(sorted[k] * 100) / 100;
+        // 專門為變幅率設計的網格閾值 (-30 到 30)
+        if(f < 12) {
+          for(let g=-30; g<=30; g+=5) {
+            for(let op=0; op<4; op++) {
+               let bs = getBS(f, op, g);
+               let count = 0;
+               for(let j=0; j<bs.length; j++) {
+                 let x = bs[j];
+                 x=x-((x>>1)&0x55555555); x=(x&0x33333333)+((x>>2)&0x33333333); x=(x+(x>>4))&0x0F0F0F0F;
+                 count += (x*0x01010101)>>>24;
+               }
+               if(count < 10) continue;
+               for(let tc=0; tc<3; tc++) {
+                 let st = getWinsAndProfit(bs, tc, tRes, tOdds, tN);
+                 if(st.profit > 0) baseSingles.push({ cond: [f, op, g], tc, bs });
+               }
+            }
+          }
+        }
+        
+        // 加入真實分佈點
         for(let op=0; op<4; op++) {
           let bs = getBS(f, op, thr);
           let count = 0;
@@ -338,17 +355,22 @@ async function start() {
           
           for(let tc=0; tc<3; tc++) {
             let st = getWinsAndProfit(bs, tc, tRes, tOdds, tN);
-            if(minWinsRequired > 0 && st.wins < minWinsRequired) continue;
-            if(st.profit > 0) {
-              baseSingles.push({ cond: [f, op, thr], tc, bs });
-            }
+            if(st.profit > 0) baseSingles.push({ cond: [f, op, thr], tc, bs });
           }
         }
       }
-      // 每處理完一個特徵讓步一次
       await new Promise(r => setTimeout(r, 0));
     }
     
+    // 去除重複的單條件
+    let uniqueSingles = [];
+    let seen = new Set();
+    for(let s of baseSingles) {
+        let key = s.cond.join('_') + '_' + s.tc;
+        if(!seen.has(key)) { seen.add(key); uniqueSingles.push(s); }
+    }
+    baseSingles = uniqueSingles;
+
     document.getElementById('log').innerHTML += `✅ 特徵池生成完畢：${baseSingles.length} 個單條件。<br>⏳ 開始爬山搜索（共 ${runs} 輪）...<br>`;
     document.getElementById('log').scrollTop = 9999;
     await new Promise(r => setTimeout(r, 50));
@@ -377,8 +399,7 @@ async function start() {
         document.getElementById('log').scrollTop = 9999;
       }
       
-      // 每 3 輪更新一次日誌，避免刷屏卡頓
-      if(run % 3 === 0) {
+      if(run % 5 === 0) {
         document.getElementById('log').innerHTML += `...已進行 ${run+1}/${runs} 輪<br>`;
         document.getElementById('log').scrollTop = 9999;
       }
@@ -433,9 +454,9 @@ async function start() {
     
     drawChart(cumulativeProfits);
     
-    let tHtml = '<tr><th>順序</th><th>條件</th><th>預測</th><th>測試集場次</th><th>測試集勝率</th></tr>';
+    let tHtml = '<tr><th>順序</th><th>條件 (趨勢與變幅)</th><th>預測</th><th>測試集場次</th><th>測試集勝率</th></tr>';
     bestOverallRules.forEach((r, i) => {
-      let condStr = r.conds.length === 0 ? '其餘全部' : r.conds.map(c => FEATURE_NAMES[c[0]] + OPS[c[1]] + c[2]).join(' & ');
+      let condStr = r.conds.length === 0 ? '其餘全部' : r.conds.map(c => FEATURE_NAMES[c[0]] + OPS[c[1]] + c[2] + '%').join(' & ');
       let rs = testStats.ruleStats[i];
       tHtml += `<tr>
         <td>${i+1}</td>
@@ -552,21 +573,21 @@ function genFormula(rules) {
       let f = c[0], op = c[1], thr = c[2];
       let exp = '';
       switch(FEATURES[f]) {
-        case 'A-D': exp = '(A2:A*1)-(D2:D*1)'; break;
-        case 'B-E': exp = '(B2:B*1)-(E2:E*1)'; break;
-        case 'C-F': exp = '(C2:C*1)-(F2:F*1)'; break;
-        case 'A/D': exp = 'IF(D2:D*1=0,0,A2:A*1/(D2:D*1))'; break;
-        case 'B/E': exp = 'IF(E2:E*1=0,0,B2:B*1/(E2:E*1))'; break;
-        case 'C/F': exp = 'IF(F2:F*1=0,0,C2:C*1/(F2:F*1))'; break;
-        case '(C-F)/C*100': exp = 'IF(C2:C*1=0,0,((C2:C*1)-(F2:F*1))/(C2:C*1)*100)'; break;
-        case '(A-D)/A*100': exp = 'IF(A2:A*1=0,0,((A2:A*1)-(D2:D*1))/(A2:A*1)*100)'; break;
-        case 'A': exp = 'A2:A*1'; break; case 'B': exp = 'B2:B*1'; break; case 'C': exp = 'C2:C*1'; break;
-        case 'D': exp = 'D2:D*1'; break; case 'E': exp = 'E2:E*1'; break; case 'F': exp = 'F2:F*1'; break;
-        case 'A-C': exp = '(A2:A*1)-(C2:C*1)'; break;
-        case 'A-B': exp = '(A2:A*1)-(B2:B*1)'; break;
-        case 'B-C': exp = '(B2:B*1)-(C2:C*1)'; break;
-        case 'MaxABC': exp = 'MAX(A2:A*1,B2:B*1,C2:C*1)'; break;
-        case 'MinABC': exp = 'MIN(A2:A*1,B2:B*1,C2:C*1)'; break;
+        case 'MA_PCT': exp = 'IF(A2:A*1=0,0,((A2:A*1)-(D2:D*1))/(A2:A*1)*100)'; break;
+        case 'MB_PCT': exp = 'IF(B2:B*1=0,0,((B2:B*1)-(E2:E*1))/(B2:B*1)*100)'; break;
+        case 'MC_PCT': exp = 'IF(C2:C*1=0,0,((C2:C*1)-(F2:F*1))/(C2:C*1)*100)'; break;
+        case 'MA-MB': exp = '(IF(A2:A*1=0,0,((A2:A*1)-(D2:D*1))/(A2:A*1)*100)-IF(B2:B*1=0,0,((B2:B*1)-(E2:E*1))/(B2:B*1)*100))'; break;
+        case 'MA-MC': exp = '(IF(A2:A*1=0,0,((A2:A*1)-(D2:D*1))/(A2:A*1)*100)-IF(C2:C*1=0,0,((C2:C*1)-(F2:F*1))/(C2:C*1)*100))'; break;
+        case 'MC-MB': exp = '(IF(C2:C*1=0,0,((C2:C*1)-(F2:F*1))/(C2:C*1)*100)-IF(B2:B*1=0,0,((B2:B*1)-(E2:E*1))/(B2:B*1)*100))'; break;
+        case 'MA+MB': exp = '(IF(A2:A*1=0,0,((A2:A*1)-(D2:D*1))/(A2:A*1)*100)+IF(B2:B*1=0,0,((B2:B*1)-(E2:E*1))/(B2:B*1)*100))'; break;
+        case 'MA+MC': exp = '(IF(A2:A*1=0,0,((A2:A*1)-(D2:D*1))/(A2:A*1)*100)+IF(C2:C*1=0,0,((C2:C*1)-(F2:F*1))/(C2:C*1)*100))'; break;
+        case 'MB+MC': exp = '(IF(B2:B*1=0,0,((B2:B*1)-(E2:E*1))/(B2:B*1)*100)+IF(C2:C*1=0,0,((C2:C*1)-(F2:F*1))/(C2:C*1)*100))'; break;
+        case 'MA/MB': exp = 'IF(IF(B2:B*1=0,0,((B2:B*1)-(E2:E*1))/(B2:B*1)*100)=0,0,IF(A2:A*1=0,0,((A2:A*1)-(D2:D*1))/(A2:A*1)*100)/IF(B2:B*1=0,0,((B2:B*1)-(E2:E*1))/(B2:B*1)*100))'; break;
+        case 'MA/MC': exp = 'IF(IF(C2:C*1=0,0,((C2:C*1)-(F2:F*1))/(C2:C*1)*100)=0,0,IF(A2:A*1=0,0,((A2:A*1)-(D2:D*1))/(A2:A*1)*100)/IF(C2:C*1=0,0,((C2:C*1)-(F2:F*1))/(C2:C*1)*100))'; break;
+        case 'MC/MB': exp = 'IF(IF(B2:B*1=0,0,((B2:B*1)-(E2:E*1))/(B2:B*1)*100)=0,0,IF(C2:C*1=0,0,((C2:C*1)-(F2:F*1))/(C2:C*1)*100)/IF(B2:B*1=0,0,((B2:B*1)-(E2:E*1))/(B2:B*1)*100))'; break;
+        case 'DirA': exp = 'IF(D2:D*1<A2:A*1,1,IF(D2:D*1>A2:A*1,-1,0))'; break;
+        case 'DirB': exp = 'IF(E2:E*1<B2:B*1,1,IF(E2:E*1>B2:B*1,-1,0))'; break;
+        case 'DirC': exp = 'IF(F2:F*1<C2:C*1,1,IF(F2:F*1>C2:C*1,-1,0))'; break;
       }
       return `(${exp}${OPS_SHEET[op]}${thr})`;
     });
