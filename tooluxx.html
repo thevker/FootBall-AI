@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v89.2 — 終極實戰版（利潤優先 + 勝利門檻）</title>
+<title>🚀 v89.3 — 終極實戰版（資金曲線修復）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -30,15 +30,13 @@ th{background:#0f172a;color:#94a3b8}
 .card .num{font-size:28px;font-weight:bold;margin-top:8px}
 .card .lbl{font-size:12px;color:#94a3b8}
 .profit-pos{color:#4ade80}.profit-neg{color:#f87171}
-.chart-container {width:100%; height:200px; display:flex; align-items:flex-end; gap:2px; margin-top:16px; background:#020617; padding:16px; border-radius:6px; overflow:hidden;}
-.bar {flex:1; background:#3b82f6; transition:height 0.3s;}
-.bar.pos {background:#22c55e;}
-.bar.neg {background:#ef4444;}
+.chart-wrapper {width:100%; background:#020617; padding:16px; border-radius:6px; margin-top:16px; border:1px solid #1e293b;}
+canvas {width:100%; height:auto; display:block;}
 </style>
 </head>
 <body>
 
-<h2>🚀 v89.2 — 終極實戰版（利潤優先 + 勝利門檻）</h2>
+<h2>🚀 v89.3 — 終極實戰版</h2>
 
 <div class="warn-banner" style="background:#1e293b; padding:12px; border-radius:6px; color:#cbd5e1; font-size:13px; margin-bottom:12px;">
   <b>💡 實戰核心理念：</b><br>
@@ -105,8 +103,10 @@ th{background:#0f172a;color:#94a3b8}
   </div>
 
   <div class="panel">
-    <h3>📈 測試集資金曲線</h3>
-    <div class="chart-container" id="equityChart"></div>
+    <h3>📈 測試集資金累積曲線</h3>
+    <div class="chart-wrapper">
+      <canvas id="equityChart" width="1000" height="300"></canvas>
+    </div>
   </div>
 
   <div class="panel">
@@ -234,10 +234,10 @@ async function searchForClass(tc, baseSingles) {
     if(!running) break;
     let moveType = Math.random();
     let testConds = current.conds.slice();
-    let changed = false;
+ U    let changed = false;
     
-    if(moveType < 0.5) {
-      let cand = classSingles[Math.floor(Math.random()*classSingles.length)];
+   int if(moveType <32 0.5) {
+Array      let cand = classSingles[((Math.floor(Math.random()t*classSingles.length)];
       let overlap = false;
       for(let c of testConds) if(c[0] === cand.cond[0]) { overlap = true; break; }
       if(!overlap) { testConds.push(cand.cond); changed = true; }
@@ -254,7 +254,7 @@ async function searchForClass(tc, baseSingles) {
     
     if(!changed) continue;
     
-    let newBS = new Uint32Array((tN+31)>>5).fill(0xFFFFFFFF);
+    let newBS = newN+31)>>5).fill(0xFFFFFFFF);
     for(let c of testConds) {
       let cBS = getBS(c[0], c[1], c[2]);
       for(let j=0; j<newBS.length; j++) newBS[j] &= cBS[j];
@@ -262,10 +262,9 @@ async function searchForClass(tc, baseSingles) {
     
     let nStats = getWinsAndProfit(newBS, tc, tRes, tOdds, tN);
     
-    // 勝利門檻檢查
     if(nStats.games === 0 || (minWinsRequired > 0 && nStats.wins < minWinsRequired)) continue;
     
-    let nScore = nStats.profit; // 純利潤優先
+    let nScore = nStats.profit; 
     
     if(nScore > current.score) {
       current = { conds: testConds, bs: newBS, score: nScore };
@@ -306,7 +305,6 @@ async function start() {
     tFeat = trainDS.feat; tRes = trainDS.res; tOdds = trainDS.odds; tN = trainDS.N;
     bsCache = {};
     
-    // ★ 讀取最低勝場門檻
     let gatePct = parseFloat(document.getElementById('minHitsPct').value) || 0;
     minWinsRequired = gatePct > 0 ? Math.ceil(tN * gatePct) : 0;
     
@@ -339,10 +337,7 @@ async function start() {
           
           for(let tc=0; tc<3; tc++) {
             let st = getWinsAndProfit(bs, tc, tRes, tOdds, tN);
-            
-            // ★ 特徵池生成時也檢查勝利門檻
             if(minWinsRequired > 0 && st.wins < minWinsRequired) continue;
-            
             if(st.profit > 0) {
               baseSingles.push({ cond: [f, op, thr], tc, bs });
             }
@@ -370,7 +365,7 @@ async function start() {
       tempRules.push({ on: 1, then: 'skip', thenCode: 3, conds: [], bs: new Uint32Array((tN+31)>>5).fill(0xFFFFFFFF) });
       
       let vStats = evalRules(tempRules, validDS);
-      let vScore = vStats.profit; // 純利潤優先
+      let vScore = vStats.profit; 
       
       if(vScore > bestValidScore) {
         bestValidScore = vScore;
@@ -390,9 +385,11 @@ async function start() {
     
     let cum = 0, peak = 0, maxDD = 0;
     let winSumOdds = 0, winCount = 0;
+    let cumulativeProfits = [0]; // 給畫圖用
     
     testStats.details.forEach(d => {
       cum += d.profit;
+      cumulativeProfits.push(cum);
       if(cum > peak) peak = cum;
       let dd = peak - cum;
       if(dd > maxDD) maxDD = dd;
@@ -430,35 +427,7 @@ async function start() {
       kellyEl.style.color = '#ef4444';
     }
     
-    let chart = document.getElementById('equityChart');
-    chart.innerHTML = '';
-    let minCum = 0;
-    let c2 = 0;
-    testStats.details.forEach(d => {
-      c2 += d.profit;
-      if(c2 < minCum) minCum = c2;
-    });
-    let range = peak - minCum;
-    if(range === 0) range = 1;
-    
-    let c3 = 0;
-    testStats.details.forEach(d => {
-      c3 += d.profit;
-      let bar = document.createElement('div');
-      bar.className = 'bar ' + (d.profit > 0 ? 'pos' : (d.profit < 0 ? 'neg' : ''));
-      let hPercent = Math.abs(d.profit) / range * 100;
-      hPercent = Math.max(2, hPercent);
-      bar.style.height = hPercent + '%';
-      
-      if(d.profit > 0) {
-        bar.style.alignSelf = 'flex-end';
-        bar.style.marginBottom = ((c3 - d.profit - minCum) / range * 100) + '%';
-      } else {
-        bar.style.alignSelf = 'flex-start';
-        bar.style.marginTop = ((c3 - minCum) / range * 100) + '%';
-      }
-      chart.appendChild(bar);
-    });
+    drawChart(cumulativeProfits);
     
     let tHtml = '<tr><th>順序</th><th>條件</th><th>預測</th><th>測試集場次</th><th>測試集勝率</th></tr>';
     bestOverallRules.forEach((r, i) => {
@@ -486,6 +455,52 @@ async function start() {
     document.getElementById('btnRun').disabled = false;
     running = false;
   }
+}
+
+// 折線圖繪製
+function drawChart(data) {
+  const canvas = document.getElementById('equityChart');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  
+  if (data.length < 2) return;
+  
+  const minVal = Math.min(...data, 0);
+  const maxVal = Math.max(...data, 100);
+  const range = maxVal - minVal;
+  
+  // 畫中軸線 (利潤 0)
+  const zeroY = h - ((0 - minVal) / range) * h;
+  ctx.beginPath();
+  ctx.moveTo(0, zeroY);
+  ctx.lineTo(w, zeroY);
+  ctx.strokeStyle = '#334155';
+  ctx.setLineDash([5, 5]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // 畫折線
+  ctx.beginPath();
+  for (let i = 0; i < data.length; i++) {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - ((data[i] - minVal) / range) * h;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  
+  // 根據最終利潤決定顏色
+  ctx.strokeStyle = data[data.length - 1] >= 0 ? '#22c55e' : '#ef4444';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  
+  // 填色
+  ctx.lineTo(w, zeroY);
+  ctx.lineTo(0, zeroY);
+  ctx.fillStyle = data[data.length - 1] >= 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+  ctx.fill();
 }
 
 function evalRules(rules, ds) {
