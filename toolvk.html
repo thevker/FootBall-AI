@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v96.2 — 實戰驗證版（修復變數缺失）</title>
+<title>🚀 v96.3 — 實戰驗證版（修復爬山變數）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -66,7 +66,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v96.2 — 實戰驗證版（修復變數缺失）</h2>
+<h2>🚀 v96.3 — 實戰驗證版（修復爬山變數）</h2>
 
 <div class="warn-banner">
   <b>🛡️ 全新樣本外驗證功能：</b>
@@ -231,7 +231,11 @@ var MIN_FALLBACK_SAMPLES=15;
 
 var precomputedSingles = null;
 var allMask = null;
-var poolSize = 0; // ★ 修復：補回缺失的 poolSize 宣告
+var poolSize = 0; 
+
+// ★ 修復：補回爬山法所需的全局變數
+var globalBestScore=-Infinity;
+var globalBestRules=null, globalBestStats=null, globalBestFallback=null;
 var globalBestWinRate=0, globalBestGames=0, globalBestProfit=-Infinity;
 
 var featureValueCache={}, condBSCache={}, condBSCacheSize=0;
@@ -863,6 +867,8 @@ async function start(){
 
     running=true; startTime=Date.now();
     poolSize=0; currentRun=0;
+    globalBestScore=-Infinity;
+    globalBestRules=null; globalBestStats=null; globalBestFallback=null;
     globalBestProfit=-Infinity; globalBestWinRate=0; globalBestGames=0;
     precomputedSingles=null; lastYieldTime=0;
 
@@ -872,7 +878,7 @@ async function start(){
     document.getElementById('testResultPanel').style.display='none';
     updateStats(); clearLog();
 
-    pushLog('🚀 v96.2 — ' + (algoMode==='genetic'?'遺傳進化 (Genetic Algorithm)':(algoMode==='hill-climb'?'隨機爬山':'決策樹')), 'head');
+    pushLog('🚀 v96.3 — ' + (algoMode==='genetic'?'遺傳進化 (Genetic Algorithm)':(algoMode==='hill-climb'?'隨機爬山':'決策樹')), 'head');
     pushLog(nowTime()+' 訓練集資料：'+rawRowsData.length+' 筆，條件上限：'+condLabel, 'success');
     await yieldUI();
 
