@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v95.2 — 絕對對齊版（純淨）</title>
+<title>🚀 v95.3 — 格式對齊版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -63,10 +63,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v95.2 — 絕對對齊版</h2>
+<h2>🚀 v95.3 — 格式對齊版</h2>
 
 <div class="warn-banner">
-  <b>🔥 徹底解決數據脫節：</b>網頁端在提取特徵、判斷條件時，完全採用與 Google Sheets 公式相同的 ROUND 邏輯。生成公式時也不再進行二次放大，保證兩邊連一分錢都不差。
+  <b>🔥 徹底解決「翻譯」出錯：</b>網頁生成 Google Sheet 公式時，所有涉及加減乘除的衍生特徵（如 `ma-mc`），全部強制套用 `ROUND(..., 2)`，徹底消滅中間變數的浮點數尾巴！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -221,7 +221,6 @@ var condBSCache={};
 var condBSCacheSize=0;
 var COND_CACHE_MAX=300000; 
 
-// 完全模擬 Google Sheets 的 ROUND 行為
 function rnd2(val) {
   if (!isFinite(val)) return 0;
   return Math.sign(val) * Math.round(Math.abs(val) * 100) / 100;
@@ -540,22 +539,22 @@ function featToExpr(fi){
   switch(fn){
     case 'A':return 'a'; case 'B':return 'b'; case 'C':return 'c';
     case 'D':return 'd'; case 'E':return 'e'; case 'F':return 'f';
-    case 'A-D':return '(a-d)'; case 'D-A':return '(d-a)';
-    case 'B-E':return '(b-e)'; case 'E-B':return '(e-b)';
-    case 'C-F':return '(c-f)'; case 'F-C':return '(f-c)';
+    case 'A-D':return 'ROUND(a-d, 2)'; case 'D-A':return 'ROUND(d-a, 2)';
+    case 'B-E':return 'ROUND(b-e, 2)'; case 'E-B':return 'ROUND(e-b, 2)';
+    case 'C-F':return 'ROUND(c-f, 2)'; case 'F-C':return 'ROUND(f-c, 2)';
     case 'MA_PCT':return 'ma'; case 'MB_PCT':return 'mb'; case 'MC_PCT':return 'mc';
     case 'A/D':return 'ROUND(IFERROR(a/d,0),2)';
     case 'B/E':return 'ROUND(IFERROR(b/e,0),2)';
     case 'C/F':return 'ROUND(IFERROR(c/f,0),2)';
-    case 'MA-MC':return '(ma-mc)';
-    case 'MA-MB':return '(ma-mb)';
-    case 'MC-MB':return '(mc-mb)';
-    case 'A-D-(C-F)':return '((a-d)-(c-f))';
-    case 'A-D-(B-E)':return '((a-d)-(b-e))';
-    case 'C-F-(B-E)':return '((c-f)-(b-e))';
-    case '(A-D)+(F-C)':return '((a-d)+(f-c))';
-    case '(C-F)+(D-A)':return '((c-f)+(d-a))';
-    case 'A-C':return '(a-c)'; case 'D-F':return '(d-f)';
+    case 'MA-MC':return 'ROUND(ma-mc, 2)';
+    case 'MA-MB':return 'ROUND(ma-mb, 2)';
+    case 'MC-MB':return 'ROUND(mc-mb, 2)';
+    case 'A-D-(C-F)':return 'ROUND((a-d)-(c-f), 2)';
+    case 'A-D-(B-E)':return 'ROUND((a-d)-(b-e), 2)';
+    case 'C-F-(B-E)':return 'ROUND((c-f)-(b-e), 2)';
+    case '(A-D)+(F-C)':return 'ROUND((a-d)+(f-c), 2)';
+    case '(C-F)+(D-A)':return 'ROUND((c-f)+(d-a), 2)';
+    case 'A-C':return 'ROUND(a-c, 2)'; case 'D-F':return 'ROUND(d-f, 2)';
     case 'MaxABC':return 'MAX(a,b,c)';
     case 'MinABC':return 'MIN(a,b,c)';
     case 'DirA':return 'IF(d<a,1,IF(d>a,-1,0))';
@@ -599,7 +598,6 @@ function genHFormula(rules){
   if(rules.length === 0) return '=ARRAYFORMULA(IF((A2:A=""),"",""))';
   var body = genFormulaRecursive(rules, 0);
   
-  // LET 中所有的變數運算全都與網頁端的 rnd2 邏輯一致
   var setup = 
     'a, A2:A*1, b, B2:B*1, c, C2:C*1, d, D2:D*1, e, E2:E*1, f, F2:F*1, ' +
     'ma, IFERROR(ROUND((a-d)/a*100, 2), 0), ' +
@@ -718,7 +716,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v95.2 — 絕對對齊版','head');
+    pushLog('🚀 v95.3 — 格式對齊版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，命中門檻：'+gateLabel,'info');
@@ -841,7 +839,6 @@ function parseData(text){
   return {rows:rows,total:rows.length};
 }
 
-// 使用與 Google Sheets LET 完全相同之計算與 ROUND 邏輯
 function extractFeatures(rows){
   var N=rows.length;
   var mat=new Array(N);
@@ -850,13 +847,18 @@ function extractFeatures(rows){
     var A=r.A,B=r.B,C=r.C,D=r.D,E=r.E,F=r.F;
     var f=new Float64Array(FCOUNT);
     
-    // 1-19 差值類
-    f[0] = rnd2(A-D); f[1] = rnd2(D-A);
-    f[2] = rnd2(A===0?0:(A-D)/A*100); f[3] = rnd2(D===0?0:A/D);
-    f[4] = rnd2(B-E); f[5] = rnd2(E-B);
-    f[6] = rnd2(B===0?0:(B-E)/B*100); f[7] = rnd2(E===0?0:B/E);
-    f[8] = rnd2(C-F); f[9] = rnd2(F-C);
-    f[10] = rnd2(C===0?0:(C-F)/C*100); f[11] = rnd2(F===0?0:C/F);
+    f[0] = rnd2(A-D);
+    f[1] = rnd2(D-A);
+    f[2] = rnd2(A===0?0:(A-D)/A*100);
+    f[3] = rnd2(D===0?0:A/D);
+    f[4] = rnd2(B-E);
+    f[5] = rnd2(E-B);
+    f[6] = rnd2(B===0?0:(B-E)/B*100);
+    f[7] = rnd2(E===0?0:B/E);
+    f[8] = rnd2(C-F);
+    f[9] = rnd2(F-C);
+    f[10] = rnd2(C===0?0:(C-F)/C*100);
+    f[11] = rnd2(F===0?0:C/F);
     
     var maPct = rnd2(A===0?0:(A-D)/A*100);
     var mbPct = rnd2(B===0?0:(B-E)/B*100);
@@ -871,11 +873,9 @@ function extractFeatures(rows){
     f[18] = rnd2((A-D)+(F-C)); 
     f[19] = rnd2((C-F)+(D-A)); 
     
-    // 20-25 原始數值
     f[20]=A; f[21]=B; f[22]=C;
     f[23]=D; f[24]=E; f[25]=F;
     
-    // 26-34 其他
     f[26]=rnd2(A-C); 
     f[27]=rnd2(D-F);
     f[28]=Math.max(A,B,C); 
@@ -888,7 +888,6 @@ function extractFeatures(rows){
     f[33]=rnd2(C===0?0:A/C);
     f[34]=rnd2(F===0?0:D/F);
     
-    // 35-43 返還率與真實概率
     var sumA = (A===0?0:1/A) + (B===0?0:1/B) + (C===0?0:1/C);
     var sumD = (D===0?0:1/D) + (E===0?0:1/E) + (F===0?0:1/F);
     
