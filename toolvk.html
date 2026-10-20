@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v96.0 — 實戰驗證版（防過擬合）</title>
+<title>🚀 v96.1 — 實戰驗證版（修復UI）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -66,7 +66,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v96.0 — 實戰驗證版（防過擬合）</h2>
+<h2>🚀 v96.1 — 實戰驗證版（修復UI）</h2>
 
 <div class="warn-banner">
   <b>🛡️ 全新樣本外驗證功能：</b>
@@ -135,6 +135,14 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
     <option value="ev-gated">🧠 EV 門控（推薦）</option>
     <option value="always-hda">🎯 純 HDA（永遠押）</option>
     <option value="skip" selected>⏸ 純 Skip（不下注）</option>
+  </select>
+
+  <!-- ★ 修復：補回缺失的 fallbackEv 下拉選單 -->
+  <label>🛟 兜底 EV 門檻：</label>
+  <select id="fallbackEv">
+    <option value="0" selected>總盈利 &gt; 0</option>
+    <option value="50">總盈利 &gt; +50</option>
+    <option value="100">總盈利 &gt; +100</option>
   </select>
 </div>
 
@@ -861,10 +869,10 @@ async function start(){
     document.getElementById('btnRun').disabled=true; document.getElementById('btnStop').disabled=false;
     document.getElementById('best').style.display='none'; document.getElementById('liveStats').style.display='flex';
     document.getElementById('progbar').style.width='0%'; document.getElementById('progText').textContent='0.0%';
-    document.getElementById('testResultPanel').style.display='none'; // 重置測試面板
+    document.getElementById('testResultPanel').style.display='none';
     updateStats(); clearLog();
 
-    pushLog('🚀 v96.0 — ' + (algoMode==='genetic'?'遺傳進化 (Genetic Algorithm)':(algoMode==='hill-climb'?'隨機爬山':'決策樹')), 'head');
+    pushLog('🚀 v96.1 — ' + (algoMode==='genetic'?'遺傳進化 (Genetic Algorithm)':(algoMode==='hill-climb'?'隨機爬山':'決策樹')), 'head');
     pushLog(nowTime()+' 訓練集資料：'+rawRowsData.length+' 筆，條件上限：'+condLabel, 'success');
     await yieldUI();
 
