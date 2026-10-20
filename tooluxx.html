@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v89.3 — 終極實戰版（資金曲線修復）</title>
+<title>🚀 v89.4 — 終極實戰版（手機流暢優化）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -36,14 +36,11 @@ canvas {width:100%; height:auto; display:block;}
 </head>
 <body>
 
-<h2>🚀 v89.3 — 終極實戰版</h2>
+<h2>🚀 v89.4 — 終極實戰版</h2>
 
 <div class="warn-banner" style="background:#1e293b; padding:12px; border-radius:6px; color:#cbd5e1; font-size:13px; margin-bottom:12px;">
-  <b>💡 實戰核心理念：</b><br>
-  1. 嚴格三集切分（訓練60%、驗證20%、測試20%）。<br>
-  2. 純利潤優先模式，並可設定最低勝場門檻，過濾垃圾規則。<br>
-  3. 內建凱利公式計算，告訴你每場該下注總資金的百分之幾。<br>
-  4. 展示最大回撤 (MDD) 與資金曲線，確保策略不會讓你破產。
+  <b>💡 手機流暢優化：</b><br>
+  已加入高效能異步讓步機制，解決運算卡死問題。若長時間無反應，請將「搜索次數」調低至 50 次。
 </div>
 
 <textarea id="input" placeholder="請貼上歷史數據（A B C D E F 結果），至少 100 場。"></textarea>
@@ -67,8 +64,9 @@ canvas {width:100%; height:auto; display:block;}
 
   <label>🔄 搜索次數：</label>
   <select id="runCount">
-    <option value="50">50 次 (極速)</option>
-    <option value="100" selected>100 次 (推薦)</option>
+    <option value="30">30 次 (手機推薦)</option>
+    <option value="50">50 次 (快速)</option>
+    <option value="100" selected>100 次 (標準)</option>
     <option value="300">300 次 (深度)</option>
   </select>
 </div>
@@ -230,14 +228,15 @@ async function searchForClass(tc, baseSingles) {
   
   let globalBest = { conds: current.conds.slice(), bs: current.bs, score: current.score };
   
-  for(let iter=0; iter<5000; iter++) {
+  // 降為 1500 次，減少卡頓
+  for(let iter=0; iter<1500; iter++) {
     if(!running) break;
     let moveType = Math.random();
     let testConds = current.conds.slice();
- U    let changed = false;
+    let changed = false;
     
-   int if(moveType <32 0.5) {
-Array      let cand = classSingles[((Math.floor(Math.random()t*classSingles.length)];
+    if(moveType < 0.5) {
+      let cand = classSingles[Math.floor(Math.random()*classSingles.length)];
       let overlap = false;
       for(let c of testConds) if(c[0] === cand.cond[0]) { overlap = true; break; }
       if(!overlap) { testConds.push(cand.cond); changed = true; }
@@ -254,7 +253,7 @@ Array      let cand = classSingles[((Math.floor(Math.random()t*classSingles.leng
     
     if(!changed) continue;
     
-    let newBS = newN+31)>>5).fill(0xFFFFFFFF);
+    let newBS = new Uint32Array((tN+31)>>5).fill(0xFFFFFFFF);
     for(let c of testConds) {
       let cBS = getBS(c[0], c[1], c[2]);
       for(let j=0; j<newBS.length; j++) newBS[j] &= cBS[j];
@@ -273,7 +272,8 @@ Array      let cand = classSingles[((Math.floor(Math.random()t*classSingles.leng
       }
     }
     
-    if(iter % 500 === 0) await new Promise(r => setTimeout(r, 0));
+    // ★ 每 20 次就讓出執行緒，確保 UI 流暢
+    if(iter % 20 === 0) await new Promise(r => setTimeout(r, 0));
   }
   return globalBest;
 }
@@ -318,11 +318,12 @@ async function start() {
     await new Promise(r => setTimeout(r, 50));
     
     let baseSingles = [];
+    // 降低分段，減少初始生成卡頓
     for(let f=0; f<FEATURES.length; f++) {
       let vals = [];
       for(let i=0; i<tN; i++) vals.push(tFeat[i][f]);
       let sorted = [...new Set(vals)].sort((a,b)=>a-b);
-      let step = Math.max(1, Math.floor(sorted.length / 15));
+      let step = Math.max(1, Math.floor(sorted.length / 12)); 
       for(let k=0; k<sorted.length; k+=step) {
         let thr = Math.round(sorted[k] * 100) / 100;
         for(let op=0; op<4; op++) {
@@ -344,6 +345,8 @@ async function start() {
           }
         }
       }
+      // 每處理完一個特徵讓步一次
+      await new Promise(r => setTimeout(r, 0));
     }
     
     document.getElementById('log').innerHTML += `✅ 特徵池生成完畢：${baseSingles.length} 個單條件。<br>⏳ 開始爬山搜索（共 ${runs} 輪）...<br>`;
@@ -374,7 +377,8 @@ async function start() {
         document.getElementById('log').scrollTop = 9999;
       }
       
-      if(run % 10 === 0) {
+      // 每 3 輪更新一次日誌，避免刷屏卡頓
+      if(run % 3 === 0) {
         document.getElementById('log').innerHTML += `...已進行 ${run+1}/${runs} 輪<br>`;
         document.getElementById('log').scrollTop = 9999;
       }
@@ -385,7 +389,7 @@ async function start() {
     
     let cum = 0, peak = 0, maxDD = 0;
     let winSumOdds = 0, winCount = 0;
-    let cumulativeProfits = [0]; // 給畫圖用
+    let cumulativeProfits = [0]; 
     
     testStats.details.forEach(d => {
       cum += d.profit;
@@ -457,7 +461,6 @@ async function start() {
   }
 }
 
-// 折線圖繪製
 function drawChart(data) {
   const canvas = document.getElementById('equityChart');
   const ctx = canvas.getContext('2d');
@@ -471,7 +474,6 @@ function drawChart(data) {
   const maxVal = Math.max(...data, 100);
   const range = maxVal - minVal;
   
-  // 畫中軸線 (利潤 0)
   const zeroY = h - ((0 - minVal) / range) * h;
   ctx.beginPath();
   ctx.moveTo(0, zeroY);
@@ -481,7 +483,6 @@ function drawChart(data) {
   ctx.stroke();
   ctx.setLineDash([]);
   
-  // 畫折線
   ctx.beginPath();
   for (let i = 0; i < data.length; i++) {
     const x = (i / (data.length - 1)) * w;
@@ -490,13 +491,11 @@ function drawChart(data) {
     else ctx.lineTo(x, y);
   }
   
-  // 根據最終利潤決定顏色
   ctx.strokeStyle = data[data.length - 1] >= 0 ? '#22c55e' : '#ef4444';
   ctx.lineWidth = 3;
   ctx.lineJoin = 'round';
   ctx.stroke();
   
-  // 填色
   ctx.lineTo(w, zeroY);
   ctx.lineTo(0, zeroY);
   ctx.fillStyle = data[data.length - 1] >= 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)';
