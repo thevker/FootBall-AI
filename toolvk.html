@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v95.1 — 遺傳進化版（穩定版）</title>
+<title>🚀 v95.2 — 遺傳進化版（修復無限Bug）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -65,13 +65,12 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v95.1 — 遺傳進化版（穩定版）</h2>
+<h2>🚀 v95.2 — 遺傳進化版（修復無限Bug）</h2>
 
 <div class="warn-banner">
-  <b>🧬 修復與優化：</b>
-  <br>① 修復了精英複製導致的 <code>Uint32Array</code> 丟失問題。
-  <br>② 初始化與繁衍迴圈加入實時 <code>yield</code>，進化過程不會假死。
-  <br>③ 保留「遺傳、爬山、決策樹」三種模式，預設為 <b>遺傳進化</b>。
+  <b>🧬 修復與提醒：</b>
+  <br>① 修復了決策樹模式下「條件上限選擇無限時，直接變成0單位」的 Bug。
+  <br>② 實戰警告：決策樹上限 10 層跑出 5 萬多盈利是「嚴重過度擬合」，只代表它把歷史數據死記硬背下來了，實盤請不要用超過 5 層的規則。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -476,9 +475,10 @@ function getBestLeaf(bs){
   if (optMode === 'profit' && bestProfit <= 0) { bestCode = 3; bestScore = 0; bestProfit = 0; }
   return { code: bestCode, score: bestScore, profit: bestProfit, wins: bestWins, games: total, winRate: total > 0 ? (bestWins/total*100) : 0 };
 }
-async function buildTree(bs_mask, depth) {
+async function buildTree(bs_mask, depth, limitDepth) { // ★ 加入 limitDepth
   var bestLeaf = getBestLeaf(bs_mask);
-  if (depth >= maxCondsLimit) return { isLeaf: true, leafInfo: bestLeaf };
+  if (depth >= limitDepth) return { isLeaf: true, leafInfo: bestLeaf }; // ★ 改用 limitDepth
+  
   var currentProfit = bestLeaf.profit, bestSplit = null, maxSplitProfit = currentProfit;
   for(var fi=0; fi<FCOUNT; fi++){
     var ths = getThresholds(fi);
@@ -496,7 +496,7 @@ async function buildTree(bs_mask, depth) {
     if (fi % 5 === 0 && shouldYield()) await yieldUI();
   }
   if (!bestSplit) return { isLeaf: true, leafInfo: bestLeaf };
-  var leftNode = await buildTree(bestSplit.leftBS, depth + 1), rightNode = await buildTree(bestSplit.rightBS, depth + 1);
+  var leftNode = await buildTree(bestSplit.leftBS, depth + 1, limitDepth), rightNode = await buildTree(bestSplit.rightBS, depth + 1, limitDepth);
   return { isLeaf: false, cond: [bestSplit.fi, bestSplit.op, bestSplit.thr], left: leftNode, right: rightNode };
 }
 function extractRules(node, currentConds, rules){
@@ -512,16 +512,14 @@ function extractRules(node, currentConds, rules){
 
 // 🧬 遺傳進化核心
 function getRandomPoolItem(pool) { return pool[Math.floor(Math.random() * pool.length)]; }
-
 function cloneInd(ind) {
   var newRules = [];
   for (var i=0; i<ind.rules.length; i++) {
     var r = ind.rules[i];
-    newRules.push({ cond: r.cond, thenCode: r.thenCode, bs: r.bs, fi: r.fi }); // bs 直接引用（Uint32Array）
+    newRules.push({ cond: r.cond, thenCode: r.thenCode, bs: r.bs, fi: r.fi });
   }
   return { rules: newRules, eval: ind.eval };
 }
-
 function evaluateIndividual(ind) {
   var covered = bsNew(trainN);
   var totalProfit = 0, games = 0, wins = 0;
@@ -567,11 +565,10 @@ function evaluateIndividual(ind) {
     fitness: optMode === 'profit' ? totalProfit : (games > 0 ? (wins/games*100 + games*0.0001) : -Infinity)
   };
 }
-
 function createRandomIndividual(pool, maxRules) {
   var rules = [], usedFeatures = {};
   var ruleCount = Math.min(maxRules === 0 ? 10 : maxRules, 15); 
-  ruleCount = Math.floor(Math.random() * 5) + 3; // 隨機 3~7 條起步
+  ruleCount = Math.floor(Math.random() * 5) + 3; 
   
   var safeCount = 0;
   while(rules.length < ruleCount && safeCount < 50) {
@@ -584,7 +581,6 @@ function createRandomIndividual(pool, maxRules) {
   }
   return { rules: rules };
 }
-
 function crossover(pA, pB, maxRules) {
   var combined = pA.rules.concat(pB.rules);
   for (var i = combined.length - 1; i > 0; i--) {
@@ -600,10 +596,9 @@ function crossover(pA, pB, maxRules) {
       if (maxRules > 0 && childRules.length >= maxRules) break;
     }
   }
-  if(childRules.length === 0) childRules.push(getRandomPoolItem(precomputedSingles)); // 保底
+  if(childRules.length === 0) childRules.push(getRandomPoolItem(precomputedSingles)); 
   return { rules: childRules };
 }
-
 function mutate(ind, pool, maxRules) {
   if (ind.rules.length === 0) return;
   var mutType = Math.random();
@@ -626,7 +621,6 @@ function mutate(ind, pool, maxRules) {
     }
   }
 }
-
 async function runGeneticEngine() {
   var pool = precomputedSingles;
   if (!pool || pool.length === 0) return { rules:[], stats:{totalProfit:0, winRate:0, games:0}, fallbackInfo:null };
@@ -634,7 +628,6 @@ async function runGeneticEngine() {
   var POP_SIZE = 30;
   var maxRules = maxCondsLimit === 0 ? 15 : maxCondsLimit;
   
-  // 1. 初始化種群
   pushLog(nowTime()+' 🧬 初始化種群...', 'info');
   var population = [];
   for (var i=0; i<POP_SIZE; i++) {
@@ -646,7 +639,6 @@ async function runGeneticEngine() {
   
   var globalBestInd = null;
   
-  // 2. 進化主循環
   for (var gen=1; gen<=totalPhases; gen++) {
     if(!running) break;
     currentRun = gen;
@@ -849,7 +841,7 @@ async function start(){
     document.getElementById('progbar').style.width='0%'; document.getElementById('progText').textContent='0.0%';
     updateStats(); clearLog();
 
-    pushLog('🚀 v95.1 — ' + (algoMode==='genetic'?'遺傳進化 (Genetic Algorithm)':(algoMode==='hill-climb'?'隨機爬山':'決策樹')), 'head');
+    pushLog('🚀 v95.2 — ' + (algoMode==='genetic'?'遺傳進化 (Genetic Algorithm)':(algoMode==='hill-climb'?'隨機爬山':'決策樹')), 'head');
     pushLog(nowTime()+' 資料：'+rawRowsData.length+' 筆，條件上限：'+condLabel, 'success');
     await yieldUI();
 
@@ -885,7 +877,8 @@ async function start(){
       res = { rules: globalBestRules, stats: globalBestStats, fallbackInfo: globalBestFallback };
     } else {
       pushLog(nowTime()+' 🌳 開始建立決策樹...', 'info'); currentRun = 1; totalPhases = 1;
-      var tree = await buildTree(allMask, 0);
+      var limitDepth = maxCondsLimit === 0 ? 20 : maxCondsLimit; // ★ 修復無限的 Bug
+      var tree = await buildTree(allMask, 0, limitDepth);
       var finalRules = []; extractRules(tree, [], finalRules);
       var covered = bsNew(trainN);
       for(var r=0; r<finalRules.length; r++){ var rbs=null; for(var c=0;c<finalRules[r].conds.length;c++){ var cb=getCondBS(finalRules[r].conds[c][0], finalRules[r].conds[c][1], finalRules[r].conds[c][2]); rbs=rbs===null?cb:bsAnd(rbs,cb);} if(rbs) bsOrInPlace(covered,rbs); }
@@ -899,6 +892,11 @@ async function start(){
     var bestTotal = finalStats.totalProfit;
     var bestWinRate = finalStats.winRate;
     var formulaH = genHFormula(res.rules);
+
+    // ★ 同步更新全局變數，避免右上角顯示 Infinity
+    globalBestProfit = bestTotal;
+    globalBestWinRate = bestWinRate;
+    globalBestGames = finalStats.games;
 
     document.getElementById('best').style.display='block';
     var earnStatus = bestTotal > 0 ? '🟢 長期賺錢' : '🔴 長期蝕本';
