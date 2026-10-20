@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v92.4 — 嚴格命中門檻版</title>
+<title>🚀 v93.0 — 概率進化版（包含返還率與真實概率）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -63,10 +63,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v92.4 — 嚴格命中門檻版</h2>
+<h2>🚀 v93.0 — 概率進化版</h2>
 
 <div class="warn-banner">
-  <b>🎯 精準「命中次數」限制：</b>現在系統會嚴格要求每一條規則，在生效時所覆蓋的「總場次（不論輸贏）」，都必須大於等於你設定的門檻。例如 5% (23場)，如果一條規則最終只能抓到 5 場，它將被直接淘汰，絕不出現在最終名單。
+  <b>🔥 核心進化：</b>加入了莊家的「初盤返還率」、「尾盤返還率」以及「真實去水勝率（主/平/客）」。這是職業操盤手判斷莊家真實意圖的終極武器。<br>
+  已經優化特徵庫，保留了最具實戰價值的指標，避免無意義的過度擬合。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -169,7 +170,10 @@ var FEATURES=[
   'A','B','C','D','E','F',
   'A-C','D-F','MaxABC','MinABC',
   'DirA','DirB','DirC',
-  'A/C','D/F'
+  'A/C','D/F',
+  'RR_INIT','RR_FINAL','RR_DIFF',   // ★ 新增：返還率
+  'TP_A','TP_D','TP_A_DIFF',        // ★ 新增：主隊真實概率
+  'TP_C','TP_F','TP_C_DIFF'         // ★ 新增：客隊真實概率
 ];
 var FEATURE_NAMES=[
   '主跌(A-D)','主升(D-A)','主跌幅%','主倍率(A/D)',
@@ -181,7 +185,10 @@ var FEATURE_NAMES=[
   'A主初','B和初','C客初','D主尾','E和尾','F客尾',
   'A-C','D-F','MaxABC','MinABC',
   '主方向','和方向','客方向',
-  'A/C','D/F'
+  'A/C','D/F',
+  '初盤返還率','尾盤返還率','返還率變化',
+  '主真實概率初','主真實概率尾','主真實概率變化',
+  '客真實概率初','客真實概率尾','客真實概率變化'
 ];
 var FCOUNT=FEATURES.length;
 
@@ -201,7 +208,7 @@ var currentPhase=0,totalPhases=100;
 var poolSize=0,currentRun=0;
 var optMode='profit';
 var maxCondsLimit=0;
-var minHitsRequired=0; // ★ 改名為 minHitsRequired
+var minHitsRequired=0;
 
 var globalBestScore=-Infinity;
 var globalBestProfit=-Infinity;
@@ -367,7 +374,7 @@ function getThresholds(fi){
       if(!seen[grid[g]]){ seen[grid[g]]=1; ths.push(grid[g]); }
     }
   }
-  var isPct = (fn==='MA_PCT'||fn==='MB_PCT'||fn==='MC_PCT');
+  var isPct = (fn.indexOf('%')>=0 || fn.indexOf('率')>=0);
   if(isPct){
     var pgrid=[-50,-40,-30,-25,-20,-15,-10,-8,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,8,10,15,20,25,30,40,50];
     for(var pg=0;pg<pgrid.length;pg++){
@@ -396,7 +403,6 @@ async function runSingleEngine() {
         var bs=getCondBS(fi,op,thr);
         var total=bsCount(bs);
         
-        // ★ 在單條件生成時，檢查「總觸發場次」是否達標
         if(total === 0 || (minHitsRequired > 0 && total < minHitsRequired)) continue;
         
         for(var tc=0;tc<3;tc++){
@@ -460,7 +466,6 @@ async function runSingleEngine() {
           newBS = newBS === null ? condBS : bsAnd(newBS, condBS);
         }
         
-        // ★ 爬山組合後，也必須檢查「總觸發場次」達標
         if(!newBS || bsCount(newBS) < (minHitsRequired > 0 ? minHitsRequired : 1)) continue;
         
         var newScore = metricOfBS(newBS, tc, optMode);
@@ -494,7 +499,6 @@ async function runSingleEngine() {
       var only = bsAndNot(rule.bs, covered);
       var cnt = bsCount(only);
       
-      // ★ 核心修改：在剩餘場次中，能觸發的次數(cnt)必須 >= 命中門檻
       if (cnt === 0 || (minHitsRequired > 0 && cnt < minHitsRequired)) continue; 
 
       var inc = profitOfBS(only, rule.thenCode); 
@@ -627,6 +631,16 @@ function featToExpr(fi){
     case 'DirC':return 'IF(f<c,1,IF(f>c,-1,0))';
     case 'A/C':return 'ROUND(IF(c=0,0,a/c),2)';
     case 'D/F':return 'ROUND(IF(f=0,0,d/f),2)';
+    // ★ 新增返還率與概率的公式
+    case 'RR_INIT':return '100/(1/a+1/b+1/c)';
+    case 'RR_FINAL':return '100/(1/d+1/e+1/f)';
+    case 'RR_DIFF':return '(100/(1/d+1/e+1/f)) - (100/(1/a+1/b+1/c))';
+    case 'TP_A':return '(1/a)/(1/a+1/b+1/c)';
+    case 'TP_D':return '(1/d)/(1/d+1/e+1/f)';
+    case 'TP_A_DIFF':return '((1/d)/(1/d+1/e+1/f)) - ((1/a)/(1/a+1/b+1/c))';
+    case 'TP_C':return '(1/c)/(1/a+1/b+1/c)';
+    case 'TP_F':return '(1/f)/(1/d+1/e+1/f)';
+    case 'TP_C_DIFF':return '((1/f)/(1/d+1/e+1/f)) - ((1/c)/(1/a+1/b+1/c))';
     default:return '0';
   }
 }
@@ -653,6 +667,7 @@ function genFormulaRecursive(rules, index){
 function genHFormula(rules){
   if(rules.length === 0) return '=ARRAYFORMULA(IF((A2:A=""),"",""))';
   var body = genFormulaRecursive(rules, 0);
+  // ★ LET 中加入了所有基礎計算的預定義，維持公式簡短
   return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"", LET(' +
     'a, A2:A*1, b, B2:B*1, c, C2:C*1, d, D2:D*1, e, E2:E*1, f, F2:F*1, ' +
     'ma, ROUND(IF(a=0,0,(a-d)/a*100),2), ' +
@@ -731,7 +746,6 @@ async function start(){
     maxCondsLimit = parseInt(document.getElementById('maxConds').value) || 0;
     
     var gatePct = parseFloat(document.getElementById('minHitsPct').value) || 0;
-    // ★ 這裡計算的是需要達標的總觸發場次
     minHitsRequired = gatePct > 0 ? Math.ceil(rawRowsData.length * gatePct) : 0;
     
     var modeLabel = (optMode === 'hitrate') ? '🎯 命中模式（最高命中率）' : '💰 盈利模式（最高利潤）';
@@ -758,7 +772,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v92.4 — 嚴格命中門檻版','head');
+    pushLog('🚀 v93.0 — 概率進化版（包含返還率與真實概率）','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，命中門檻：'+gateLabel,'info');
@@ -930,6 +944,26 @@ function extractFeatures(rows){
     
     f[33]=Math.round((C===0?0:A/C)*100)/100;
     f[34]=Math.round((F===0?0:D/F)*100)/100;
+    
+    // ★ 新增：返還率與真實概率的計算
+    var sumA = (A===0?0:1/A) + (B===0?0:1/B) + (C===0?0:1/C);
+    var sumD = (D===0?0:1/D) + (E===0?0:1/E) + (F===0?0:1/F);
+    
+    var rrInit = sumA === 0 ? 0 : 100 / sumA;
+    var rrFinal = sumD === 0 ? 0 : 100 / sumD;
+    
+    f[35] = Math.round(rrInit * 100) / 100;
+    f[36] = Math.round(rrFinal * 100) / 100;
+    f[37] = Math.round((rrFinal - rrInit) * 100) / 100;
+    
+    f[38] = sumA === 0 ? 0 : Math.round(((1/A)/sumA) * 10000) / 100; // TP_A
+    f[39] = sumD === 0 ? 0 : Math.round(((1/D)/sumD) * 10000) / 100; // TP_D
+    f[40] = Math.round((f[39] - f[38]) * 100) / 100; // TP_A_DIFF
+    
+    f[41] = sumA === 0 ? 0 : Math.round(((1/C)/sumA) * 10000) / 100; // TP_C
+    f[42] = sumD === 0 ? 0 : Math.round(((1/F)/sumD) * 10000) / 100; // TP_F
+    f[43] = Math.round((f[42] - f[41]) * 100) / 100; // TP_C_DIFF
+    
     mat[i]=f;
   }
   return mat;
