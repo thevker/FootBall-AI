@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v95.3 — 遺傳進化解鎖版</title>
+<title>🚀 v96.0 — 實戰驗證版（防過擬合）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -61,31 +61,39 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 .compare-table .miss{color:#f87171}
 .fb-panel{background:rgba(0,0,0,0.25);border:1px solid #475569;border-radius:6px;padding:10px 12px;margin-top:10px;font-size:12px;line-height:1.9;color:#cbd5e1}
 .fb-panel b{color:#f8fafc}
+.test-panel{background:rgba(0,0,0,0.3);border:2px dashed #475569;border-radius:6px;padding:12px;margin-top:12px;font-size:13px;line-height:1.8;color:#cbd5e1}
 </style>
 </head>
 <body>
 
-<h2>🚀 v95.3 — 遺傳進化解鎖版</h2>
+<h2>🚀 v96.0 — 實戰驗證版（防過擬合）</h2>
 
 <div class="warn-banner">
-  <b>🧬 遺傳算法強化：</b>
-  <br>① 解除了遺傳算法的「15 條規則」封印。選擇「無限」時，它最多可以演化出 <b>100 條</b>精密規則。
-  <br>② 種群規模從 30 擴大到 <b>100</b>，大大增加基因多樣性，盈利能力將對標決策樹。
-  <br>③ 保留了決策樹與爬山法，你可以切換對比。
+  <b>🛡️ 全新樣本外驗證功能：</b>
+  <br>① 開啟「70/30 分割」後，算法只會用前 70% 的數據尋找規則。
+  <br>② 找到規則後，系統會用完全沒看過的後 30% 數據來檢驗這套規則。
+  <br>③ 如果測試集虧錢，代表這是「死背歷史的假規律」，實戰請勿使用！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
 
 <div class="row">
-  <button id="btnRun" class="hero" onclick="start()">🚀 啟動進化</button>
+  <button id="btnRun" class="hero" onclick="start()">🚀 啟動優化</button>
   <button id="btnStop" class="stop" onclick="stop()" disabled>⏹ 停止</button>
   <button id="btnCopy" class="copy" onclick="copyIt('txtH')">📋 複製 H2 公式</button>
 
   <label>🧠 算法：</label>
   <select id="algoMode" onchange="onAlgoChange()">
-    <option value="genetic" selected>🧬 遺傳進化（終極推薦）</option>
-    <option value="hill-climb">⛰️ 隨機爬山（快速探索）</option>
-    <option value="decision-tree">🌳 決策樹（確定性）</option>
+    <option value="genetic" selected>🧬 遺傳進化</option>
+    <option value="hill-climb">⛰️ 隨機爬山</option>
+    <option value="decision-tree">🌳 決策樹</option>
+  </select>
+
+  <label>🔍 驗證模式：</label>
+  <select id="splitMode">
+    <option value="70-30" selected>70% 訓練 / 30% 測試（推薦）</option>
+    <option value="80-20">80% 訓練 / 20% 測試</option>
+    <option value="none">關閉（全數據優化）</option>
   </select>
 
   <label>🎯 模式：</label>
@@ -105,14 +113,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
     <option value="0" selected>無限</option>
   </select>
 
-  <label id="lblRunCount">🔄 搜索次數/代數：</label>
+  <label id="lblRunCount">🔄 進化/搜索次數：</label>
   <select id="runCount">
     <option value="10">10 次</option>
     <option value="50">50 次</option>
     <option value="100" selected>100 次</option>
     <option value="500">500 次</option>
     <option value="1000">1000 次</option>
-    <option value="5000">5000 次</option>
   </select>
 
   <label>🎯 命中門檻：</label>
@@ -121,9 +128,6 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
     <option value="0.05">5%</option>
     <option value="0.10">10%</option>
     <option value="0.15">15%</option>
-    <option value="0.20">20%</option>
-    <option value="0.25">25%</option>
-    <option value="0.30">30%</option>
   </select>
 
   <label>🛟 兜底策略：</label>
@@ -131,13 +135,6 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
     <option value="ev-gated">🧠 EV 門控（推薦）</option>
     <option value="always-hda">🎯 純 HDA（永遠押）</option>
     <option value="skip" selected>⏸ 純 Skip（不下注）</option>
-  </select>
-
-  <label>🛟 兜底 EV 門檻：</label>
-  <select id="fallbackEv">
-    <option value="0" selected>總盈利 &gt; 0</option>
-    <option value="50">總盈利 &gt; +50</option>
-    <option value="100">總盈利 &gt; +100</option>
   </select>
 </div>
 
@@ -159,6 +156,9 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 
 <div class="best" id="best">
   <div id="summary"></div>
+  
+  <div id="testResultPanel" class="test-panel" style="display:none;"></div>
+
   <div class="result-banner">
     <b>🎯 優化結果</b>
     <div id="resultInfo" style="margin-top:8px;font-size:12px"></div>
@@ -170,7 +170,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
   </div>
 
   <div class="section">
-    <h3>📋 全場次模擬明細（請上下滾動對賬）</h3>
+    <h3>📋 全場次模擬明細</h3>
     <div class="scroll-container">
       <table class="compare-table" id="compareTable"></table>
     </div>
@@ -209,37 +209,24 @@ var RESULTS=['H','D','A','skip'];
 var RESULT_CODES={H:0,D:1,A:2,skip:3};
 
 var rawRowsData = [];
+var testRowsData = null; 
 var trainFeat=null,trainResult=null,trainOdds=null;
 var trainN=0;
 
 var running=false,startTime=0;
 var logBuffer=[],logTimer=null,LOG_MAX=5000;
 var lastYieldTime=0;
-var currentPhase=0,totalPhases=100;
-var poolSize=0,currentRun=0;
-var algoMode='genetic';
-var optMode='profit';
-var maxCondsLimit=0;
-var minHitsRequired=0;
-
-var fallbackMode='skip';
+var totalPhases=100, currentRun=0;
+var algoMode='genetic', optMode='profit';
+var maxCondsLimit=0, minHitsRequired=0;
+var fallbackMode='skip', fallbackEvThreshold=0;
 var MIN_FALLBACK_SAMPLES=15;
-var fallbackEvThreshold=0;
 
 var precomputedSingles = null;
 var allMask = null;
+var globalBestWinRate=0, globalBestGames=0, globalBestProfit=-Infinity;
 
-var globalBestScore=-Infinity;
-var globalBestProfit=-Infinity;
-var globalBestWinRate=0;
-var globalBestGames=0;
-var globalBestRules=null;
-var globalBestStats=null;
-var globalBestFallback=null;
-
-var featureValueCache={};
-var condBSCache={};
-var condBSCacheSize=0;
+var featureValueCache={}, condBSCache={}, condBSCacheSize=0;
 var COND_CACHE_MAX=500000; 
 
 function rnd2(val) { if (!isFinite(val)) return 0; return Math.sign(val) * Math.round(Math.abs(val) * 100) / 100; }
@@ -511,7 +498,7 @@ function extractRules(node, currentConds, rules){
   extractRules(node.right, currentConds, rules);
 }
 
-// 🧬 遺傳進化核心（大解鎖）
+// 🧬 遺傳進化
 function getRandomPoolItem(pool) { return pool[Math.floor(Math.random() * pool.length)]; }
 function cloneInd(ind) {
   var newRules = [];
@@ -566,10 +553,8 @@ function evaluateIndividual(ind) {
     fitness: optMode === 'profit' ? totalProfit : (games > 0 ? (wins/games*100 + games*0.0001) : -Infinity)
   };
 }
-
 function createRandomIndividual(pool, maxRules) {
   var rules = [], usedFeatures = {};
-  // 解鎖：如果是無限，初始隨機給 5~15 條，後續繁衍可以增加。
   var initCount = Math.floor(Math.random() * 10) + 5; 
   var safeCount = 0;
   while(rules.length < initCount && safeCount < 100) {
@@ -582,7 +567,6 @@ function createRandomIndividual(pool, maxRules) {
   }
   return { rules: rules };
 }
-
 function crossover(pA, pB, maxRules) {
   var combined = pA.rules.concat(pB.rules);
   for (var i = combined.length - 1; i > 0; i--) {
@@ -601,39 +585,33 @@ function crossover(pA, pB, maxRules) {
   if(childRules.length === 0) childRules.push(getRandomPoolItem(precomputedSingles)); 
   return { rules: childRules };
 }
-
 function mutate(ind, pool, maxRules) {
   if (ind.rules.length === 0) return;
   var mutType = Math.random();
   
   if (mutType < 0.5) {
-    // 替換
     var idx = Math.floor(Math.random() * ind.rules.length);
     var cand = getRandomPoolItem(pool);
     var overlap = false;
     for(var i=0; i<ind.rules.length; i++){ if(i !== idx && ind.rules[i].fi === cand.fi) { overlap = true; break; } }
     if(!overlap) ind.rules[idx] = { cond: cand.cond, thenCode: cand.thenCode, bs: cand.bs, fi: cand.fi };
   } else if (mutType < 0.8) {
-    // 增加（解鎖最多到 100 條）
     if (maxRules > 0 && ind.rules.length >= maxRules) return;
     var cand = getRandomPoolItem(pool);
     var overlap = false;
     for(var i=0; i<ind.rules.length; i++){ if(ind.rules[i].fi === cand.fi) { overlap = true; break; } }
     if(!overlap) ind.rules.push({ cond: cand.cond, thenCode: cand.thenCode, bs: cand.bs, fi: cand.fi });
   } else {
-    // 刪除
     if (ind.rules.length > 1) {
       ind.rules.splice(Math.floor(Math.random() * ind.rules.length), 1);
     }
   }
 }
-
 async function runGeneticEngine() {
   var pool = precomputedSingles;
   if (!pool || pool.length === 0) return { rules:[], stats:{totalProfit:0, winRate:0, games:0}, fallbackInfo:null };
   
-  var POP_SIZE = 100; // ★ 擴大到 100
-  // ★ 解鎖限制：無限時，最多允許演化出 100 條規則
+  var POP_SIZE = 100; 
   var maxRules = maxCondsLimit === 0 ? 100 : maxCondsLimit; 
   
   pushLog(nowTime()+' 🧬 初始化種群 (100 個體)...', 'info');
@@ -688,7 +666,6 @@ async function runGeneticEngine() {
   }
   
   var bestRules = globalBestInd.rules;
-  
   var covered = bsNew(trainN);
   for (var r=0; r<bestRules.length; r++) bsOrInPlace(covered, bestRules[r].bs);
   var fbRes = applyFallbackLogic(bestRules, covered);
@@ -729,6 +706,32 @@ function applyFallbackLogic(finalRules, covered) {
     return { on:1, then:r.then, thenCode:r.thenCode, conds:[r.cond] }; 
   });
   return { rules: formattedRules, fallbackInfo: fallbackInfo };
+}
+
+// 樣本外測試驗證
+function evaluateTestSet(rules, testRows) {
+  if (!testRows || testRows.length === 0) return null;
+  
+  // 保存當前訓練集狀態
+  var oldFeat = trainFeat, oldResult = trainResult, oldOdds = trainOdds, oldN = trainN;
+  
+  // 臨時替換為測試集數據
+  trainN = testRows.length;
+  trainFeat = extractFeatures(testRows);
+  var meta = extractMeta(testRows, 'final');
+  trainResult = meta.codes;
+  trainOdds = meta.odds;
+  
+  // 跑回測
+  var stats = calcRulesStats(rules);
+  
+  // 恢復訓練集狀態
+  trainN = oldN;
+  trainFeat = oldFeat;
+  trainResult = oldResult;
+  trainOdds = oldOdds;
+  
+  return stats;
 }
 
 // UI 渲染函數
@@ -821,7 +824,19 @@ async function start(){
   try {
     var parsed=parseData(document.getElementById('input').value);
     if(parsed.rows.length < 100){ alert('⚠️ 數據不足！至少 100 場。'); return; }
-    rawRowsData = parsed.rows;
+    
+    // ★ 樣本外驗證：分割數據
+    var splitMode = document.getElementById('splitMode').value;
+    if (splitMode !== 'none') {
+      var ratio = splitMode === '70-30' ? 0.7 : 0.8;
+      var splitIdx = Math.floor(parsed.rows.length * ratio);
+      rawRowsData = parsed.rows.slice(0, splitIdx);
+      testRowsData = parsed.rows.slice(splitIdx);
+      pushLog(`✂️ 樣本分割：訓練集 ${rawRowsData.length} 場 / 測試集 ${testRowsData.length} 場`, 'warn');
+    } else {
+      rawRowsData = parsed.rows;
+      testRowsData = null;
+    }
     
     algoMode = document.getElementById('algoMode').value;
     optMode = document.getElementById('optMode').value;
@@ -840,17 +855,17 @@ async function start(){
 
     running=true; startTime=Date.now();
     poolSize=0; currentRun=0;
-    globalBestScore=-Infinity; globalBestProfit=-Infinity; globalBestWinRate=0; globalBestGames=0;
-    globalBestRules=null; globalBestStats=null; globalBestFallback=null;
+    globalBestProfit=-Infinity; globalBestWinRate=0; globalBestGames=0;
     precomputedSingles=null; lastYieldTime=0;
 
     document.getElementById('btnRun').disabled=true; document.getElementById('btnStop').disabled=false;
     document.getElementById('best').style.display='none'; document.getElementById('liveStats').style.display='flex';
     document.getElementById('progbar').style.width='0%'; document.getElementById('progText').textContent='0.0%';
+    document.getElementById('testResultPanel').style.display='none'; // 重置測試面板
     updateStats(); clearLog();
 
-    pushLog('🚀 v95.3 — ' + (algoMode==='genetic'?'遺傳進化 (Genetic Algorithm)':(algoMode==='hill-climb'?'隨機爬山':'決策樹')), 'head');
-    pushLog(nowTime()+' 資料：'+rawRowsData.length+' 筆，條件上限：'+condLabel, 'success');
+    pushLog('🚀 v96.0 — ' + (algoMode==='genetic'?'遺傳進化 (Genetic Algorithm)':(algoMode==='hill-climb'?'隨機爬山':'決策樹')), 'head');
+    pushLog(nowTime()+' 訓練集資料：'+rawRowsData.length+' 筆，條件上限：'+condLabel, 'success');
     await yieldUI();
 
     featureValueCache={}; clearCondCache();
@@ -906,7 +921,7 @@ async function start(){
     globalBestGames = finalStats.games;
 
     document.getElementById('best').style.display='block';
-    var earnStatus = bestTotal > 0 ? '🟢 長期賺錢' : '🔴 長期蝕本';
+    var earnStatus = bestTotal > 0 ? '🟢 訓練集賺錢' : '🔴 訓練集蝕本';
     var earnColor = bestTotal > 0 ? '#4ade80' : '#f87171';
     
     var fbPanelHtml = '';
@@ -917,13 +932,13 @@ async function start(){
         var isBest = (di === res.fallbackInfo.bestDirCode);
         dirRows += '<span style="display:inline-block;margin-right:14px;'+(isBest?'font-weight:bold;':'')+'"><span class="tag-'+(di===0?'h':di===1?'d':'a')+'">'+dirNames[di]+'</span> <span class="'+pc+'">'+(pv>0?'+':'')+pv+'</span>'+(isBest?' ←最高':'')+'</span>';
       }
-      fbPanelHtml = '<div class="fb-panel"><b>🛟 兜底（剩餘 '+res.fallbackInfo.remainCnt+' 場）</b><br>EV：'+dirRows+'<br>決策：<b style="color:'+((res.fallbackInfo.mode==='HDA')?'#4ade80':'#94a3b8')+'">'+((res.fallbackInfo.mode==='HDA')?('押 '+res.fallbackInfo.bestDir):'Skip')+'</b>　原因：<span style="color:#94a3b8">'+res.fallbackInfo.reason+'</span></div>';
+      fbPanelHtml = '<div class="fb-panel"><b>🛟 訓練集兜底（剩餘 '+res.fallbackInfo.remainCnt+' 場）</b><br>EV：'+dirRows+'<br>決策：<b style="color:'+((res.fallbackInfo.mode==='HDA')?'#4ade80':'#94a3b8')+'">'+((res.fallbackInfo.mode==='HDA')?('押 '+res.fallbackInfo.bestDir):'Skip')+'</b>　原因：<span style="color:#94a3b8">'+res.fallbackInfo.reason+'</span></div>';
     } else {
-      fbPanelHtml = '<div class="fb-panel"><b>🛟 兜底</b>：✅ 所有場次已被規則完全覆蓋</div>';
+      fbPanelHtml = '<div class="fb-panel"><b>🛟 訓練集兜底</b>：✅ 所有場次已被規則完全覆蓋</div>';
     }
     
     document.getElementById('summary').innerHTML=
-      '<div style="font-size:16px; color:#cbd5e1; margin-bottom:4px">基於所有歷史數據模擬：</div>' +
+      '<div style="font-size:16px; color:#cbd5e1; margin-bottom:4px">基於訓練集數據模擬：</div>' +
       '<div style="font-size:36px;color:'+earnColor+';font-weight:bold;margin-bottom:12px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; text-align: center;">' + earnStatus + '（' + (bestTotal > 0 ? '+' : '') + bestTotal + ' 單位）</div>'+
       '<div style="font-size:14px;color:#cbd5e1;line-height:1.9">結算模式：<b>尾盤 D/E/F</b>　條件上限：<b>'+condLabel+'</b>　命中門檻：<b>'+(minHitsRequired===0?'關閉':Math.round(gatePct*100)+'%')+'</b><br>命中率 <b style="color:#c084fc">'+bestWinRate.toFixed(2)+'%</b>（'+finalStats.wins+'/'+finalStats.games+'）　共 <b>'+res.rules.length+'</b> 條規則</div>'+fbPanelHtml;
 
@@ -932,6 +947,38 @@ async function start(){
     renderCompareTable(finalStats, rawRowsData, 'final');
     document.getElementById('txtH').value=formulaH;
     renderRuleTable(res.rules, finalStats);
+
+    // ★ 執行樣本外測試驗證
+    if (testRowsData && testRowsData.length > 0) {
+      pushLog(nowTime()+' 🔍 正在使用未看過的測試集數據進行驗證...', 'info');
+      await yieldUI();
+      var testStats = evaluateTestSet(res.rules, testRowsData);
+      
+      var trProfit = finalStats.totalProfit;
+      var teProfit = testStats.totalProfit;
+      var isOverfit = teProfit <= 0;
+      
+      var testColor = isOverfit ? '#f87171' : '#4ade80';
+      var testBg = isOverfit ? 'rgba(239,68,68,0.1)' : 'rgba(74,222,128,0.1)';
+      var testBorder = isOverfit ? '#f87171' : '#4ade80';
+      var testText = isOverfit ? '🔴 嚴重過擬合（實戰恐虧損）' : '🟢 泛化能力良好（實戰潛力高）';
+      
+      document.getElementById('testResultPanel').style.display = 'block';
+      document.getElementById('testResultPanel').style.background = testBg;
+      document.getElementById('testResultPanel').style.borderColor = testBorder;
+      
+      document.getElementById('testResultPanel').innerHTML = 
+        '<b style="font-size:15px; color:#cbd5e1">📊 樣本外驗證（Out-of-Sample Testing）</b><br><br>' +
+        '訓練集（' + (splitMode==='70-30'?'70':'80') + '%）：<b style="color:' + (trProfit>0?'#4ade80':'#f87171') + '">' + (trProfit>0?'+':'') + trProfit + '</b> 單位（命中率 ' + finalStats.winRate.toFixed(1) + '%）<br>' +
+        '測試集（' + (splitMode==='70-30'?'30':'20') + '%）：<b style="color:' + testColor + '">' + (teProfit>0?'+':'') + teProfit + '</b> 單位（命中率 ' + testStats.winRate.toFixed(1) + '%）<br>' +
+        '<div style="margin-top:8px; font-weight:bold; color:' + testColor + '; font-size:15px;">結論：' + testText + '</div>';
+        
+      if (isOverfit) {
+        pushLog('⚠️ 警告：測試集為負盈利 ('+teProfit+')，模型可能過度擬合歷史數據。', 'error');
+      } else {
+        pushLog('✅ 驗證通過：測試集依然盈利 ('+teProfit+')，規則具備實戰價值。', 'success');
+      }
+    }
 
     running=false;
     document.getElementById('btnRun').disabled=false; document.getElementById('btnStop').disabled=true;
