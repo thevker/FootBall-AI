@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v91.3 — 七規則全覆蓋版（公式完美壓縮）</title>
+<title>🚀 v91.4 — 七規則全覆蓋版（流暢終極版）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -62,11 +62,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v91.3 — 七規則全覆蓋版（公式完美壓縮）</h2>
+<h2>🚀 v91.4 — 七規則全覆蓋版</h2>
 
 <div class="warn-banner">
-  <b>🔥 解決十萬字元公式爆炸：</b>已修復多條件嵌套導致的長度膨脹，並使用 LET 函數，公式長度縮減 90% 以上，完美貼入 Google Sheets。<br>
-  第 7 條兜底附帶「必定成立」條件，消滅 skip！
+  <b>🔥 手機流暢優化：</b>已解決搜尋卡死問題。恢復所有條件上限選項（1~5、無限）。<br>
+  公式已徹底優化（LET + 乘法嵌套），並保證第 7 條兜底必定有條件（不再 skip）。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -86,7 +86,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
   <select id="maxConds">
     <option value="1">1 個</option>
     <option value="2">2 個</option>
-    <option value="3" selected>3 個 (防爆炸)</option>
+    <option value="3" selected>3 個</option>
+    <option value="4">4 個</option>
+    <option value="5">5 個</option>
+    <option value="0">無限</option>
   </select>
 
   <label>🛡️ 勝利門檻：</label>
@@ -129,13 +132,12 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 <div class="best" id="best">
   <div id="summary"></div>
   <div class="result-banner">
-    <b>🎯  }
-優化結果</b>
-    <divfunction id="resultInfo" style="margin-top bs:8px;font-size:12px"></div>
- Or </div>
+    <b>🎯 優化結果</b>
+    <div id="resultInfo" style="margin-top:8px;font-size:12px"></div>
+  </div>
 
   <div class="section">
-    <Inh3>📋 最終規則順序（共 7 條）</h3>
+    <h3>📋 最終規則順序（共 7 條）</h3>
     <div class="diag" id="ruleTable"></div>
   </div>
 
@@ -216,7 +218,8 @@ var COND_CACHE_MAX=300000;
 function bsWords(N){ return (N+31)>>5; }
 function bsNew(N){ return new Uint32Array(bsWords(N)); }
 function bsAnd(a,b){ var n=a.length,o=new Uint32Array(n); for(var i=0;i<n;i++) o[i]=a[i]&b[i]; return o; }
-function bsAndNot(a,b){ var n=a.length,o=new Uint32Array(n); for(var i=0;i<n;i++) o[i]=a[i]&~b[i]; return o;Place(a,b){ for(var i=0;i<a.length;i++) a[i]|=b[i]; }
+function bsAndNot(a,b){ var n=a.length,o=new Uint32Array(n); for(var i=0;i<n;i++) o[i]=a[i]&~b[i]; return o; }
+function bsOrInPlace(a,b){ for(var i=0;i<a.length;i++) a[i]|=b[i]; }
 function bsCount(bs){
   var c=0;
   for(var i=0;i<bs.length;i++){
@@ -425,7 +428,8 @@ async function runSingleEngine() {
       current.score = metricOfBS(current.bs, tc, optMode);
       var globalBest = { conds: current.conds.slice(), bs: current.bs, score: current.score };
       
-      var maxIter = 10000; 
+      // ★ 核心修復：將迭代次數從 10000 降到 2000，防止卡死
+      var maxIter = 2000; 
       for(var iter=0; iter<maxIter; iter++){
         if(!running) break;
         var moveType = Math.random();
@@ -462,7 +466,9 @@ async function runSingleEngine() {
           current = { conds: testConds, bs: newBS, score: newScore };
           if(newScore > globalBest.score) globalBest = { conds: testConds.slice(), bs: newBS, score: newScore };
         }
-        if(iter % 500 === 0 && shouldYield()) await yieldUI();
+        
+        // ★ 頻率從 500 提高至 50，讓瀏覽器有充足的喘息空間
+        if(iter % 50 === 0 && shouldYield()) await yieldUI();
       }
       
       if (globalBest.score > -Infinity && bsCount(globalBest.bs) > 0) {
@@ -529,7 +535,8 @@ async function runSingleEngine() {
     }
   }
   
-  var bottomCond = [20, 0, 0]; // 主初(A) > 0
+  // 兜底條件：必定成立的主初 > 0
+  var bottomCond = [20, 0, 0]; 
   finalRules.push({ on: 1, then: RESULTS[bestTc], thenCode: bestTc, conds: [bottomCond], bs: allOnes });
 
   var cleanStats = calcRulesStats(finalRules);
@@ -604,7 +611,7 @@ function renderCompareTable(stats, rawRows, payoutMode){
   document.getElementById('compareTable').innerHTML = html;
 }
 
-// ★ 使用 LET 變數，極致壓縮公式
+// LET 變數壓縮
 function featToExpr(fi){
   var fn=FEATURES[fi];
   switch(fn){
@@ -651,7 +658,7 @@ function genFormulaRecursive(rules, index){
     return '(' + expr + op + val + ')'; 
   });
   
-  // ★ 核心修改：用 * 將條件相乘，避免 nextIf 被重複嵌套導致字元數爆炸
+  // 用乘法串聯條件，避免字元爆炸
   var condLogic = condSheetStrings.join('*');
   
   return 'IF((' + condLogic + '), "' + rule.then + '", ' + nextIf + ')';
@@ -660,7 +667,6 @@ function genFormulaRecursive(rules, index){
 function genHFormula(rules){
   if(rules.length === 0) return '=ARRAYFORMULA(IF((A2:A=""),"",""))';
   var body = genFormulaRecursive(rules, 0);
-  // ★ 利用 LET 預先計算特徵與變幅率，壓縮公式
   return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"", LET(' +
     'a, A2:A*1, b, B2:B*1, c, C2:C*1, d, D2:D*1, e, E2:E*1, f, F2:F*1, ' +
     'ma, ROUND(IF(a=0,0,(a-d)/a*100),2), ' +
@@ -765,7 +771,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v91.3 — 七規則全覆蓋版（公式完美壓縮）','head');
+    pushLog('🚀 v91.4 — 七規則全覆蓋版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，勝利門檻：'+gateLabel,'info');
