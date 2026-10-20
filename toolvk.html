@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v97.0 — 雙集尋優版（測試集優先）</title>
+<title>🚀 v97.1 — 雙集尋優 + 智能評分版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -62,17 +62,22 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 .fb-panel{background:rgba(0,0,0,0.25);border:1px solid #475569;border-radius:6px;padding:10px 12px;margin-top:10px;font-size:12px;line-height:1.9;color:#cbd5e1}
 .fb-panel b{color:#f8fafc}
 .test-panel{background:rgba(0,0,0,0.3);border:2px dashed #475569;border-radius:6px;padding:12px;margin-top:12px;font-size:13px;line-height:1.8;color:#cbd5e1}
+.score-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:18px;font-weight:bold;margin-bottom:10px;}
+.score-s{background:#166534;color:#4ade80;border:1px solid #22c55e;}
+.score-a{background:#1e3a8a;color:#60a5fa;border:1px solid #3b82f6;}
+.score-b{background:#854d0e;color:#facc15;border:1px solid #eab308;}
+.score-f{background:#7f1d1d;color:#f87171;border:1px solid #ef4444;}
 </style>
 </head>
 <body>
 
-<h2>🚀 v97.0 — 雙集尋優版（測試集優先）</h2>
+<h2>🚀 v97.1 — 雙集尋優 + 智能評分版</h2>
 
 <div class="warn-banner">
-  <b>🔥 全新目標模式：雙集極限尋優</b>
-  <br>① 切分 70% 訓練集、30% 測試集。
-  <br>② 算法每產生一條規則，會<b>同時評估</b>它在兩邊的表現。
-  <br>③ 若測試集不賺錢，直接被淘汰。目標是找出「測試集盈利最大化」且「訓練集不虧」的完美交集！
+  <b>🔥 全新智能評分：</b>
+  <br>① 代碼會自動計算「穩定度」與「規則簡潔度」。
+  <br>② 跑完後直接給你 <b>0~100 分</b>，並告訴你「能不能實戰」。
+  <br>③ 80 分以上是「S級印鈔機」，低於 60 分系統會警告你「丟掉」。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -84,7 +89,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 
   <label>🧠 算法：</label>
   <select id="algoMode" onchange="onAlgoChange()">
-    <option value="hill-climb" selected>⛰️ 爬山法（精準）</option>
+    <option value="hill-climb" selected>⛰️ 爬山法（推薦）</option>
     <option value="genetic">🧬 遺傳進化</option>
     <option value="decision-tree">🌳 決策樹（易過擬合）</option>
   </select>
@@ -329,27 +334,17 @@ function metricOfBS(bs, conds, thenCode, mode){
   var trainProfit = profitOfBS(bs, thenCode);
   
   if(mode === 'test_max'){
-    // 如果測試集沒數據，退回只看訓練集
     if (!testRowsData || testRowsData.length === 0) return trainProfit;
-    
     var testRes = evalOnTest(conds, thenCode);
-    
-    // 為了防範「死背測試集」，設定條件：
-    // 1. 測試集必須至少中 3 場（避免極端巧合）
-    // 2. 訓練集不能是負的（避免找到只在測試集有效的廢規則）
     if (testRes.cnt < 3) return -999999; 
     if (trainProfit <= 0) return -999999;
-    
-    // 最終得分：測試集盈利 * 1.5 + 訓練集盈利 * 0.5
-    // 放大測試集的權重，引導算法去找測試集賺錢的規則
     return (testRes.profit * 1.5) + (trainProfit * 0.5);
   }
-  
   return trainProfit;
 }
 
 function statsScore(stats, mode){
-  if(mode === 'test_max') return stats.testProfit; // 最終只挑測試集最強的
+  if(mode === 'test_max') return stats.testProfit;
   return stats.trainProfit;
 }
 
@@ -538,6 +533,36 @@ function applyFallbackLogic(finalRules, covered) {
   return { rules: formattedRules, fallbackInfo: fallbackInfo };
 }
 
+// ★ 智能評分系統
+function calculateModelScore(trainStats, testStats, ruleCount) {
+  if (!testStats || testStats.totalProfit <= 0) {
+    return { score: 0, grade: 'F', color: 'score-f', text: '❌ 直接丟棄（測試集虧損）' };
+  }
+  
+  var score = 60; // 基礎及格分
+  var ratio = testStats.totalProfit / (trainStats.totalProfit || 1);
+  
+  // 1. 穩定度加分 (最高 20 分)
+  score += Math.min(ratio, 1.0) * 20;
+  
+  // 2. 簡潔度加分 (最高 20 分)
+  if (ruleCount <= 10) score += 20;
+  else if (ruleCount <= 15) score += 10;
+  
+  // 3. 懲罰：如果訓練集賺太多，測試集賺太少 (比例 < 0.3)，扣 20 分
+  if (ratio < 0.3) score -= 20;
+
+  score = Math.min(100, Math.round(score));
+  
+  var grade, color, text;
+  if (score >= 85) { grade = 'S'; color = 'score-s'; text = '🏆 頂級印鈔機（強烈建議實戰）'; }
+  else if (score >= 75) { grade = 'A'; color = 'score-a'; text = '✅ 良好模型（可以實戰）'; }
+  else if (score >= 60) { grade = 'B'; color = 'score-b'; text = '⚠️ 普通模型（建議小注測試）'; }
+  else { grade = 'F'; color = 'score-f'; text = '❌ 風險過高（不建議實戰）'; }
+  
+  return { score, grade, color, text };
+}
+
 // UI 渲染函數
 function fmtCond(c){ return FEATURE_NAMES[c[0]]+OPS[c[1]]+Number(c[2].toFixed(2)); }
 function fmtRule(r){ if(!r.conds || r.conds.length===0) return '(空)'; return r.conds.map(fmtCond).join(' & ')+' → '+r.then; }
@@ -669,7 +694,7 @@ async function start(){
     document.getElementById('testResultPanel').style.display='none';
     updateStats(); clearLog();
 
-    pushLog('🚀 v97.0 — ' + (algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')), 'head');
+    pushLog('🚀 v97.1 — ' + (algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')), 'head');
     pushLog(nowTime()+' 訓練集資料：'+rawRowsData.length+' 筆，條件上限：'+condLabel, 'success');
     await yieldUI();
 
@@ -721,7 +746,7 @@ async function start(){
       }
       res = { rules: globalBestRules, stats: globalBestStats, fallbackInfo: globalBestFallback };
     } else {
-      pushLog(nowTime()+' ⚠️ 目前 v97.0 雙集尋優僅支援爬山法。','warn');
+      pushLog(nowTime()+' ⚠️ 目前 v97.1 雙集尋優僅支援爬山法。','warn');
       running = false; return;
     }
 
@@ -764,26 +789,27 @@ async function start(){
     document.getElementById('txtH').value=formulaH;
     renderRuleTable(res.rules, finalTrainStats);
 
-    // 渲染測試集結果
+    // 渲染測試集結果 + 智能評分
     if (testRowsData && testRowsData.length > 0) {
       var trProfit = finalTrainStats.totalProfit;
       var teProfit = finalTestStats.totalProfit;
-      var isOverfit = teProfit <= 0;
       
-      var testColor = isOverfit ? '#f87171' : '#4ade80';
-      var testBg = isOverfit ? 'rgba(239,68,68,0.1)' : 'rgba(74,222,128,0.1)';
-      var testBorder = isOverfit ? '#f87171' : '#4ade80';
-      var testText = isOverfit ? '🔴 警告：測試集虧損，實戰請勿使用！' : '🟢 完美：測試集高盈利，具備實戰價值！';
+      var scoreData = calculateModelScore(finalTrainStats, finalTestStats, res.rules.length);
+      
+      var testColor = teProfit > 0 ? '#4ade80' : '#f87171';
+      var testBg = teProfit > 0 ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)';
+      var testBorder = teProfit > 0 ? '#4ade80' : '#f87171';
       
       document.getElementById('testResultPanel').style.display = 'block';
       document.getElementById('testResultPanel').style.background = testBg;
       document.getElementById('testResultPanel').style.borderColor = testBorder;
       
       document.getElementById('testResultPanel').innerHTML = 
+        '<div class="score-badge '+scoreData.color+'">模型評分：' + scoreData.score + ' 分 (' + scoreData.grade + ' 級)</div><br>' +
         '<b style="font-size:15px; color:#cbd5e1">📊 雙集驗證結果</b><br><br>' +
-        '訓練集（' + (splitMode==='70-30'?'70':'80') + '%）：<b style="color:' + (trProfit>0?'#4ade80':'#f87171') + '">' + (trProfit>0?'+':'') + trProfit + '</b> 單位<br>' +
-        '測試集（' + (splitMode==='70-30'?'30':'20') + '%）：<b style="color:' + testColor + '">' + (teProfit>0?'+':'') + teProfit + '</b> 單位<br>' +
-        '<div style="margin-top:8px; font-weight:bold; color:' + testColor + '; font-size:15px;">結論：' + testText + '</div>';
+        '訓練集：<b style="color:' + (trProfit>0?'#4ade80':'#f87171') + '">' + (trProfit>0?'+':'') + trProfit + '</b> 單位（' + res.rules.length + ' 條規則）<br>' +
+        '測試集：<b style="color:' + testColor + '">' + (teProfit>0?'+':'') + teProfit + '</b> 單位<br>' +
+        '<div style="margin-top:12px; font-weight:bold; color:' + testColor + '; font-size:15px;">實戰建議：' + scoreData.text + '</div>';
     }
 
     running=false;
