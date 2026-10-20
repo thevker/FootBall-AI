@@ -117,6 +117,15 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
   <div id="progText">0.0%</div>
 </div>
 
+<!-- ★ 加回被誤刪的即時統計面板 -->
+<div class="stats" id="liveStats" style="display:none">
+  <div class="stat" id="stat-pool">📦 候選池: 0</div>
+  <div class="stat" id="stat-greedy">🌡️ 當前輪次: 0 / -</div>
+  <div class="stat" id="stat-win">🎯 全局最高命中率: -</div>
+  <div class="stat" id="stat-train">📊 全局場次: -</div>
+  <div class="stat" id="stat-total">💵 全局最高盈利: -</div>
+</div>
+
 <div id="log">等待開始...</div>
 
 <div class="best" id="best">
@@ -402,7 +411,7 @@ async function runSingleEngine() {
   if(singles.length === 0) return { rules:[], stats:{totalProfit:0, winRate:0, games:0} };
   poolSize = singles.length;
 
-  var bestRulesPerClass = [[], [], []]; // H, D, A 各存前2名
+  var bestRulesPerClass = [[], [], []]; 
 
   for(var tc=0; tc<3; tc++){
     var tcSingles = singles.filter(function(s){ return s.thenCode === tc; });
@@ -467,7 +476,6 @@ async function runSingleEngine() {
     }
   }
 
-  // 将所有符合条件的规则收集起来，最多6条
   var allCondRules = [];
   for (var tc=0; tc<3; tc++) {
     for (var r of bestRulesPerClass[tc]) {
@@ -475,7 +483,6 @@ async function runSingleEngine() {
     }
   }
 
-  // 贪心组合规则，每次选利润增量最大的
   var finalRules = [];
   var covered = bsNew(trainN);
   
@@ -511,7 +518,6 @@ async function runSingleEngine() {
     }
   }
 
-  // 兜底规则：计算剩下的场次，全押剩余利润最高的结果
   var allOnes = new Uint32Array((trainN+31)>>5).fill(0xFFFFFFFF);
   var uncoveredBS = bsAndNot(allOnes, covered);
   
@@ -525,8 +531,8 @@ async function runSingleEngine() {
     }
   }
   
-  // ★ 核心修改：赋予一个必定成立的条件（主初 A > 0），满足「兜底也是规则」的需求
-  var bottomCond = [20, 0, 0]; // FEATURES[20] 是 'A'
+  // 賦予必定成立的條件，保證是合法規則
+  var bottomCond = [20, 0, 0]; // 主初(A) > 0
   finalRules.push({ on: 1, then: RESULTS[bestTc], thenCode: bestTc, conds: [bottomCond], bs: allOnes });
 
   var cleanStats = calcRulesStats(finalRules);
@@ -552,7 +558,6 @@ function renderRuleTable(rules, stats){
     var thenTag='<span class="'+thenClass+'">'+r.then+'</span>';
     var wr=rs.hit>0?(rs.wins/rs.hit*100).toFixed(1)+'%':'-';
     
-    // 判斷是否為第七條兜底
     var isBottom = (i === rules.length - 1);
     var rowLabel = isBottom ? (i+1) + ' (兜底)' : '第 ' + (i+1);
     
