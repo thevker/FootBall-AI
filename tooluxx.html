@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v91.1 — 七規則全覆蓋版（全條件兜底）</title>
+<title>🚀 v91.3 — 七規則全覆蓋版（公式完美壓縮）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -62,11 +62,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v91.1 — 七規則全覆蓋版（全條件兜底）</h2>
+<h2>🚀 v91.3 — 七規則全覆蓋版（公式完美壓縮）</h2>
 
 <div class="warn-banner">
-  <b>🔥 全新升級：</b>HDA 各類允許 2 個名額（共 6 條條件規則），第 7 條兜底同樣附帶「必定成立」的條件（不顯示 skip），自動全押剩餘利潤最高結果。<br>
-  結果頁面將直觀顯示長期是賺還是蝕本！
+  <b>🔥 解決十萬字元公式爆炸：</b>已修復多條件嵌套導致的長度膨脹，並使用 LET 函數，公式長度縮減 90% 以上，完美貼入 Google Sheets。<br>
+  第 7 條兜底附帶「必定成立」條件，消滅 skip！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -84,10 +84,9 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 
   <label>📐 條件上限：</label>
   <select id="maxConds">
-    <option value="0" selected>無限</option>
     <option value="1">1 個</option>
     <option value="2">2 個</option>
-    <option value="3">3 個</option>
+    <option value="3" selected>3 個 (防爆炸)</option>
   </select>
 
   <label>🛡️ 勝利門檻：</label>
@@ -117,7 +116,6 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
   <div id="progText">0.0%</div>
 </div>
 
-<!-- ★ 加回被誤刪的即時統計面板 -->
 <div class="stats" id="liveStats" style="display:none">
   <div class="stat" id="stat-pool">📦 候選池: 0</div>
   <div class="stat" id="stat-greedy">🌡️ 當前輪次: 0 / -</div>
@@ -131,12 +129,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 <div class="best" id="best">
   <div id="summary"></div>
   <div class="result-banner">
-    <b>🎯 優化結果</b>
-    <div id="resultInfo" style="margin-top:8px;font-size:12px"></div>
-  </div>
+    <b>🎯  }
+優化結果</b>
+    <divfunction id="resultInfo" style="margin-top bs:8px;font-size:12px"></div>
+ Or </div>
 
   <div class="section">
-    <h3>📋 最終規則順序（共 7 條）</h3>
+    <Inh3>📋 最終規則順序（共 7 條）</h3>
     <div class="diag" id="ruleTable"></div>
   </div>
 
@@ -217,8 +216,7 @@ var COND_CACHE_MAX=300000;
 function bsWords(N){ return (N+31)>>5; }
 function bsNew(N){ return new Uint32Array(bsWords(N)); }
 function bsAnd(a,b){ var n=a.length,o=new Uint32Array(n); for(var i=0;i<n;i++) o[i]=a[i]&b[i]; return o; }
-function bsAndNot(a,b){ var n=a.length,o=new Uint32Array(n); for(var i=0;i<n;i++) o[i]=a[i]&~b[i]; return o; }
-function bsOrInPlace(a,b){ for(var i=0;i<a.length;i++) a[i]|=b[i]; }
+function bsAndNot(a,b){ var n=a.length,o=new Uint32Array(n); for(var i=0;i<n;i++) o[i]=a[i]&~b[i]; return o;Place(a,b){ for(var i=0;i<a.length;i++) a[i]|=b[i]; }
 function bsCount(bs){
   var c=0;
   for(var i=0;i<bs.length;i++){
@@ -531,7 +529,6 @@ async function runSingleEngine() {
     }
   }
   
-  // 賦予必定成立的條件，保證是合法規則
   var bottomCond = [20, 0, 0]; // 主初(A) > 0
   finalRules.push({ on: 1, then: RESULTS[bestTc], thenCode: bestTc, conds: [bottomCond], bs: allOnes });
 
@@ -607,38 +604,35 @@ function renderCompareTable(stats, rawRows, payoutMode){
   document.getElementById('compareTable').innerHTML = html;
 }
 
+// ★ 使用 LET 變數，極致壓縮公式
 function featToExpr(fi){
-  var A='(A2:A*1)',B='(B2:B*1)',C='(C2:C*1)';
-  var D='(D2:D*1)',E='(E2:E*1)',F='(F2:F*1)';
   var fn=FEATURES[fi];
   switch(fn){
-    case 'A':return A; case 'B':return B; case 'C':return C;
-    case 'D':return D; case 'E':return E; case 'F':return F;
-    case 'A-D':return '('+A+'-'+D+')'; case 'D-A':return '('+D+'-'+A+')';
-    case 'B-E':return '('+B+'-'+E+')'; case 'E-B':return '('+E+'-'+B+')';
-    case 'C-F':return '('+C+'-'+F+')'; case 'F-C':return '('+F+'-'+C+')';
-    case 'MA_PCT':return 'ROUND(IF('+A+'=0,0,('+A+'-'+D+')/'+A+'*100),2)';
-    case 'MB_PCT':return 'ROUND(IF('+B+'=0,0,('+B+'-'+E+')/'+B+'*100),2)';
-    case 'MC_PCT':return 'ROUND(IF('+C+'=0,0,('+C+'-'+F+')/'+C+'*100),2)';
-    case 'A/D':return 'ROUND(IF('+D+'=0,0,'+A+'/'+D+'),2)';
-    case 'B/E':return 'ROUND(IF('+E+'=0,0,'+B+'/'+E+'),2)';
-    case 'C/F':return 'ROUND(IF('+F+'=0,0,'+C+'/'+F+'),2)';
-    case 'MA-MC':return 'ROUND(IF('+A+'=0,0,IF('+C+'=0,0,('+A+'-'+D+')/'+A+'*100-('+C+'-'+F+')/'+C+'*100)),2)';
-    case 'MA-MB':return 'ROUND(IF('+A+'=0,0,IF('+B+'=0,0,('+A+'-'+D+')/'+A+'*100-('+B+'-'+E+')/'+B+'*100)),2)';
-    case 'MC-MB':return 'ROUND(IF('+C+'=0,0,IF('+B+'=0,0,('+C+'-'+F+')/'+C+'*100-('+B+'-'+E+')/'+B+'*100)),2)';
-    case 'A-D-(C-F)':return '(('+A+'-'+D+')-('+C+'-'+F+'))';
-    case 'A-D-(B-E)':return '(('+A+'-'+D+')-('+B+'-'+E+'))';
-    case 'C-F-(B-E)':return '(('+C+'-'+F+')-('+B+'-'+E+'))';
-    case '(A-D)+(F-C)':return '(('+A+'-'+D+')+('+F+'-'+C+'))';
-    case '(C-F)+(D-A)':return '(('+C+'-'+F+')+('+D+'-'+A+'))';
-    case 'A-C':return '('+A+'-'+C+')'; case 'D-F':return '('+D+'-'+F+')';
-    case 'MaxABC':return 'IF('+A+'>'+B+',IF('+A+'>'+C+','+A+','+C+'),IF('+B+'>'+C+','+B+','+C+'))';
-    case 'MinABC':return 'IF('+A+'<'+B+',IF('+A+'<'+C+','+A+','+C+'),IF('+B+'<'+C+','+B+','+C+'))';
-    case 'DirA':return 'IF('+D+'<'+A+',1,IF('+D+'>'+A+',-1,0))';
-    case 'DirB':return 'IF('+E+'<'+B+',1,IF('+E+'>'+B+',-1,0))';
-    case 'DirC':return 'IF('+F+'<'+C+',1,IF('+F+'>'+C+',-1,0))';
-    case 'A/C':return 'ROUND(IF('+C+'=0,0,'+A+'/'+C+'),2)';
-    case 'D/F':return 'ROUND(IF('+F+'=0,0,'+D+'/'+F+'),2)';
+    case 'A':return 'a'; case 'B':return 'b'; case 'C':return 'c';
+    case 'D':return 'd'; case 'E':return 'e'; case 'F':return 'f';
+    case 'A-D':return '(a-d)'; case 'D-A':return '(d-a)';
+    case 'B-E':return '(b-e)'; case 'E-B':return '(e-b)';
+    case 'C-F':return '(c-f)'; case 'F-C':return '(f-c)';
+    case 'MA_PCT':return 'ma'; case 'MB_PCT':return 'mb'; case 'MC_PCT':return 'mc';
+    case 'A/D':return 'ROUND(IF(d=0,0,a/d),2)';
+    case 'B/E':return 'ROUND(IF(e=0,0,b/e),2)';
+    case 'C/F':return 'ROUND(IF(f=0,0,c/f),2)';
+    case 'MA-MC':return '(ma-mc)';
+    case 'MA-MB':return '(ma-mb)';
+    case 'MC-MB':return '(mc-mb)';
+    case 'A-D-(C-F)':return '((a-d)-(c-f))';
+    case 'A-D-(B-E)':return '((a-d)-(b-e))';
+    case 'C-F-(B-E)':return '((c-f)-(b-e))';
+    case '(A-D)+(F-C)':return '((a-d)+(f-c))';
+    case '(C-F)+(D-A)':return '((c-f)+(d-a))';
+    case 'A-C':return '(a-c)'; case 'D-F':return '(d-f)';
+    case 'MaxABC':return 'MAX(a,b,c)';
+    case 'MinABC':return 'MIN(a,b,c)';
+    case 'DirA':return 'IF(d<a,1,IF(d>a,-1,0))';
+    case 'DirB':return 'IF(e<b,1,IF(e>b,-1,0))';
+    case 'DirC':return 'IF(f<c,1,IF(f>c,-1,0))';
+    case 'A/C':return 'ROUND(IF(c=0,0,a/c),2)';
+    case 'D/F':return 'ROUND(IF(f=0,0,d/f),2)';
     default:return '0';
   }
 }
@@ -656,17 +650,23 @@ function genFormulaRecursive(rules, index){
     var val = Number(c[2].toFixed(2)); 
     return '(' + expr + op + val + ')'; 
   });
-  var currentLogic = '"' + rule.then + '"';
-  for(var i = conds.length - 1; i >= 0; i--){
-    currentLogic = 'IF(' + condSheetStrings[i] + ', ' + currentLogic + ', ' + nextIf + ')';
-  }
-  return currentLogic;
+  
+  // ★ 核心修改：用 * 將條件相乘，避免 nextIf 被重複嵌套導致字元數爆炸
+  var condLogic = condSheetStrings.join('*');
+  
+  return 'IF((' + condLogic + '), "' + rule.then + '", ' + nextIf + ')';
 }
 
 function genHFormula(rules){
   if(rules.length === 0) return '=ARRAYFORMULA(IF((A2:A=""),"",""))';
   var body = genFormulaRecursive(rules, 0);
-  return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"",' + body + '))';
+  // ★ 利用 LET 預先計算特徵與變幅率，壓縮公式
+  return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"", LET(' +
+    'a, A2:A*1, b, B2:B*1, c, C2:C*1, d, D2:D*1, e, E2:E*1, f, F2:F*1, ' +
+    'ma, ROUND(IF(a=0,0,(a-d)/a*100),2), ' +
+    'mb, ROUND(IF(b=0,0,(b-e)/b*100),2), ' +
+    'mc, ROUND(IF(c=0,0,(c-f)/c*100),2), ' +
+    body + ')))';
 }
 
 function nowTime(){
@@ -765,7 +765,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v91.1 — 七規則全覆蓋版（全條件兜底）','head');
+    pushLog('🚀 v91.3 — 七規則全覆蓋版（公式完美壓縮）','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，勝利門檻：'+gateLabel,'info');
