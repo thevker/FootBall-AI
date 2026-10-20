@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v92.1 — 無限規則（嚴格門檻 + Skip 兜底）</title>
+<title>🚀 v92.3 — 精準門檻版（每條規則必達標）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -63,12 +63,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v92.1 — 無限規則（嚴格門檻 + Skip 兜底）</h2>
+<h2>🚀 v92.3 — 精準門檻版</h2>
 
 <div class="warn-banner">
-  <b>🔥 解除數量限制：</b>系統會貪婪抓取所有符合條件的規則。<br>
-  <b>🛡️ 嚴格勝利門檻：</b>最終選出的每一條規則，本身都必須達到設定的勝場門檻。<br>
-  <b>🛑 兜底恢復：</b>最後一條規則若無利可圖，將無條件 Skip（不留強行下注）。
+  <b>🔥 精準控制每條規則的「實際生效勝場」：</b>現在系統在組裝最終公式時，會嚴格計算這條規則在「剩餘場次」裡還能贏多少場。如果贏的場次低於設定的勝利門檻（例如 5% = 23 場），該規則將被直接淘汰，絕不混入最終名單！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -490,17 +488,18 @@ async function runSingleEngine() {
     for(var i=0; i<allCondRules.length; i++) {
       var rule = allCondRules[i];
       
-      // ★ 嚴格套用勝利門檻：如果這條規則在全樣本上的勝場未達標，直接跳過不選
-      if (minWinsRequired > 0 && getWins(rule.bs, rule.thenCode) < minWinsRequired) continue;
-
       var only = bsAndNot(rule.bs, covered);
       var cnt = bsCount(only);
       if (cnt === 0) continue; 
       
+      var newWins = getWins(only, rule.thenCode);
+      
+      // ★ 核心修改：在剩餘場次中，實際能贏的場次必須 >= 勝利門檻
+      if (minWinsRequired > 0 && newWins < minWinsRequired) continue;
+
       var inc = profitOfBS(only, rule.thenCode); 
       if (optMode === 'hitrate') {
-        var w = getWins(only, rule.thenCode);
-        inc = (w / cnt) * 100;
+        inc = (cnt > 0) ? (newWins / cnt) * 100 : -Infinity;
       }
       
       if (inc > maxIncrement) {
@@ -519,7 +518,6 @@ async function runSingleEngine() {
     }
   }
 
-  // ★ 兜底改回 skip (無條件)
   finalRules.push({on:1, then:'skip', thenCode:3, conds:[], bs:bsNew(trainN)});
 
   var cleanStats = calcRulesStats(finalRules);
@@ -758,7 +756,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v92.1 — 無限規則（嚴格門檻 + Skip 兜底）','head');
+    pushLog('🚀 v92.3 — 精準門檻版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，勝利門檻：'+gateLabel,'info');
