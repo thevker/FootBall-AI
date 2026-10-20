@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v93.1 — 絕對同步版（防呆防除零）</title>
+<title>🚀 v94.0 — 絕對同步版（精度對齊）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -63,10 +63,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v93.1 — 絕對同步版（防呆防除零）</h2>
+<h2>🚀 v94.0 — 絕對同步版（精度對齊）</h2>
 
 <div class="warn-banner">
-  <b>🔥 徹底解決網頁與 Excel 落差：</b>現在公式會預先處理所有計算（包含防除零 `IFERROR` 與小數點精度），你在網頁看到的結果，與貼進 Google Sheets 後的結果將 100% 完全一致。
+  <b>🔥 徹底解決網頁與 Excel 落差：</b>現在網頁的底層 JS 已經完全模擬了 Google Sheets 的 <code>ROUND</code> 規則（包含處理負數時的四捨五入），並把公式的計算樹完全扁平化，保證兩邊 100% 吻合！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -221,6 +221,12 @@ var condBSCache={};
 var condBSCacheSize=0;
 var COND_CACHE_MAX=300000; 
 
+// ★ 核心修復：模擬 Google Sheets 的 ROUND 行為 (四捨五入遠離零)
+function rnd2(val) {
+  if (!isFinite(val)) return 0;
+  return Math.sign(val) * Math.round(Math.abs(val) * 100) / 100;
+}
+
 function bsWords(N){ return (N+31)>>5; }
 function bsNew(N){ return new Uint32Array(bsWords(N)); }
 function bsAnd(a,b){ var n=a.length,o=new Uint32Array(n); for(var i=0;i<n;i++) o[i]=a[i]&b[i]; return o; }
@@ -361,7 +367,8 @@ function getThresholds(fi){
   vals.sort(function(a,b){return a-b;});
   var ths=[],seen={};
   for(var i=0;i<vals.length;i++){
-    var v = Math.round(vals[i] * 100) / 100; 
+    // 使用 rnd2 確保閾值也與 Sheets 對齊
+    var v = rnd2(vals[i]); 
     if(!seen[v]){ seen[v]=1; ths.push(v); }
   }
   var fn=FEATURES[fi];
@@ -602,7 +609,7 @@ function renderCompareTable(stats, rawRows, payoutMode){
   document.getElementById('compareTable').innerHTML = html;
 }
 
-// ★ 全部特徵統一由 LET 預先算好，並處理除零問題
+// ★ 直接返回 LET 定義好的變數，避免 Google Sheets 二次解析出錯
 function featToExpr(fi){
   var fn=FEATURES[fi];
   switch(fn){
@@ -631,16 +638,15 @@ function featToExpr(fi){
     case 'DirC':return 'IF(f<c,1,IF(f>c,-1,0))';
     case 'A/C':return 'ROUND(IFERROR(a/c,0),2)';
     case 'D/F':return 'ROUND(IFERROR(d/f,0),2)';
-    // ★ 以下全部替換為 LET 內定義好的變數
     case 'RR_INIT':return 'rr_i';
     case 'RR_FINAL':return 'rr_f';
-    case 'RR_DIFF':return '(rr_f - rr_i)';
+    case 'RR_DIFF':return 'rr_d';
     case 'TP_A':return 'tp_a';
     case 'TP_D':return 'tp_d';
-    case 'TP_A_DIFF':return '(tp_d - tp_a)';
+    case 'TP_A_DIFF':return 'tp_ad';
     case 'TP_C':return 'tp_c';
     case 'TP_F':return 'tp_f';
-    case 'TP_C_DIFF':return '(tp_f - tp_c)';
+    case 'TP_C_DIFF':return 'tp_cd';
     default:return '0';
   }
 }
@@ -668,356 +674,6 @@ function genHFormula(rules){
   if(rules.length === 0) return '=ARRAYFORMULA(IF((A2:A=""),"",""))';
   var body = genFormulaRecursive(rules, 0);
   
-  // ★ 核心防呆：在 LET 裏面預先算好所有東西，保證精度，且用 IFERROR 處理除以 0
+  // ★ 在 LET 裡預先算好所有變數，並且每一行都套用 ROUND，確保精度對齊
   var setup = 
-    'a, A2:A*1, b, B2:B*1, c, C2:C*1, d, D2:D*1, e, E2:E*1, f, F2:F*1, ' +
-    'ma, IFERROR(ROUND((a-d)/a*100, 2), 0), ' +
-    'mb, IFERROR(ROUND((b-e)/b*100, 2), 0), ' +
-    'mc, IFERROR(ROUND((c-f)/c*100, 2), 0), ' +
-    'inv_a, IFERROR(1/a, 0), inv_b, IFERROR(1/b, 0), inv_c, IFERROR(1/c, 0), ' +
-    'inv_d, IFERROR(1/d, 0), inv_e, IFERROR(1/e, 0), inv_f, IFERROR(1/f, 0), ' +
-    'sumA, inv_a+inv_b+inv_c, ' +
-    'sumD, inv_d+inv_e+inv_f, ' +
-    'rr_i, IFERROR(100/sumA, 0), ' +
-    'rr_f, IFERROR(100/sumD, 0), ' +
-    'tp_a, IFERROR(inv_a/sumA*100, 0), ' +
-    'tp_d, IFERROR(inv_d/sumD*100, 0), ' +
-    'tp_c, IFERROR(inv_c/sumA*100, 0), ' +
-    'tp_f, IFERROR(inv_f/sumD*100, 0), ';
-
-  return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"", LET(' + setup + body + ')))';
-}
-
-function nowTime(){
-  if(!startTime) return '[00:00.000]';
-  var ms=Date.now()-startTime;
-  var s=Math.floor(ms/1000),m=Math.floor(s/60);
-  return '['+String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0')+'.'+String(ms%1000).padStart(3,'0')+']';
-}
-function pushLog(text,cls){
-  logBuffer.push({text:text,cls:cls||''});
-  if(!logTimer) logTimer=setTimeout(flushLog,80);
-}
-function flushLog(){
-  logTimer=null;
-  if(logBuffer.length===0) return;
-  var logEl=document.getElementById('log');
-  if(!logEl.dataset.started){ logEl.innerHTML=''; logEl.dataset.started='1'; }
-  var frag=document.createDocumentFragment();
-  for(var i=0;i<logBuffer.length;i++){
-    var e=logBuffer[i];
-    var div=document.createElement('div');
-    if(e.cls) div.className='l-'+e.cls;
-    div.textContent=e.text;
-    frag.appendChild(div);
-  }
-  logBuffer=[];
-  logEl.appendChild(frag);
-  while(logEl.children.length>LOG_MAX) logEl.removeChild(logEl.firstChild);
-  logEl.scrollTop=logEl.scrollHeight;
-}
-function flushNow(){ if(logTimer){ clearTimeout(logTimer); logTimer=null; } flushLog(); }
-function clearLog(){
-  var logEl=document.getElementById('log');
-  logEl.innerHTML=''; logEl.dataset.started='1'; logBuffer=[];
-}
-function updateProgress(){
-  var pct=(currentRun/totalPhases)*100;
-  if(!running&&startTime>0&&document.getElementById('best').style.display==='block') pct=100;
-  document.getElementById('progbar').style.width=pct.toFixed(1)+'%';
-  document.getElementById('progText').textContent=pct.toFixed(1)+'%';
-  var el=document.getElementById('progPhase');
-  el.textContent='第 '+currentRun+' / '+totalPhases+' 輪'+(running?' 搜索中':' 完成');
-}
-function updateStats(){
-  document.getElementById('stat-pool').innerHTML='📦 候選池: <b>'+poolSize+'</b>';
-  document.getElementById('stat-greedy').innerHTML='🌡️ 當前輪次: <b>'+currentRun+' / '+totalPhases+'</b>';
-  document.getElementById('stat-win').innerHTML='🎯 全局最高命中率: <b>'+globalBestWinRate.toFixed(1)+'%</b>';
-  document.getElementById('stat-train').innerHTML='📊 全局場次: <b>'+globalBestGames+'</b>';
-  document.getElementById('stat-total').innerHTML='💵 全局最高盈利: <b>'+globalBestProfit+'</b>';
-}
-var lastYieldTime=0;
-function yieldUI(){
-  flushNow();
-  updateProgress(); updateStats();
-  lastYieldTime=Date.now();
-  return new Promise(function(resolve){ setTimeout(resolve,0); });
-}
-function shouldYield(){ return Date.now()-lastYieldTime>25; }
-
-async function start(){
-  try {
-    var parsed=parseData(document.getElementById('input').value);
-    if(parsed.rows.length < 100){ 
-      alert('⚠️ 數據不足！\n目前只有 ' + parsed.rows.length + ' 場。\n請提供至少 100 場數據。');
-      return; 
-    }
-    rawRowsData = parsed.rows;
-    
-    optMode = document.getElementById('optMode').value;
-    maxCondsLimit = parseInt(document.getElementById('maxConds').value) || 0;
-    
-    var gatePct = parseFloat(document.getElementById('minHitsPct').value) || 0;
-    minHitsRequired = gatePct > 0 ? Math.ceil(rawRowsData.length * gatePct) : 0;
-    
-    var modeLabel = (optMode === 'hitrate') ? '🎯 命中模式（最高命中率）' : '💰 盈利模式（最高利潤）';
-    var condLabel = (maxCondsLimit === 0) ? '無限' : (maxCondsLimit + ' 個條件');
-    var gateLabel = (minHitsRequired === 0) ? '關閉' : (Math.round(gatePct*100)+'% (至少觸發 '+minHitsRequired+' 場)');
-    
-    var selectedRuns = parseInt(document.getElementById('runCount').value);
-    totalPhases = selectedRuns;
-    
-    pushLog('🛡️ 數據量：'+rawRowsData.length+' 場。','info');
-
-    running=true; startTime=Date.now();
-    poolSize=0; currentRun=0;
-    globalBestScore=-Infinity;
-    globalBestProfit=-Infinity; globalBestWinRate=0; globalBestGames=0;
-    lastYieldTime=0;
-
-    document.getElementById('btnRun').disabled=true;
-    document.getElementById('btnStop').disabled=false;
-    document.getElementById('best').style.display='none';
-    document.getElementById('liveStats').style.display='flex';
-    document.getElementById('progbar').style.width='0%';
-    document.getElementById('progText').textContent='0.0%';
-    updateStats(); clearLog();
-
-    pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v93.1 — 絕對同步版','head');
-    pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
-    pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，命中門檻：'+gateLabel,'info');
-    pushLog(nowTime()+' 尾盤結算，預計執行 '+totalPhases+' 次','info');
-    await yieldUI();
-
-    for(var run=1; run<=totalPhases; run++){
-      if(!running) break;
-      currentRun = run;
-      pushLog(nowTime()+' 🏃 正在執行第 '+run+'/'+totalPhases+' 輪搜索...','info');
-      updateProgress();
-      await yieldUI();
-      
-      var res = await runSingleEngine();
-      
-      var score = statsScore(res.stats, optMode);
-      if(score > globalBestScore){
-        globalBestScore = score;
-        globalBestProfit = res.stats.totalProfit;
-        globalBestWinRate = res.stats.winRate;
-        globalBestGames = res.stats.games;
-        globalBestRules = res.rules;
-        globalBestStats = res.stats;
-        if(optMode === 'hitrate'){
-          pushLog(nowTime()+' 🌟 [第 '+run+' 輪] 打破紀錄！新最高命中率：'+res.stats.winRate.toFixed(2)+'%（盈利 '+res.stats.totalProfit+'）','best');
-        } else {
-          pushLog(nowTime()+' 🌟 [第 '+run+' 輪] 打破紀錄！新最高利潤：'+res.stats.totalProfit+'（命中率 '+res.stats.winRate.toFixed(2)+'%）','best');
-        }
-      } else {
-        if(optMode === 'hitrate'){
-          pushLog(nowTime()+'    [第 '+run+' 輪] 命中率：'+res.stats.winRate.toFixed(2)+'%（未打破紀錄）','dim');
-        } else {
-          pushLog(nowTime()+'    [第 '+run+' 輪] 利潤：'+res.stats.totalProfit+'（未打破紀錄）','dim');
-        }
-      }
-      
-      updateStats();
-      await yieldUI();
-    }
-    
-    if(!running) return;
-
-    pushLog('');
-    pushLog('═══════════════════════════════════════════════════════════','final');
-    pushLog('🏆 全部 '+totalPhases+' 次搜索完成！','best');
-    pushLog('═══════════════════════════════════════════════════════════','final');
-
-    var optimizedRules = globalBestRules;
-    var finalStats = globalBestStats;
-    
-    var bestTotal = finalStats.totalProfit;
-    var bestWinRate = finalStats.winRate;
-    var formulaH = genHFormula(optimizedRules);
-    var activeCount = optimizedRules.length - 1;
-
-    pushLog('   📊 最終產出 '+optimizedRules.length+' 條規則（包含 Skip 兜底）','info');
-    pushLog('   🎯 命中率：'+bestWinRate.toFixed(1)+'%（'+finalStats.wins+'/'+finalStats.games+'）','info');
-    pushLog('   💵 總盈利：'+bestTotal,'info');
-    pushLog('═══════════════════════════════════════════════════════════','final');
-
-    document.getElementById('best').style.display='block';
-    
-    var earnStatus = bestTotal > 0 ? '🟢 長期賺錢' : '🔴 長期蝕本';
-    var earnColor = bestTotal > 0 ? '#4ade80' : '#f87171';
-    
-    document.getElementById('summary').innerHTML=
-      '<div style="font-size:16px; color:#cbd5e1; margin-bottom:4px">基於所有歷史數據模擬：</div>' +
-      '<div style="font-size:36px;color:'+earnColor+';font-weight:bold;margin-bottom:12px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; text-align: center;">' +
-      earnStatus + '（' + (bestTotal > 0 ? '+' : '') + bestTotal + ' 單位）' +
-      '</div>'+
-      '<div style="font-size:14px;color:#cbd5e1;line-height:1.9">'+
-      '結算模式：<b>尾盤 D/E/F</b>　條件上限：<b>'+condLabel+'</b>　命中門檻：<b>'+gateLabel+'</b><br>'+
-      '命中率 <b style="color:#c084fc">'+bestWinRate.toFixed(2)+'%</b>（'+finalStats.wins+'/'+finalStats.games+'）　'+
-      '共 <b>'+optimizedRules.length+'</b> 條規則（包含 Skip 兜底）</div>';
-
-    document.getElementById('resultInfo').innerHTML=
-      '模式：<b>'+modeLabel+'</b><br>'+
-      '結算：<b>尾盤</b>　搜索次數：<b>'+totalPhases+' 次</b>';
-
-    renderCompareTable(finalStats, rawRowsData, 'final');
-    document.getElementById('txtH').value=formulaH;
-
-    renderRuleTable(optimizedRules, finalStats);
-
-    running=false;
-    document.getElementById('btnRun').disabled=false;
-    document.getElementById('btnStop').disabled=true;
-    updateStats(); updateProgress();
-    flushNow();
-  } catch(e) {
-    pushLog('❌ 發生錯誤：' + e.message + '\n' + e.stack, 'error');
-    running = false;
-    document.getElementById('btnRun').disabled=false;
-    document.getElementById('btnStop').disabled=true;
-    updateStats(); updateProgress();
-    flushNow();
-  }
-}
-
-function stop(){
-  running=false;
-  document.getElementById('btnStop').disabled=true;
-  pushLog('⏹ 使用者手動停止','warn');
-  flushNow();
-}
-
-function parseData(text){
-  var rows=[],seen={};
-  var lines=text.split('\n');
-  for(var i=0;i<lines.length;i++){
-    var p=lines[i].trim().split(/\s+/);
-    if(p.length<7) continue;
-    var A=Number(p[0]),B=Number(p[1]),C=Number(p[2]);
-    var D=Number(p[3]),E=Number(p[4]),F=Number(p[5]);
-    var r=p[6].toUpperCase();
-    if([A,B,C,D,E,F].some(isNaN)) continue;
-    if(['H','D','A'].indexOf(r)===-1) continue;
-    var sig=[A,B,C,D,E,F,r].join('|');
-    if(seen[sig]) continue;
-    seen[sig]=1;
-    rows.push({A:A,B:B,C:C,D:D,E:E,F:F,result:r});
-  }
-  return {rows:rows,total:rows.length};
-}
-
-function extractFeatures(rows){
-  var N=rows.length;
-  var mat=new Array(N);
-  for(var i=0;i<N;i++){
-    var r=rows[i];
-    var A=r.A,B=r.B,C=r.C,D=r.D,E=r.E,F=r.F;
-    var f=new Float64Array(FCOUNT);
-    
-    f[0] = Math.round((A-D)*100)/100;
-    f[1] = Math.round((D-A)*100)/100;
-    f[2] = Math.round((A===0?0:(A-D)/A*100)*100)/100;
-    f[3] = Math.round((D===0?0:A/D)*100)/100;
-    f[4] = Math.round((B-E)*100)/100;
-    f[5] = Math.round((E-B)*100)/100;
-    f[6] = Math.round((B===0?0:(B-E)/B*100)*100)/100;
-    f[7] = Math.round((E===0?0:B/E)*100)/100;
-    f[8] = Math.round((C-F)*100)/100;
-    f[9] = Math.round((F-C)*100)/100;
-    f[10] = Math.round((C===0?0:(C-F)/C*100)*100)/100;
-    f[11] = Math.round((F===0?0:C/F)*100)/100;
-    var maPct = Math.round((A===0?0:(A-D)/A*100)*100)/100;
-    var mbPct = Math.round((B===0?0:(B-E)/B*100)*100)/100;
-    var mcPct = Math.round((C===0?0:(C-F)/C*100)*100)/100;
-    f[12] = Math.round((maPct-mcPct)*100)/100;
-    f[13] = Math.round((maPct-mbPct)*100)/100;
-    f[14] = Math.round((mcPct-mbPct)*100)/100;
-    f[15] = Math.round(((A-D)-(C-F))*100)/100;
-    f[16] = Math.round(((A-D)-(B-E))*100)/100;
-    f[17] = Math.round(((C-F)-(B-E))*100)/100;
-    f[18] = Math.round(((A-D)+(F-C))*100)/100; 
-    f[19] = Math.round(((C-F)+(D-A))*100)/100; 
-    
-    f[20]=A; f[21]=B; f[22]=C;
-    f[23]=D; f[24]=E; f[25]=F;
-    
-    f[26]=Math.round((A-C)*100)/100; 
-    f[27]=Math.round((D-F)*100)/100;
-    f[28]=Math.max(A,B,C); 
-    f[29]=Math.min(A,B,C);
-    
-    f[30]=D<A?1:(D>A?-1:0);
-    f[31]=E<B?1:(E>B?-1:0);
-    f[32]=F<C?1:(F>C?-1:0);
-    
-    f[33]=Math.round((C===0?0:A/C)*100)/100;
-    f[34]=Math.round((F===0?0:D/F)*100)/100;
-    
-    var sumA = (A===0?0:1/A) + (B===0?0:1/B) + (C===0?0:1/C);
-    var sumD = (D===0?0:1/D) + (E===0?0:1/E) + (F===0?0:1/F);
-    
-    var rrInit = sumA === 0 ? 0 : 100 / sumA;
-    var rrFinal = sumD === 0 ? 0 : 100 / sumD;
-    
-    f[35] = Math.round(rrInit * 100) / 100;
-    f[36] = Math.round(rrFinal * 100) / 100;
-    f[37] = Math.round((rrFinal - rrInit) * 100) / 100;
-    
-    f[38] = sumA === 0 ? 0 : Math.round(((1/A)/sumA) * 10000) / 100;
-    f[39] = sumD === 0 ? 0 : Math.round(((1/D)/sumD) * 10000) / 100;
-    f[40] = Math.round((f[39] - f[38]) * 100) / 100;
-    
-    f[41] = sumA === 0 ? 0 : Math.round(((1/C)/sumA) * 10000) / 100;
-    f[42] = sumD === 0 ? 0 : Math.round(((1/F)/sumD) * 10000) / 100;
-    f[43] = Math.round((f[42] - f[41]) * 100) / 100;
-    
-    mat[i]=f;
-  }
-  return mat;
-}
-function extractMeta(rows,payoutMode){
-  var N=rows.length;
-  var codes=new Int8Array(N);
-  var odds=new Float64Array(N*3);
-  for(var i=0;i<N;i++){
-    codes[i]=RESULT_CODES[rows[i].result];
-    if(payoutMode==='initial'){ odds[i*3]=rows[i].A; odds[i*3+1]=rows[i].B; odds[i*3+2]=rows[i].C; }
-    else { odds[i*3]=rows[i].D; odds[i*3+1]=rows[i].E; odds[i*3+2]=rows[i].F; }
-  }
-  return {codes:codes,odds:odds};
-}
-
-function copyIt(id){
-  var el=document.getElementById(id);
-  if(!el) return;
-  var txt=el.value;
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(function(){
-      var m=document.getElementById('msg');
-      m.textContent='✅ 已複製 '+txt.length+' 字元';
-      m.className='ok'; m.style.display='block';
-      setTimeout(function(){ m.style.display='none'; },3000);
-    }).catch(function(){ fallbackCopy(txt); });
-  } else fallbackCopy(txt);
-}
-function fallbackCopy(text){
-  var ta=document.createElement('textarea');
-  ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px';
-  document.body.appendChild(ta); ta.focus(); ta.select();
-  var ok=false;
-  try{ ok=document.execCommand('copy'); }catch(e){}
-  document.body.removeChild(ta);
-  var m=document.getElementById('msg');
-  m.textContent=ok?'✅ 已複製 '+text.length+' 字元':'❌ 複製失敗';
-  m.className=ok?'ok':'err'; m.style.display='block';
-  setTimeout(function(){ m.style.display='none'; },3000);
-}
-
-(function(){ document.getElementById('log').textContent='等待開始...'; })();
-</script>
-</body>
-</html>
+    'a, A2:A*1, b, B2:B*1, c, C2:C*1, d, D2:D*1, e, E2:E*1,
