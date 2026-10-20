@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v95.0 — 遺傳進化版（終極算法）</title>
+<title>🚀 v95.1 — 遺傳進化版（穩定版）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -65,14 +65,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v95.0 — 遺傳進化版（終極算法）</h2>
+<h2>🚀 v95.1 — 遺傳進化版（穩定版）</h2>
 
 <div class="warn-banner">
-  <b>🧬 全新進化引擎：</b>
-  <br>① 拋棄單體爬山，改用 <b>遺傳算法 (GA)</b>，一次評估一整套規則組合。
-  <br>② <b>優勝劣汰</b>：自動保留歷史最強規則，淘汰虧錢組合。
-  <br>③ <b>交叉繁衍</b>：將最強規則互相融合，產生 1+1>2 的奇蹟。
-  <br>④ <b>基因突變</b>：偶爾微調閾值，防止卡在局部最優。此版本運算量極大，請耐心等待進化完成。
+  <b>🧬 修復與優化：</b>
+  <br>① 修復了精英複製導致的 <code>Uint32Array</code> 丟失問題。
+  <br>② 初始化與繁衍迴圈加入實時 <code>yield</code>，進化過程不會假死。
+  <br>③ 保留「遺傳、爬山、決策樹」三種模式，預設為 <b>遺傳進化</b>。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -384,7 +383,7 @@ async function buildSinglesAsync(){
   return singles;
 }
 
-// ⛰️ 爬山法（保留）
+// ⛰️ 爬山法
 async function runHillClimb() {
   var singles = precomputedSingles;
   if(!singles || singles.length === 0) return { rules:[], stats:{totalProfit:0, winRate:0, games:0}, fallbackInfo:null };
@@ -436,7 +435,7 @@ async function runHillClimb() {
       }
       if (globalBest.score > -Infinity && bsCount(globalBest.bs) > 0) {
         var isDup = allCondRules.some(function(r){ return JSON.stringify(r.conds) === JSON.stringify(globalBest.conds); });
-        if(!isDup) allCondRules.push({ on: 1, then: RESULTS[tOfcBS], thenCode: tc(, conds:only globalBest.conds, bs: globalBest,.bs });
+        if(!isDup) allCondRules.push({ on: 1, then: RESULTS[tc], thenCode: tc, conds: globalBest.conds, bs: globalBest.bs });
       }
     }
   }
@@ -447,7 +446,7 @@ async function runHillClimb() {
     for(var i=0; i<allCondRules.length; i++) {
       var rule = allCondRules[i], only = bsAndNot(rule.bs, covered), cnt = bsCount(only);
       if (cnt === 0 || (minHitsRequired > 0 && cnt < minHitsRequired)) continue; 
-      var inc = profit rule.thenCode); 
+      var inc = profitOfBS(only, rule.thenCode); 
       if (optMode === 'hitrate') inc = (getWins(only, rule.thenCode) / cnt) * 100;
       if (inc > maxIncrement) { maxIncrement = inc; bestIdx = i; }
     }
@@ -460,7 +459,7 @@ async function runHillClimb() {
   return { rules: fbRes.rules, stats: calcRulesStats(fbRes.rules), fallbackInfo: fbRes.fallbackInfo };
 }
 
-// 🌳 決策樹（保留）
+// 🌳 決策樹
 function getBestLeaf(bs){
   var total = bsCount(bs);
   if(total === 0) return { code: 3, score: 0, profit: 0, wins: 0, games: 0, winRate: 0 };
@@ -514,6 +513,15 @@ function extractRules(node, currentConds, rules){
 // 🧬 遺傳進化核心
 function getRandomPoolItem(pool) { return pool[Math.floor(Math.random() * pool.length)]; }
 
+function cloneInd(ind) {
+  var newRules = [];
+  for (var i=0; i<ind.rules.length; i++) {
+    var r = ind.rules[i];
+    newRules.push({ cond: r.cond, thenCode: r.thenCode, bs: r.bs, fi: r.fi }); // bs 直接引用（Uint32Array）
+  }
+  return { rules: newRules, eval: ind.eval };
+}
+
 function evaluateIndividual(ind) {
   var covered = bsNew(trainN);
   var totalProfit = 0, games = 0, wins = 0;
@@ -562,7 +570,7 @@ function evaluateIndividual(ind) {
 
 function createRandomIndividual(pool, maxRules) {
   var rules = [], usedFeatures = {};
-  var ruleCount = Math.min(maxRules === 0 ? 10 : maxRules, 15); // 如果無限，預設給10~15條
+  var ruleCount = Math.min(maxRules === 0 ? 10 : maxRules, 15); 
   ruleCount = Math.floor(Math.random() * 5) + 3; // 隨機 3~7 條起步
   
   var safeCount = 0;
@@ -579,7 +587,6 @@ function createRandomIndividual(pool, maxRules) {
 
 function crossover(pA, pB, maxRules) {
   var combined = pA.rules.concat(pB.rules);
-  // 洗牌
   for (var i = combined.length - 1; i > 0; i--) {
     var j = Math.floor(Math.random() * (i + 1));
     var temp = combined[i]; combined[i] = combined[j]; combined[j] = temp;
@@ -602,21 +609,18 @@ function mutate(ind, pool, maxRules) {
   var mutType = Math.random();
   
   if (mutType < 0.5) {
-    // 突變點：替換一條規則
     var idx = Math.floor(Math.random() * ind.rules.length);
     var cand = getRandomPoolItem(pool);
     var overlap = false;
     for(var i=0; i<ind.rules.length; i++){ if(i !== idx && ind.rules[i].fi === cand.fi) { overlap = true; break; } }
     if(!overlap) ind.rules[idx] = { cond: cand.cond, thenCode: cand.thenCode, bs: cand.bs, fi: cand.fi };
   } else if (mutType < 0.8) {
-    // 突變點：增加一條新規則
     if (maxRules > 0 && ind.rules.length >= maxRules) return;
     var cand = getRandomPoolItem(pool);
     var overlap = false;
     for(var i=0; i<ind.rules.length; i++){ if(ind.rules[i].fi === cand.fi) { overlap = true; break; } }
     if(!overlap) ind.rules.push({ cond: cand.cond, thenCode: cand.thenCode, bs: cand.bs, fi: cand.fi });
   } else {
-    // 突變點：刪除一條規則 (至少要留1條)
     if (ind.rules.length > 1) {
       ind.rules.splice(Math.floor(Math.random() * ind.rules.length), 1);
     }
@@ -631,11 +635,13 @@ async function runGeneticEngine() {
   var maxRules = maxCondsLimit === 0 ? 15 : maxCondsLimit;
   
   // 1. 初始化種群
+  pushLog(nowTime()+' 🧬 初始化種群...', 'info');
   var population = [];
   for (var i=0; i<POP_SIZE; i++) {
     var ind = createRandomIndividual(pool, maxRules);
     ind.eval = evaluateIndividual(ind);
     population.push(ind);
+    if (i % 5 === 0) await yieldUI();
   }
   
   var globalBestInd = null;
@@ -645,34 +651,32 @@ async function runGeneticEngine() {
     if(!running) break;
     currentRun = gen;
     
-    // 排序（適應度從高到低）
     population.sort(function(a,b){ return b.eval.fitness - a.eval.fitness; });
     
     if (!globalBestInd || population[0].eval.fitness > globalBestInd.eval.fitness) {
-      globalBestInd = JSON.parse(JSON.stringify(population[0]));
+      globalBestInd = cloneInd(population[0]);
     }
     
-    // 下一代替換
     var nextGen = [];
-    var eliteCount = Math.max(2, Math.floor(POP_SIZE * 0.1)); // 保留前 10% 精英
+    var eliteCount = Math.max(2, Math.floor(POP_SIZE * 0.1)); 
     for (var e=0; e<eliteCount; e++) {
-      nextGen.push(JSON.parse(JSON.stringify(population[e])));
+      nextGen.push(cloneInd(population[e]));
     }
     
     while (nextGen.length < POP_SIZE) {
-      // 錦標賽選擇
       var pA = population[Math.floor(Math.random() * Math.min(10, POP_SIZE))];
       var pB = population[Math.floor(Math.random() * Math.min(10, POP_SIZE))];
       
       var child = crossover(pA, pB, maxRules);
-      if (Math.random() < 0.3) mutate(child, pool, maxRules); // 30% 突變率
+      if (Math.random() < 0.3) mutate(child, pool, maxRules); 
       
       child.eval = evaluateIndividual(child);
       nextGen.push(child);
+      
+      if (nextGen.length % 5 === 0) await yieldUI();
     }
     population = nextGen;
     
-    // UI 更新
     if (gen % 5 === 0 || gen === totalPhases) {
       updateStats();
       var p = population[0].eval;
@@ -683,10 +687,8 @@ async function runGeneticEngine() {
     }
   }
   
-  // 3. 最終輸出
   var bestRules = globalBestInd.rules;
   
-  // 重新跑一次計算，並生成完整結構 (包含兜底)
   var covered = bsNew(trainN);
   for (var r=0; r<bestRules.length; r++) bsOrInPlace(covered, bestRules[r].bs);
   var fbRes = applyFallbackLogic(bestRules, covered);
@@ -722,10 +724,9 @@ function applyFallbackLogic(finalRules, covered) {
       fallbackInfo = { remainCnt, bestDir:RESULTS[bestDir], bestDirCode:bestDir, profit:bestDirProfit, dirProfits, mode:'skip', reason };
     }
   }
-  // 重組結構以符合輸出格式
   var formattedRules = finalRules.map(function(r){
     if(r.conds) return r;
-    return { on:1, then:r.then, thenCode:r.thenCode, conds:[r.cond] }; // 兼容爬山和樹
+    return { on:1, then:r.then, thenCode:r.thenCode, conds:[r.cond] }; 
   });
   return { rules: formattedRules, fallbackInfo: fallbackInfo };
 }
@@ -848,7 +849,7 @@ async function start(){
     document.getElementById('progbar').style.width='0%'; document.getElementById('progText').textContent='0.0%';
     updateStats(); clearLog();
 
-    pushLog('🚀 v95.0 — ' + (algoMode==='genetic'?'遺傳進化 (Genetic Algorithm)':(algoMode==='hill-climb'?'隨機爬山':'決策樹')), 'head');
+    pushLog('🚀 v95.1 — ' + (algoMode==='genetic'?'遺傳進化 (Genetic Algorithm)':(algoMode==='hill-climb'?'隨機爬山':'決策樹')), 'head');
     pushLog(nowTime()+' 資料：'+rawRowsData.length+' 筆，條件上限：'+condLabel, 'success');
     await yieldUI();
 
@@ -860,7 +861,6 @@ async function start(){
     allMask = bsNew(trainN);
     for(var i=0; i<trainN; i++) allMask[i>>5] |= (1<<(i&31));
 
-    // ⚙️ 預計算
     var initStart = Date.now();
     precomputedSingles = await buildSinglesAsync();
     poolSize = precomputedSingles.length;
@@ -874,7 +874,6 @@ async function start(){
       res = await runGeneticEngine();
     } else if (algoMode === 'hill-climb') {
       pushLog(nowTime()+' ⛰️ 開始爬山搜索 '+totalPhases+' 輪...', 'info');
-      // 簡化處理，爬山直接跑 globalBest
       for(var run=1; run<=totalPhases; run++){
         if(!running) break; currentRun = run; await yieldUI();
         var r = await runHillClimb();
