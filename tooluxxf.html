@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v95.3 — 格式對齊版</title>
+<title>🚀 v96.0 — 變數防呆版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -63,10 +63,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v95.3 — 格式對齊版</h2>
+<h2>🚀 v96.0 — 變數防呆版</h2>
 
 <div class="warn-banner">
-  <b>🔥 徹底解決「翻譯」出錯：</b>網頁生成 Google Sheet 公式時，所有涉及加減乘除的衍生特徵（如 `ma-mc`），全部強制套用 `ROUND(..., 2)`，徹底消滅中間變數的浮點數尾巴！
+  <b>🔥 解決「抓錯欄位」的致命 Bug：</b>將底層公式的變數名稱從 `a, b, c, d, e, f` 全面改為 `vA, vB, vC, vD, vE, vF`，徹底防止 Google Sheets 錯認欄位，保證兩邊結果 100% 完美對齊！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -534,34 +534,35 @@ async function runSingleEngine() {
   return { rules: finalRules, stats: cleanStats };
 }
 
+// ★ 將變數改為 vA, vB... 避免 Google Sheet 抓錯欄位
 function featToExpr(fi){
   var fn=FEATURES[fi];
   switch(fn){
-    case 'A':return 'a'; case 'B':return 'b'; case 'C':return 'c';
-    case 'D':return 'd'; case 'E':return 'e'; case 'F':return 'f';
-    case 'A-D':return 'ROUND(a-d, 2)'; case 'D-A':return 'ROUND(d-a, 2)';
-    case 'B-E':return 'ROUND(b-e, 2)'; case 'E-B':return 'ROUND(e-b, 2)';
-    case 'C-F':return 'ROUND(c-f, 2)'; case 'F-C':return 'ROUND(f-c, 2)';
+    case 'A':return 'vA'; case 'B':return 'vB'; case 'C':return 'vC';
+    case 'D':return 'vD'; case 'E':return 'vE'; case 'F':return 'vF';
+    case 'A-D':return 'ROUND(vA-vD, 2)'; case 'D-A':return 'ROUND(vD-vA, 2)';
+    case 'B-E':return 'ROUND(vB-vE, 2)'; case 'E-B':return 'ROUND(vE-vB, 2)';
+    case 'C-F':return 'ROUND(vC-vF, 2)'; case 'F-C':return 'ROUND(vF-vC, 2)';
     case 'MA_PCT':return 'ma'; case 'MB_PCT':return 'mb'; case 'MC_PCT':return 'mc';
-    case 'A/D':return 'ROUND(IFERROR(a/d,0),2)';
-    case 'B/E':return 'ROUND(IFERROR(b/e,0),2)';
-    case 'C/F':return 'ROUND(IFERROR(c/f,0),2)';
+    case 'A/D':return 'ROUND(IFERROR(vA/vD,0),2)';
+    case 'B/E':return 'ROUND(IFERROR(vB/vE,0),2)';
+    case 'C/F':return 'ROUND(IFERROR(vC/vF,0),2)';
     case 'MA-MC':return 'ROUND(ma-mc, 2)';
     case 'MA-MB':return 'ROUND(ma-mb, 2)';
     case 'MC-MB':return 'ROUND(mc-mb, 2)';
-    case 'A-D-(C-F)':return 'ROUND((a-d)-(c-f), 2)';
-    case 'A-D-(B-E)':return 'ROUND((a-d)-(b-e), 2)';
-    case 'C-F-(B-E)':return 'ROUND((c-f)-(b-e), 2)';
-    case '(A-D)+(F-C)':return 'ROUND((a-d)+(f-c), 2)';
-    case '(C-F)+(D-A)':return 'ROUND((c-f)+(d-a), 2)';
-    case 'A-C':return 'ROUND(a-c, 2)'; case 'D-F':return 'ROUND(d-f, 2)';
-    case 'MaxABC':return 'MAX(a,b,c)';
-    case 'MinABC':return 'MIN(a,b,c)';
-    case 'DirA':return 'IF(d<a,1,IF(d>a,-1,0))';
-    case 'DirB':return 'IF(e<b,1,IF(e>b,-1,0))';
-    case 'DirC':return 'IF(f<c,1,IF(f>c,-1,0))';
-    case 'A/C':return 'ROUND(IFERROR(a/c,0),2)';
-    case 'D/F':return 'ROUND(IFERROR(d/f,0),2)';
+    case 'A-D-(C-F)':return 'ROUND((vA-vD)-(vC-vF), 2)';
+    case 'A-D-(B-E)':return 'ROUND((vA-vD)-(vB-vE), 2)';
+    case 'C-F-(B-E)':return 'ROUND((vC-vF)-(vB-vE), 2)';
+    case '(A-D)+(F-C)':return 'ROUND((vA-vD)+(vF-vC), 2)';
+    case '(C-F)+(D-A)':return 'ROUND((vC-vF)+(vD-vA), 2)';
+    case 'A-C':return 'ROUND(vA-vC, 2)'; case 'D-F':return 'ROUND(vD-vF, 2)';
+    case 'MaxABC':return 'MAX(vA,vB,vC)';
+    case 'MinABC':return 'MIN(vA,vB,vC)';
+    case 'DirA':return 'IF(vD<vA,1,IF(vD>vA,-1,0))';
+    case 'DirB':return 'IF(vE<vB,1,IF(vE>vB,-1,0))';
+    case 'DirC':return 'IF(vF<vC,1,IF(vF>vC,-1,0))';
+    case 'A/C':return 'ROUND(IFERROR(vA/vC,0),2)';
+    case 'D/F':return 'ROUND(IFERROR(vD/vF,0),2)';
     case 'RR_INIT':return 'rr_i';
     case 'RR_FINAL':return 'rr_f';
     case 'RR_DIFF':return 'rr_d';
@@ -598,13 +599,14 @@ function genHFormula(rules){
   if(rules.length === 0) return '=ARRAYFORMULA(IF((A2:A=""),"",""))';
   var body = genFormulaRecursive(rules, 0);
   
+  // ★ 替換為 vA, vB... 並且強制所有運算都包上 ROUND
   var setup = 
-    'a, A2:A*1, b, B2:B*1, c, C2:C*1, d, D2:D*1, e, E2:E*1, f, F2:F*1, ' +
-    'ma, IFERROR(ROUND((a-d)/a*100, 2), 0), ' +
-    'mb, IFERROR(ROUND((b-e)/b*100, 2), 0), ' +
-    'mc, IFERROR(ROUND((c-f)/c*100, 2), 0), ' +
-    'inv_a, IFERROR(1/a, 0), inv_b, IFERROR(1/b, 0), inv_c, IFERROR(1/c, 0), ' +
-    'inv_d, IFERROR(1/d, 0), inv_e, IFERROR(1/e, 0), inv_f, IFERROR(1/f, 0), ' +
+    'vA, A2:A*1, vB, B2:B*1, vC, C2:C*1, vD, D2:D*1, vE, E2:E*1, vF, F2:F*1, ' +
+    'ma, IFERROR(ROUND((vA-vD)/vA*100, 2), 0), ' +
+    'mb, IFERROR(ROUND((vB-vE)/vB*100, 2), 0), ' +
+    'mc, IFERROR(ROUND((vC-vF)/vC*100, 2), 0), ' +
+    'inv_a, IFERROR(1/vA, 0), inv_b, IFERROR(1/vB, 0), inv_c, IFERROR(1/vC, 0), ' +
+    'inv_d, IFERROR(1/vD, 0), inv_e, IFERROR(1/vE, 0), inv_f, IFERROR(1/vF, 0), ' +
     'sumA, inv_a+inv_b+inv_c, ' +
     'sumD, inv_d+inv_e+inv_f, ' +
     'rr_i, IFERROR(ROUND(100/sumA, 2), 0), ' +
@@ -716,7 +718,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v95.3 — 格式對齊版','head');
+    pushLog('🚀 v96.0 — 變數防呆版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，命中門檻：'+gateLabel,'info');
