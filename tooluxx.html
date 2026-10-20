@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v89.1 — 終極實戰版（修復卡死）</title>
+<title>🚀 v89.2 — 終極實戰版（利潤優先 + 勝利門檻）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -38,13 +38,14 @@ th{background:#0f172a;color:#94a3b8}
 </head>
 <body>
 
-<h2>🚀 v89.1 — 終極實戰版（修復卡死）</h2>
+<h2>🚀 v89.2 — 終極實戰版（利潤優先 + 勝利門檻）</h2>
 
 <div class="warn-banner" style="background:#1e293b; padding:12px; border-radius:6px; color:#cbd5e1; font-size:13px; margin-bottom:12px;">
   <b>💡 實戰核心理念：</b><br>
   1. 嚴格三集切分（訓練60%、驗證20%、測試20%）。<br>
-  2. 加入了**凱利公式**，告訴你每場該下注總資金的百分之幾。<br>
-  3. 展示**最大回撤 (MDD)** 與 **資金曲線**，確保策略不會讓你破產。
+  2. 純利潤優先模式，並可設定最低勝場門檻，過濾垃圾規則。<br>
+  3. 內建凱利公式計算，告訴你每場該下注總資金的百分之幾。<br>
+  4. 展示最大回撤 (MDD) 與資金曲線，確保策略不會讓你破產。
 </div>
 
 <textarea id="input" placeholder="請貼上歷史數據（A B C D E F 結果），至少 100 場。"></textarea>
@@ -52,11 +53,20 @@ th{background:#0f172a;color:#94a3b8}
 <div class="row">
   <button id="btnRun" class="hero" onclick="start()">🚀 啟動訓練與驗證</button>
   <button id="btnCopy" class="copy" onclick="copyIt('txtH')">📋 複製 H2 公式</button>
-  <label>🎯 模式：</label>
-  <select id="optMode">
-    <option value="profit">💰 利潤優先</option>
-    <option value="hitrate">🎯 勝率優先</option>
+
+  <label>🛡️ 勝利門檻：</label>
+  <select id="minHitsPct">
+    <option value="0" selected>關閉</option>
+    <option value="0.05">5%</option>
+    <option value="0.10">10%</option>
+    <option value="0.15">15%</option>
+    <option value="0.20">20%</option>
+    <option value="0.25">25%</option>
+    <option value="0.30">30%</option>
+    <option value="0.35">35%</option>
+    <option value="0.40">40%</option>
   </select>
+
   <label>🔄 搜索次數：</label>
   <select id="runCount">
     <option value="50">50 次 (極速)</option>
@@ -139,6 +149,7 @@ let running = false;
 let trainDS, validDS, testDS;
 let tFeat, tRes, tOdds, tN;
 let bsCache = {};
+let minWinsRequired = 0;
 
 function getWinsAndProfit(bs, thenCode, res, odds, N) {
   let wins = 0, games = 0, profit = 0;
@@ -203,7 +214,7 @@ function getBS(f, op, thr) {
   return bs;
 }
 
-async function searchForClass(tc, baseSingles, mode) {
+async function searchForClass(tc, baseSingles) {
   let classSingles = baseSingles.filter(s => s.tc === tc);
   if(classSingles.length === 0) return null;
   
@@ -215,7 +226,7 @@ async function searchForClass(tc, baseSingles, mode) {
   };
   
   let cStats = getWinsAndProfit(current.bs, tc, tRes, tOdds, tN);
-  current.score = mode === 'hitrate' ? (cStats.games>0?cStats.wins/cStats.games*100:-999) : cStats.profit;
+  current.score = cStats.profit;
   
   let globalBest = { conds: current.conds.slice(), bs: current.bs, score: current.score };
   
@@ -250,9 +261,11 @@ async function searchForClass(tc, baseSingles, mode) {
     }
     
     let nStats = getWinsAndProfit(newBS, tc, tRes, tOdds, tN);
-    if(nStats.games === 0) continue;
     
-    let nScore = mode === 'hitrate' ? (nStats.wins/nStats.games*100) : nStats.profit;
+    // 勝利門檻檢查
+    if(nStats.games === 0 || (minWinsRequired > 0 && nStats.wins < minWinsRequired)) continue;
+    
+    let nScore = nStats.profit; // 純利潤優先
     
     if(nScore > current.score) {
       current = { conds: testConds, bs: newBS, score: nScore };
@@ -293,13 +306,16 @@ async function start() {
     tFeat = trainDS.feat; tRes = trainDS.res; tOdds = trainDS.odds; tN = trainDS.N;
     bsCache = {};
     
-    let mode = document.getElementById('optMode').value;
+    // ★ 讀取最低勝場門檻
+    let gatePct = parseFloat(document.getElementById('minHitsPct').value) || 0;
+    minWinsRequired = gatePct > 0 ? Math.ceil(tN * gatePct) : 0;
+    
     let runs = parseInt(document.getElementById('runCount').value);
     
     running = true;
     document.getElementById('btnRun').disabled = true;
     document.getElementById('resultArea').style.display = 'none';
-    document.getElementById('log').innerHTML = '⏳ 正在生成單條件特徵池...<br>';
+    document.getElementById('log').innerHTML = `⏳ 正在生成特徵池（勝利門檻：${minWinsRequired > 0 ? '至少 '+minWinsRequired+' 場' : '關閉'}）...<br>`;
     
     await new Promise(r => setTimeout(r, 50));
     
@@ -323,7 +339,11 @@ async function start() {
           
           for(let tc=0; tc<3; tc++) {
             let st = getWinsAndProfit(bs, tc, tRes, tOdds, tN);
-            if(mode === 'hitrate' ? (st.wins/st.games > 0.35) : (st.profit > 0)) {
+            
+            // ★ 特徵池生成時也檢查勝利門檻
+            if(minWinsRequired > 0 && st.wins < minWinsRequired) continue;
+            
+            if(st.profit > 0) {
               baseSingles.push({ cond: [f, op, thr], tc, bs });
             }
           }
@@ -342,7 +362,7 @@ async function start() {
       if(!running) break;
       let tempRules = [];
       for(let tc=0; tc<3; tc++) {
-        let bestForTc = await searchForClass(tc, baseSingles, mode);
+        let bestForTc = await searchForClass(tc, baseSingles);
         if(bestForTc) {
           tempRules.push({ on: 1, then: RESULTS[tc], thenCode: tc, conds: bestForTc.conds, bs: bestForTc.bs });
         }
@@ -350,7 +370,7 @@ async function start() {
       tempRules.push({ on: 1, then: 'skip', thenCode: 3, conds: [], bs: new Uint32Array((tN+31)>>5).fill(0xFFFFFFFF) });
       
       let vStats = evalRules(tempRules, validDS);
-      let vScore = mode === 'hitrate' ? (vStats.games>0?vStats.winRate:-999) : vStats.profit;
+      let vScore = vStats.profit; // 純利潤優先
       
       if(vScore > bestValidScore) {
         bestValidScore = vScore;
