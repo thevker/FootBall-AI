@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v94.4 — EV門控兜底版</title>
+<title>🚀 v94.5 — 預計算加速版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -65,14 +65,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v94.4 — EV門控兜底版</h2>
+<h2>🚀 v94.5 — 預計算加速版</h2>
 
 <div class="warn-banner">
   <b>🔥 本次重點：</b>
-  <br>① <code>MinABC / MaxABC</code> 用 <code>LET</code> 逐列變數 <code>mn_abc / mx_abc</code>（不用 <code>MIN/MAX</code> 整列聚合）。
-  <br>② <code>a~f</code> 用 <code>IFERROR(...,0)</code> 包住，杜絕 <code>#VALUE!</code> 擴散。
-  <br>③ <b>兜底三模式</b>：<code>🧠 EV 門控</code>（默認）、<code>🎯 純 HDA</code>、<code>⏸ 純 Skip</code>。
-  <br>④ EV 門控 = 剩餘 ≥15 場 且 最高方向總盈利 > 門檻 → 押該方向；否則 skip。避免「純 HDA」在剩餘場次 EV 為負時送錢。
+  <br>① <b>預設值</b>：條件上限 = <b>無限</b>、兜底策略 = <b>純 Skip</b>。
+  <br>② <b>性能修復</b>：<code>trainFeat</code> / <code>featureValueCache</code> / <code>condBSCache</code> / 候選池全部移到 <code>start()</code> 只計算一次。<code>runSingleEngine()</code> 每輪只做爬山 + 貪婪，不再重算不變的東西。
+  <br>③ <b>為何原本「有時快有時慢」</b>：原本每輪開頭 <code>clearCondCache()</code>，爬山時每次 <code>getCondBS()</code> 都要重新遍歷 N 場生成 bitset。隨機路徑若頻繁調用「新條件」→ 慢（10 秒）；若剛好命中 cache → 快（0.2 秒）。修復後 cache 跨輪共用，命中率 100%。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -92,10 +91,10 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
   <select id="maxConds">
     <option value="1">1 個</option>
     <option value="2">2 個</option>
-    <option value="3" selected>3 個</option>
+    <option value="3">3 個</option>
     <option value="4">4 個</option>
     <option value="5">5 個</option>
-    <option value="0">無限</option>
+    <option value="0" selected>無限</option>
   </select>
 
   <label>🎯 命中門檻：</label>
@@ -120,9 +119,9 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 
   <label>🛟 兜底策略：</label>
   <select id="fallbackMode">
-    <option value="ev-gated" selected>🧠 EV 門控（推薦）</option>
+    <option value="ev-gated">🧠 EV 門控（推薦）</option>
     <option value="always-hda">🎯 純 HDA（永遠押）</option>
-    <option value="skip">⏸ 純 Skip（不下注）</option>
+    <option value="skip" selected>⏸ 純 Skip（不下注）</option>
   </select>
 
   <label>🛟 兜底 EV 門檻：</label>
@@ -230,10 +229,13 @@ var optMode='profit';
 var maxCondsLimit=0;
 var minHitsRequired=0;
 
-// ★ 兜底設定
-var fallbackMode='ev-gated';        // 'ev-gated' | 'always-hda' | 'skip'
-var MIN_FALLBACK_SAMPLES=15;        // 剩餘場次 < 此值 → EV 門控直接 skip
-var fallbackEvThreshold=0;          // 最高方向總盈利 > 此值 → 才押
+// ★ 兜底設定（預設純 Skip）
+var fallbackMode='skip';            // 'ev-gated' | 'always-hda' | 'skip'
+var MIN_FALLBACK_SAMPLES=15;
+var fallbackEvThreshold=0;
+
+// ★ 預計算候選池（start 時生成一次，跨輪共用）
+var precomputedSingles = null;
 
 var globalBestScore=-Infinity;
 var globalBestProfit=-Infinity;
@@ -416,15 +418,8 @@ function getThresholds(fi){
   return ths;
 }
 
-async function runSingleEngine() {
-  featureValueCache={};
-  clearCondCache();
-  
-  var meta = extractMeta(rawRowsData, 'final');
-  trainResult = meta.codes; trainOdds = meta.odds;
-  trainN = rawRowsData.length;
-  trainFeat = extractFeatures(rawRowsData);
-  
+// ★ 預計算候選池（async，每 5 個 feature yield 一次，避免 UI 凍結）
+async function buildSinglesAsync(){
   var singles = [];
   for(var fi=0;fi<FCOUNT;fi++){
     var ths=getThresholds(fi);
@@ -433,9 +428,7 @@ async function runSingleEngine() {
         var thr=ths[k];
         var bs=getCondBS(fi,op,thr);
         var total=bsCount(bs);
-        
         if(total === 0 || (minHitsRequired > 0 && total < minHitsRequired)) continue;
-        
         for(var tc=0;tc<3;tc++){
           if(optMode === 'hitrate'){
             var w = getWins(bs, tc);
@@ -447,8 +440,19 @@ async function runSingleEngine() {
         }
       }
     }
+    if(fi % 5 === 0 || fi === FCOUNT - 1){
+      pushLog(nowTime()+'   ⚙️ 生成候選池 '+(fi+1)+'/'+FCOUNT+'（已 '+singles.length+' 個）','dim');
+      flushNow();
+      await new Promise(function(r){ setTimeout(r, 0); });
+    }
   }
-  if(singles.length === 0) return { rules:[], stats:{totalProfit:0, winRate:0, games:0}, fallbackInfo:null };
+  return singles;
+}
+
+async function runSingleEngine() {
+  // ★ 不再重算 trainFeat / featureValueCache / condBSCache / singles
+  var singles = precomputedSingles;
+  if(!singles || singles.length === 0) return { rules:[], stats:{totalProfit:0, winRate:0, games:0}, fallbackInfo:null };
   poolSize = singles.length;
 
   var allCondRules = []; 
@@ -552,7 +556,7 @@ async function runSingleEngine() {
     }
   }
 
-  // ★ v94.4 兜底：三模式 + EV 門控
+  // ★ 兜底：三模式 + EV 門控
   var fallbackInfo = null;
   var remainingBS = bsNew(trainN);
   for(var ri=0; ri<trainN; ri++) remainingBS[ri>>5] |= (1<<(ri&31));
@@ -560,7 +564,6 @@ async function runSingleEngine() {
   var remainCnt = bsCount(remainingBS);
 
   if(remainCnt > 0) {
-    // 計算三個方向 EV
     var dirProfits = [];
     var bestDir = 0, bestDirProfit = -Infinity;
     for(var ftc=0; ftc<3; ftc++) {
@@ -586,7 +589,7 @@ async function runSingleEngine() {
         useFallbackHDA = true;
         reason = 'EV門控通過：'+RESULTS[bestDir]+' 盈利 +'+bestDirProfit+' > 門檻 '+fallbackEvThreshold;
       }
-    } else { // 'skip'
+    } else {
       useFallbackHDA = false;
       reason = '純Skip模式';
     }
@@ -856,14 +859,13 @@ async function start(){
     
     var selectedRuns = parseInt(document.getElementById('runCount').value);
     totalPhases = selectedRuns;
-    
-    pushLog('🛡️ 數據量：'+rawRowsData.length+' 場。','info');
 
     running=true; startTime=Date.now();
     poolSize=0; currentRun=0;
     globalBestScore=-Infinity;
     globalBestProfit=-Infinity; globalBestWinRate=0; globalBestGames=0;
     globalBestRules=null; globalBestStats=null; globalBestFallback=null;
+    precomputedSingles=null;
     lastYieldTime=0;
 
     document.getElementById('btnRun').disabled=true;
@@ -875,7 +877,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v94.4 — EV門控兜底版','head');
+    pushLog('🚀 v94.5 — 預計算加速版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，命中門檻：'+gateLabel,'info');
@@ -883,15 +885,44 @@ async function start(){
     pushLog(nowTime()+' 尾盤結算，預計執行 '+totalPhases+' 次','info');
     await yieldUI();
 
+    // ★ 預計算（只做一次）
+    pushLog(nowTime()+' ⚙️ 正在預計算特徵與候選池（只做一次，之後每輪會很快）...','info');
+    await yieldUI();
+
+    featureValueCache={};
+    clearCondCache();
+    var meta = extractMeta(rawRowsData, 'final');
+    trainResult = meta.codes; trainOdds = meta.odds;
+    trainN = rawRowsData.length;
+    trainFeat = extractFeatures(rawRowsData);
+
+    var initStart = Date.now();
+    precomputedSingles = await buildSinglesAsync();
+    var initMs = Date.now() - initStart;
+    poolSize = precomputedSingles.length;
+
+    if(precomputedSingles.length === 0){
+      pushLog(nowTime()+' ⚠️ 候選池為空（沒有任何單條件達到門檻），無法搜索。','warn');
+      running=false;
+      document.getElementById('btnRun').disabled=false;
+      document.getElementById('btnStop').disabled=true;
+      flushNow();
+      return;
+    }
+
+    pushLog(nowTime()+' ✅ 候選池生成完成：'+poolSize+' 個單條件（耗時 '+initMs+' ms）','success');
+    pushLog(nowTime()+' 開始搜索 '+totalPhases+' 輪...','info');
+    await yieldUI();
+
     for(var run=1; run<=totalPhases; run++){
       if(!running) break;
       currentRun = run;
-      pushLog(nowTime()+' 🏃 正在執行第 '+run+'/'+totalPhases+' 輪搜索...','info');
-      updateProgress();
+      var runStart = Date.now();
       await yieldUI();
       
       var res = await runSingleEngine();
       
+      var runMs = Date.now() - runStart;
       var score = statsScore(res.stats, optMode);
       if(score > globalBestScore){
         globalBestScore = score;
@@ -902,15 +933,15 @@ async function start(){
         globalBestStats = res.stats;
         globalBestFallback = res.fallbackInfo;
         if(optMode === 'hitrate'){
-          pushLog(nowTime()+' 🌟 [第 '+run+' 輪] 打破紀錄！新最高命中率：'+res.stats.winRate.toFixed(2)+'%（盈利 '+res.stats.totalProfit+'）','best');
+          pushLog(nowTime()+' 🌟 [第 '+run+'/'+totalPhases+' 輪, '+runMs+'ms] 打破紀錄！新最高命中率：'+res.stats.winRate.toFixed(2)+'%（盈利 '+res.stats.totalProfit+'）','best');
         } else {
-          pushLog(nowTime()+' 🌟 [第 '+run+' 輪] 打破紀錄！新最高利潤：'+res.stats.totalProfit+'（命中率 '+res.stats.winRate.toFixed(2)+'%）','best');
+          pushLog(nowTime()+' 🌟 [第 '+run+'/'+totalPhases+' 輪, '+runMs+'ms] 打破紀錄！新最高利潤：'+res.stats.totalProfit+'（命中率 '+res.stats.winRate.toFixed(2)+'%）','best');
         }
       } else {
         if(optMode === 'hitrate'){
-          pushLog(nowTime()+'    [第 '+run+' 輪] 命中率：'+res.stats.winRate.toFixed(2)+'%（未打破紀錄）','dim');
+          pushLog(nowTime()+'    [第 '+run+'/'+totalPhases+' 輪, '+runMs+'ms] 命中率：'+res.stats.winRate.toFixed(2)+'%（未打破紀錄）','dim');
         } else {
-          pushLog(nowTime()+'    [第 '+run+' 輪] 利潤：'+res.stats.totalProfit+'（未打破紀錄）','dim');
+          pushLog(nowTime()+'    [第 '+run+'/'+totalPhases+' 輪, '+runMs+'ms] 利潤：'+res.stats.totalProfit+'（未打破紀錄）','dim');
         }
       }
       
