@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v91.4 — 七規則全覆蓋版（流暢終極版）</title>
+<title>🚀 v92.0 — 無限規則全覆蓋版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -62,11 +62,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v91.4 — 七規則全覆蓋版</h2>
+<h2>🚀 v92.0 — 無限規則全覆蓋版</h2>
 
 <div class="warn-banner">
-  <b>🔥 手機流暢優化：</b>已解決搜尋卡死問題。恢復所有條件上限選項（1~5、無限）。<br>
-  公式已徹底優化（LET + 乘法嵌套），並保證第 7 條兜底必定有條件（不再 skip）。
+  <b>🔥 解除數量限制：</b>不再局限於 7 條！系統會貪婪地抓取所有「在剩餘場次中仍有正利潤」的規則，直到榨乾最後一滴價值。最後一條兜底依然保證有條件成立。<br>
+  <span style="color:#fca5a5">⚠️ 提示：若規則過多導致公式超長（超過 5 萬字元），Google Sheets 可能會卡頓。建議條件上限設為 3 或 4。</span>
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -137,7 +137,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
   </div>
 
   <div class="section">
-    <h3>📋 最終規則順序（共 7 條）</h3>
+    <h3 id="ruleTitle">📋 最終規則順序</h3>
     <div class="diag" id="ruleTable"></div>
   </div>
 
@@ -412,13 +412,14 @@ async function runSingleEngine() {
   if(singles.length === 0) return { rules:[], stats:{totalProfit:0, winRate:0, games:0} };
   poolSize = singles.length;
 
-  var bestRulesPerClass = [[], [], []]; 
+  var allCondRules = []; 
 
+  // ★ 取消每類限制2條，改為每類挖掘 5 條潛在的高利潤規則進入候選池
   for(var tc=0; tc<3; tc++){
     var tcSingles = singles.filter(function(s){ return s.thenCode === tc; });
     if(tcSingles.length === 0) continue;
     
-    for(var k=0; k<2; k++){
+    for(var k=0; k<5; k++){
       var current = {
         conds: [tcSingles[Math.floor(Math.random() * tcSingles.length)].cond],
         bs: null, score: -Infinity
@@ -428,7 +429,6 @@ async function runSingleEngine() {
       current.score = metricOfBS(current.bs, tc, optMode);
       var globalBest = { conds: current.conds.slice(), bs: current.bs, score: current.score };
       
-      // ★ 核心修復：將迭代次數從 10000 降到 2000，防止卡死
       var maxIter = 2000; 
       for(var iter=0; iter<maxIter; iter++){
         if(!running) break;
@@ -467,30 +467,23 @@ async function runSingleEngine() {
           if(newScore > globalBest.score) globalBest = { conds: testConds.slice(), bs: newBS, score: newScore };
         }
         
-        // ★ 頻率從 500 提高至 50，讓瀏覽器有充足的喘息空間
         if(iter % 50 === 0 && shouldYield()) await yieldUI();
       }
       
       if (globalBest.score > -Infinity && bsCount(globalBest.bs) > 0) {
-        var isDup = bestRulesPerClass[tc].some(function(r){
+        var isDup = allCondRules.some(function(r){
            return JSON.stringify(r.conds) === JSON.stringify(globalBest.conds);
         });
-        if(!isDup) bestRulesPerClass[tc].push(globalBest);
+        if(!isDup) allCondRules.push({ on: 1, then: RESULTS[tc], thenCode: tc, conds: globalBest.conds, bs: globalBest.bs });
       }
     }
   }
 
-  var allCondRules = [];
-  for (var tc=0; tc<3; tc++) {
-    for (var r of bestRulesPerClass[tc]) {
-      allCondRules.push({ on: 1, then: RESULTS[tc], thenCode: tc, conds: r.conds, bs: r.bs });
-    }
-  }
-
+  // ★ 無限貪心組裝：只要能在剩餘場次中榨出利潤，就一直加規則
   var finalRules = [];
   var covered = bsNew(trainN);
   
-  while(allCondRules.length > 0 && finalRules.length < 6) {
+  while(true) {
     var bestIdx = -1;
     var maxIncrement = -Infinity;
     
@@ -498,7 +491,7 @@ async function runSingleEngine() {
       var rule = allCondRules[i];
       var only = bsAndNot(rule.bs, covered);
       var cnt = bsCount(only);
-      if (cnt === 0) continue;
+      if (cnt === 0) continue; // 沒有覆蓋任何新場次，跳過
       
       var inc = profitOfBS(only, rule.thenCode); 
       if (optMode === 'hitrate') {
@@ -512,16 +505,18 @@ async function runSingleEngine() {
       }
     }
     
+    // 若在盈利模式下，增量大於0；或在命中模式下增量大於 33%，則收錄該規則
     if (bestIdx !== -1 && (maxIncrement > 0 || optMode === 'hitrate')) {
       var chosen = allCondRules[bestIdx];
       finalRules.push(chosen);
       bsOrInPlace(covered, chosen.bs);
       allCondRules.splice(bestIdx, 1);
     } else {
-      break;
+      break; // 榨不出利潤了，結束貪心
     }
   }
 
+  // 最後一条必定成立的条件兜底，包揽所有剩余结果
   var allOnes = new Uint32Array((trainN+31)>>5).fill(0xFFFFFFFF);
   var uncoveredBS = bsAndNot(allOnes, covered);
   
@@ -535,8 +530,7 @@ async function runSingleEngine() {
     }
   }
   
-  // 兜底條件：必定成立的主初 > 0
-  var bottomCond = [20, 0, 0]; 
+  var bottomCond = [20, 0, 0]; // A主初 > 0
   finalRules.push({ on: 1, then: RESULTS[bestTc], thenCode: bestTc, conds: [bottomCond], bs: allOnes });
 
   var cleanStats = calcRulesStats(finalRules);
@@ -573,6 +567,7 @@ function renderRuleTable(rules, stats){
   }
   html+='</tbody></table>';
   document.getElementById('ruleTable').innerHTML=html;
+  document.getElementById('ruleTitle').textContent = '📋 最終規則順序（共 ' + rules.length + ' 條）';
 }
 
 function renderCompareTable(stats, rawRows, payoutMode){
@@ -611,7 +606,6 @@ function renderCompareTable(stats, rawRows, payoutMode){
   document.getElementById('compareTable').innerHTML = html;
 }
 
-// LET 變數壓縮
 function featToExpr(fi){
   var fn=FEATURES[fi];
   switch(fn){
@@ -658,7 +652,6 @@ function genFormulaRecursive(rules, index){
     return '(' + expr + op + val + ')'; 
   });
   
-  // 用乘法串聯條件，避免字元爆炸
   var condLogic = condSheetStrings.join('*');
   
   return 'IF((' + condLogic + '), "' + rule.then + '", ' + nextIf + ')';
@@ -771,7 +764,7 @@ async function start(){
     updateStats(); clearLog();
 
     pushLog('═══════════════════════════════════════════════════════════','head');
-    pushLog('🚀 v91.4 — 七規則全覆蓋版','head');
+    pushLog('🚀 v92.0 — 無限規則全覆蓋版','head');
     pushLog('═══════════════════════════════════════════════════════════','head');
     pushLog(nowTime()+' 資料：'+parsed.rows.length+' 筆','success');
     pushLog(nowTime()+' 模式：'+modeLabel+'，條件上限：'+condLabel+'，勝利門檻：'+gateLabel,'info');
