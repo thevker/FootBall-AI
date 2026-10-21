@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v98.3 — 最強直觀評分版</title>
+<title>🚀 v98.6 — 純粹公式版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -62,24 +62,22 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 .fb-panel{background:rgba(0,0,0,0.25);border:1px solid #475569;border-radius:6px;padding:10px 12px;margin-top:10px;font-size:12px;line-height:1.9;color:#cbd5e1}
 .fb-panel b{color:#f8fafc}
 .test-panel{background:rgba(0,0,0,0.3);border:2px dashed #475569;border-radius:6px;padding:12px;margin-top:12px;font-size:13px;line-height:1.8;color:#cbd5e1}
-.score-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:18px;font-weight:bold;margin-bottom:10px;}
-.score-s{background:#166534;color:#4ade80;border:1px solid #22c55e;}
-.score-a{background:#1e3a8a;color:#60a5fa;border:1px solid #3b82f6;}
-.score-b{background:#854d0e;color:#facc15;border:1px solid #eab308;}
-.score-f{background:#7f1d1d;color:#f87171;border:1px solid #ef4444;}
-.score-detail { margin-top: 10px; border-top: 1px dashed #475569; padding-top: 10px; font-size: 12px; color: #cbd5e1; }
-.score-detail ul { margin: 5px 0 0 0; padding-left: 20px; }
-.score-detail li { margin-bottom: 4px; }
+.score-badge{display:inline-block;padding:6px 18px;border-radius:20px;font-size:24px;font-weight:bold;margin-bottom:10px;}
+.score-s{background:#166534;color:#4ade80;border:2px solid #22c55e;}
+.score-a{background:#1e3a8a;color:#60a5fa;border:2px solid #3b82f6;}
+.score-b{background:#854d0e;color:#facc15;border:2px solid #eab308;}
+.score-f{background:#7f1d1d;color:#f87171;border:2px solid #ef4444;}
+.score-detail { margin-top: 10px; border-top: 1px dashed #475569; padding-top: 10px; font-size: 13px; color: #cbd5e1; }
 </style>
 </head>
 <body>
 
-<h2>🚀 v98.3 — 最強直觀評分版</h2>
+<h2>🚀 v98.6 — 純粹公式版</h2>
 
 <div class="warn-banner">
-  <b>🔥 全新「無上限積分制」上線：</b>
-  <br>① 取消 100 分封頂！測試集賺越多，分數越高。
-  <br>② 最終規則表補回「命中率、贏輸場數」，並加入「測試集獨立體檢」。
+  <b>🔥 絕對純粹的評分公式：</b>
+  <br>完全遵照你的要求：<b>(測試集利潤 ÷ 測試集場次) × 100</b>。
+  <br>無任何打折、無任何獎勵，算出來是多少就是多少！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -468,13 +466,13 @@ async function runHillClimb() {
     }
   }
 
-  var finalRules = [], covered = bsNew(trainN);
-  while(true) {
-    var bestIdx = -1, maxIncrement = -Infinity;
+  var finalRules. = [], covered = bscondsNew(trainN);
+  while(true), {
+    var bestIdx = - rule1, maxIncrement = -Infinity;
     for(var i=0; i<allCondRules.length; i++) {
       var rule = allCondRules[i], only = bsAndNot(rule.bs, covered), cnt = bsCount(only);
       if (cnt === 0 || (minHitsRequired > 0 && cnt < minHitsRequired)) continue; 
-      var inc = metricOfBS(only, rule.conds, rule.thenCode, optMode); 
+      var inc = metricOfBS(only, rule.thenCode, optMode); 
       if (inc > maxIncrement) { maxIncrement = inc; bestIdx = i; }
     }
     if (bestIdx !== -1 && maxIncrement > 0) {
@@ -739,56 +737,30 @@ function applyFallbackLogic(finalRules, covered) {
   return { rules: formattedRules, fallbackInfo: fallbackInfo };
 }
 
-// ★ 無上限積分系統
+// ★ 絕對純粹評分公式： (測試集利潤 / 測試集場次) * 100
 function calculateModelScore(trainStats, testStats, ruleCount) {
   if (!testStats || testStats.totalProfit <= 0) {
     return { score: 0, grade: 'F', color: 'score-f', text: '❌ 直接丟棄（測試集虧損）', details: '' };
   }
   
-  var pScore = 0, rScore = 0, wScore = 0, sScore = 0;
-  
-  pScore = testStats.totalProfit / 100;
-  
-  var ratio = testStats.totalProfit / (trainStats.totalProfit || 1);
-  if (ratio >= 0.8 && ratio <= 1.2) rScore = 25;
-  else if (ratio > 1.2) rScore = 20; 
-  else if (ratio >= 0.5) rScore = 15;
-  else rScore = 5;
-  
-  var wr = testStats.winRate;
-  if (wr >= 55) wScore = 20;
-  else if (wr >= 50) wScore = 15;
-  else if (wr >= 45) wScore = 10;
-  else wScore = 5;
-  
-  if (ruleCount <= 7) sScore = 15;
-  else if (ruleCount <= 10) sScore = 12;
-  else if (ruleCount <= 15) sScore = 8;
-  else sScore = 4;
-  
-  var total = Math.round(pScore + rScore + wScore + sScore);
+  var testGames = testStats.games || 1;
+  var score = Math.round((testStats.totalProfit / testGames) * 100);
   
   var grade, color, text;
-  if (total >= 120) { grade = 'SSS'; color = 'score-s'; text = '👑 神級印鈔機（無敵）'; }
-  else if (total >= 90) { grade = 'S'; color = 'score-s'; text = '🏆 頂級印鈔機（強烈建議實戰）'; }
-  else if (total >= 70) { grade = 'A'; color = 'score-a'; text = '✅ 良好模型（可以實戰）'; }
-  else if (total >= 50) { grade = 'B'; color = 'score-b'; text = '⚠️ 普通模型（建議小注測試）'; }
-  else { grade = 'F'; color = 'score-f'; text = '❌ 風險過高（不建議實戰）'; }
+  if (score >= 200) { grade = 'SSS'; color = 'score-s'; text = '👑 神級印鈔機'; }
+  else if (score >= 100) { grade = 'S'; color = 'score-s'; text = '🏆 頂級印鈔機'; }
+  else if (score >= 50) { grade = 'A'; color = 'score-a'; text = '✅ 良好模型'; }
+  else if (score >= 20) { grade = 'B'; color = 'score-b'; text = '⚠️ 普通模型'; }
+  else { grade = 'F'; color = 'score-f'; text = '❌ 風險過高'; }
   
-  var details = '<div class="score-detail"><b>得分明細（無上限）：</b><ul>' +
-    '<li>測試利潤分：<b>' + pScore.toFixed(1) + '</b> 分 (每賺100塊得1分)</li>' +
-    '<li>泛化能力分：<b>' + rScore.toFixed(1) + '</b> / 25</li>' +
-    '<li>測試勝率分：<b>' + wScore.toFixed(1) + '</b> / 20</li>' +
-    '<li>規則簡潔度分：<b>' + sScore.toFixed(1) + '</b> / 15</li>' +
-    '</ul></div>';
+  var details = '<div class="score-detail"><b>評分公式：</b> (測試利潤 ' + testStats.totalProfit + ' ÷ 測試場次 ' + testGames + ') × 100 = <b>' + score + '</b> 分</div>';
   
-  return { score: total, grade: grade, color: color, text: text, details: details };
+  return { score: score, grade: grade, color: color, text: text, details: details };
 }
 
 function fmtCond(c){ return FEATURE_NAMES[c[0]]+OPS[c[1]]+Number(c[2].toFixed(2)); }
 function fmtRule(r){ if(!r.conds || r.conds.length===0) return '(空)'; return r.conds.map(fmtCond).join(' & ')+' → '+r.then; }
 
-// ★ 回歸完整資訊的規則表
 function renderRuleTable(rules, trainStats) {
   function getIndependentStats(rule) {
     var tProfit = 0, tGames = 0, tWins = 0;
@@ -980,7 +952,7 @@ async function start(){
     document.getElementById('testResultPanel').style.display='none';
     updateStats(); clearLog();
 
-    pushLog('🚀 v98.3 — ' + (algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')), 'head');
+    pushLog('🚀 v98.6 — ' + (algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')), 'head');
     pushLog(nowTime()+' 訓練集資料：'+rawRowsData.length+' 筆，條件上限：'+condLabel, 'success');
     await yieldUI();
 
@@ -1100,7 +1072,7 @@ async function start(){
         '<div class="score-badge '+scoreData.color+'">模型評分：' + scoreData.score + ' 分 (' + scoreData.grade + ' 級)</div><br>' +
         '<b style="font-size:15px; color:#cbd5e1">📊 雙集驗證結果</b><br><br>' +
         '訓練集：<b style="color:' + (trProfit>0?'#4ade80':'#f87171') + '">' + (trProfit>0?'+':'') + trProfit + '</b> 單位（' + res.rules.length + ' 條規則）<br>' +
-        '測試集：<b style="color:' + testColor + '">' + (teProfit>0?'+':'') + teProfit + '</b> 單位（勝率 ' + finalTestStats.winRate.toFixed(1) + '%）<br>' +
+        '測試集：<b style="color:' + testColor + '">' + (teProfit>0?'+':'') + teProfit + '</b> 單位（場次 ' + finalTestStats.games + '，勝率 ' + finalTestStats.winRate.toFixed(1) + '%）<br>' +
         '<div style="margin-top:12px; font-weight:bold; color:' + testColor + '; font-size:15px;">實戰建議：' + scoreData.text + '</div>' +
         scoreData.details;
     }
