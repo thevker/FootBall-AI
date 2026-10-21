@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v98.1 — 規則獨立體檢版（兼容修復）</title>
+<title>🚀 v98.1 — 規則獨立體檢版（穩定版）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -80,7 +80,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
   <b>🩺 全新「規則獨立體檢」功能：</b>
   <br>① 最終表格新增「測試集獨立盈利」。
   <br>② 你可以清楚看到，哪一條規則在未來（測試集）是真賺錢，哪一條是只會死背歷史的毒藥。
-  <br>③ 如果發現某條規則是「歷史毒藥」（測試集虧損），實戰時請手動無視它！
+  <br>③ 實戰時，如果看到表格中某些規則「測試集虧損」，你可以選擇手動剔除它！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -128,6 +128,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
     <option value="100" selected>100 次</option>
     <option value="500">500 次</option>
     <option value="1000">1000 次</option>
+    <option value="5000">5000 次</option>
+    <option value="10000">10000 次</option>
   </select>
 
   <label>🎯 命中門檻：</label>
@@ -329,15 +331,7 @@ function evalOnTest(conds, thenCode) {
 function metricOfBS(bs, conds, thenCode, mode){
   var total = bsCount(bs);
   if(total === 0) return -Infinity;
-  var trainProfit = profitOfBS(bs, thenCode);
-  if(mode === 'test_max'){
-    if (!testRowsData || testRowsData.length === 0) return trainProfit;
-    var testRes = evalOnTest(conds, thenCode);
-    if (testRes.cnt < 3) return -999999; 
-    if (trainProfit <= 0) return -999999;
-    return (testRes.profit * 1.5) + (trainProfit * 0.5);
-  }
-  return trainProfit;
+  return profitOfBS(bs, thenCode);
 }
 
 function evaluateRuleSet(rules) {
@@ -482,6 +476,7 @@ async function runHillClimb() {
       var chosen = allCondRules[bestIdx];
       finalRules.push(chosen); bsOrInPlace(covered, chosen.bs); allCondRules.splice(bestIdx, 1);
     } else break;
+    if (finalRules.length > 100) break;
   }
   var fbRes = applyFallbackLogic(finalRules, covered);
   return { rules: fbRes.rules, fallbackInfo: fbRes.fallbackInfo };
@@ -740,59 +735,27 @@ function applyFallbackLogic(finalRules, covered) {
   return { rules: formattedRules, fallbackInfo: fallbackInfo };
 }
 
+// ★ 計算模型評分 (暫時保留，顯示用)
 function calculateModelScore(trainStats, testStats, ruleCount) {
   if (!testStats || testStats.totalProfit <= 0) {
     return { score: 0, grade: 'F', color: 'score-f', text: '❌ 直接丟棄（測試集虧損）', details: '' };
   }
-  
-  var pScore = 0, rScore = 0, wScore = 0, sScore = 0;
-  
-  pScore = Math.min((testStats.totalProfit / 8000) * 40, 40);
-  
-  var ratio = testStats.totalProfit / (trainStats.totalProfit || 1);
-  if (ratio >= 0.8 && ratio <= 1.2) rScore = 25;
-  else if (ratio > 1.2) rScore = 20; 
-  else if (ratio >= 0.5) rScore = 15;
-  else rScore = 5;
-  
-  var wr = testStats.winRate;
-  if (wr >= 55) wScore = 20;
-  else if (wr >= 50) wScore = 15;
-  else if (wr >= 45) wScore = 10;
-  else wScore = 5;
-  
-  if (ruleCount <= 7) sScore = 15;
-  else if (ruleCount <= 10) sScore = 12;
-  else if (ruleCount <= 15) sScore = 8;
-  else sScore = 4;
-  
-  var total = Math.round(pScore + rScore + wScore + sScore);
-  
-  var grade, color, text;
-  if (total >= 90) { grade = 'S'; color = 'score-s'; text = '🏆 頂級印鈔機（強烈建議實戰）'; }
-  else if (total >= 75) { grade = 'A'; color = 'score-a'; text = '✅ 良好模型（可以實戰）'; }
-  else if (total >= 60) { grade = 'B'; color = 'score-b'; text = '⚠️ 普通模型（建議小注測試）'; }
-  else { grade = 'F'; color = 'score-f'; text = '❌ 風險過高（不建議實戰）'; }
-  
-  var details = '<div class="score-detail"><b>得分明細：</b><ul>' +
-    '<li>測試集利潤 (基準8000)：<b>' + pScore.toFixed(1) + '</b> / 40</li>' +
-    '<li>泛化能力 (健康度)：<b>' + rScore.toFixed(1) + '</b> / 25</li>' +
-    '<li>測試集勝率 (基準55%)：<b>' + wScore.toFixed(1) + '</b> / 20</li>' +
-    '<li>規則簡潔度 (&le;7條滿分)：<b>' + sScore.toFixed(1) + '</b> / 15</li>' +
-    '</ul></div>';
-  
-  return { score: total, grade: grade, color: color, text: text, details: details };
+  var testGames = testStats.games || 1;
+  var score = Math.round((testStats.totalProfit / testGames) * 100);
+  var grade = 'S';
+  var color = 'score-a'; 
+  var text = '客觀計算結果';
+  var details = '<div class="score-detail"><b>評分公式：</b> (測試利潤 ' + testStats.totalProfit + ' ÷ 測試場次 ' + testGames + ') × 100 = <b>' + score + '</b> 分</div>';
+  return { score: score, grade: grade, color: color, text: text, details: details };
 }
 
 function fmtCond(c){ return FEATURE_NAMES[c[0]]+OPS[c[1]]+Number(c[2].toFixed(2)); }
 function fmtRule(r){ if(!r.conds || r.conds.length===0) return '(空)'; return r.conds.map(fmtCond).join(' & ')+' → '+r.then; }
 
-// ★ 渲染規則表，增加獨立測試集評估（移除潛在語法風險）
 function renderRuleTable(rules, trainStats) {
   function getIndependentStats(rule) {
-    var tProfit = 0, tGames = 0;
+    var tProfit = 0, tGames = 0, tWins = 0;
     var rc = rule.conds || [];
-    
     for (var i = 0; i < trainN; i++) {
       var ok = true;
       for (var c = 0; c < rc.length; c++) {
@@ -800,12 +763,12 @@ function renderRuleTable(rules, trainStats) {
       }
       if (ok) {
         tGames++;
-        if (trainResult[i] === rule.thenCode) { tProfit += trainOdds[i*3+rule.thenCode] - 100; }
+        if (trainResult[i] === rule.thenCode) { tWins++; tProfit += trainOdds[i*3+rule.thenCode] - 100; }
         else tProfit -= 100;
       }
     }
     
-    var eProfit = 0, eGames = 0;
+    var eProfit = 0, eGames = 0, eWins = 0;
     if (testFeat) {
       for (var i = 0; i < testN; i++) {
         var ok = true;
@@ -814,15 +777,16 @@ function renderRuleTable(rules, trainStats) {
         }
         if (ok) {
           eGames++;
-          if (testResult[i] === rule.thenCode) { eProfit += testOdds[i*3+rule.thenCode] - 100; }
+          if (testResult[i] === rule.thenCode) { eWins++; eProfit += testOdds[i*3+rule.thenCode] - 100; }
           else eProfit -= 100;
         }
       }
     }
-    return { tProfit: tProfit, tGames: tGames, eProfit: eProfit, eGames: eGames };
+    return { tProfit: tProfit, tGames: tGames, tWins: tWins, eProfit: eProfit, eGames: eGames, eWins: eWins };
   }
 
-  var html = '<table><thead><tr><th>順序</th><th>條件</th><th>→</th><th>訓練獨立利潤</th><th>測試獨立利潤</th><th>狀態</th></tr></thead><tbody>';
+  var html = '<table><thead><tr><th>順序</th><th>條件</th><th>→</th><th colspan="4" style="background:#1e293b;">訓練集獨立表現</th><th>測試獨立利潤</th><th>狀態</th></tr>' +
+             '<tr><th></th><th></th><th></th><th>命中</th><th>贏/輸</th><th>勝率</th><th>利潤</th><th></th><th></th></tr></thead><tbody>';
   
   for (var i = 0; i < rules.length; i++) {
     var r = rules[i];
@@ -833,33 +797,30 @@ function renderRuleTable(rules, trainStats) {
     
     var thenClass = isSkip ? 'tag-skip' : (r.thenCode === 0 ? 'tag-h' : (r.thenCode === 1 ? 'tag-d' : 'tag-a'));
     var thenTag = '<span class="' + thenClass + '">' + r.then + '</span>';
-    
     var rowLabel = (i === rules.length - 1) ? (i + 1) + ' (兜底)' : '第 ' + (i + 1);
     
     var ind = getIndependentStats(r);
     
-    var tProfitHtml = ind.tProfit >= 0 ? '<span class="profit-pos">+' + ind.tProfit + '</span>' : '<span class="profit-neg">' + ind.tProfit + '</span>';
-    if (ind.tGames === 0) tProfitHtml = '-';
+    var tWinRate = ind.tGames > 0 ? (ind.tWins / ind.tGames * 100).toFixed(1) + '%' : '-';
+    var tProfitHtml = ind.tGames === 0 ? '-' : (ind.tProfit >= 0 ? '<span class="profit-pos">+' + ind.tProfit + '</span>' : '<span class="profit-neg">' + ind.tProfit + '</span>');
     
-    var eProfitHtml = ind.eProfit >= 0 ? '<span class="profit-pos">+' + ind.eProfit + '</span>' : '<span class="profit-neg">' + ind.eProfit + '</span>';
-    if (ind.eGames === 0) eProfitHtml = '-';
+    var eProfitHtml = ind.eGames === 0 ? '-' : (ind.eProfit >= 0 ? '<span class="profit-pos">+' + ind.eProfit + '</span>' : '<span class="profit-neg">' + ind.eProfit + '</span>');
     
     var statusHtml = '';
     if (ind.tGames > 0 && ind.eGames > 0) {
-      if (ind.eProfit > 0) {
-        statusHtml = '<span style="color:#4ade80; font-weight:bold;">✅ 實戰可用</span>';
-      } else {
-        statusHtml = '<span style="color:#f87171; font-weight:bold;">❌ 歷史毒藥</span>';
-      }
+      statusHtml = ind.eProfit > 0 ? '<span style="color:#4ade80;font-weight:bold;">✅ 可用</span>' : '<span style="color:#f87171;font-weight:bold;">❌ 毒藥</span>';
     } else if (ind.eGames === 0) {
-       statusHtml = '<span style="color:#94a3b8;">(測試集未觸發)</span>';
+       statusHtml = '<span style="color:#94a3b8;">(未觸發)</span>';
     }
 
     if (r.conds.length === 0) {
-      html += '<tr><td>' + rowLabel + '</td><td style="text-align:left;color:#94a3b8">' + ss + '</td><td>' + thenTag + '</td><td colspan="3" style="text-align:center;color:#64748b">全局兜底</td></tr>';
+      html += '<tr><td>' + rowLabel + '</td><td style="text-align:left;color:#94a3b8">' + ss + '</td><td>' + thenTag + '</td><td colspan="6" style="text-align:center;color:#64748b">全局兜底</td></tr>';
     } else {
       html += '<tr><td>' + rowLabel + '</td>' +
         '<td style="text-align:left;font-size:10px">' + ss + '</td><td>' + thenTag + '</td>' +
+        '<td>' + ind.tGames + '</td>' +
+        '<td>' + ind.tWins + '/' + (ind.tGames - ind.tWins) + '</td>' +
+        '<td>' + tWinRate + '</td>' +
         '<td>' + tProfitHtml + '</td>' +
         '<td>' + eProfitHtml + '</td>' +
         '<td>' + statusHtml + '</td></tr>';
@@ -916,10 +877,10 @@ function genHFormula(rules){
   var setup = 
     'a, IFERROR(A2:A*1, 0), b, IFERROR(B2:B*1, 0), c, IFERROR(C2:C*1, 0), d, IFERROR(D2:D*1, 0), e, IFERROR(E2:E*1, 0), f, IFERROR(F2:F*1, 0), ' +
     'mn_abc, IFERROR(IF((a<=b)*(a<=c), a, IF(b<=c, b, c)), 0), mx_abc, IFERROR(IF((a>=b)*(a>=c), a, IF(b>=c, b, c)), 0), ' +
-    'ma, IFERROR(ROUND((a-d)/a*100, 2), 0), mb, IFERROR(ROUND((b-e)/b*100, 2), 0), mc, IFERROR(ROUND((c-f)/c*100, 2), 0), ' +
-    'inv_a, IFERROR(1/a, 0), inv_b, IFERROR(1/b, 0), inv_c, IFERROR(1/c, 0), inv_d, IFERROR(1/d, 0), inv_e, IFERROR(1/e, 0), inv_f, IFERROR(1/f, 0), ' +
+    'ma, IFERROR(ROUND((a-d)/a*100, 2), 0), mb, IFERROR(ROUND((b-e)/b*100, 2), 0), mc, IFERROR(ROUND(( rrc-f)/c*100, 2), _i0), ' +
+    'inv_a, IFERROR,(1/a, 0), inv_b, IF ERROR(1/b, 0), inv_c, IF2ERROR(1/c,), 0), inv_d, IFERROR(1/d, 0), inv_e, IFERROR(1/e, 0), inv_f, IFERROR(1/f, 0), ' +
     'sumA, inv_a+inv_b+inv_c, sumD, inv_d+inv_e+inv_f, ' +
-    'rr_i, IFERROR(ROUND(100/sumA, 2), 0), rr_f, IFERROR(ROUND(100/sumD, 2), 0), rr_d, IFERROR(ROUND(rr_f - rr_i, 2), 0), ' +
+    'rr_i, IFERROR(ROUND(100/sumA, 2), 0), rr_f, IFERROR(ROUND(100/sumD, 2), 0), rr_d, IFERROR(ROUND(rr_f - 0), ' +
     'tp_a, IFERROR(ROUND(inv_a/sumA*100, 2), 0), tp_d, IFERROR(ROUND(inv_d/sumD*100, 2), 0), tp_ad, IFERROR(ROUND(tp_d - tp_a, 2), 0), ' +
     'tp_c, IFERROR(ROUND(inv_c/sumA*100, 2), 0), tp_f, IFERROR(ROUND(inv_f/sumD*100, 2), 0), tp_cd, IFERROR(ROUND(tp_f - tp_c, 2), 0), ';
   return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"", LET(' + setup + body + ')))';
@@ -948,7 +909,7 @@ async function start(){
       var splitIdx = Math.floor(parsed.rows.length * ratio);
       rawRowsData = parsed.rows.slice(0, splitIdx);
       testRowsData = parsed.rows.slice(splitIdx);
-      pushLog(`✂️ 樣本分割：訓練集 ${rawRowsData.length} 場 / 測試集 ${testRowsData.length} 場`, 'warn');
+      pushLog('✂️ 樣本分割：訓練集 ' + rawRowsData.length + ' 場 / 測試集 ' + testRowsData.length + ' 場', 'warn');
     } else {
       rawRowsData = parsed.rows;
       testRowsData = null;
@@ -1099,11 +1060,10 @@ async function start(){
       document.getElementById('testResultPanel').style.borderColor = testBorder;
       
       document.getElementById('testResultPanel').innerHTML = 
-        '<div class="score-badge '+scoreData.color+'">模型評分：' + scoreData.score + ' 分 (' + scoreData.grade + ' 級)</div><br>' +
+        '<div class="score-badge '+scoreData.color+'">模型評分：' + scoreData.score + ' 分</div><br>' +
         '<b style="font-size:15px; color:#cbd5e1">📊 雙集驗證結果</b><br><br>' +
         '訓練集：<b style="color:' + (trProfit>0?'#4ade80':'#f87171') + '">' + (trProfit>0?'+':'') + trProfit + '</b> 單位（' + res.rules.length + ' 條規則）<br>' +
-        '測試集：<b style="color:' + testColor + '">' + (teProfit>0?'+':'') + teProfit + '</b> 單位（勝率 ' + finalTestStats.winRate.toFixed(1) + '%）<br>' +
-        '<div style="margin-top:12px; font-weight:bold; color:' + testColor + '; font-size:15px;">實戰建議：' + scoreData.text + '</div>' +
+        '測試集：<b style="color:' + testColor + '">' + (teProfit>0?'+':'') + teProfit + '</b> 單位（場次 ' + finalTestStats.games + '，勝率 ' + finalTestStats.winRate.toFixed(1) + '%）<br>' +
         scoreData.details;
     }
 
@@ -1138,12 +1098,12 @@ function extractFeatures(rows){
     f[4]=rnd2(B-E); f[5]=rnd2(E-B); f[6]=rnd2(B===0?0:(B-E)/B*100); f[7]=rnd2(E===0?0:B/E);
     f[8]=rnd2(C-F); f[9]=rnd2(F-C); f[10]=rnd2(C===0?0:(C-F)/C*100); f[11]=rnd2(F===0?0:C/F);
     var maPct=rnd2(A===0?0:(A-D)/A*100), mbPct=rnd2(B===0?0:(B-E)/B*100), mcPct=rnd2(C===0?0:(C-F)/C*100);
-    f[12]=rnd2(maPct-mcPct); f[13]=rnd2(maPct-mbPct); f[14]=rnd2(mcPct-mbPct);
-    f[15]=rnd2((A-D)-(C-F)); f[16]=rnd2((A-D)-(B-E)); f[17]=rnd2((C-F)-(B-E));
+    f[12]=rnd2(maPct<-mcPct); f[13A]=rnd2(maPct-mb?Pct); f[14]=rnd2(m1cPct-mbPct);
+   :( f[15]=rnd2((A-D)-(C-F)); f[16]=rnd2((A-D)-(B-E)); f[17]=rnd2((C-F)-(B-E));
     f[18]=rnd2((A-D)+(F-C)); f[19]=rnd2((C-F)+(D-A));
     f[20]=A; f[21]=B; f[22]=C; f[23]=D; f[24]=E; f[25]=F;
     f[26]=rnd2(A-C); f[27]=rnd2(D-F); f[28]=Math.max(A,B,C); f[29]=Math.min(A,B,C);
-    f[30]=D<A?1:(D>A?-1:0); f[31]=E<B?1:(E>B?-1:0); f[32]=F<C?1:(F>C?-1:0);
+    f[30]=DD>A?-1:0); f[31]=E<B?1:(E>B?-1:0); f[32]=F<C?1:(F>C?-1:0);
     f[33]=rnd2(C===0?0:A/C); f[34]=rnd2(F===0?0:D/F);
     var sumA=(A===0?0:1/A)+(B===0?0:1/B)+(C===0?0:1/C), sumD=(D===0?0:1/D)+(E===0?0:1/E)+(F===0?0:1/F);
     f[35]=sumA===0?0:rnd2(100/sumA); f[36]=sumD===0?0:rnd2(100/sumD); f[37]=rnd2(f[36]-f[35]);
