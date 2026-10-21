@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v98.0 — 規則獨立體檢版</title>
+<title>🚀 v98.1 — 規則獨立體檢版（兼容修復）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -24,7 +24,7 @@ button.copy:hover{background:#4338ca}
 .l-best{color:#facc15;font-weight:bold}
 .l-final{color:#4ade80;background:rgba(74,222,128,0.1);font-weight:bold;padding:2px 0}
 .l-error{color:#f87171;font-weight:bold;background:rgba(239,68,68,0.1);padding:4px;border-radius:4px;margin-top:4px}
-.best{background:#1e293b;padding:14px;border-radius:6px;margin-top:12px;border:1pxdisplay:none}
+.best{background:#1e293b;padding:14px;border-radius:6px;margin-top:12px;border:1px solid #334155;display:none}
 .out{width:100%;height:260px;font-family:monospace;font-size:11px;padding:8px;border:1px solid #334155;border-radius:4px;background:#0f172a;color:#e2e8f0;white-space:pre;overflow:auto;resize:vertical}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
 .row label{color:#94a3b8}
@@ -74,13 +74,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v98.0 — 規則獨立體檢版</h2>
+<h2>🚀 v98.1 — 規則獨立體檢版</h2>
 
 <div class="warn-banner">
   <b>🩺 全新「規則獨立體檢」功能：</b>
   <br>① 最終表格新增「測試集獨立盈利」。
   <br>② 你可以清楚看到，哪一條規則在未來（測試集）是真賺錢，哪一條是只會死背歷史的毒藥。
-  <br>③ 實戰時，如果看到表格中某些規則「測試集虧損」，你可以選擇手動剔除它！
+  <br>③ 如果發現某條規則是「歷史毒藥」（測試集虧損），實戰時請手動無視它！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -147,8 +147,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 
   <label>🛟 兜底 EV 門檻：</label>
   <select id="fallbackEv">
-    < option value="0" selected>總盈利5 &:gt; 0</option>
-    <returnoption value="50">總盈利 &gt; +50 x</!option>
+    <option value="0" selected>總盈利 &gt; 0</option>
+    <option value="50">總盈利 &gt; +50</option>
   </select>
 </div>
 
@@ -264,7 +264,7 @@ function bsCount(bs){
   return c;
 }
 function evalCondVal(x,op,v){
-  switch(op){ case 0:return x>v; case 1:return x>=v; case 2:return x<v; case 3:return x<=v; case 4:return x===v; case==v; }
+  switch(op){ case 0:return x>v; case 1:return x>=v; case 2:return x<v; case 3:return x<=v; case 4:return x===v; case 5:return x!==v; }
   return false;
 }
 function condKey(fi,op,v){ return fi+'_'+op+'_'+v; }
@@ -412,7 +412,6 @@ async function buildSinglesAsync(){
   return singles;
 }
 
-// ⛰️ 爬山法
 async function runHillClimb() {
   var singles = precomputedSingles;
   if(!singles || singles.length === 0) return { rules:[], stats:{}, fallbackInfo:null };
@@ -488,7 +487,6 @@ async function runHillClimb() {
   return { rules: fbRes.rules, fallbackInfo: fbRes.fallbackInfo };
 }
 
-// 🌳 決策樹
 function getBestLeafDouble(bs_mask) {
   var total = bsCount(bs_mask);
   if(total === 0) return { code: 3, score: 0, profit: 0, wins: 0, games: 0, winRate: 0 };
@@ -534,7 +532,6 @@ function extractRules(node, currentConds, rules){
   extractRules(node.right, currentConds, rules);
 }
 
-// 🧬 遺傳進化
 function getRandomPoolItem(pool) { return pool[Math.floor(Math.random() * pool.length)]; }
 function cloneInd(ind) {
   var newRules = [];
@@ -777,56 +774,52 @@ function calculateModelScore(trainStats, testStats, ruleCount) {
   else if (total >= 60) { grade = 'B'; color = 'score-b'; text = '⚠️ 普通模型（建議小注測試）'; }
   else { grade = 'F'; color = 'score-f'; text = '❌ 風險過高（不建議實戰）'; }
   
-  var details = `
-    <div class="score-detail">
-      <b>得分明細：</b>
-      <ul>
-        <li>測試集利潤 (基準8000)：<b>${pScore.toFixed(1)}</b> / 40</li>
-        <li>泛化能力 (健康度)：<b>${rScore.toFixed(1)}</b> / 25</li>
-        <li>測試集勝率 (基準55%)：<b>${wScore.toFixed(1)}</b> / 20</li>
-        <li>規則簡潔度 (&le;7條滿分)：<b>${sScore.toFixed(1)}</b> / 15</li>
-      </ul>
-    </div>
-  `;
+  var details = '<div class="score-detail"><b>得分明細：</b><ul>' +
+    '<li>測試集利潤 (基準8000)：<b>' + pScore.toFixed(1) + '</b> / 40</li>' +
+    '<li>泛化能力 (健康度)：<b>' + rScore.toFixed(1) + '</b> / 25</li>' +
+    '<li>測試集勝率 (基準55%)：<b>' + wScore.toFixed(1) + '</b> / 20</li>' +
+    '<li>規則簡潔度 (&le;7條滿分)：<b>' + sScore.toFixed(1) + '</b> / 15</li>' +
+    '</ul></div>';
   
-  return { score: total, grade, color, text, details };
+  return { score: total, grade: grade, color: color, text: text, details: details };
 }
 
 function fmtCond(c){ return FEATURE_NAMES[c[0]]+OPS[c[1]]+Number(c[2].toFixed(2)); }
 function fmtRule(r){ if(!r.conds || r.conds.length===0) return '(空)'; return r.conds.map(fmtCond).join(' & ')+' → '+r.then; }
 
-// ★ 渲染規則表，增加獨立測試集評估
+// ★ 渲染規則表，增加獨立測試集評估（移除潛在語法風險）
 function renderRuleTable(rules, trainStats) {
-  // 生成該規則的隨機變數 (這裡我們用臨時物件計算)
   function getIndependentStats(rule) {
-    var tProfit = 0, tGames = 0, tWins = 0;
+    var tProfit = 0, tGames = 0;
+    var rc = rule.conds || [];
+    
     for (var i = 0; i < trainN; i++) {
       var ok = true;
-      for (var c = 0; c < rule.conds.length; c++) {
-        if (!evalCondVal(trainFeat[i][rule.conds[c][0]], rule.conds[c][1], rule.conds[c][2])) { ok = false; break; }
+      for (var c = 0; c < rc.length; c++) {
+        if (!evalCondVal(trainFeat[i][rc[c][0]], rc[c][1], rc[c][2])) { ok = false; break; }
       }
       if (ok) {
         tGames++;
-        if (trainResult[i] === rule.thenCode) { tWins++; tProfit += trainOdds[i*3+rule.thenCode] - 100; }
+        if (trainResult[i] === rule.thenCode) { tProfit += trainOdds[i*3+rule.thenCode] - 100; }
         else tProfit -= 100;
       }
     }
     
-    var eProfit = 0, eGames = 0, eWins = 0;
+    var eProfit = 0, eGames = 0;
     if (testFeat) {
       for (var i = 0; i < testN; i++) {
         var ok = true;
-        for (var c = 0; c < rule.conds.length; c++) {
-          if (!evalCondVal(testFeat[i][rule.conds[c][0]], rule.conds[c][1], rule.conds[c][2])) { ok = false; break; }
+        for (var c = 0; c < rc.length; c++) {
+          if (!evalCondVal(testFeat[i][rc[c][0]], rc[c][1], rc[c][2])) { ok = false; break; }
         }
         if (ok) {
           eGames++;
-          if (testResult[i] === rule.thenCode) { eWins++; eProfit += testOdds[i*3+rule.thenCode] - 100; }
+          if (testResult[i] === rule.thenCode) { eProfit += testOdds[i*3+rule.thenCode] - 100; }
           else eProfit -= 100;
         }
       }
     }
-    return { tProfit, tGames, tWins, eProfit, eGames, eWins };
+    return { tProfit: tProfit, tGames: tGames, eProfit: eProfit, eGames: eGames };
   }
 
   var html = '<table><thead><tr><th>順序</th><th>條件</th><th>→</th><th>訓練獨立利潤</th><th>測試獨立利潤</th><th>狀態</th></tr></thead><tbody>';
@@ -843,7 +836,6 @@ function renderRuleTable(rules, trainStats) {
     
     var rowLabel = (i === rules.length - 1) ? (i + 1) + ' (兜底)' : '第 ' + (i + 1);
     
-    // 計算獨立利潤
     var ind = getIndependentStats(r);
     
     var tProfitHtml = ind.tProfit >= 0 ? '<span class="profit-pos">+' + ind.tProfit + '</span>' : '<span class="profit-neg">' + ind.tProfit + '</span>';
@@ -990,7 +982,7 @@ async function start(){
     document.getElementById('testResultPanel').style.display='none';
     updateStats(); clearLog();
 
-    pushLog('🚀 v98.0 — ' + (algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')), 'head');
+    pushLog('🚀 v98.1 — ' + (algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')), 'head');
     pushLog(nowTime()+' 訓練集資料：'+rawRowsData.length+' 筆，條件上限：'+condLabel, 'success');
     await yieldUI();
 
@@ -1090,7 +1082,6 @@ async function start(){
     renderCompareTable(finalTrainStats, rawRowsData, 'final');
     document.getElementById('txtH').value=formulaH;
     
-    // ★ 渲染帶有獨立體檢的表格
     renderRuleTable(res.rules, finalTrainStats);
 
     if (testRowsData && testRowsData.length > 0) {
