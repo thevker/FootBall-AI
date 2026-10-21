@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v98.1 — 規則獨立體檢版（穩定版）</title>
+<title>🚀 v98.8 — 穩定終極版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -68,19 +68,17 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 .score-b{background:#854d0e;color:#facc15;border:1px solid #eab308;}
 .score-f{background:#7f1d1d;color:#f87171;border:1px solid #ef4444;}
 .score-detail { margin-top: 10px; border-top: 1px dashed #475569; padding-top: 10px; font-size: 12px; color: #cbd5e1; }
-.score-detail ul { margin: 5px 0 0 0; padding-left: 20px; }
-.score-detail li { margin-bottom: 4px; }
 </style>
 </head>
 <body>
 
-<h2>🚀 v98.1 — 規則獨立體檢版</h2>
+<h2>🚀 v98.8 — 穩定終極版</h2>
 
 <div class="warn-banner">
-  <b>🩺 全新「規則獨立體檢」功能：</b>
-  <br>① 最終表格新增「測試集獨立盈利」。
-  <br>② 你可以清楚看到，哪一條規則在未來（測試集）是真賺錢，哪一條是只會死背歷史的毒藥。
-  <br>③ 實戰時，如果看到表格中某些規則「測試集虧損」，你可以選擇手動剔除它！
+  <b>🩺 規則獨立體檢 + 10000次搜索：</b>
+  <br>① 最終表格新增「測試集獨立盈利」，一眼看穿誰是毒藥。
+  <br>② 新增 10000 次搜索選項，並優化了底層計算，避免卡死。
+  <br>③ 純粹的評分公式，最直觀的實戰指標。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -121,7 +119,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
     <option value="0" selected>無限</option>
   </select>
 
-  <label id="lblRunCount">🔄 進化/搜索次數：</label>
+  <label id="lblRunCount">🔄 搜索次數：</label>
   <select id="runCount">
     <option value="10">10 次</option>
     <option value="50">50 次</option>
@@ -162,7 +160,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 
 <div class="stats" id="liveStats" style="display:none">
   <div class="stat" id="stat-pool">📦 候選池: 0</div>
-  <div class="stat" id="stat-greedy">🌡️ 當前代數: 0 / -</div>
+  <div class="stat" id="stat-greedy">🌡️ 當前輪次: 0 / -</div>
   <div class="stat" id="stat-win">🎯 全局最高命中率: -</div>
   <div class="stat" id="stat-train">📊 全局場次: -</div>
   <div class="stat" id="stat-total">💵 全局最高盈利: -</div>
@@ -311,23 +309,7 @@ function getWins(bs, thenCode){
   return wins;
 }
 
-function evalOnTest(conds, thenCode) {
-  if (!testRowsData || testRowsData.length === 0) return { profit: 0, cnt: 0 };
-  var profit = 0, cnt = 0;
-  for (var i = 0; i < testN; i++) {
-    var ok = true;
-    for (var c = 0; c < conds.length; c++) {
-      if (!evalCondVal(testFeat[i][conds[c][0]], conds[c][1], conds[c][2])) { ok = false; break; }
-    }
-    if (ok) {
-      cnt++;
-      if (testResult[i] === thenCode) profit += testOdds[i * 3 + thenCode] - 100;
-      else profit -= 100;
-    }
-  }
-  return { profit: profit, cnt: cnt };
-}
-
+// ★ 爬山階段只評估訓練集，避免手機卡死
 function metricOfBS(bs, conds, thenCode, mode){
   var total = bsCount(bs);
   if(total === 0) return -Infinity;
@@ -735,7 +717,7 @@ function applyFallbackLogic(finalRules, covered) {
   return { rules: formattedRules, fallbackInfo: fallbackInfo };
 }
 
-// ★ 計算模型評分 (暫時保留，顯示用)
+// ★ 計算模型評分 (純粹公式)
 function calculateModelScore(trainStats, testStats, ruleCount) {
   if (!testStats || testStats.totalProfit <= 0) {
     return { score: 0, grade: 'F', color: 'score-f', text: '❌ 直接丟棄（測試集虧損）', details: '' };
@@ -877,10 +859,10 @@ function genHFormula(rules){
   var setup = 
     'a, IFERROR(A2:A*1, 0), b, IFERROR(B2:B*1, 0), c, IFERROR(C2:C*1, 0), d, IFERROR(D2:D*1, 0), e, IFERROR(E2:E*1, 0), f, IFERROR(F2:F*1, 0), ' +
     'mn_abc, IFERROR(IF((a<=b)*(a<=c), a, IF(b<=c, b, c)), 0), mx_abc, IFERROR(IF((a>=b)*(a>=c), a, IF(b>=c, b, c)), 0), ' +
-    'ma, IFERROR(ROUND((a-d)/a*100, 2), 0), mb, IFERROR(ROUND((b-e)/b*100, 2), 0), mc, IFERROR(ROUND(( rrc-f)/c*100, 2), _i0), ' +
-    'inv_a, IFERROR,(1/a, 0), inv_b, IF ERROR(1/b, 0), inv_c, IF2ERROR(1/c,), 0), inv_d, IFERROR(1/d, 0), inv_e, IFERROR(1/e, 0), inv_f, IFERROR(1/f, 0), ' +
+    'ma, IFERROR(ROUND((a-d)/a*100, 2), 0), mb, IFERROR(ROUND((b-e)/b*100, 2), 0), mc, IFERROR(ROUND((c-f)/c*100, 2), 0), ' +
+    'inv_a, IFERROR(1/a, 0), inv_b, IFERROR(1/b, 0), inv_c, IFERROR(1/c, 0), inv_d, IFERROR(1/d, 0), inv_e, IFERROR(1/e, 0), inv_f, IFERROR(1/f, 0), ' +
     'sumA, inv_a+inv_b+inv_c, sumD, inv_d+inv_e+inv_f, ' +
-    'rr_i, IFERROR(ROUND(100/sumA, 2), 0), rr_f, IFERROR(ROUND(100/sumD, 2), 0), rr_d, IFERROR(ROUND(rr_f - 0), ' +
+    'rr_i, IFERROR(ROUND(100/sumA, 2), 0), rr_f, IFERROR(ROUND(100/sumD, 2), 0), rr_d, IFERROR(ROUND(rr_f - rr_i, 2), 0), ' +
     'tp_a, IFERROR(ROUND(inv_a/sumA*100, 2), 0), tp_d, IFERROR(ROUND(inv_d/sumD*100, 2), 0), tp_ad, IFERROR(ROUND(tp_d - tp_a, 2), 0), ' +
     'tp_c, IFERROR(ROUND(inv_c/sumA*100, 2), 0), tp_f, IFERROR(ROUND(inv_f/sumD*100, 2), 0), tp_cd, IFERROR(ROUND(tp_f - tp_c, 2), 0), ';
   return '=ARRAYFORMULA(IF((A2:A="")+(B2:B="")+(C2:C="")+(D2:D="")+(E2:E="")+(F2:F=""),"", LET(' + setup + body + ')))';
@@ -943,7 +925,7 @@ async function start(){
     document.getElementById('testResultPanel').style.display='none';
     updateStats(); clearLog();
 
-    pushLog('🚀 v98.1 — ' + (algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')), 'head');
+    pushLog('🚀 v98.8 — ' + (algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')), 'head');
     pushLog(nowTime()+' 訓練集資料：'+rawRowsData.length+' 筆，條件上限：'+condLabel, 'success');
     await yieldUI();
 
@@ -1098,12 +1080,12 @@ function extractFeatures(rows){
     f[4]=rnd2(B-E); f[5]=rnd2(E-B); f[6]=rnd2(B===0?0:(B-E)/B*100); f[7]=rnd2(E===0?0:B/E);
     f[8]=rnd2(C-F); f[9]=rnd2(F-C); f[10]=rnd2(C===0?0:(C-F)/C*100); f[11]=rnd2(F===0?0:C/F);
     var maPct=rnd2(A===0?0:(A-D)/A*100), mbPct=rnd2(B===0?0:(B-E)/B*100), mcPct=rnd2(C===0?0:(C-F)/C*100);
-    f[12]=rnd2(maPct<-mcPct); f[13A]=rnd2(maPct-mb?Pct); f[14]=rnd2(m1cPct-mbPct);
-   :( f[15]=rnd2((A-D)-(C-F)); f[16]=rnd2((A-D)-(B-E)); f[17]=rnd2((C-F)-(B-E));
+    f[12]=rnd2(maPct-mcPct); f[13]=rnd2(maPct-mbPct); f[14]=rnd2(mcPct-mbPct);
+    f[15]=rnd2((A-D)-(C-F)); f[16]=rnd2((A-D)-(B-E)); f[17]=rnd2((C-F)-(B-E));
     f[18]=rnd2((A-D)+(F-C)); f[19]=rnd2((C-F)+(D-A));
     f[20]=A; f[21]=B; f[22]=C; f[23]=D; f[24]=E; f[25]=F;
     f[26]=rnd2(A-C); f[27]=rnd2(D-F); f[28]=Math.max(A,B,C); f[29]=Math.min(A,B,C);
-    f[30]=DD>A?-1:0); f[31]=E<B?1:(E>B?-1:0); f[32]=F<C?1:(F>C?-1:0);
+    f[30]=D<A?1:(D>A?-1:0); f[31]=E<B?1:(E>B?-1:0); f[32]=F<C?1:(F>C?-1:0);
     f[33]=rnd2(C===0?0:A/C); f[34]=rnd2(F===0?0:D/F);
     var sumA=(A===0?0:1/A)+(B===0?0:1/B)+(C===0?0:1/C), sumD=(D===0?0:1/D)+(E===0?0:1/E)+(F===0?0:1/F);
     f[35]=sumA===0?0:rnd2(100/sumA); f[36]=sumD===0?0:rnd2(100/sumD); f[37]=rnd2(f[36]-f[35]);
