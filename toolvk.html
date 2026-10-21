@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v98.2 — 最強直觀評分版</title>
+<title>🚀 v98.3 — 最強直觀評分版</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -74,11 +74,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v98.2 — 最強直觀評分版</h2>
+<h2>🚀 v98.3 — 最強直觀評分版</h2>
 
 <div class="warn-banner">
   <b>🔥 全新「無上限積分制」上線：</b>
-  <br>① 取消 100 分封頂！測試集賺越多，分數越高，再也不怕分不清 1000 還是 8000。
+  <br>① 取消 100 分封頂！測試集賺越多，分數越高。
   <br>② 最終規則表補回「命中率、贏輸場數」，並加入「測試集獨立體檢」。
 </div>
 
@@ -739,7 +739,7 @@ function applyFallbackLogic(finalRules, covered) {
   return { rules: formattedRules, fallbackInfo: fallbackInfo };
 }
 
-// ★ 全新無上限積分系統
+// ★ 無上限積分系統
 function calculateModelScore(trainStats, testStats, ruleCount) {
   if (!testStats || testStats.totalProfit <= 0) {
     return { score: 0, grade: 'F', color: 'score-f', text: '❌ 直接丟棄（測試集虧損）', details: '' };
@@ -747,24 +747,20 @@ function calculateModelScore(trainStats, testStats, ruleCount) {
   
   var pScore = 0, rScore = 0, wScore = 0, sScore = 0;
   
-  // 1. 測試利潤分 (無上限，每 100 塊 = 1 分)
   pScore = testStats.totalProfit / 100;
   
-  // 2. 泛化分 (最高 25)
   var ratio = testStats.totalProfit / (trainStats.totalProfit || 1);
   if (ratio >= 0.8 && ratio <= 1.2) rScore = 25;
   else if (ratio > 1.2) rScore = 20; 
   else if (ratio >= 0.5) rScore = 15;
   else rScore = 5;
   
-  // 3. 勝率分 (最高 20)
   var wr = testStats.winRate;
   if (wr >= 55) wScore = 20;
   else if (wr >= 50) wScore = 15;
   else if (wr >= 45) wScore = 10;
   else wScore = 5;
   
-  // 4. 簡潔分 (最高 15)
   if (ruleCount <= 7) sScore = 15;
   else if (ruleCount <= 10) sScore = 12;
   else if (ruleCount <= 15) sScore = 8;
@@ -950,7 +946,7 @@ async function start(){
       var splitIdx = Math.floor(parsed.rows.length * ratio);
       rawRowsData = parsed.rows.slice(0, splitIdx);
       testRowsData = parsed.rows.slice(splitIdx);
-      pushLog(`✂️ 樣本分割：訓練集 ${rawRowsData.length} 場 / 測試集 ${testRowsData.length} 場`, 'warn');
+      pushLog('✂️ 樣本分割：訓練集 ' + rawRowsData.length + ' 場 / 測試集 ' + testRowsData.length + ' 場', 'warn');
     } else {
       rawRowsData = parsed.rows;
       testRowsData = null;
@@ -984,7 +980,7 @@ async function start(){
     document.getElementById('testResultPanel').style.display='none';
     updateStats(); clearLog();
 
-    pushLog('🚀 v98.2 — ' + (algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')), 'head');
+    pushLog('🚀 v98.3 — ' + (algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')), 'head');
     pushLog(nowTime()+' 訓練集資料：'+rawRowsData.length+' 筆，條件上限：'+condLabel, 'success');
     await yieldUI();
 
@@ -1105,13 +1101,13 @@ async function start(){
         '<b style="font-size:15px; color:#cbd5e1">📊 雙集驗證結果</b><br><br>' +
         '訓練集：<b style="color:' + (trProfit>0?'#4ade80':'#f87171') + '">' + (trProfit>0?'+':'') + trProfit + '</b> 單位（' + res.rules.length + ' 條規則）<br>' +
         '測試集：<b style="color:' + testColor + '">' + (teProfit>0?'+':'') + teProfit + '</b> 單位（勝率 ' + finalTestStats.winRate.toFixed(1) + '%）<br>' +
-        '<div style="margin-top:12px; font-weight:bold; color:' + testColor + '; font-size:15px;">實戰建議：.value' + scoreData.text + '</=div>' +
-       text scoreData.details;
+        '<div style="margin-top:12px; font-weight:bold; color:' + testColor + '; font-size:15px;">實戰建議：' + scoreData.text + '</div>' +
+        scoreData.details;
     }
 
     running=false;
-;    document.getElementById('btnRun').disabled=false; document.getElementById ta('btnStop').disabled=true;
-   .style updateStats(); updateProgress(); flushNow();
+    document.getElementById('btnRun').disabled=false; document.getElementById('btnStop').disabled=true;
+    updateStats(); updateProgress(); flushNow();
   } catch(e) {
     pushLog('❌ 發生錯誤：' + e.message + '\n' + e.stack, 'error');
     running = false; document.getElementById('btnRun').disabled=false; document.getElementById('btnStop').disabled=true;
@@ -1172,7 +1168,7 @@ function copyIt(id){
   } else fallbackCopy(txt);
 }
 function fallbackCopy(text){
-  var ta=document.createElement('textarea'); ta.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.focus(); ta.select();
+  var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.focus(); ta.select();
   var ok=false; try{ ok=document.execCommand('copy'); }catch(e){}
   document.body.removeChild(ta); var m=document.getElementById('msg');
   m.textContent=ok?'✅ 已複製 '+text.length+' 字元':'❌ 複製失敗'; m.className=ok?'ok':'err'; m.style.display='block';
