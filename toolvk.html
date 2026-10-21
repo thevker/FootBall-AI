@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v98.8 — 穩定終極版</title>
+<title>🚀 v98.1 — 規則獨立體檢版（10000次）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -68,17 +68,19 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 .score-b{background:#854d0e;color:#facc15;border:1px solid #eab308;}
 .score-f{background:#7f1d1d;color:#f87171;border:1px solid #ef4444;}
 .score-detail { margin-top: 10px; border-top: 1px dashed #475569; padding-top: 10px; font-size: 12px; color: #cbd5e1; }
+.score-detail ul { margin: 5px 0 0 0; padding-left: 20px; }
+.score-detail li { margin-bottom: 4px; }
 </style>
 </head>
 <body>
 
-<h2>🚀 v98.8 — 穩定終極版</h2>
+<h2>🚀 v98.1 — 規則獨立體檢版（10000次）</h2>
 
 <div class="warn-banner">
-  <b>🩺 規則獨立體檢 + 10000次搜索：</b>
-  <br>① 最終表格新增「測試集獨立盈利」，一眼看穿誰是毒藥。
-  <br>② 新增 10000 次搜索選項，並優化了底層計算，避免卡死。
-  <br>③ 純粹的評分公式，最直觀的實戰指標。
+  <b>🩺 全新「規則獨立體檢」功能：</b>
+  <br>① 最終表格新增「測試集獨立盈利」。
+  <br>② 你可以清楚看到，哪一條規則在未來（測試集）是真賺錢，哪一條是只會死背歷史的毒藥。
+  <br>③ 實戰時，如果看到表格中某些規則「測試集虧損」，你可以選擇手動剔除它！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -119,7 +121,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
     <option value="0" selected>無限</option>
   </select>
 
-  <label id="lblRunCount">🔄 搜索次數：</label>
+  <label id="lblRunCount">🔄 進化/搜索次數：</label>
   <select id="runCount">
     <option value="10">10 次</option>
     <option value="50">50 次</option>
@@ -160,7 +162,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 
 <div class="stats" id="liveStats" style="display:none">
   <div class="stat" id="stat-pool">📦 候選池: 0</div>
-  <div class="stat" id="stat-greedy">🌡️ 當前輪次: 0 / -</div>
+  <div class="stat" id="stat-greedy">🌡️ 當前代數: 0 / -</div>
   <div class="stat" id="stat-win">🎯 全局最高命中率: -</div>
   <div class="stat" id="stat-train">📊 全局場次: -</div>
   <div class="stat" id="stat-total">💵 全局最高盈利: -</div>
@@ -309,11 +311,38 @@ function getWins(bs, thenCode){
   return wins;
 }
 
-// ★ 爬山階段只評估訓練集，避免手機卡死
+// ★ 恢復 v98.1 的核心評估邏輯：爬山時，同時評估訓練集與測試集
+function evalOnTest(conds, thenCode) {
+  if (!testRowsData || testRowsData.length === 0) return { profit: 0, cnt: 0 };
+  var profit = 0, cnt = 0;
+  for (var i = 0; i < testN; i++) {
+    var ok = true;
+    for (var c = 0; c < conds.length; c++) {
+      if (!evalCondVal(testFeat[i][conds[c][0]], conds[c][1], conds[c][2])) { ok = false; break; }
+    }
+    if (ok) {
+      cnt++;
+      if (testResult[i] === thenCode) profit += testOdds[i * 3 + thenCode] - 100;
+      else profit -= 100;
+    }
+  }
+  return { profit: profit, cnt: cnt };
+}
+
 function metricOfBS(bs, conds, thenCode, mode){
   var total = bsCount(bs);
   if(total === 0) return -Infinity;
-  return profitOfBS(bs, thenCode);
+  
+  var trainProfit = profitOfBS(bs, thenCode);
+  
+  if(mode === 'test_max'){
+    if (!testRowsData || testRowsData.length === 0) return trainProfit;
+    var testRes = evalOnTest(conds, thenCode);
+    if (testRes.cnt < 3) return -999999; 
+    if (trainProfit <= 0) return -999999;
+    return (testRes.profit * 1.5) + (trainProfit * 0.5);
+  }
+  return trainProfit;
 }
 
 function evaluateRuleSet(rules) {
@@ -717,7 +746,6 @@ function applyFallbackLogic(finalRules, covered) {
   return { rules: formattedRules, fallbackInfo: fallbackInfo };
 }
 
-// ★ 計算模型評分 (純粹公式)
 function calculateModelScore(trainStats, testStats, ruleCount) {
   if (!testStats || testStats.totalProfit <= 0) {
     return { score: 0, grade: 'F', color: 'score-f', text: '❌ 直接丟棄（測試集虧損）', details: '' };
@@ -925,7 +953,7 @@ async function start(){
     document.getElementById('testResultPanel').style.display='none';
     updateStats(); clearLog();
 
-    pushLog('🚀 v98.8 — ' + (algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')), 'head');
+    pushLog('🚀 v98.1 — ' + (algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')), 'head');
     pushLog(nowTime()+' 訓練集資料：'+rawRowsData.length+' 筆，條件上限：'+condLabel, 'success');
     await yieldUI();
 
