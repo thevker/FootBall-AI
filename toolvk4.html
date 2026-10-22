@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🏆 v10.2 ULTIMATE — 賠率模式挖掘引擎</title>
+<title>🏆 v10.3 ULTIMATE — 賠率模式挖掘引擎</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b1120;color:#e2e8f0;padding:0 0 60px}
@@ -85,7 +85,7 @@ td.left-align,th.left-align{text-align:left}
 .rule-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;}
 .rule-index{font-weight:800;color:#818cf8;font-size:14px;}
 .rule-stats{display:flex;gap:16px;font-size:12px;background:#0b1120;padding:6px 12px;border-radius:6px;border:1px solid #334155;flex-wrap:wrap;}
-.rule-cond{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:#cbd5e1;line-height:1.8;background:#0f172a;padding:8px 12px;border-radius:6px;border-left:3px solid #6366f1;word-break:break-all;}
+.rule-cond{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:#cbd5e1;line-height:1.8;background:#0f172a;padding:8px 12px;border-radius:6px;border-left:3px solid #6366f1;word-wrap:break-word;word-break:break-word;}
 .rule-cond span{color:#fbbf24;font-weight:700;}
 .rule-cond .and{color:#64748b;margin:0 6px;font-weight:400;}
 
@@ -130,24 +130,13 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 .stab-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:10px}
 .stab-card{background:#0b1120;border:1px solid #334155;border-radius:6px;padding:10px;font-size:12px;line-height:1.8}
 .stab-card h4{color:#818cf8;margin-bottom:6px;font-size:12px}
-
-/* 全域遮罩 */
-#loadingOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(11,17,32,0.85);backdrop-filter:blur(6px);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:20px;}
-.spinner{width:60px;height:60px;border:5px solid rgba(99,102,241,0.3);border-top-color:#6366f1;border-radius:50%;animation:spin 1s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 
-<div id="loadingOverlay">
-  <div class="spinner"></div>
-  <div style="color:#a5b4fc;font-weight:bold;font-size:18px" id="loadingText">正在深度計算中，請稍候...</div>
-  <div style="color:#64748b;font-size:12px">（請勿關閉頁面，完成後會自動跳轉）</div>
-</div>
-
 <header>
   <div class="wrap">
-    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v10.2 ULTIMATE</span><span class="sub">68 特徵 · 5 算法 · 三段驗證 · 風控指標</span></h1>
+    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v10.3 ULTIMATE</span><span class="sub">68 特徵 · 5 算法 · 三段驗證 · 風控指標</span></h1>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="tab-setup" onclick="switchTab('tab-setup')">⚙️ 設定</button>
       <button class="tab-btn" data-tab="tab-result" onclick="switchTab('tab-result')">🏆 結果</button>
@@ -256,8 +245,8 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
           <label>🔄 迭代次數</label>
           <select id="runCount">
             <option value="5">5 (極速)</option>
-            <option value="10" selected>10 (推薦)</option>
-            <option value="20">20</option>
+            <option value="10">10</option>
+            <option value="20" selected>20 (推薦)</option>
             <option value="50">50</option>
             <option value="100">100</option>
           </select>
@@ -454,7 +443,7 @@ var EVAL_MAT={feat:null,result:null,odds:null,N:0,profitMat:null,condCache:{},co
 var running=false,startTime=0;
 var logBuffer=[],logTimer=null,LOG_MAX=3000;
 var lastYieldTime=0;
-var totalPhases=10,currentRun=0;
+var totalPhases=20,currentRun=0;
 var algoMode='hill-climb',optMode='test_max',ratioMode='A';
 var maxCondsLimit=0,minHitsRequired=0,dirLimit=0,fallbackMode='always-hda',trendMode='HDA';
 var allowedDirCodes=[0,1,2];
@@ -860,7 +849,7 @@ async function buildSinglesAsync(){
         }
       }
     }
-    if(fi%5===0||fi===FCOUNT-1){
+    if(fi%10===0 || fi===FCOUNT-1){
       pushLog('   ⚙️ 候選池 '+Math.round((fi+1)/FCOUNT*100)+'%（'+singles.length+' 個）','dim');
       if(shouldYield()) await yieldUI();
     }
@@ -909,7 +898,7 @@ async function runHillClimb(){
       var initS=tcSingles[initIdx];
       var current={conds:[initS.cond],bs:initS.bs,score:metricOfBS(initS.bs,[initS.cond],tc,optMode)};
       var gBest={conds:current.conds.slice(),bs:current.bs,score:current.score};
-      var maxIter=500,noImprove=0,T0=4000,alpha=0.995;
+      var maxIter=800,noImprove=0,T0=4000,alpha=0.995;
 
       for(var iter=0;iter<maxIter;iter++){
         if(!running)break;
@@ -960,10 +949,10 @@ async function runHillClimb(){
           if(newScore>gBest.score){gBest={conds:testConds.slice(),bs:newBS,score:newScore};noImprove=0;}
           else noImprove++;
         }else noImprove++;
-        if(noImprove>150)break;
+        if(noImprove>200)break;
         
-        // 每一百次強制刷新，避免卡死
-        if(iter % 100 === 0) await yieldUI();
+        // 取消高频中断，仅保留偶尔的 UI 刷新
+        if(iter % 200 === 0) await yieldUI();
       }
 
       if(gBest.score>-Infinity&&gBest.bs&&bsCount(gBest.bs)>0){
@@ -1135,7 +1124,7 @@ function extractRules(node,curConds,rules){
 }
 
 /* ============================================================
-   12. 遺傳 / 模因
+   12. 遺傳 / 模因 (修復統一字串與數組屬性)
    ============================================================ */
 function cloneInd(ind){
   var nr=[];
@@ -1202,6 +1191,7 @@ function createRandomIndividual(pool,maxRules){
     if(!usedFeatures[cand.fi]){
       usedFeatures[cand.fi]=true;
       if(cand.thenCode!==3)dirCounts[cand.thenCode]++;
+      // 修復：這裡必須是 conds: [cand.cond] 數組
       rules.push({on:1,then:RESULTS[cand.thenCode],thenCode:cand.thenCode,conds:[cand.cond],bs:cand.bs});
     }
   }
@@ -1217,7 +1207,7 @@ function crossover(pA,pB,maxRules){
   for(var k=0;k<combined.length;k++){
     var r=combined[k];
     if(dirLimit>0&&r.thenCode!==3&&dc[r.thenCode]>=dirLimit)continue;
-    var fi=r.conds[0][0];
+    var fi=r.conds[0][0]; // 取第一個條件的特徵索引作為去重基準
     if(!used[fi]){
       used[fi]=true;
       if(r.thenCode!==3)dc[r.thenCode]++;
@@ -1276,7 +1266,7 @@ async function runGeneticEngine(isMemetic){
     var ind=createRandomIndividual(pool,maxRules);
     ind.eval=evaluateIndividual(ind);
     pop.push(ind);
-    if(i%5===0)await yieldUI();
+    if(i%10===0)await yieldUI();
   }
   var gBest=null;
 
@@ -1294,12 +1284,11 @@ async function runGeneticEngine(isMemetic){
       var localN=Math.min(3,eliteCount);
       for(var m=0;m<localN;m++){
         var base=cloneInd(pop[m]);
-        for(var lm=0;lm<10;lm++){ 
+        for(var lm=0;lm<20;lm++){ 
           var trial=cloneInd(base);
           mutate(trial,pool,maxRules);
           trial.eval=evaluateIndividual(trial);
           if(trial.eval.fitness>base.eval.fitness)base=trial;
-          if(lm%3===0) await yieldUI();
         }
         if(base.eval.fitness>next[m].eval.fitness)next[m]=base;
       }
@@ -1313,7 +1302,6 @@ async function runGeneticEngine(isMemetic){
       if(Math.random()<mutRate)mutate(child,pool,maxRules);
       child.eval=evaluateIndividual(child);
       next.push(child);
-      if(next.length%5===0) await yieldUI();
     }
     pop=next;
 
@@ -1410,13 +1398,13 @@ async function runLearningCurveScan(parsedRows,R_budget,allowedCodes){
 
       trainN=trRows.length;testN=teRows.length;
       var m1=extractMeta(trRows,'final');
-      trainResult=m1.codes;trainOdds=m1.odds;trainFeat=await extractFeatures(trRows);
+      trainResult=m1.codes;trainOdds=m1.odds;trainFeat=extractFeatures(trRows);
       trainProfitMat=new Float64Array(3*trainN);
       for(var p1=0;p1<trainN;p1++)for(var c1=0;c1<3;c1++)
         trainProfitMat[c1*trainN+p1]=(trainResult[p1]===c1)?(trainOdds[p1*3+c1]-100):-100;
 
       var m2=extractMeta(teRows,'final');
-      testResult=m2.codes;testOdds=m2.odds;testFeat=await extractFeatures(teRows);
+      testResult=m2.codes;testOdds=m2.odds;testFeat=extractFeatures(teRows);
       testProfitMat=new Float64Array(3*testN);
       for(var p2=0;p2<testN;p2++)for(var c2=0;c2<3;c2++)
         testProfitMat[c2*testN+p2]=(testResult[p2]===c2)?(testOdds[p2*3+c2]-100):-100;
@@ -1972,9 +1960,7 @@ function drawEquityChart(details){
    ============================================================ */
 async function start(){
   try{
-    document.getElementById('loadingOverlay').style.display = 'flex';
-    document.getElementById('loadingText').textContent = '正在解析數據...';
-    document.getElementById('btnRun').textContent = '⏳ 解析中...';
+    document.getElementById('btnRun').textContent = '⏳ 尋優中...';
     document.getElementById('btnRun').disabled = true;
     document.getElementById('log').textContent = '正在解析數據...';
     
@@ -1982,7 +1968,6 @@ async function start(){
 
     var parsed=parseData(document.getElementById('input').value);
     if(parsed.rows.length<50){
-      document.getElementById('loadingOverlay').style.display = 'none';
       document.getElementById('log').innerHTML = '<div style="color:#f87171;font-weight:bold;padding:10px;">⚠️ 錯誤：解析到的有效數據不足 50 場（目前 ' + parsed.rows.length + ' 場）。<br>請檢查數據格式，或點擊「載入示範數據」測試。</div>';
       toast('⚠️ 有效數據不足，請檢查格式');
       document.getElementById('btnRun').textContent = '🚀 啟動終極尋優';
@@ -1999,10 +1984,9 @@ async function start(){
     var uiTrend=document.getElementById('trendMode').value;
     isAutoMode=(uiTrend==='AUTO');
     var gatePct=parseFloat(document.getElementById('minHitsPct').value)||0;
-    var runCount=parseInt(document.getElementById('runCount').value)||10;
+    var runCount=parseInt(document.getElementById('runCount').value)||20;
 
     running=true;startTime=Date.now();
-    document.getElementById('btnRun').textContent = '⏳ 尋優中...';
     document.getElementById('liveStats').style.display='flex';
     document.getElementById('autoRankPanel').style.display='none';
     document.getElementById('resultBody').style.display='none';
@@ -2011,7 +1995,7 @@ async function start(){
     currentResult=null;
     updateStats();clearLog();
 
-    pushLog('🚀 v10.2 ULTIMATE — 啟動','head');
+    pushLog('🚀 v10.3 ULTIMATE — 啟動','head');
     pushLog('🔬 比例：'+ratioModeLabel(ratioMode)+'｜算法：'+algoLabel(algoMode)+'｜目標：'+optLabel(optMode),'info');
     pushLog('🧬 特徵數：'+FCOUNT+'　場次：'+parsed.rows.length,'info');
     
@@ -2029,7 +2013,6 @@ async function start(){
       var bR=dirLimit>0?dirLimit*bcodes.length:15;
       minHitsRequired=gatePct>0?Math.ceil(N*0.7*gatePct):0;
       pushLog('📈 方案B 學習曲線掃描啟動（耗時較長）...','warn');
-      document.getElementById('loadingText').textContent = '正在掃描學習曲線...';
       ratio=await runLearningCurveScan(parsed.rows,bR,bcodes);
       splitIdx=Math.floor(N*ratio);
     }else if(ratioMode==='C'){
@@ -2070,22 +2053,18 @@ async function start(){
     featureValueCache={};clearCondCache();
 
     trainN=rawRowsData.length;
-    document.getElementById('loadingText').textContent = '正在提取特徵...';
-    await new Promise(r => setTimeout(r, 20));
     var mT=extractMeta(rawRowsData,'final');
     trainResult=mT.codes;trainOdds=mT.odds;
-    trainFeat=await extractFeatures(rawRowsData);
+    trainFeat=extractFeatures(rawRowsData);
     trainProfitMat=new Float64Array(3*trainN);
     for(var pi=0;pi<trainN;pi++)for(var ptc=0;ptc<3;ptc++)
       trainProfitMat[ptc*trainN+pi]=(trainResult[pi]===ptc)?(trainOdds[pi*3+ptc]-100):-100;
 
     if(testRowsData&&testRowsData.length>0){
       testN=testRowsData.length;
-      document.getElementById('loadingText').textContent = '正在提取測試集特徵...';
-      await new Promise(r => setTimeout(r, 20));
       var mTe=extractMeta(testRowsData,'final');
       testResult=mTe.codes;testOdds=mTe.odds;
-      testFeat=await extractFeatures(testRowsData);
+      testFeat=extractFeatures(testRowsData);
       testProfitMat=new Float64Array(3*testN);
       for(var pi2=0;pi2<testN;pi2++)for(var ptc2=0;ptc2<3;ptc2++)
         testProfitMat[ptc2*testN+pi2]=(testResult[pi2]===ptc2)?(testOdds[pi2*3+ptc2]-100):-100;
@@ -2097,7 +2076,7 @@ async function start(){
       valN=valRowsData.length;
       var mV=extractMeta(valRowsData,'final');
       valResult=mV.codes;valOdds=mV.odds;
-      valFeat=await extractFeatures(valRowsData);
+      valFeat=extractFeatures(valRowsData);
       valProfitMat=new Float64Array(3*valN);
       for(var pv=0;pv<valN;pv++)for(var pvc=0;pvc<3;pvc++)
         valProfitMat[pvc*valN+pv]=(valResult[pv]===pvc)?(valOdds[pv*3+pvc]-100):-100;
@@ -2128,9 +2107,6 @@ async function start(){
       else if(curMode==='HA')allowedDirCodes=[0,2];
       else allowedDirCodes=[0,1,2];
 
-      document.getElementById('loadingText').textContent = '正在深度計算模式：' + curMode + '（' + (mi+1) + '/' + modesToRun.length + '）';
-      await yieldUI();
-      
       if(isAutoMode)pushLog(nowTime()+' ▶️ 測試模式 '+curMode+' ('+(mi+1)+'/'+modesToRun.length+')','info');
 
       globalBestScore=-Infinity;globalBestRules=null;globalBestStats=null;globalBestFallback=null;
@@ -2262,7 +2238,6 @@ async function start(){
     }
 
     running=false;
-    document.getElementById('loadingOverlay').style.display = 'none';
     document.getElementById('btnRun').disabled=false;
     document.getElementById('btnRun').textContent='🚀 啟動終極尋優';
     updateStats();updateProgress();flushNow();
@@ -2270,7 +2245,6 @@ async function start(){
   }catch(e){
     pushLog('❌ 錯誤：'+e.message+'\n'+(e.stack||''),'error');
     running=false;
-    document.getElementById('loadingOverlay').style.display = 'none';
     document.getElementById('btnRun').disabled=false;
     document.getElementById('btnRun').textContent='🚀 啟動終極尋優';
     updateStats();updateProgress();flushNow();
@@ -2288,9 +2262,9 @@ function renderRankTable(){
     var teW=r.testStats?r.testStats.winRate:0;
     html+='<tr class="rank-row'+(i===0?' active':'')+'" data-mode="'+r.mode+'" onclick="viewAutoResult(\''+r.mode+'\')">'+
       '<td style="color:'+(i===0?'#facc15':'#cbd5e1')+'">'+r.mode+' '+crown+'</td>'+
-      '<td style="color:#4ade80;font-weight:700">'+r.scoreData.score+'</td>'+
-      '<td class="'+(teP>0?'profit-pos':'profit-neg')+'">'+(teP>0?'+':'')+teP+'</td>'+
-      '<td>'+teW.toFixed(1)+'%</td>'+
+      '<td style="color:#4ade80;font-weight:700">'+r ta.scoreData.score+'</td>'.value+
+      '<td class="'+(te=P>0?'profittext-pos':'profit-neg')+'">'+(teP>0?'+':'')+teP;+'</td>'+
+      '<tdta>'+teW.toFixed(1)+'%</td>'+
       '<td>'+r.trainStats.totalProfit+'</td>'+
       '<td>'+r.rules.length+'</td>'+
       '<td><button class="mini" style="background:#4f46e5">查看</button></td></tr>';
@@ -2439,7 +2413,7 @@ function copyText(txt){
 }
 function fallbackCopy(text){
   var ta=document.createElement('textarea');
-  ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';
+ .style.position='fixed';ta.style.left='-9999px';
   document.body.appendChild(ta);ta.focus();ta.select();
   var ok=false;
   try{ok=document.execCommand('copy');}catch(e){}
@@ -2505,11 +2479,10 @@ function updateRowCount(){
   document.getElementById('rowCountBadge').textContent=parsed.total+' 場';
 }
 
-async function extractFeatures(rows){
+function extractFeatures(rows){
   var N=rows.length,mat=new Array(N);
   var streakDir=null,streakLen=0;
   for(var i=0;i<N;i++){
-    if(i%500===0) await yieldUI(); // 防止大數據卡死
     var r=rows[i];
     var A=r.A,B=r.B,C=r.C,D=r.D,E=r.E,F=r.F;
     var f=new Float64Array(FCOUNT);
@@ -2686,7 +2659,6 @@ function loadModel(id){
   for(var i=0;i<list.length;i++){if(list[i].id===id){m=list[i];break;}}
   if(!m){toast('❌ 找不到模型');return;}
 
-  // 兼容修復：處理歷史存儲的單數 cond 或缺失 conds
   var rules=m.rules.map(function(r){
     var cs = r.conds ? r.conds : (r.cond ? [r.cond] : []);
     return {on:1,then:r.then,thenCode:r.thenCode,conds:cs,bs:null};
@@ -2814,12 +2786,11 @@ function loadDemo(){
     var rv=rnd();
     var res=rv<pHome?'H':(rv<pHome+pDraw?'D':'A');
 
-    // 模擬用戶錯行格式
-    lines.push(A+' '+B+' '+C+' '+D+' '+E+' '+F+'\n'+res);
+    lines.push(A+' '+B+' '+C+' '+D+' '+E+' '+F+' '+res);
   }
   document.getElementById('input').value=lines.join('\n');
   updateRowCount();
-  toast('🎲 已載入 800 場示範數據 (含換行排版)');
+  toast('🎲 已載入 800 場示範數據');
 }
 function rnd2s(v){return Math.round(v);}
 
