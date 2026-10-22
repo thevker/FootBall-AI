@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v98.4.1 — 獨立體檢 + 最高評分 + 指向限制 + 性能優化</title>
+<title>🚀 v98.5 — 獨立體檢 + 最高評分 + 指向限制 + 防虧兜底</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -69,13 +69,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v98.4.1 — 獨立體檢 + 最高評分 + 指向限制 + 性能優化</h2>
+<h2>🚀 v98.5 — 獨立體檢 + 最高評分 + 指向限制 + 防虧兜底</h2>
 
 <div class="warn-banner">
-  <b>🩺 規則獨立體檢：</b>① 最終表格含「測試集獨立盈利」 ② 一眼看穿哪條規則未來真賺錢、哪條是死背歷史的毒藥 ③ 可手動剔除測試集虧損的規則。
+  <b>🩺 規則獨立體檢：</b>① 最終表格含「測試集獨立盈利」 ② 一眼看穿哪條規則未來真賺錢 ③ 可手動剔除虧損規則。
   <br><b>🏆 找最高評分：</b>④ 以「測試集單位利潤×100」為優化目標。
-  <br><b>🎯 指向限制：</b>⑤ 限制每方向(H/D/A)最多幾條條件規則，可選 1/2/3/無限，預設無限。
-  <br><b>⚡ v98.4 性能優化：</b>⑥ 測試集評估位運算化+緩存（10~30倍） ⑦ 訓練集虧損提前秒退（2~5倍） ⑧ 利潤矩陣查表（1.3倍）。
+  <br><b>🎯 指向限制：</b>⑤ 限制每方向(H/D/A)最多幾條條件規則。
+  <br><b>🛟 v98.5 智慧兜底：</b>⑥ 移除 EV 門控。預設「純 HDA」，若計算發現 H/D/A 全數虧損，<b>自動改為 Skip（不下注）</b>，絕不硬送錢。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -146,15 +146,8 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 
   <label>🛟 兜底策略：</label>
   <select id="fallbackMode">
-    <option value="ev-gated">🧠 EV 門控</option>
-    <option value="always-hda">🎯 純 HDA</option>
-    <option value="skip" selected>⏸ 純 Skip（不下注）</option>
-  </select>
-
-  <label>🛟 兜底 EV 門檻：</label>
-  <select id="fallbackEv">
-    <option value="0" selected>總盈利 &gt; 0</option>
-    <option value="50">總盈利 &gt; +50</option>
+    <option value="always-hda" selected>🎯 純 HDA（全虧自動 Skip）</option>
+    <option value="skip">⏸ 純 Skip（不下注）</option>
   </select>
 </div>
 
@@ -231,8 +224,7 @@ var lastYieldTime=0;
 var totalPhases=100,currentRun=0;
 var algoMode='hill-climb',optMode='test_max';
 var maxCondsLimit=0,minHitsRequired=0,dirLimit=0;
-var fallbackMode='skip',fallbackEvThreshold=0;
-var MIN_FALLBACK_SAMPLES=15;
+var fallbackMode='always-hda'; // 預設改為 always-hda
 
 var precomputedSingles=null;
 var allMask=null;
@@ -244,7 +236,6 @@ var globalBestWinRate=0,globalBestGames=0,globalBestProfit=-Infinity;
 var featureValueCache={},condBSCache={},condBSCacheSize=0;
 var COND_CACHE_MAX=500000;
 
-// v98.4 性能矩陣與測試緩存
 var trainProfitMat=null;
 var testProfitMat=null;
 var testCondBSCache={},testCondBSCacheSize=0;
@@ -330,7 +321,6 @@ function getWins(bs,thenCode){
   return wins;
 }
 
-// v98.4 evalOnTest 位運算化
 function evalOnTest(conds,thenCode){
   if(!testFeat||testN===0)return {profit:0,cnt:0};
   if(!conds||conds.length===0)return {profit:0,cnt:0};
@@ -531,7 +521,6 @@ async function runHillClimb(){
     }
   }
 
-  // v98.3 貪心覆蓋 + dirLimit
   var finalRules=[],covered=bsNew(trainN),dirCounts=[0,0,0];
   while(true){
     var bestIdx=-1,maxIncrement=-Infinity;
@@ -632,9 +621,8 @@ function evaluateIndividualDouble(ind){
       if(pDir>bestDirProfit){bestDirProfit=pDir;bestDir=tc;}
     }
     var useHDA=false;
-    if(fallbackMode==='always-hda')useHDA=true;
-    else if(fallbackMode==='ev-gated'){
-      if(remainCnt>=MIN_FALLBACK_SAMPLES&&bestDirProfit>fallbackEvThreshold)useHDA=true;
+    if(fallbackMode==='always-hda'){
+      if(bestDirProfit>0) useHDA=true; // 防虧機制：全虧則不押
     }
     if(useHDA){totalProfit+=bestDirProfit;games+=remainCnt;wins+=getWins(remainBS,bestDir);}
   }
@@ -780,12 +768,17 @@ function applyFallbackLogic(finalRules,covered){
       if(pDir>bestDirProfit){bestDirProfit=pDir;bestDir=ftc;}
     }
     var useFallbackHDA=false,reason='';
-    if(fallbackMode==='always-hda'){useFallbackHDA=true;reason='強制純HDA';}
-    else if(fallbackMode==='ev-gated'){
-      if(remainCnt<MIN_FALLBACK_SAMPLES)reason='樣本不足';
-      else if(bestDirProfit<=fallbackEvThreshold)reason='EV不及門檻';
-      else{useFallbackHDA=true;reason='EV門控通過';}
-    }else reason='純Skip模式';
+    if(fallbackMode==='always-hda'){
+      if(bestDirProfit>0){
+        useFallbackHDA=true;
+        reason='純HDA（利潤>0）';
+      }else{
+        useFallbackHDA=false;
+        reason='純HDA（全虧自動Skip）';
+      }
+    }else{
+      reason='純Skip模式';
+    }
     if(useFallbackHDA){
       finalRules.push({on:1,then:RESULTS[bestDir],thenCode:bestDir,conds:[],bs:remainingBS});
       fallbackInfo={remainCnt:remainCnt,bestDir:RESULTS[bestDir],bestDirCode:bestDir,profit:bestDirProfit,dirProfits:dirProfits,mode:'HDA',reason:reason};
@@ -934,7 +927,7 @@ function updateStats(){document.getElementById('stat-pool').innerHTML='📦 候�
 function yieldUI(){flushNow();updateProgress();updateStats();lastYieldTime=Date.now();return new Promise(function(resolve){setTimeout(resolve,0);});}
 function shouldYield(){return Date.now()-lastYieldTime>25;}
 function onAlgoChange(){var m=document.getElementById('algoMode').value;document.getElementById('runCount').style.display=m==='decision-tree'?'none':'inline-block';document.getElementById('lblRunCount').style.display=m==='decision-tree'?'none':'inline-block';}
-function fallbackModeLabel(m){return m==='ev-gated'?'🧠 EV 門控':(m==='always-hda'?'🎯 純 HDA':'⏸ 純 Skip');}
+function fallbackModeLabel(m){return m==='always-hda'?'🎯 純 HDA（全虧自動 Skip）':'⏸ 純 Skip';}
 function dirLimitLabel(d){return d===0?'無限':('每方向 ≤ '+d+' 條');}
 
 async function start(){
@@ -959,7 +952,6 @@ async function start(){
     maxCondsLimit=parseInt(document.getElementById('maxConds').value)||0;
     dirLimit=parseInt(document.getElementById('dirLimit').value)||0;
     fallbackMode=document.getElementById('fallbackMode').value;
-    fallbackEvThreshold=parseFloat(document.getElementById('fallbackEv').value)||0;
 
     var gatePct=parseFloat(document.getElementById('minHitsPct').value)||0;
     minHitsRequired=gatePct>0?Math.ceil(rawRowsData.length*gatePct):0;
@@ -984,7 +976,7 @@ async function start(){
     document.getElementById('testResultPanel').style.display='none';
     updateStats();clearLog();
 
-    pushLog('🚀 v98.4.1 — '+(algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')),'head');
+    pushLog('🚀 v98.5 — '+(algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')),'head');
     pushLog(nowTime()+' 訓練集：'+rawRowsData.length+' 筆，條件上限：'+condLabel+'，指向限制：'+dirLabel,'success');
     await yieldUI();
 
@@ -1109,7 +1101,8 @@ async function start(){
         var isBest=(di===res.fallbackInfo.bestDirCode);
         dirRows+='<span style="display:inline-block;margin-right:14px;'+(isBest?'font-weight:bold;':'')+'"><span class="tag-'+(di===0?'h':di===1?'d':'a')+'">'+dirNames[di]+'</span> <span class="'+pc+'">'+(pv>0?'+':'')+pv+'</span>'+(isBest?' ←最高':'')+'</span>';
       }
-      fbPanelHtml='<div class="fb-panel"><b>🛟 兜底（剩餘 '+res.fallbackInfo.remainCnt+' 場）</b><br>EV：'+dirRows+'<br>決策：<b style="color:'+((res.fallbackInfo.mode==='HDA')?'#4ade80':'#94a3b8')+'">'+((res.fallbackInfo.mode==='HDA')?('押 '+res.fallbackInfo.bestDir):'Skip')+'</b>　原因：<span style="color:#94a3b8">'+res.fallbackInfo.reason+'</span>　<span style="color:#fbbf24;font-size:11px;">(兜底不計入指向限制)</span></div>';
+      var fbColor = res.fallbackInfo.mode==='HDA' ? '#4ade80' : '#fbbf24';
+      fbPanelHtml='<div class="fb-panel"><b>🛟 兜底（剩餘 '+res.fallbackInfo.remainCnt+' 場）</b><br>EV：'+dirRows+'<br>決策：<b style="color:'+fbColor+'">'+((res.fallbackInfo.mode==='HDA')?('押 '+res.fallbackInfo.bestDir):'Skip')+'</b>　原因：<span style="color:#94a3b8">'+res.fallbackInfo.reason+'</span>　<span style="color:#fbbf24;font-size:11px;">(兜底不計入指向限制)</span></div>';
     }else{
       fbPanelHtml='<div class="fb-panel"><b>🛟 兜底</b>：✅ 所有場次已被規則完全覆蓋</div>';
     }
