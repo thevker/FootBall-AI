@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v98.5 — 獨立體檢 + 最高評分 + 指向限制 + 防虧兜底</title>
+<title>🚀 v98.6 — 獨立體檢 + 最高評分 + 指向限制 + 防虧兜底 + 趨勢模式</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -69,13 +69,14 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v98.5 — 獨立體檢 + 最高評分 + 指向限制 + 防虧兜底</h2>
+<h2>🚀 v98.6 — 獨立體檢 + 最高評分 + 指向限制 + 防虧兜底 + 趨勢模式</h2>
 
 <div class="warn-banner">
   <b>🩺 規則獨立體檢：</b>① 最終表格含「測試集獨立盈利」 ② 一眼看穿哪條規則未來真賺錢 ③ 可手動剔除虧損規則。
   <br><b>🏆 找最高評分：</b>④ 以「測試集單位利潤×100」為優化目標。
   <br><b>🎯 指向限制：</b>⑤ 限制每方向(H/D/A)最多幾條條件規則。
-  <br><b>🛟 v98.5 智慧兜底：</b>⑥ 移除 EV 門控。預設「純 HDA」，若計算發現 H/D/A 全數虧損，<b>自動改為 Skip（不下注）</b>，絕不硬送錢。
+  <br><b>🛟 智慧兜底：</b>⑥ 預設「純 HDA」，若計算發現 H/D/A 全數虧損，<b>自動改為 Skip</b>。
+  <br><b>📈 v98.6 趨勢模式：</b>⑦ 限制特徵規則只能預測特定賽果。例如選 HA，爬山/遺傳/決策樹就<b>只會抓主客，絕不碰和局</b>。兜底不受此限。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -123,6 +124,17 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
     <option value="1">每方向 1 條</option>
     <option value="2">每方向 2 條</option>
     <option value="3">每方向 3 條</option>
+  </select>
+
+  <label>📈 趨勢模式：</label>
+  <select id="trendMode">
+    <option value="H">H（僅主勝）</option>
+    <option value="D">D（僅和局）</option>
+    <option value="A">A（僅客勝）</option>
+    <option value="HD">HD（主/和）</option>
+    <option value="DA">DA（和/客）</option>
+    <option value="HA">HA（主/客）</option>
+    <option value="HDA" selected>HDA（全方向）</option>
   </select>
 
   <label id="lblRunCount">🔄 進化/搜索次數：</label>
@@ -224,7 +236,9 @@ var lastYieldTime=0;
 var totalPhases=100,currentRun=0;
 var algoMode='hill-climb',optMode='test_max';
 var maxCondsLimit=0,minHitsRequired=0,dirLimit=0;
-var fallbackMode='always-hda'; // 預設改為 always-hda
+var fallbackMode='always-hda';
+var trendMode='HDA';
+var allowedDirCodes=[0,1,2]; // H=0, D=1, A=2
 
 var precomputedSingles=null;
 var allMask=null;
@@ -451,6 +465,7 @@ async function buildSinglesAsync(){
         var thr=ths[k],bs=getCondBS(fi,op,thr),total=bsCount(bs);
         if(total===0||(minHitsRequired>0&&total<minHitsRequired))continue;
         for(var tc=0;tc<3;tc++){
+          if(allowedDirCodes.indexOf(tc) === -1) continue; // 趨勢模式限制
           var p=profitOfBS(bs,tc);
           if(p>0)singles.push({fi:fi,cond:[fi,op,thr],bs:bs,thenCode:tc,profit:p});
         }
@@ -470,6 +485,7 @@ async function runHillClimb(){
   var allCondRules=[];
 
   for(var tc=0;tc<3;tc++){
+    if(allowedDirCodes.indexOf(tc) === -1) continue; // 趨勢模式限制
     var tcSingles=singles.filter(function(s){return s.thenCode===tc;});
     if(tcSingles.length===0)continue;
     tcSingles.sort(function(a,b){return b.profit-a.profit;});
@@ -548,6 +564,7 @@ function getBestLeafDouble(bs_mask){
   if(total===0)return {code:3,score:0,profit:0,wins:0,games:0,winRate:0};
   var bestCode=3,bestScore=-Infinity,bestProfit=0,bestWins=0;
   for(var tc=0;tc<3;tc++){
+    if(allowedDirCodes.indexOf(tc) === -1) continue; // 趨勢模式限制
     var p=profitOfBS(bs_mask,tc);
     if(p>bestScore){bestScore=p;bestCode=tc;bestProfit=p;bestWins=getWins(bs_mask,tc);}
   }
@@ -616,13 +633,13 @@ function evaluateIndividualDouble(ind){
   var remainCnt=bsCount(remainBS);
   if(remainCnt>0){
     var bestDir=0,bestDirProfit=-Infinity;
-    for(var tc=0;tc<3;tc++){
+    for(var tc=0;tc<3;tc++){ // 兜底不受趨勢模式限制
       var pDir=profitOfBS(remainBS,tc);
       if(pDir>bestDirProfit){bestDirProfit=pDir;bestDir=tc;}
     }
     var useHDA=false;
     if(fallbackMode==='always-hda'){
-      if(bestDirProfit>0) useHDA=true; // 防虧機制：全虧則不押
+      if(bestDirProfit>0) useHDA=true;
     }
     if(useHDA){totalProfit+=bestDirProfit;games+=remainCnt;wins+=getWins(remainBS,bestDir);}
   }
@@ -763,7 +780,7 @@ function applyFallbackLogic(finalRules,covered){
   var remainCnt=bsCount(remainingBS),fallbackInfo=null;
   if(remainCnt>0){
     var dirProfits=[],bestDir=0,bestDirProfit=-Infinity;
-    for(var ftc=0;ftc<3;ftc++){
+    for(var ftc=0;ftc<3;ftc++){ // 兜底不受趨勢模式限制
       var pDir=profitOfBS(remainingBS,ftc);dirProfits.push(pDir);
       if(pDir>bestDirProfit){bestDirProfit=pDir;bestDir=ftc;}
     }
@@ -952,6 +969,15 @@ async function start(){
     maxCondsLimit=parseInt(document.getElementById('maxConds').value)||0;
     dirLimit=parseInt(document.getElementById('dirLimit').value)||0;
     fallbackMode=document.getElementById('fallbackMode').value;
+    
+    trendMode=document.getElementById('trendMode').value;
+    if(trendMode==='H') allowedDirCodes=[0];
+    else if(trendMode==='D') allowedDirCodes=[1];
+    else if(trendMode==='A') allowedDirCodes=[2];
+    else if(trendMode==='HD') allowedDirCodes=[0,1];
+    else if(trendMode==='DA') allowedDirCodes=[1,2];
+    else if(trendMode==='HA') allowedDirCodes=[0,2];
+    else allowedDirCodes=[0,1,2];
 
     var gatePct=parseFloat(document.getElementById('minHitsPct').value)||0;
     minHitsRequired=gatePct>0?Math.ceil(rawRowsData.length*gatePct):0;
@@ -976,8 +1002,8 @@ async function start(){
     document.getElementById('testResultPanel').style.display='none';
     updateStats();clearLog();
 
-    pushLog('🚀 v98.5 — '+(algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')),'head');
-    pushLog(nowTime()+' 訓練集：'+rawRowsData.length+' 筆，條件上限：'+condLabel+'，指向限制：'+dirLabel,'success');
+    pushLog('🚀 v98.6 — '+(algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')),'head');
+    pushLog(nowTime()+' 訓練集：'+rawRowsData.length+' 筆，條件上限：'+condLabel+'，指向限制：'+dirLabel+'，趨勢模式：'+trendMode,'success');
     await yieldUI();
 
     featureValueCache={};clearCondCache();
@@ -1013,7 +1039,7 @@ async function start(){
     var initStart=Date.now();
     precomputedSingles=await buildSinglesAsync();
     poolSize=precomputedSingles.length;
-    if(precomputedSingles.length===0){alert('⚠️ 候選池為空，無法搜索。');running=false;document.getElementById('btnRun').disabled=false;return;}
+    if(precomputedSingles.length===0){alert('⚠️ 候選池為空，無法搜索。可能與趨勢模式限制有關。');running=false;document.getElementById('btnRun').disabled=false;return;}
     pushLog(nowTime()+' ✅ 候選池：'+poolSize+' 個（'+(Date.now()-initStart)+' ms）','success');
     await yieldUI();
 
@@ -1102,7 +1128,7 @@ async function start(){
         dirRows+='<span style="display:inline-block;margin-right:14px;'+(isBest?'font-weight:bold;':'')+'"><span class="tag-'+(di===0?'h':di===1?'d':'a')+'">'+dirNames[di]+'</span> <span class="'+pc+'">'+(pv>0?'+':'')+pv+'</span>'+(isBest?' ←最高':'')+'</span>';
       }
       var fbColor = res.fallbackInfo.mode==='HDA' ? '#4ade80' : '#fbbf24';
-      fbPanelHtml='<div class="fb-panel"><b>🛟 兜底（剩餘 '+res.fallbackInfo.remainCnt+' 場）</b><br>EV：'+dirRows+'<br>決策：<b style="color:'+fbColor+'">'+((res.fallbackInfo.mode==='HDA')?('押 '+res.fallbackInfo.bestDir):'Skip')+'</b>　原因：<span style="color:#94a3b8">'+res.fallbackInfo.reason+'</span>　<span style="color:#fbbf24;font-size:11px;">(兜底不計入指向限制)</span></div>';
+      fbPanelHtml='<div class="fb-panel"><b>🛟 兜底（剩餘 '+res.fallbackInfo.remainCnt+' 場）</b><br>EV：'+dirRows+'<br>決策：<b style="color:'+fbColor+'">'+((res.fallbackInfo.mode==='HDA')?('押 '+res.fallbackInfo.bestDir):'Skip')+'</b>　原因：<span style="color:#94a3b8">'+res.fallbackInfo.reason+'</span>　<span style="color:#fbbf24;font-size:11px;">(兜底不受趨勢模式限制)</span></div>';
     }else{
       fbPanelHtml='<div class="fb-panel"><b>🛟 兜底</b>：✅ 所有場次已被規則完全覆蓋</div>';
     }
@@ -1110,9 +1136,9 @@ async function start(){
     document.getElementById('summary').innerHTML=
       '<div style="font-size:16px;color:#cbd5e1;margin-bottom:4px">基於訓練集模擬：</div>'+
       '<div style="font-size:36px;color:'+earnColor+';font-weight:bold;margin-bottom:12px;padding:10px;background:rgba(0,0,0,0.2);border-radius:8px;text-align:center;">'+earnStatus+'（'+(bestTotal>0?'+':'')+bestTotal+' 單位）</div>'+
-      '<div style="font-size:14px;color:#cbd5e1;line-height:1.9">結算：<b>尾盤 D/E/F</b>　條件上限：<b>'+condLabel+'</b>　指向限制：<b>'+dirLabel+'</b>　命中門檻：<b>'+(minHitsRequired===0?'關閉':Math.round(gatePct*100)+'%')+'</b><br>命中率 <b style="color:#c084fc">'+finalTrainStats.winRate.toFixed(2)+'%</b>（'+finalTrainStats.wins+'/'+finalTrainStats.games+'）　共 <b>'+res.rules.length+'</b> 條規則</div>'+fbPanelHtml;
+      '<div style="font-size:14px;color:#cbd5e1;line-height:1.9">結算：<b>尾盤 D/E/F</b>　條件上限：<b>'+condLabel+'</b>　指向限制：<b>'+dirLabel+'</b>　趨勢模式：<b>'+trendMode+'</b>　命中門檻：<b>'+(minHitsRequired===0?'關閉':Math.round(gatePct*100)+'%')+'</b><br>命中率 <b style="color:#c084fc">'+finalTrainStats.winRate.toFixed(2)+'%</b>（'+finalTrainStats.wins+'/'+finalTrainStats.games+'）　共 <b>'+res.rules.length+'</b> 條規則</div>'+fbPanelHtml;
 
-    document.getElementById('resultInfo').innerHTML='算法：<b>'+(algoMode==='genetic'?'🧬 遺傳':(algoMode==='hill-climb'?'⛰️ 爬山':'🌳 決策樹'))+'</b>　目標：<b>'+modeLabel+'</b><br>兜底：<b>'+fbLabel+'</b>　指向限制：<b>'+dirLabel+'</b>　輪數：<b>'+totalPhases+'</b>';
+    document.getElementById('resultInfo').innerHTML='算法：<b>'+(algoMode==='genetic'?'🧬 遺傳':(algoMode==='hill-climb'?'⛰️ 爬山':'🌳 決策樹'))+'</b>　目標：<b>'+modeLabel+'</b><br>兜底：<b>'+fbLabel+'</b>　指向限制：<b>'+dirLabel+'</b>　趨勢模式：<b>'+trendMode+'</b>　輪數：<b>'+totalPhases+'</b>';
 
     renderCompareTable(finalTrainStats,rawRowsData,'final');
     document.getElementById('txtH').value=formulaH;
