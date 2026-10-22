@@ -82,10 +82,10 @@ td.left-align,th.left-align{text-align:left}
 /* RULE CARD LAYOUT */
 .rule-item{display:flex;flex-direction:column;border-bottom:1px solid #1e293b;padding:12px;}
 .rule-item:last-child{border-bottom:none;}
-.rule-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.rule-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;}
 .rule-index{font-weight:800;color:#818cf8;font-size:14px;}
-.rule-stats{display:flex;gap:16px;font-size:12px;background:#0b1120;padding:6px 12px;border-radius:6px;border:1px solid #334155;}
-.rule-cond{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:#cbd5e1;line-height:1.8;background:#0f172a;padding:8px 12px;border-radius:6px;border-left:3px solid #6366f1;}
+.rule-stats{display:flex;gap:16px;font-size:12px;background:#0b1120;padding:6px 12px;border-radius:6px;border:1px solid #334155;flex-wrap:wrap;}
+.rule-cond{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:#cbd5e1;line-height:1.8;background:#0f172a;padding:8px 12px;border-radius:6px;border-left:3px solid #6366f1;word-break:break-all;}
 .rule-cond span{color:#fbbf24;font-weight:700;}
 .rule-cond .and{color:#64748b;margin:0 6px;font-weight:400;}
 
@@ -174,7 +174,7 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 
     <div class="info-banner">
       <b>📥 數據格式</b>：每行 7 欄 <code>A主初 B和初 C客初 D主尾 E和尾 F客尾 結果</code>（H/D/A）。
-      <b>支援自動偵測百分制</b>（如 <code>167 370 400 144 495 550 H</code> 會自動轉為 1.67 等標準賠率）。至少 100 場。
+      <b>系統已自動相容排版錯位</b>（如賽果被換到下一行也能精準抓取）。支援百分制自動轉換。
     </div>
 
     <div class="card">
@@ -855,6 +855,27 @@ async function buildSinglesAsync(){
       await new Promise(function(r){setTimeout(r,0);});
     }
   }
+  
+  // 防呆機制：如果完全找不到正向利潤的條件，強制取利潤最高的前 100 個
+  if(singles.length===0){
+    pushLog('   ⚠️ 無法找到正利潤條件，啟動防呆：提取虧損最小的候選...','warn');
+    for(var fi2=0;fi2<FCOUNT;fi2+=5){
+      var ths2=getThresholds(fi2);
+      for(var k2=0;k2<ths2.length;k2+=10){
+        var bs2=getCondBS(fi2,0,ths2[k2]);
+        var total2=bsCount(bs2);
+        if(total2<10)continue;
+        for(var tc2=0;tc2<3;tc2++){
+          if(allowedDirCodes.indexOf(tc2)===-1)continue;
+          var p2=profitOfBS(bs2,tc2);
+          singles.push({fi:fi2,cond:[fi2,0,ths2[k2]],bs:bs2,thenCode:tc2,profit:p2});
+        }
+      }
+    }
+    singles.sort(function(a,b){return b.profit-a.profit;});
+    singles=singles.slice(0,200); // 只取前200
+  }
+
   return singles;
 }
 
@@ -1940,8 +1961,8 @@ function drawEquityChart(details){
 async function start(){
   try{
     var parsed=parseData(document.getElementById('input').value);
-    if(parsed.rows.length<100){
-      toast('⚠️ 數據不足，至少需要 100 場（目前 '+parsed.rows.length+' 場）');
+    if(parsed.rows.length<50){
+      toast('⚠️ 有效數據不足，至少需要 50 場（目前 '+parsed.rows.length+' 場）');
       return;
     }
 
@@ -2413,90 +2434,38 @@ function optLabel(m){
   var map={'test_max':'🔥 測試集極限利潤','score_max':'🏆 最高綜合評分','robust':'🛡️ 穩健優先','profit':'💰 僅訓練盈利'};
   return map[m]||m;
 }
+
+// 全新智慧讀取：無視換行與排版，精準提取
+function parseData(text){
+  var tokens = text.split(/[\s,]+/).filter(function(t){ return t.trim().length > 0; });
+  var rows = [], seen = {};
+  for (var i = 0; i < tokens.length; i++) {
+    if (tokens.length - i < 7) break;
+    var A = Number(tokens[i]);
+    var B = Number(tokens[i+1]);
+    var C = Number(tokens[i+2]);
+    var D = Number(tokens[i+3]);
+    var E = Number(tokens[i+4]);
+    var F = Number(tokens[i+5]);
+    var r = String(tokens[i+6]).toUpperCase();
+    
+    if ([A,B,C,D,E,F].every(function(x){return !isNaN(x) && x > 0;}) && ['H','D','A'].indexOf(r) !== -1) {
+      if (A > 10) { A/=100; B/=100; C/=100; D/=100; E/=100; F/=100; }
+      var sig = [A,B,C,D,E,F,r].join('|');
+      if (!seen[sig]) {
+        seen[sig] = 1;
+        rows.push({A:A,B:B,C:C,D:D,E:E,F:F,result:r});
+      }
+      i += 6; // 成功匹配，跳過這 7 個元素
+    }
+  }
+  return {rows:rows, total:rows.length};
+}
+
 function updateRowCount(){
   var txt=document.getElementById('input').value;
-  var lines=txt.split('\n').filter(function(l){return l.trim().split(/\s+/).length>=7;});
-  document.getElementById('rowCountBadge').textContent=lines.length+' 場';
-}
-
-/* 日誌 */
-function nowTime(){
-  if(!startTime)return '[00:00.000]';
-  var ms=Date.now()-startTime;
-  var s=Math.floor(ms/1000),m=Math.floor(s/60);
-  return '['+String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0')+'.'+String(ms%1000).padStart(3,'0')+']';
-}
-function pushLog(text,cls){
-  logBuffer.push({text:text,cls:cls||''});
-  if(!logTimer)logTimer=setTimeout(flushLog,80);
-}
-function flushLog(){
-  logTimer=null;
-  if(logBuffer.length===0)return;
-  var el=document.getElementById('log');
-  if(!el.dataset.started){el.innerHTML='';el.dataset.started='1';}
-  var frag=document.createDocumentFragment();
-  for(var i=0;i<logBuffer.length;i++){
-    var e=logBuffer[i],div=document.createElement('div');
-    if(e.cls)div.className='l-'+e.cls;
-    div.textContent=e.text;
-    frag.appendChild(div);
-  }
-  logBuffer=[];
-  el.appendChild(frag);
-  while(el.children.length>LOG_MAX)el.removeChild(el.firstChild);
-  el.scrollTop=el.scrollHeight;
-}
-function flushNow(){if(logTimer){clearTimeout(logTimer);logTimer=null;}flushLog();}
-function clearLog(){
-  var el=document.getElementById('log');
-  el.innerHTML='';el.dataset.started='1';logBuffer=[];
-}
-function updateProgress(){
-  var pct=totalPhases>0?(currentRun/totalPhases)*100:0;
-  if(!running&&startTime>0)pct=100;
-  document.getElementById('progbar').style.width=pct.toFixed(1)+'%';
-  document.getElementById('progText').textContent=pct.toFixed(1)+'%';
-  document.getElementById('progPhase').textContent='第 '+currentRun+' / '+totalPhases+' 輪'+(running?' 尋優中':' 完成');
-}
-function updateStats(){
-  document.getElementById('stat-pool').innerHTML='📦 候選池: <b>'+poolSize+'</b>';
-  document.getElementById('stat-run').innerHTML='🌡️ 輪次: <b>'+currentRun+' / '+totalPhases+'</b>';
-  document.getElementById('stat-win').innerHTML='🎯 最高命中: <b>'+globalBestWinRate.toFixed(1)+'%</b>';
-  document.getElementById('stat-games').innerHTML='📊 場次: <b>'+globalBestGames+'</b>';
-  document.getElementById('stat-profit').innerHTML='💵 最高盈利: <b>'+globalBestProfit+'</b>';
-}
-function yieldUI(){
-  flushNow();updateProgress();updateStats();
-  lastYieldTime=Date.now();
-  return new Promise(function(resolve){setTimeout(resolve,0);});
-}
-function shouldYield(){return Date.now()-lastYieldTime>25;}
-
-/* ============================================================
-   21. 數據解析 (自動除百)
-   ============================================================ */
-function parseData(text){
-  var rows=[],seen={},lines=text.split('\n');
-  for(var i=0;i<lines.length;i++){
-    var line=lines[i].trim();
-    if(!line||line.charAt(0)==='#'||line.charAt(0)==='/'||line.charAt(0)===';')continue;
-    var p=line.split(/[\s,]+/);
-    if(p.length<7)continue;
-    var A=Number(p[0]),B=Number(p[1]),C=Number(p[2]),D=Number(p[3]),E=Number(p[4]),F=Number(p[5]);
-    var r=String(p[6]).toUpperCase();
-    
-    // 智慧賠率轉換
-    if(A>10){A/=100;B/=100;C/=100;D/=100;E/=100;F/=100;}
-    
-    if([A,B,C,D,E,F].some(function(x){return isNaN(x)||x<=0;}))continue;
-    if(['H','D','A'].indexOf(r)===-1)continue;
-    var sig=[A,B,C,D,E,F,r].join('|');
-    if(seen[sig])continue;
-    seen[sig]=1;
-    rows.push({A:A,B:B,C:C,D:D,E:E,F:F,result:r});
-  }
-  return {rows:rows,total:rows.length};
+  var parsed = parseData(txt);
+  document.getElementById('rowCountBadge').textContent=parsed.total+' 場';
 }
 
 function extractFeatures(rows){
@@ -2807,11 +2776,12 @@ function loadDemo(){
     var rv=rnd();
     var res=rv<pHome?'H':(rv<pHome+pDraw?'D':'A');
 
-    lines.push(A+' '+B+' '+C+' '+D+' '+E+' '+F+' '+res);
+    // 模擬用戶錯行格式
+    lines.push(A+' '+B+' '+C+' '+D+' '+E+' '+F+'\n'+res);
   }
   document.getElementById('input').value=lines.join('\n');
   updateRowCount();
-  toast('🎲 已載入 800 場示範數據 (整數格式)');
+  toast('🎲 已載入 800 場示範數據 (含換行排版)');
 }
 function rnd2s(v){return Math.round(v);}
 
