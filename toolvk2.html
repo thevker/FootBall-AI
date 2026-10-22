@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v98.7 — 自動趨勢模式 + 獨立體檢 + 防虧兜底</title>
+<title>🚀 v98.8 — 全新防作弊評分 + 自動趨勢全測 + 防虧兜底</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -65,7 +65,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 .score-a{background:#1e3a8a;color:#60a5fa;border:1px solid #3b82f6}
 .score-f{background:#7f1d1d;color:#f87171;border:1px solid #ef4444}
 .score-detail{margin-top:10px;border-top:1px dashed #475569;padding-top:10px;font-size:12px;color:#cbd5e1}
-/* 新增自動模式排行榜樣式 */
+/* 自動模式排行榜樣式 */
 .auto-rank-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #0f172a; }
 .auto-rank-table th, .auto-rank-table td { padding: 8px; border: 1px solid #334155; text-align: center; font-size: 13px; }
 .auto-rank-table th { background: #1e293b; color: #94a3b8; }
@@ -76,11 +76,14 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v98.7 — 自動趨勢全測 + 最高評分 + 防虧兜底</h2>
+<h2>🚀 v98.8 — 全新防作弊評分 + 自動趨勢全測 + 防虧兜底</h2>
 
 <div class="warn-banner">
-  <b>🤖 v98.7 自動全測模式：</b>在趨勢模式中選擇「自動全測」，系統會依序跑完 H/D/A/HD/DA/HA/HDA 七種模式，並產出戰力排行榜！
-  <br><b>⚠️ 注意：</b>自動全測耗時為單次跑 7 倍，手機建議先選「10次/50次」測試。
+  <b>🏆 v98.8 全新防作弊評分公式：</b>
+  <br>為解決「小樣本靠運氣刷高分」的問題，評分改為 <b>(測試利潤 × √場次) / 10</b>。
+  <br>若測試場次 &lt; 50 或勝率 &lt; 45%，分數將被打折懲罰，確保冠軍是真正穩定賺錢的模型。
+  <br><br>
+  <b>🤖 自動全測模式：</b>趨勢模式選「自動全測」，系統依序跑完 7 種模式並產出排行榜。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -268,7 +271,7 @@ var TEST_COND_CACHE_MAX=200000;
 // Auto 模式專用
 var isAutoMode = false;
 var autoModeList = ['H','D','A','HD','DA','HA','HDA'];
-var autoModeResults = {}; // 儲存每個模式的結果
+var autoModeResults = {}; 
 var autoCurrentModeIdx = 0;
 
 // === 工具函數 ===
@@ -813,14 +816,35 @@ function applyFallbackLogic(finalRules,covered){
   return {rules:finalRules,fallbackInfo:fallbackInfo};
 }
 
+// 🚀 v98.8 全新防作弊評分公式
 function calculateModelScore(trainStats,testStats,ruleCount){
   if(!testStats||testStats.totalProfit<=0){
     return {score:0,grade:'F',color:'score-f',text:'❌ 直接丟棄（測試集虧損）',details:''};
   }
-  var testGames=testStats.games||1;
-  var score=Math.round((testStats.totalProfit/testGames)*100);
-  var details='<div class="score-detail"><b>評分公式：</b>(測試利潤 '+testStats.totalProfit+' ÷ 測試場次 '+testGames+') × 100 = <b>'+score+'</b> 分</div>';
-  return {score:score,grade:'S',color:'score-a',text:'客觀計算結果',details:details};
+  
+  var testGames = testStats.games || 1;
+  var testProfit = testStats.totalProfit;
+  var winRate = testStats.winRate;
+  
+  // 新增限制：為了防止小樣本作弊，如果測試場次太少，強制降分
+  // 如果測試場次少於 50，或者勝率低於 45%，分數打折懲罰
+  var penalty = 1;
+  if (testGames < 50) penalty *= 0.5; 
+  if (winRate < 45) penalty *= 0.8;
+  
+  // 新公式：(總利潤 × √場次) / 10 × 懲罰係數
+  var rawScore = (testProfit * Math.sqrt(testGames)) / 10;
+  var score = Math.round(rawScore * penalty);
+  
+  var details = '<div class="score-detail">' +
+    '<b>新版評分公式：</b><br>' +
+    '測試總利潤：<b>+' + testProfit + '</b>　測試場次：<b>' + testGames + '</b><br>' +
+    '綜合分數 = (利潤 ' + testProfit + ' × √場次 ' + testGames + ') ÷ 10 = ' + Math.round(rawScore) + '<br>' +
+    (penalty < 1 ? '<span style="color:#f87171;">⚠️ 樣本懲罰（場次過少或勝率過低）：分數 × ' + penalty + '</span><br>' : '') +
+    '最終得分：<b>' + score + '</b> 分' +
+    '</div>';
+    
+  return {score:score, grade:'S', color:'score-a', text:'客觀計算結果', details:details};
 }
 
 function fmtCond(c){return FEATURE_NAMES[c[0]]+OPS[c[1]]+Number(c[2].toFixed(2));}
@@ -990,7 +1014,7 @@ async function start(){
     document.getElementById('best').style.display='none';
     updateStats();clearLog();
 
-    pushLog('🚀 v98.7 — '+(algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')),'head');
+    pushLog('🚀 v98.8 — '+(algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')),'head');
     if(isAutoMode) pushLog('🤖 已啟動「自動全測」，將依序測試 7 種趨勢模式...', 'warn');
     await yieldUI();
 
@@ -1168,10 +1192,6 @@ async function start(){
       var singleMode = modesToRun[0];
       if(autoModeResults[singleMode]) {
         var r = autoModeResults[singleMode];
-        var finalTrainStats = r.trainStats;
-        var finalTestStats = r.testStats;
-        
-        // 這裡調用原本的 UI 渲染函數 (見後面的 helper 函數)
         renderSingleResultUI(r);
       }
     }
@@ -1196,7 +1216,6 @@ function viewAutoResult(mode) {
   // 高亮表格
   var btns = document.querySelectorAll('.btn-view');
   btns.forEach(function(btn) { btn.classList.remove('active'); });
-  // 根據 onclick 找到對應的按鈕 (簡化處理)
   var tableRows = document.querySelectorAll('#autoRankTable tbody tr');
   tableRows.forEach(function(tr) {
     if(tr.innerHTML.indexOf("'"+mode+"'") > -1) {
