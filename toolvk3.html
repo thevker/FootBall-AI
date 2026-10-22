@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v99.1 — 比例 A/B/C + 定向 Skip 過濾器</title>
+<title>🚀 v99.2 — 比例 A/B/C + 定向 Skip（修復卡死）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -76,12 +76,11 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v99.1 — 比例 A/B/C + 定向 Skip 過濾器</h2>
+<h2>🚀 v99.2 — 比例 A/B/C + 定向 Skip（修復卡死）</h2>
 
 <div class="warn-banner">
-  <b>🏆 v99.1 核心升級：</b>
-  <br>新增「🩺 定向 Skip 過濾器」——搜索完成後自動診斷虧損簇，最多加 2 條定向 skip，且必須通過驗證集利潤提升門檻。
-  <br>不會把 skip 丟進搜索池，避免過擬合。
+  <b>🏆 v99.2 修復：</b>
+  <br>Skip 診斷改為異步 + 位集剪枝 + 閾值採樣，不再卡住主線程。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -345,7 +344,7 @@ function profitOfBS(bs,thenCode){
 function getWins(bs,thenCode){
   if(thenCode===3)return 0;
   var wins=0;
-={  for(var wremain=0;w<bs.length;w++){
+  for(var w=0;w<bs.length;w++){
     var x=bs[w],base=w<<5;
     while(x){
       var low=x&-x;var pos=31-Math.clz32(low);var idx=base+pos;
@@ -809,7 +808,7 @@ function applyFallbackLogic(finalRules,covered){
     }else{reason='純Skip模式';}
     if(useFallbackHDA){
       finalRules.push({on:1,then:RESULTS[bestDir],thenCode:bestDir,conds:[],bs:remainingBS});
-      fallbackInfoCnt:remainCnt,bestDir:RESULTS[bestDir],bestDirCode:bestDir,profit:bestDirProfit,dirProfits:dirProfits,mode:'HDA',reason:reason};
+      fallbackInfo={remainCnt:remainCnt,bestDir:RESULTS[bestDir],bestDirCode:bestDir,profit:bestDirProfit,dirProfits:dirProfits,mode:'HDA',reason:reason};
     }else{
       finalRules.push({on:1,then:'skip',thenCode:3,conds:[],bs:remainingBS});
       fallbackInfo={remainCnt:remainCnt,bestDir:RESULTS[bestDir],bestDirCode:bestDir,profit:bestDirProfit,dirProfits:dirProfits,mode:'skip',reason:reason};
@@ -818,8 +817,8 @@ function applyFallbackLogic(finalRules,covered){
   return {rules:finalRules,fallbackInfo:fallbackInfo};
 }
 
-// === v99.1 新增：定向 Skip 過濾器 ===
-function optimizeSkipFilter(rules){
+// === v99.2 修復：異步 + 位集剪枝 + 閾值採樣 ===
+async function optimizeSkipFilter(rules){
   if(!skipFilterEnabled) return {rules:rules, added:[]};
   var stats = calcRulesStats(rules, trainFeat, trainResult, trainOdds, trainN);
   var lossIdx=[], winIdx=[];
@@ -830,38 +829,59 @@ function optimizeSkipFilter(rules){
   }
   if(lossIdx.length < 40 || winIdx.length < 40) return {rules:rules, added:[]};
 
+  var lossBS = bsNew(trainN), winBS = bsNew(trainN);
+  for(var li=0; li<lossIdx.length; li++){ var ix=lossIdx[li]; lossBS[ix>>5]|=(1<<(ix&31)); }
+  for(var wi=0; wi<winIdx.length; wi++){ var ix2=winIdx[wi]; winBS[ix2>>5]|=(1<<(ix2&31)); }
   var lossTotal = lossIdx.length, winTotal = winIdx.length;
+
   var candidates = [];
+  var MAX_TH_PER_FI = 30;
+
   for(var fi=0; fi<FCOUNT; fi++){
+    if(!running) return {rules:rules, added:[]};
     var ths = getThresholds(fi);
+    var step = Math.max(1, Math.ceil(ths.length / MAX_TH_PER_FI));
     for(var op=0; op<4; op++){
-      for(var k=0; k<ths.length; k++){
-        var thr=ths[k];
-        var bs = getCondBS(fi,op,thr);
-        var hitLoss=0, hitWin=0;
-        for(var li=0; li<lossTotal; li++){ var ix=lossIdx[li]; if(bs[ix>>5]&(1<<(ix&31))) hitLoss++; }
-        for(var wi=0; wi<winTotal; wi++){ var ix2=winIdx[wi]; if(bs[ix2>>5]&(1<<(ix2&31))) hitWin++; }
-        if(hitLoss < lossTotal*0.5) continue;
-        if(hitWin > winTotal*0.2) continue;
-        var cnt = bsCount(bs);
+      for(var k=0; k<ths.length; k+=step){
+        var thr = ths[k];
+        var bs = getCondBS(fi, op, thr);
+        var hitLoss = 0, hitWin = 0;
+        for(var w=0; w<bs.length; w++){
+          var xl = bs[w] & lossBS[w];
+          while(xl){ xl &= xl - 1; hitLoss++; }
+          var xw = bs[w] & winBS[w];
+          while(xw){ xw &= xw - 1; hitWin++; }
+        }
+        if(hitLoss < lossTotal * 0.5) continue;
+        if(hitWin > winTotal * 0.2) continue;
+        var cnt = hitLoss + hitWin;
         if(cnt < 40) continue;
-        var pH = profitOfBS(bs,0), pD = profitOfBS(bs,1), pA = profitOfBS(bs,2);
-        if(pH>0 || pD>0 || pA>0) continue;
+        var pH = profitOfBS(bs, 0), pD = profitOfBS(bs, 1), pA = profitOfBS(bs, 2);
+        if(pH > 0 || pD > 0 || pA > 0) continue;
         candidates.push({cond:[fi,op,thr], lossHit:hitLoss, winHit:hitWin, cnt:cnt, totalLoss:pH+pD+pA});
       }
     }
+    if(fi % 4 === 0 || fi === FCOUNT - 1){
+      pushLog(nowTime()+'   🩺 Skip 診斷 '+((fi+1))+'/'+FCOUNT+'（候選 '+candidates.length+'）','dim');
+      flushNow();
+      await new Promise(function(r){setTimeout(r,0);});
+    }
   }
-  if(candidates.length===0) return {rules:rules, added:[]};
 
-  candidates.sort(function(a,b){ return (b.lossHit - a.winHit*2) - (a.lossHit - b.winHit*2); });
+  if(candidates.length === 0) return {rules:rules, added:[]};
+  candidates.sort(function(a,b){ return (b.lossHit - b.winHit*2) - (a.lossHit - a.winHit*2); });
+
   var baseProfit = calcRulesStatsOnEval(rules).totalProfit;
   var added = [];
   var usedFi = {};
+  var MAX_EVAL_PER_ROUND = 30;
+
   for(var pick=0; pick<2; pick++){
-    var bestC=null, bestGain=0;
-    for(var ci=0; ci<candidates.length && ci<60; ci++){
+    var bestC=null, bestGain=0, tried=0;
+    for(var ci=0; ci<candidates.length && tried<MAX_EVAL_PER_ROUND; ci++){
       var c = candidates[ci];
       if(usedFi[c.cond[0]]) continue;
+      tried++;
       var skipRules = added.concat([c]).map(function(x){ return {on:1,then:'skip',thenCode:3,conds:[x.cond]}; });
       var trial = skipRules.concat(rules);
       var ev = calcRulesStatsOnEval(trial);
@@ -873,9 +893,10 @@ function optimizeSkipFilter(rules){
     usedFi[bestC.cond[0]] = 1;
     baseProfit += bestGain;
   }
-  if(added.length===0) return {rules:rules, added:[]};
-  var skipRules = added.map(function(x){ return {on:1,then:'skip',thenCode:3,conds:[x.cond]}; });
-  return {rules: skipRules.concat(rules), added: added};
+
+  if(added.length === 0) return {rules:rules, added:[]};
+  var skipRules2 = added.map(function(x){ return {on:1,then:'skip',thenCode:3,conds:[x.cond]}; });
+  return {rules: skipRules2.concat(rules), added: added};
 }
 
 function calculateModelScore(trainStats,testStats,ruleCount){
@@ -1160,7 +1181,7 @@ async function start(){
     document.getElementById('best').style.display='none';
     updateStats();clearLog();
 
-    pushLog('🚀 v99.1 — '+(algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')),'head');
+    pushLog('🚀 v99.2 — '+(algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')),'head');
     pushLog('🔬 比例模式：'+(ratioMode==='manual'?'手動':ratioMode==='A'?'📐 A 自動公式':ratioMode==='B'?'📈 B 學習曲線':'🧪 C 三段嵌套'),'info');
     pushLog('🩺 定向 Skip：'+(skipFilterEnabled?'✅ 啟用':'❌ 關閉'),'info');
     await yieldUI();
@@ -1335,9 +1356,9 @@ async function start(){
         res={rules:fbRes2.rules,stats:evalRes3.train,fallbackInfo:fbRes2.fallbackInfo};
       }
 
-      // === v99.1：定向 Skip 過濾器 ===
+      // === v99.2 修復：await optimizeSkipFilter ===
       if(res && res.rules && res.rules.length>0 && skipFilterEnabled){
-        var skipOpt = optimizeSkipFilter(res.rules);
+        var skipOpt = await optimizeSkipFilter(res.rules);
         if(skipOpt.added.length > 0){
           res.rules = skipOpt.rules;
           res.stats = calcRulesStats(res.rules, trainFeat, trainResult, trainOdds, trainN);
