@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v99.0 — 評分驅動尋優版</title>
+<title>🚀 v98.1 — 規則獨立體檢版（新增評分尋優）</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -62,7 +62,7 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 .fb-panel{background:rgba(0,0,0,0.25);border:1px solid #475569;border-radius:6px;padding:10px 12px;margin-top:10px;font-size:12px;line-height:1.9;color:#cbd5e1}
 .fb-panel b{color:#f8fafc}
 .test-panel{background:rgba(0,0,0,0.3);border:2px dashed #475569;border-radius:6px;padding:12px;margin-top:12px;font-size:13px;line-height:1.8;color:#cbd5e1}
-.score-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:24px;font-weight:bold;margin-bottom:10px;}
+.score-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:18px;font-weight:bold;margin-bottom:10px;}
 .score-s{background:#166534;color:#4ade80;border:1px solid #22c55e;}
 .score-a{background:#1e3a8a;color:#60a5fa;border:1px solid #3b82f6;}
 .score-b{background:#854d0e;color:#facc15;border:1px solid #eab308;}
@@ -72,13 +72,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v99.0 — 評分驅動尋優版</h2>
+<h2>🚀 v98.1 — 規則獨立體檢版</h2>
 
 <div class="warn-banner">
-  <b>🩺 終極尋優目標：</b>
-  <br>① 爬山法在搜索時，<b>直接以「(測試利潤 ÷ 測試場次) × 100」為最高目標</b>。
-  <br>② 為了防止「只中 2 場刷高分」，內部強制設定測試集需觸發 15 場以上。
-  <br>③ 表格保留獨立體檢功能，讓你看清誰是毒藥。
+  <b>🩺 全新「規則獨立體檢」功能：</b>
+  <br>① 最終表格新增「測試集獨立盈利」。
+  <br>② 你可以清楚看到，哪一條規則在未來（測試集）是真賺錢，哪一條是只會死背歷史的毒藥。
+  <br>③ 實戰時，如果看到表格中某些規則「測試集虧損」，你可以選擇手動剔除它！
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -93,6 +93,13 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
     <option value="hill-climb" selected>⛰️ 爬山法（推薦）</option>
     <option value="genetic">🧬 遺傳進化</option>
     <option value="decision-tree">🌳 決策樹</option>
+  </select>
+
+  <label>🎯 目標：</label>
+  <select id="optMode">
+    <option value="test_max" selected>🔥 雙集極限尋優（找測試集最高）</option>
+    <option value="max_score">🏆 最高評分（找每百場利潤最高）</option>
+    <option value="profit">💰 僅看訓練集盈利</option>
   </select>
 
   <label>🔍 驗證模式：</label>
@@ -231,7 +238,7 @@ var algoMode='hill-climb', optMode='test_max';
 var maxCondsLimit=0, minHitsRequired=0;
 var fallbackMode='skip', fallbackEvThreshold=0;
 var MIN_FALLBACK_SAMPLES=15;
-var MIN_TEST_GAMES_FOR_SCORE=15; // 防止只觸發極少場次刷高分
+var MIN_TEST_GAMES_FOR_SCORE=15;
 
 var precomputedSingles = null;
 var allMask = null;
@@ -321,7 +328,6 @@ function evalOnTest(conds, thenCode) {
   return { profit: profit, cnt: cnt };
 }
 
-// ★ 爬山法直接以「每百場期望利潤」為目標
 function metricOfBS(bs, conds, thenCode, mode){
   var total = bsCount(bs);
   if(total === 0) return -Infinity;
@@ -331,12 +337,14 @@ function metricOfBS(bs, conds, thenCode, mode){
   if(mode === 'test_max'){
     if (!testRowsData || testRowsData.length === 0) return trainProfit;
     var testRes = evalOnTest(conds, thenCode);
-    
-    // 強制測試集必須觸發至少 15 場，否則不計分（防止運氣刷分）
+    if (testRes.cnt < 3) return -999999; 
+    if (trainProfit <= 0) return -999999;
+    return (testRes.profit * 1.5) + (trainProfit * 0.5);
+  } else if (mode === 'max_score') {
+    if (!testRowsData || testRowsData.length === 0) return trainProfit;
+    var testRes = evalOnTest(conds, thenCode);
     if (testRes.cnt < MIN_TEST_GAMES_FOR_SCORE) return -999999; 
-    if (trainProfit <= 0) return -999999; 
-    
-    // 核心：直接回傳 (測試利潤 / 測試場次) * 100
+    if (trainProfit <= 0) return -999999;
     return Math.round((testRes.profit / testRes.cnt) * 100);
   }
   return trainProfit;
@@ -743,17 +751,12 @@ function applyFallbackLogic(finalRules, covered) {
   return { rules: formattedRules, fallbackInfo: fallbackInfo };
 }
 
-// ★ 最終輸出時的評分計算（與內部目標完全一致）
+// ★ 絕對純粹評分公式： (測試集利潤 / 測試集場次) * 100
 function calculateModelScore(trainStats, testStats, ruleCount) {
   if (!testStats || testStats.totalProfit <= 0) {
     return { score: 0, grade: 'F', color: 'score-f', text: '❌ 直接丟棄（測試集虧損）', details: '' };
   }
-  
   var testGames = testStats.games || 1;
-  if (testGames < MIN_TEST_GAMES_FOR_SCORE) {
-     return { score: 0, grade: 'F', color: 'score-f', text: '⚠️ 測試場次太少 (未達'+MIN_TEST_GAMES_FOR_SCORE+'場)', details: '無法計算有效評分' };
-  }
-
   var score = Math.round((testStats.totalProfit / testGames) * 100);
   var grade = 'S';
   var color = 'score-a'; 
@@ -929,7 +932,7 @@ async function start(){
     }
     
     algoMode = document.getElementById('algoMode').value;
-    optMode = document.getElementById('optMode').value;
+    optMode = document.getElementById('optMode').value; // ★ 修復：現在有正確讀取這個下拉選單了
     maxCondsLimit = parseInt(document.getElementById('maxConds').value) || 0;
     fallbackMode = document.getElementById('fallbackMode').value;
     fallbackEvThreshold = parseFloat(document.getElementById('fallbackEv').value) || 0;
@@ -937,7 +940,10 @@ async function start(){
     var gatePct = parseFloat(document.getElementById('minHitsPct').value) || 0;
     minHitsRequired = gatePct > 0 ? Math.ceil(rawRowsData.length * gatePct) : 0;
     
-    var modeLabel = (optMode === 'test_max') ? '🔥 評分驅動尋優（每百場利潤最高）' : '💰 僅看訓練集盈利';
+    var modeLabel = '🔥 雙集極限尋優（測試集最高）';
+    if (optMode === 'max_score') modeLabel = '🏆 最高評分（每百場利潤最高）';
+    if (optMode === 'profit') modeLabel = '💰 僅看訓練集盈利';
+    
     var condLabel = (maxCondsLimit === 0) ? '無限' : (maxCondsLimit + ' 個條件');
     var fbLabel = fallbackModeLabel(fallbackMode);
     
@@ -956,7 +962,7 @@ async function start(){
     document.getElementById('testResultPanel').style.display='none';
     updateStats(); clearLog();
 
-    pushLog('🚀 v99.0 — ' + (algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')), 'head');
+    pushLog('🚀 v98.1 — ' + (algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')), 'head');
     pushLog(nowTime()+' 訓練集資料：'+rawRowsData.length+' 筆，條件上限：'+condLabel, 'success');
     await yieldUI();
 
@@ -984,28 +990,28 @@ async function start(){
     pushLog(nowTime()+' ✅ 候選池生成完成：'+poolSize+' 個（耗時 '+(Date.now()-initStart)+' ms）', 'success');
     await yieldUI();
 
-    var res = null;
+    var res = null ';
     
-    if (algoMode === 'hill-climb') {
-      pushLog(nowTime()+' ⛰️ 開始爬山搜索 '+totalPhases+' 輪...', 'info');
+    if (algoMode === 'profithill-climb')') {
+      {
+ push         Log(nowTime()+' ⛰️ 開始爬山搜索 '+totalPhases+' 輪...', 'info');
       for(var run=1; run<=totalPhases; run++){
         if(!running) break; currentRun = run; await yieldUI();
         var r = await runHillClimb();
         var evalRes = evaluateRuleSet(r.rules);
         
-        // 直接使用 calculateModelScore 作為目標函數
-        var scoreData = calculateModelScore(evalRes.train, evalRes.test, r.rules.length);
-        var sc = scoreData.score;
+        var sc = 0;
+        if (optMode === 'test_max') {
+          sc = evalRes.test.totalProfit;
+        } else if (optMode === sc = evalRes.train.totalProfit;
+        } else if (optMode === 'max_score') {
+          var scoreData = calculateModelScore(evalRes.train, evalRes.test, r.rules.length);
+          sc = scoreData.score;
+        }
         
         if(sc > globalBestScore){ 
-          globalBestScore = sc; 
-          globalBestProfit = evalRes.train.totalProfit; 
-          globalBestWinRate = evalRes.train.winRate; 
-          globalBestGames = evalRes.train.games; 
-          globalBestRules = r.rules; 
-          globalBestStats = evalRes.train; 
-          globalBestFallback = r.fallbackInfo; 
-          pushLog(nowTime()+' 🌟 [第 '+run+'/'+totalPhases+' 輪] 打破紀錄！目標評分：'+sc,'best');
+          globalBestScore = sc; globalBestProfit = evalRes.train.totalProfit; globalBestWinRate = evalRes.train.winRate; globalBestGames = evalRes.train.games; globalBestRules = r.rules; globalBestStats = evalRes.train; globalBestFallback = r.fallbackInfo; 
+          pushLog(nowTime()+' 🌟 [第 '+run+'/'+totalPhases+' 輪] 打破紀錄！目標分數：'+sc,'best');
         }
       }
       res = { rules: globalBestRules, stats: globalBestStats, fallbackInfo: globalBestFallback };
