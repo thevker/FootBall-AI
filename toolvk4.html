@@ -130,9 +130,19 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 .stab-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:10px}
 .stab-card{background:#0b1120;border:1px solid #334155;border-radius:6px;padding:10px;font-size:12px;line-height:1.8}
 .stab-card h4{color:#818cf8;margin-bottom:6px;font-size:12px}
+
+/* 全域遮罩 */
+#loadingOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(11,17,32,0.8);backdrop-filter:blur(4px);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:20px;}
+.spinner{width:50px;height:50px;border:5px solid rgba(99,102,241,0.3);border-top-color:#6366f1;border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
+
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <div style="color:#a5b4fc;font-weight:bold;font-size:16px" id="loadingText">正在深度計算中，請稍候...</div>
+</div>
 
 <header>
   <div class="wrap">
@@ -249,7 +259,6 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
             <option value="100" selected>100</option>
             <option value="300">300</option>
             <option value="1000">1000</option>
-            <option value="3000">3000</option>
           </select>
         </div>
         <div class="field">
@@ -302,7 +311,7 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 
     <div class="card">
       <h3>📜 運行日誌</h3>
-      <div id="log">等待開始...</div>
+      <div id="log">等待開始... 請先貼上數據或載入示範數據。</div>
     </div>
   </section>
 
@@ -315,7 +324,7 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
       </div>
     </div>
 
-    <div id="resultEmpty" class="card"><div class="empty">尚無結果 — 請先在「設定」頁啟動尋優</div></div>
+    <div id="resultEmpty" class="card"><div class="empty">尚無結果 — 請先在「設定」頁啟動尋優，或等待計算完成。</div></div>
 
     <div id="resultBody" style="display:none">
       <div class="card">
@@ -589,7 +598,7 @@ function evalIndividualOnEval(rules){
   for(var i=0;i<EVAL_MAT.N;i++){
     var pred=-1;
     for(var j=0;j<rules.length;j++){
-      var c=rules[j].conds; // 注意：統一改為 conds 陣列
+      var c=rules[j].conds;
       if(!c||c.length===0)continue;
       var ok=true;
       for(var k=0;k<c.length;k++){
@@ -851,8 +860,7 @@ async function buildSinglesAsync(){
     }
     if(fi%8===0||fi===FCOUNT-1){
       pushLog('   ⚙️ 候選池 '+Math.round((fi+1)/FCOUNT*100)+'%（'+singles.length+' 個）','dim');
-      flushNow();
-      await new Promise(function(r){setTimeout(r,0);});
+      if(shouldYield()) await yieldUI();
     }
   }
   
@@ -874,6 +882,7 @@ async function buildSinglesAsync(){
     }
     singles.sort(function(a,b){return b.profit-a.profit;});
     singles=singles.slice(0,200); // 只取前200
+    await yieldUI();
   }
 
   return singles;
@@ -899,7 +908,7 @@ async function runHillClimb(){
       var initS=tcSingles[initIdx];
       var current={conds:[initS.cond],bs:initS.bs,score:metricOfBS(initS.bs,[initS.cond],tc,optMode)};
       var gBest={conds:current.conds.slice(),bs:current.bs,score:current.score};
-      var maxIter=2200,noImprove=0,T0=4000,alpha=0.995;
+      var maxIter=1000,noImprove=0,T0=4000,alpha=0.995;
 
       for(var iter=0;iter<maxIter;iter++){
         if(!running)break;
@@ -950,8 +959,8 @@ async function runHillClimb(){
           if(newScore>gBest.score){gBest={conds:testConds.slice(),bs:newBS,score:newScore};noImprove=0;}
           else noImprove++;
         }else noImprove++;
-        if(noImprove>450)break;
-        if(iter%50===0&&shouldYield())await yieldUI();
+        if(noImprove>300)break;
+        if(iter%20===0&&shouldYield()) await yieldUI();
       }
 
       if(gBest.score>-Infinity&&gBest.bs&&bsCount(gBest.bs)>0){
@@ -1190,7 +1199,6 @@ function createRandomIndividual(pool,maxRules){
     if(!usedFeatures[cand.fi]){
       usedFeatures[cand.fi]=true;
       if(cand.thenCode!==3)dirCounts[cand.thenCode]++;
-      // 修復：這裡必須是 conds: [cand.cond] 數組
       rules.push({on:1,then:RESULTS[cand.thenCode],thenCode:cand.thenCode,conds:[cand.cond],bs:cand.bs});
     }
   }
@@ -1206,7 +1214,7 @@ function crossover(pA,pB,maxRules){
   for(var k=0;k<combined.length;k++){
     var r=combined[k];
     if(dirLimit>0&&r.thenCode!==3&&dc[r.thenCode]>=dirLimit)continue;
-    var fi=r.conds[0][0]; // 取第一個條件的特徵索引作為去重基準
+    var fi=r.conds[0][0];
     if(!used[fi]){
       used[fi]=true;
       if(r.thenCode!==3)dc[r.thenCode]++;
@@ -1280,14 +1288,15 @@ async function runGeneticEngine(isMemetic){
     for(var e=0;e<eliteCount;e++)next.push(cloneInd(pop[e]));
 
     if(isMemetic){
-      var localN=Math.min(8,eliteCount);
+      var localN=Math.min(4,eliteCount); // 從8降到4以減少耗時
       for(var m=0;m<localN;m++){
         var base=cloneInd(pop[m]);
-        for(var lm=0;lm<40;lm++){
+        for(var lm=0;lm<20;lm++){ // 從40降到20
           var trial=cloneInd(base);
           mutate(trial,pool,maxRules);
           trial.eval=evaluateIndividual(trial);
           if(trial.eval.fitness>base.eval.fitness)base=trial;
+          if(lm%5===0 && shouldYield()) await yieldUI(); // 增加 yield
         }
         if(base.eval.fitness>next[m].eval.fitness)next[m]=base;
       }
@@ -1301,7 +1310,7 @@ async function runGeneticEngine(isMemetic){
       if(Math.random()<mutRate)mutate(child,pool,maxRules);
       child.eval=evaluateIndividual(child);
       next.push(child);
-      if(next.length%10===0)await yieldUI();
+      if(next.length%5===0 && shouldYield()) await yieldUI(); // 從10改成5
     }
     pop=next;
 
@@ -1960,9 +1969,17 @@ function drawEquityChart(details){
    ============================================================ */
 async function start(){
   try{
+    // 立即反饋：清空舊日誌並顯示載入中
+    document.getElementById('log').textContent = '正在解析數據...';
+    document.getElementById('btnRun').textContent = '⏳ 解析中...';
+    document.getElementById('btnRun').disabled = true;
+
     var parsed=parseData(document.getElementById('input').value);
     if(parsed.rows.length<50){
-      toast('⚠️ 有效數據不足，至少需要 50 場（目前 '+parsed.rows.length+' 場）');
+      document.getElementById('log').innerHTML = '<div style="color:#f87171;font-weight:bold;padding:10px;">⚠️ 錯誤：解析到的有效數據不足 50 場（目前 ' + parsed.rows.length + ' 場）。<br>請檢查數據格式，或點擊「載入示範數據」測試。</div>';
+      toast('⚠️ 有效數據不足，請檢查格式');
+      document.getElementById('btnRun').textContent = '🚀 啟動終極尋優';
+      document.getElementById('btnRun').disabled = false;
       return;
     }
 
@@ -1978,7 +1995,7 @@ async function start(){
     var runCount=parseInt(document.getElementById('runCount').value)||100;
 
     running=true;startTime=Date.now();
-    document.getElementById('btnRun').disabled=true;
+    document.getElementById('btnRun').textContent = '⏳ 尋優中...';
     document.getElementById('liveStats').style.display='flex';
     document.getElementById('autoRankPanel').style.display='none';
     document.getElementById('resultBody').style.display='none';
@@ -1990,7 +2007,8 @@ async function start(){
     pushLog('🚀 v10.0 ULTIMATE — 啟動','head');
     pushLog('🔬 比例：'+ratioModeLabel(ratioMode)+'｜算法：'+algoLabel(algoMode)+'｜目標：'+optLabel(optMode),'info');
     pushLog('🧬 特徵數：'+FCOUNT+'　場次：'+parsed.rows.length,'info');
-    switchTab('tab-result');
+    // 不要立刻切到結果頁，讓使用者看得到日誌
+    // switchTab('tab-result');
     await yieldUI();
 
     var N=parsed.rows.length;
@@ -2213,6 +2231,9 @@ async function start(){
       };
 
       if(isAutoMode)pushLog(nowTime()+' ✅ 模式 '+curMode+' 完成｜評分 '+scoreData.score+'｜測試利潤 '+(finalTest?finalTest.totalProfit:0),'success');
+      
+      // 算完第一個模式，就可以切到結果頁了
+      if(mi===0) switchTab('tab-result');
     }
 
     if(!running)return;
@@ -2226,16 +2247,19 @@ async function start(){
     }else{
       var only=modesToRun[0];
       if(autoModeResults[only])renderResult(autoModeResults[only]);
+      switchTab('tab-result');
     }
 
     running=false;
     document.getElementById('btnRun').disabled=false;
+    document.getElementById('btnRun').textContent='🚀 啟動終極尋優';
     updateStats();updateProgress();flushNow();
 
   }catch(e){
     pushLog('❌ 錯誤：'+e.message+'\n'+(e.stack||''),'error');
     running=false;
     document.getElementById('btnRun').disabled=false;
+    document.getElementById('btnRun').textContent='🚀 啟動終極尋優';
     updateStats();updateProgress();flushNow();
   }
 }
