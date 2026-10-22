@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>魔塔 - Magic Tower</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 0%, #1b1b2e 0%, #0a0a12 70%);
+    font-family: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+    color: #e8e8f0; user-select: none; padding: 12px;
+  }
+  #app {
+    display: flex; gap: 18px; align-items: flex-start;
+    flex-wrap: wrap; justify-content: center;
+  }
+  canvas {
+    border-radius: 12px;
+    box-shadow: 0 0 0 2px #3a3a55, 0 14px 44px rgba(0,0,0,.75);
+    display: block;
+  }
+  #panel {
+    width: 226px;
+    background: linear-gradient(180deg, #1e1e2e, #15151f);
+    border: 1px solid #33334a;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 14px 44px rgba(0,0,0,.55);
+  }
+  .title {
+    font-size: 22px; font-weight: 800; letter-spacing: 8px;
+    text-align: center; margin-bottom: 4px;
+    background: linear-gradient(90deg, #ffd54f, #ff8a65, #ba68c8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .floor {
+    text-align: center; font-size: 13px; color: #8f8fb0;
+    margin-bottom: 14px; letter-spacing: 2px;
+  }
+  .stats { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+  .row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(255,255,255,.04); border-radius: 7px;
+    padding: 6px 10px; font-size: 14px;
+  }
+  .row span:first-child { color: #9a9ac0; }
+  .row span:last-child { font-weight: 700; font-variant-numeric: tabular-nums; }
+  #hp { color: #ff7b7b; }
+  #atk { color: #ffb74d; }
+  #def { color: #64b5f6; }
+  #gold { color: #ffd54f; }
+  #exp { color: #ba68c8; }
+
+  .keys { display: flex; gap: 8px; margin-bottom: 12px; }
+  .key {
+    flex: 1; text-align: center; border-radius: 7px;
+    padding: 7px 0; font-size: 13px; font-weight: 700;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .k-y { color: #ffd54f; }
+  .k-b { color: #64b5f6; }
+  .k-r { color: #ef5350; }
+
+  .msg {
+    min-height: 42px; font-size: 12.5px; line-height: 1.5;
+    color: #b9f6ca; text-align: center; padding: 6px;
+    opacity: 0; transition: opacity .3s;
+  }
+  .msg.show { opacity: 1; }
+
+  .info {
+    min-height: 34px; font-size: 12px; line-height: 1.5;
+    color: #9a9ac0; text-align: center; padding: 4px;
+    border-top: 1px dashed #33334a; margin-top: 4px;
+  }
+  .hint {
+    font-size: 11px; color: #555570; text-align: center; margin-top: 10px;
+  }
+  .hint b { color: #7a7aa0; }
+
+  #overlay {
+    position: fixed; inset: 0; display: none;
+    align-items: center; justify-content: center;
+    background: rgba(0,0,0,.82); z-index: 100;
+    backdrop-filter: blur(4px);
+  }
+  #overlay.show { display: flex; }
+  .win-box {
+    text-align: center; padding: 40px 60px;
+    background: linear-gradient(180deg, #22223a, #15151f);
+    border: 1px solid #4a4a70; border-radius: 18px;
+    box-shadow: 0 0 60px rgba(255,213,79,.25);
+    animation: pop .5s cubic-bezier(.2,1.6,.5,1);
+  }
+  @keyframes pop { from { transform: scale(.6); opacity: 0; } }
+  .win-title {
+    font-size: 34px; font-weight: 800; margin-bottom: 12px;
+    background: linear-gradient(90deg, #ffd54f, #ff8a65);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .win-text { color: #b0b0d0; margin-bottom: 24px; font-size: 15px; }
+  .win-box button {
+    padding: 10px 30px; font-size: 15px; font-weight: 700; cursor: pointer;
+    border: none; border-radius: 10px; color: #14141f;
+    background: linear-gradient(135deg, #ffd54f, #ffb74d);
+    font-family: inherit; transition: transform .15s;
+  }
+  .win-box button:hover { transform: translateY(-2px) scale(1.04); }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="cv"></canvas>
+
+  <div id="panel">
+    <div class="title">魔塔</div>
+    <div class="floor" id="floorName">第 1 層</div>
+
+    <div class="stats">
+      <div class="row"><span>❤️ 生命</span><span id="hp">1000</span></div>
+      <div class="row"><span>⚔️ 攻擊</span><span id="atk">20</span></div>
+      <div class="row"><span>🛡️ 防禦</span><span id="def">15</span></div>
+      <div class="row"><span>💰 金幣</span><span id="gold">0</span></div>
+      <div class="row"><span>✨ 經驗</span><span id="exp">0</span></div>
+    </div>
+
+    <div class="keys">
+      <div class="key k-y">🗝 <span id="ky">0</span></div>
+      <div class="key k-b">🗝 <span id="kb">0</span></div>
+      <div class="key k-r">🗝 <span id="kr">0</span></div>
+    </div>
+
+    <div id="msg" class="msg"></div>
+    <div id="info" class="info"></div>
+    <div class="hint">用 <b>方向鍵</b> 或 <b>WASD</b> 移動</div>
+  </div>
+</div>
+
+<div id="overlay">
+  <div class="win-box">
+    <div class="win-title">🎉 通關！</div>
+    <div class="win-text">你擊敗了惡魔，成功逃出了魔塔！</div>
+    <button onclick="location.reload()">再玩一次</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   常數設定
+============================================================ */
+const TILE = 48;
+const COLS = 11;
+const ROWS = 11;
+
+const ENEMIES = {
+  '1': { name:'綠頭怪', hp:40,  atk:20,  def:5,  gold:5,   exp:5,   c1:'#81c784', c2:'#2e7d32' },
+  '2': { name:'紅頭怪', hp:80,  atk:35,  def:15, gold:10,  exp:10,  c1:'#ef5350', c2:'#b71c1c' },
+  '3': { name:'吸血蝙蝠', hp:150, atk:60, def:30, gold:20, exp:20, c1:'#ba68c8', c2:'#4a148c' },
+  '4': { name:'骷髏人', hp:250, atk:100, def:50, gold:40,  exp:40,  c1:'#cfd8dc', c2:'#546e7a' },
+  '5': { name:'石頭人', hp:400, atk:100, def:60, gold:70,  exp:70,  c1:'#bcaaa4', c2:'#4e342e' },
+  '6': { name:'獸人',   hp:700, atk:150, def:90, gold:120, exp:120, c1:'#ffb74d', c2:'#e65100' },
+  '7': { name:'惡魔',   hp:600, atk:130, def:60, gold:300, exp:300, c1:'#ff5252', c2:'#7f0000' },
+};
+
+const ITEMS = {
+  'y': { kind:'key',   key:'y' },
+  'b': { kind:'key',   key:'b' },
+  'r': { kind:'key',   key:'r' },
+  'a': { kind:'gem',   stat:'atk', value:10 },
+  'd': { kind:'gem',   stat:'def', value:10 },
+  'p': { kind:'potion', value:200 },
+  'P': { kind:'potion', value:500 },
+};
+
+const DOORS = {
+  'Y': { key:'y', name:'黃門',   keyName:'黃鑰匙' },
+  'B': { key:'b', name:'藍門',   keyName:'藍鑰匙' },
+  'R': { key:'r', name:'紅門',   keyName:'紅鑰匙' },
+};
+
+/* ============================================================
+   關卡資料
+============================================================ */
+const LEVEL_DATA = [
+  {
+    name: '第 1 層',
+    map: [
+      '###########',
+      '#s..#.....#',
+      '#...#.1...#',
+      '#.y.#.....#',
+      '#...#..a..#',
+      '#.1.#.....#',
+      '#...#..y..#',
+      '#.a.#..2..#',
+      '#.a.#.....#',
+      '#.d...p...#',
+      '#########>#',
+    ]
+  },
+  {
+    name: '第 2 層',
+    map: [
+      '###########',
+      '#<........#',
+      '#.a.....a.#',
+      '#.###.###.#',
+      '#.#4#.#3#.#',
+      '#.#.#.#.#.#',
+      '#...#...#.#',
+      '#.d...d...#',
+      '#.###.###.#',
+      '#.P...r...#',
+      '#########>#',
+    ]
+  },
+  {
+    name: '第 3 層',
+    map: [
+      '###########',
+      '#<........#',
+      '#.a.a.a...#',
+      '#.........#',
+      '#.d.d.d.d.#',
+      '#....5....#',
+      '#.........#',
+      '#..P...p..#',
+      '#....7....#',
+      '#.........#',
+      '###########',
+    ]
+  }
+];
+
+/* ============================================================
+   狀態
+============================================================ */
+const canvas = document.getElementById('cv');
+const ctx = canvas.getContext('2d');
+const dpr = window.devicePixelRatio || 1;
+canvas.width  = COLS * TILE * dpr;
+canvas.height = ROWS * TILE * dpr;
+canvas.style.width  = (COLS * TILE) + 'px';
+canvas.style.height = (ROWS * TILE) + 'px';
+ctx.scale(dpr, dpr);
+
+let maps = [];
+let player = {};
+let gameOver = false;
+let msgTimer = null;
+let hoverCell = null;
+
+/* ============================================================
+   初始化
+============================================================ */
+function initGame() {
+  maps = LEVEL_DATA.map(lv => lv.map.map(row => row.split('')));
+
+  player = {
+    x: 1, y: 1, floor: 0,
+    hp: 1000,
+    atk: 20,
+    def: 15,
+    gold: 0,
+    exp: 0,
+    keys: { y: 0, b: 0, r: 0 }
+  };
+
+  // 尋找起始點
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      if (maps[0][y][x] === 's') {
+        player.x = x;
+        player.y = y;
+        maps[0][y][x] = '.';
+      }
+    }
+  }
+
+  gameOver = false;
+  updateUI();
+  showMsg('踏上魔塔，尋找通往頂層的路吧！');
+}
+
+/* ============================================================
+   UI
+============================================================ */
+function updateUI() {
+  document.getElementById('hp').textContent   = player.hp;
+  document.getElementById('atk').textContent  = player.atk;
+  document.getElementById('def').textContent  = player.def;
+  document.getElementById('gold').textContent = player.gold;
+  document.getElementById('exp').textContent  = player.exp;
+  document.getElementById('ky').textContent   = player.keys.y;
+  document.getElementById('kb').textContent   = player.keys.b;
+  document.getElementById('kr').textContent   = player.keys.r;
+  document.getElementById('floorName').textContent = LEVEL_DATA[player.floor].name;
+}
+
+function showMsg(text) {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(msgTimer);
+  msgTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* ============================================================
+   移動 / 互動
+============================================================ */
+const DIRS = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] };
+
+function move(dir) {
+  if (gameOver) return;
+  const [dx, dy] = DIRS[dir];
+  const nx = player.x + dx;
+  const ny = player.y + dy;
+
+  if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS) return;
+
+  const map = maps[player.floor];
+  const ch = map[ny][nx];
+
+  if (ch === '#') return;
+
+  // 敵人
+  if (ENEMIES[ch]) { tryBattle(nx, ny, ch); return; }
+
+  // 門
+  if (DOORS[ch]) { tryDoor(nx, ny, ch); return; }
+
+  // 道具
+  if (ITEMS[ch]) {
+    pickItem(nx, ny, ch);
+    player.x = nx; player.y = ny;
+    return;
+  }
+
+  // 樓梯
+  if (ch === '>') { changeFloor(1); return; }
+  if (ch === '<') { changeFloor(-1); return; }
+
+  // 一般移動
+  player.x = nx;
+  player.y = ny;
+}
+
+/* ---------- 戰鬥 ---------- */
+function tryBattle(x, y, ch) {
+  const e = ENEMIES[ch];
+
+  const dmgToEnemy = player.atk - e.def;
+  if (dmgToEnemy <= 0) {
+    showMsg(`攻擊力不足，打不動「${e.name}」！`);
+    return;
+  }
+
+  const turns = Math.ceil(e.hp / dmgToEnemy);
+  const dmgToPlayer = Math.max(0, e.atk - player.def);
+  const totalDamage = dmgToPlayer * (turns - 1);
+
+  if (totalDamage >= player.hp) {
+    showMsg(`生命不足！擊敗「${e.name}」需要 ${totalDamage + 1} 點生命。`);
+    return;
+  }
+
+  // 結算
+  player.hp -= totalDamage;
+  player.gold += e.gold;
+  player.exp += e.exp;
+  maps[player.floor][y][x] = '.';
+  player.x = x;
+  player.y = y;
+
+  const dmgText = totalDamage > 0 ? `受到 ${totalDamage} 點傷害` : '毫髮無傷';
+  showMsg(`擊敗「${e.name}」！${dmgText}　+${e.gold}💰 +${e.exp}✨`);
+
+  updateUI();
+
+  if (ch === '7') {
+    winGame();
+  }
+}
+
+/* ---------- 開門 ---------- */
+function tryDoor(x, y, ch) {
+  const d = DOORS[ch];
+  if (player.keys[d.key] > 0) {
+    player.keys[d.key]--;
+    maps[player.floor][y][x] = '.';
+    player.x = x;
+    player.y = y;
+    showMsg(`使用${d.keyName}打開了${d.name}。`);
+    updateUI();
+  } else {
+    showMsg(`需要${d.keyName}才能打開${d.name}。`);
+  }
+}
+
+/* ---------- 拾取道具 ---------- */
+function pickItem(x, y, ch) {
+  const item = ITEMS[ch];
+  maps[player.floor][y][x] = '.';
+
+  if (item.kind === 'key') {
+    player.keys[item.key]++;
+    const names = { y:'黃鑰匙', b:'藍鑰匙', r:'紅鑰匙' };
+    showMsg(`撿到 ${names[item.key]}！`);
+  } else if (item.kind === 'gem') {
+    if (item.stat === 'atk') {
+      player.atk += item.value;
+      showMsg(`攻擊寶石！攻擊力 +${item.value}`);
+    } else {
+      player.def += item.value;
+      showMsg(`防禦寶石！防禦力 +${item.value}`);
+    }
+  } else if (item.kind === 'potion') {
+    player.hp += item.value;
+    showMsg(`喝下藥水，生命 +${item.value}！`);
+  }
+  updateUI();
+}
+
+/* ---------- 換層 ---------- */
+function changeFloor(delta) {
+  const nf = player.floor + delta;
+  if (nf < 0 || nf >= LEVEL_DATA.length) return;
+
+  player.floor = nf;
+  const map = maps[nf];
+  const target = delta > 0 ? '<' : '>';
+
+  let found = false;
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      if (map[y][x] === target) {
+        player.x = x;
+        player.y = y;
+        found = true;
+      }
+    }
+  }
+
+  if (!found) {
+    outer:
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        if (map[y][x] === '.') { player.x = x; player.y = y; break outer; }
+      }
+    }
+  }
+
+  updateUI();
+  showMsg(`來到 ${LEVEL_DATA[nf].name}`);
+}
+
+/* ---------- 勝利 ---------- */
+function winGame() {
+  gameOver = true;
+  setTimeout(() => {
+    document.getElementById('overlay').classList.add('show');
+  }, 500);
+}
+
+/* ============================================================
+   繪圖工具
+============================================================ */
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/* ---------- 地板 ---------- */
+function drawFloor(px, py, x, y) {
+  ctx.fillStyle = (x + y) % 2 === 0 ? '#2a2a3c' : '#242434';
+  ctx.fillRect(px, py, TILE, TILE);
+  ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(px + 0.5, py + 0.5, TILE - 1, TILE - 1);
+}
+
+/* ---------- 牆壁 ---------- */
+function drawWall(px, py) {
+  ctx.fillStyle = '#12121c';
+  ctx.fillRect(px, py, TILE, TILE);
+
+  ctx.fillStyle = '#1d1d2c';
+  ctx.fillRect(px + 3, py + 3, TILE - 6, TILE - 6);
+
+  // 磚縫
+  ctx.fillStyle = '#15151f';
+  ctx.fillRect(px + 3, py + TILE / 2 - 1, TILE - 6, 2);
+  ctx.fillRect(px + TILE / 2 - 1, py + 3, 2, TILE / 2 - 4);
+  ctx.fillRect(px + TILE / 4, py + TILE / 2 + 1, 2, TILE / 2 - 4);
+  ctx.fillRect(px + TILE * 3 / 4, py + TILE / 2 + 1, 2, TILE / 2 - 4);
+
+  // 高光
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.fillRect(px + 3, py + 3, TILE - 6, 2);
+}
+
+/* ---------- 敵人 ---------- */
+function drawEnemy(px, py, ch) {
+  const e = ENEMIES[ch];
+  const cx = px + TILE / 2;
+  const cy = py + TILE / 2;
+  const r = 15;
+  const t = performance.now() / 1000;
+  const bob = Math.sin(t * 2 + px * 0.09 + py * 0.13) * 1.6;
+
+  // 影子
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + r + 3, r * 0.75, 4, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fill();
+
+  // 身體
+  const g = ctx.createRadialGradient(cx - 5, cy - 5 + bob, 3, cx, cy + bob, r);
+  g.addColorStop(0, e.c1);
+  g.addColorStop(1, e.c2);
+  ctx.beginPath();
+  ctx.arc(cx, cy + bob, r, 0, Math.PI * 2);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+  ctx.stroke();
+
+  // 眼睛
+  const ey = cy - 3 + bob;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(cx - 5.5, ey, 4.6, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + 5.5, ey, 4.6, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = '#111118';
+  ctx.beginPath(); ctx.arc(cx - 5.5, ey + 0.6, 2.3, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + 5.5, ey + 0.6, 2.3, 0, Math.PI * 2); ctx.fill();
+
+  // 嘴巴
+  ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy + 4 + bob, 5, 0.15 * Math.PI, 0.85 * Math.PI);
+  ctx.stroke();
+}
+
+/* ---------- 門 ---------- */
+function drawDoor(px, py, ch) {
+  const palette = {
+    'Y': ['#ffd54f', '#f9a825', '#7a5200'],
+    'B': ['#64b5f6', '#1976d2', '#0d3f7a'],
+    'R': ['#ef5350', '#c62828', '#5c0000'],
+  };
+  const [c1, c2, c3] = palette[ch];
+  const pad = 4;
+  const w = TILE - pad * 2;
+  const h = TILE - pad * 2;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  roundRect(px + pad + 2, py + pad + 2, w, h, 6);
+  ctx.fill();
+
+  const g = ctx.createLinearGradient(px, py, px + TILE, py + TILE);
+  g.addColorStop(0, c1);
+  g.addColorStop(1, c2);
+  ctx.fillStyle = g;
+  roundRect(px + pad, py + pad, w, h, 6);
+  ctx.fill();
+
+  ctx.strokeStyle = c3;
+  ctx.lineWidth = 2;
+  roundRect(px + pad, py + pad, w, h, 6);
+  ctx.stroke();
+
+  // 鑰匙孔
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.beginPath();
+  ctx.arc(px + TILE / 2, py + TILE / 2 - 4, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(px + TILE / 2 - 2, py + TILE / 2 - 1, 4, 9);
+
+  // 鉚釘
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  [[8, 8], [TILE - 8, 8], [8, TILE - 8], [TILE - 8, TILE - 8]].forEach(([ox, oy]) => {
+    ctx.beginPath();
+    ctx.arc(px + ox, py + oy, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+/* ---------- 鑰匙 ---------- */
+function drawKey(px, py, ch) {
+  const colors = { 'y': '#ffd54f', 'b': '#64b5f6', 'r': '#ef5350' };
+  const c = colors[ch];
+  const cx = px + TILE / 2;
+  const cy = py + TILE / 2;
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, 15, 0, Math.PI * 2);
+  ctx.fillStyle = c + '22';
+  ctx.fill();
+
+  ctx.strokeStyle = c;
+  ctx.lineWidth = 3.5;
+  ctx.lineCap = 'round';
+
+  ctx.beginPath();
+  ctx.arc(cx - 5, cy - 5, 6, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx - 1, cy - 1);
+  ctx.lineTo(cx + 9, cy + 9);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx + 5, cy + 5);
+  ctx.lineTo(cx + 9.5, cy + 0.5);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx + 9, cy + 9);
+  ctx.lineTo(cx + 13.5, cy + 4.5);
+  ctx.stroke();
+}
+
+/* ---------- 寶石 ---------- */
+function drawGem(px, py, ch) {
+  const isAtk = ch === 'a';
+  const c1 = isAtk ? '#ffab91' : '#81d4fa';
+  const c2 = isAtk ? '#d84315' : '#0277bd';
+  const cx = px + TILE / 2;
+  const cy = py + TILE / 2;
+  const s = 13;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // 外發光
+  ctx.beginPath();
+  ctx.moveTo(0, -s - 3);
+  ctx.lineTo(s + 3, 0);
+  ctx.lineTo(0, s + 3);
+  ctx.lineTo(-s - 3, 0);
+  ctx.closePath();
+  ctx.fillStyle = c1 + '2a';
+  ctx.fill();
+
+  // 主體
+  const g = ctx.createLinearGradient(-s, -s, s, s);
+  g.addColorStop(0, c1);
+  g.addColorStop(1, c2);
+  ctx.beginPath();
+  ctx.moveTo(0, -s);
+  ctx.lineTo(s, 0);
+  ctx.lineTo(0, s);
+  ctx.lineTo(-s, 0);
+  ctx.closePath();
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // 高光
+  ctx.beginPath();
+  ctx.moveTo(0, -s);
+  ctx.lineTo(-s * 0.45, 0);
+  ctx.lineTo(0, 0);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(255,255,255,0.38)';
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/* ---------- 藥水 ---------- */
+function drawPotion(px, py, ch) {
+  const big = ch === 'P';
+  const c = big ? '#9575cd' : '#ff5252';
+  const c2 = big ? '#5e35b1' : '#c62828';
+  const cx = px + TILE / 2;
+  const cy = py + TILE / 2 + 3;
+
+  // 瓶身
+  const g = ctx.createRadialGradient(cx - 4, cy - 4, 2, cx, cy, 12);
+  g.addColorStop(0, c);
+  g.addColorStop(1, c2);
+  ctx.beginPath();
+  ctx.arc(cx, cy, 11, 0, Math.PI * 2);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = 1.8;
+  ctx.stroke();
+
+  // 瓶頸
+  ctx.fillStyle = '#cfd8dc';
+  ctx.fillRect(cx - 4, cy - 17, 8, 9);
+
+  // 軟木塞
+  ctx.fillStyle = '#8d6e63';
+  ctx.fillRect(cx - 4.5, cy - 22, 9, 6);
+
+  // 高光
+  ctx.beginPath();
+  ctx.arc(cx - 4, cy - 2, 3.2, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fill();
+}
+
+/* ---------- 樓梯 ---------- */
+function drawStairs(px, py, down) {
+  const c = down ? '#b39ddb' : '#4db6ac';
+  const cx = px + TILE / 2;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  roundRect(px + 5, py + 5, TILE - 10, TILE - 10, 6);
+  ctx.fill();
+
+  ctx.strokeStyle = c;
+  ctx.lineWidth = 2;
+  roundRect(px + 5, py + 5, TILE - 10, TILE - 10, 6);
+  ctx.stroke();
+
+  // 台階
+  ctx.fillStyle = c;
+  ctx.fillRect(px + 10, py + 14, 28, 5);
+  ctx.fillRect(px + 14, py + 22, 20, 5);
+  ctx.fillRect(px + 18, py + 30, 12, 5);
+
+  // 箭頭
+  ctx.beginPath();
+  if (down) {
+    ctx.moveTo(cx - 7, py + 10);
+    ctx.lineTo(cx + 7, py + 10);
+    ctx.lineTo(cx, py + 3);
+  } else {
+    ctx.moveTo(cx - 7, py + 39);
+    ctx.lineTo(cx + 7, py + 39);
+    ctx.lineTo(cx, py + 46);
+  }
+  ctx.closePath();
+  ctx.fillStyle = c;
+  ctx.fill();
+}
+
+/* ---------- 玩家 ---------- */
+function drawPlayer() {
+  const px = player.x * TILE;
+  const py = player.y * TILE;
+  const cx = px + TILE / 2;
+  const cy = py + TILE / 2;
+  const t = performance.now() / 1000;
+  const pulse = 1 + Math.sin(t * 3) * 0.05;
+  const r = TILE * 0.33 * pulse;
+
+  // 光環
+  const halo = ctx.createRadialGradient(cx, cy, r, cx, cy, r * 2.1);
+  halo.addColorStop(0, 'rgba(100,200,255,0.28)');
+  halo.addColorStop(1, 'rgba(100,200,255,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 2.1, 0, Math.PI * 2);
+  ctx.fillStyle = halo;
+  ctx.fill();
+
+  // 影子
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + r + 3, r * 0.7, 4, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fill();
+
+  // 身體
+  const g = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.4, 2, cx, cy, r);
+  g.addColorStop(0, '#c9f3ff');
+  g.addColorStop(1, '#1e88e5');
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI *
