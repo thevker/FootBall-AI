@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>🚀 v99.0 — 比例模式 A/B/C + 三段嵌套驗證</title>
+<title>🚀 v99.1 — 比例 A/B/C + 定向 Skip 過濾器</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui;padding:16px;max-width:1400px;margin:auto;background:#0f172a;color:#e2e8f0}
@@ -39,6 +39,7 @@ td:nth-child(1),td:nth-child(2){text-align:left}
 .tag-d{background:#2563eb;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold}
 .tag-a{background:#dc2626;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold}
 .tag-skip{background:#475569;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold}
+.tag-skipf{background:#7c3aed;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold}
 .section{background:#1e293b;padding:12px;border-radius:6px;border:1px solid #334155;margin-top:12px}
 h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 .progress-row{display:flex;align-items:center;gap:12px;margin-top:12px}
@@ -75,12 +76,12 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 </head>
 <body>
 
-<h2>🚀 v99.0 — 比例模式 A/B/C + 三段嵌套驗證</h2>
+<h2>🚀 v99.1 — 比例 A/B/C + 定向 Skip 過濾器</h2>
 
 <div class="warn-banner">
-  <b>🏆 v99.0 核心升級：</b>
-  <br>新增「比例模式」：A 自動公式 / B 學習曲線 / C 三段嵌套驗證。
-  <br>C 模式將測試集從搜索中隔離，分數才是誠實分數。
+  <b>🏆 v99.1 核心升級：</b>
+  <br>新增「🩺 定向 Skip 過濾器」——搜索完成後自動診斷虧損簇，最多加 2 條定向 skip，且必須通過驗證集利潤提升門檻。
+  <br>不會把 skip 丟進搜索池，避免過擬合。
 </div>
 
 <textarea id="input" placeholder="A主初 B和初 C客初 D主尾 E和尾 F客尾 結果..."></textarea>
@@ -96,6 +97,12 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
     <option value="A" selected>📐 A：自動公式（推薦）</option>
     <option value="B">📈 B：學習曲線（耗時）</option>
     <option value="C">🧪 C：三段嵌套驗證</option>
+  </select>
+
+  <label>🩺 定向 Skip：</label>
+  <select id="skipFilter">
+    <option value="1" selected>✅ 啟用（推薦）</option>
+    <option value="0">❌ 關閉</option>
   </select>
 
   <label>🧠 算法：</label>
@@ -224,7 +231,6 @@ h3{margin-top:0;margin-bottom:6px;font-size:15px;color:#f8fafc}
 <script>
 'use strict';
 
-// === 全局變數 ===
 var FEATURES=[
   'A-D','D-A','MA_PCT','A/D','B-E','E-B','MB_PCT','B/E','C-F','F-C','MC_PCT','C/F',
   'MA-MC','MA-MB','MC-MB','A-D-(C-F)','A-D-(B-E)','C-F-(B-E)','(A-D)+(F-C)', '(C-F)+(D-A)',
@@ -240,7 +246,6 @@ var FEATURE_NAMES=[
   '主真實概率初','主真實概率尾','主真實概率變化','客真實概率初','客真實概率尾','客真實概率變化'
 ];
 var FCOUNT=FEATURES.length;
-
 var OPS=['>','>=','<','<=','==','!='];
 var OPS_SHEET=['>','>=','<','<=','=','<>'];
 var RESULTS=['H','D','A','skip'];
@@ -250,13 +255,12 @@ var rawRowsData=[], testRowsData=null;
 var trainFeat=null,trainResult=null,trainOdds=null,trainN=0;
 var testFeat=null,testResult=null,testOdds=null,testN=0;
 
-// === v99.0 新增：比例模式 + 三段驗證 ===
-var ratioMode='A';                       // manual / A / B / C
+var ratioMode='A';
 var valRowsData=null;
 var valFeat=null,valResult=null,valOdds=null,valN=0,valProfitMat=null;
-var isThreeStage=false;                  // C 模式標記
-// 統一「搜索評估矩陣」：雙集時指向 test，三段時指向 val
+var isThreeStage=false;
 var EVAL_MAT={feat:null,result:null,odds:null,N:0,profitMat:null,condCache:{},condCacheSize:0};
+var skipFilterEnabled=true;
 
 var running=false,startTime=0;
 var logBuffer=[],logTimer=null,LOG_MAX=5000;
@@ -275,7 +279,6 @@ var globalBestWinRate=0, globalBestGames=0, globalBestProfit=-Infinity;
 
 var featureValueCache={}, condBSCache={}, condBSCacheSize=0;
 var COND_CACHE_MAX=500000;
-
 var trainProfitMat=null, testProfitMat=null;
 var testCondBSCache={}, testCondBSCacheSize=0;
 var TEST_COND_CACHE_MAX=200000;
@@ -284,7 +287,6 @@ var isAutoMode = false;
 var autoModeList = ['H','D','A','HD','DA','HA','HDA'];
 var autoModeResults = {};
 
-// === 工具函數 ===
 function rnd2(v){if(!isFinite(v))return 0;return Math.sign(v)*Math.round(Math.abs(v)*100)/100;}
 function bsWords(N){return (N+31)>>5;}
 function bsNew(N){return new Uint32Array(bsWords(N));}
@@ -304,7 +306,6 @@ function getCondBS(fi,op,v){
   if(condBSCacheSize<COND_CACHE_MAX){condBSCache[key]=bs;condBSCacheSize++;}
   return bs;
 }
-// 統一評估矩陣的位集（取代原本 getCondBSTest）
 function getCondBSEval(fi,op,v){
   var key=condKey(fi,op,v);
   if(EVAL_MAT.condCache[key])return EVAL_MAT.condCache[key];
@@ -344,7 +345,7 @@ function profitOfBS(bs,thenCode){
 function getWins(bs,thenCode){
   if(thenCode===3)return 0;
   var wins=0;
-  for(var w=0;w<bs.length;w++){
+={  for(var wremain=0;w<bs.length;w++){
     var x=bs[w],base=w<<5;
     while(x){
       var low=x&-x;var pos=31-Math.clz32(low);var idx=base+pos;
@@ -355,7 +356,6 @@ function getWins(bs,thenCode){
   return wins;
 }
 
-// 在 EVAL_MAT 上評估（取代 evalOnTest）
 function evalOnEval(conds,thenCode){
   if(!EVAL_MAT.feat||EVAL_MAT.N===0)return {profit:0,cnt:0};
   if(!conds||conds.length===0)return {profit:0,cnt:0};
@@ -382,8 +382,6 @@ function evalOnEval(conds,thenCode){
   }
   return {profit:profit,cnt:cnt};
 }
-
-// 在 EVAL_MAT 上評估個體（取代 evalIndividualOnTest）
 function evalIndividualOnEval(rules){
   if(!EVAL_MAT.feat||EVAL_MAT.N===0||!rules||rules.length===0)return null;
   var games=0,wins=0,totalProfit=0;
@@ -403,12 +401,10 @@ function evalIndividualOnEval(rules){
   return {games:games,wins:wins,totalProfit:totalProfit,score:score};
 }
 
-// 爬山目標：對齊新版評分
 function metricOfBS(bs,conds,thenCode,mode){
   var total=bsCount(bs);
   if(total===0)return -Infinity;
   var trainProfit=profitOfBS(bs,thenCode);
-  
   if(mode==='test_max'){
     if(!EVAL_MAT.feat||EVAL_MAT.N===0)return trainProfit;
     if(trainProfit<=0)return -999999;
@@ -427,8 +423,8 @@ function metricOfBS(bs,conds,thenCode,mode){
     if(tRes2.profit<=0)return -999999;
     var rawScore = tRes2.profit * Math.sqrt(tRes2.cnt);
     var penalty = 1;
-    if (tRes2.cnt < 50) penalty *= 0.5; 
-    if ((tRes2.profit / tRes2.cnt) < 10) penalty *= 0.8; 
+    if (tRes2.cnt < 50) penalty *= 0.5;
+    if ((tRes2.profit / tRes2.cnt) < 10) penalty *= 0.8;
     return rawScore * penalty;
   }
   return trainProfit;
@@ -438,6 +434,10 @@ function evaluateRuleSet(rules){
   var tr=calcRulesStats(rules,trainFeat,trainResult,trainOdds,trainN);
   var te=calcRulesStats(rules,testFeat,testResult,testOdds,testN);
   return {train:tr,test:te};
+}
+function calcRulesStatsOnEval(rules){
+  if(!EVAL_MAT.feat||EVAL_MAT.N===0)return {games:0,wins:0,skips:0,totalProfit:0,winRate:0,details:[]};
+  return calcRulesStats(rules,EVAL_MAT.feat,EVAL_MAT.result,EVAL_MAT.odds,EVAL_MAT.N);
 }
 
 function calcRulesStats(rules,featMat,resArr,oddsArr,N){
@@ -511,19 +511,16 @@ async function runHillClimb(){
   var singles=precomputedSingles;
   if(!singles||singles.length===0)return {rules:[],stats:{},fallbackInfo:null};
   var allCondRules=[];
-
   for(var tc=0;tc<3;tc++){
     if(allowedDirCodes.indexOf(tc) === -1) continue;
     var tcSingles=singles.filter(function(s){return s.thenCode===tc;});
     if(tcSingles.length===0)continue;
     tcSingles.sort(function(a,b){return b.profit-a.profit;});
-
     for(var k=0;k<5;k++){
       var initIdx=Math.floor(Math.pow(Math.random(),2)*tcSingles.length);
       var current={conds:[tcSingles[initIdx].cond],bs:tcSingles[initIdx].bs,score:metricOfBS(tcSingles[initIdx].bs,[tcSingles[initIdx].cond],tc,optMode)};
       var globalBest={conds:current.conds.slice(),bs:current.bs,score:current.score};
       var maxIter=2500,noImproveCount=0,T0=5000,alpha=0.995;
-
       for(var iter=0;iter<maxIter;iter++){
         if(!running)break;
         var moveType=Math.random(),testConds=current.conds.slice(),newBS=null,isIncremental=false;
@@ -540,13 +537,11 @@ async function runHillClimb(){
           if(overlap2)continue;
           testConds[idx2]=cand2.cond;
         }else continue;
-
         if(!isIncremental){
           newBS=null;
           for(var c3=0;c3<testConds.length;c3++){var cb=getCondBS(testConds[c3][0],testConds[c3][1],testConds[c3][2]);newBS=newBS===null?cb:bsAnd(newBS,cb);}
         }
         if(!newBS||bsCount(newBS)<(minHitsRequired>0?minHitsRequired:1))continue;
-
         var newScore=metricOfBS(newBS,testConds,tc,optMode),accept=false;
         if(newScore>current.score)accept=true;
         else{var T=T0*Math.pow(alpha,iter);if(T>0.1&&Math.random()<Math.exp((newScore-current.score)/T))accept=true;}
@@ -564,7 +559,6 @@ async function runHillClimb(){
       }
     }
   }
-
   var finalRules=[],covered=bsNew(trainN),dirCounts=[0,0,0];
   while(true){
     var bestIdx=-1,maxIncrement=-Infinity;
@@ -633,7 +627,6 @@ function extractRules(node,currentConds,rules){
   extractRules(node.left,currentConds.concat([node.cond]),rules);
   extractRules(node.right,currentConds,rules);
 }
-
 function getRandomPoolItem(pool){return pool[Math.floor(Math.random()*pool.length)];}
 function cloneInd(ind){
   var nr=[];
@@ -643,7 +636,6 @@ function cloneInd(ind){
   }
   return {rules:nr,eval:ind.eval};
 }
-
 function evaluateIndividualDouble(ind){
   var covered=bsNew(trainN);
   var totalProfit=0,games=0,wins=0;
@@ -667,13 +659,10 @@ function evaluateIndividualDouble(ind){
       if(pDir>bestDirProfit){bestDirProfit=pDir;bestDir=tc;}
     }
     var useHDA=false;
-    if(fallbackMode==='always-hda'){
-      if(bestDirProfit>0) useHDA=true;
-    }
+    if(fallbackMode==='always-hda'){if(bestDirProfit>0) useHDA=true;}
     if(useHDA){totalProfit+=bestDirProfit;games+=remainCnt;wins+=getWins(remainBS,bestDir);}
   }
   var result={profit:totalProfit,winRate:games>0?(wins/games*100):0,games:games,wins:wins};
-  
   if(optMode==='score_max'){
     var testEval=evalIndividualOnEval(ind.rules);
     if(testEval && testEval.games > 0 && testEval.totalProfit > 0){
@@ -684,16 +673,12 @@ function evaluateIndividualDouble(ind){
       if(testEval.games < 50) penalty *= 0.5;
       if((testEval.wins / testEval.games) < 0.45) penalty *= 0.8;
       result.fitness = (rawScore * penalty * 1000) + totalProfit;
-    }else{
-      result.fitness = -999999;
-    }
+    }else{result.fitness = -999999;}
   }else{
     result.fitness=optMode==='profit'?totalProfit:(games>0?(wins/games*100+games*0.0001):-Infinity);
   }
-  
   return result;
 }
-
 function createRandomIndividual(pool,maxRules){
   var rules=[],usedFeatures={},dirCounts=[0,0,0];
   var initCount=Math.floor(Math.random()*10)+5;
@@ -760,7 +745,6 @@ function mutate(ind,pool,maxRules){
     if(ind.rules.length>1)ind.rules.splice(Math.floor(Math.random()*ind.rules.length),1);
   }
 }
-
 async function runGeneticEngineDouble(){
   var pool=precomputedSingles;
   if(!pool||pool.length===0)return {rules:[],stats:{totalProfit:0,winRate:0,games:0},fallbackInfo:null};
@@ -825,7 +809,7 @@ function applyFallbackLogic(finalRules,covered){
     }else{reason='純Skip模式';}
     if(useFallbackHDA){
       finalRules.push({on:1,then:RESULTS[bestDir],thenCode:bestDir,conds:[],bs:remainingBS});
-      fallbackInfo={remainCnt:remainCnt,bestDir:RESULTS[bestDir],bestDirCode:bestDir,profit:bestDirProfit,dirProfits:dirProfits,mode:'HDA',reason:reason};
+      fallbackInfoCnt:remainCnt,bestDir:RESULTS[bestDir],bestDirCode:bestDir,profit:bestDirProfit,dirProfits:dirProfits,mode:'HDA',reason:reason};
     }else{
       finalRules.push({on:1,then:'skip',thenCode:3,conds:[],bs:remainingBS});
       fallbackInfo={remainCnt:remainCnt,bestDir:RESULTS[bestDir],bestDirCode:bestDir,profit:bestDirProfit,dirProfits:dirProfits,mode:'skip',reason:reason};
@@ -834,7 +818,66 @@ function applyFallbackLogic(finalRules,covered){
   return {rules:finalRules,fallbackInfo:fallbackInfo};
 }
 
-// 終極評分（用最終測試集）
+// === v99.1 新增：定向 Skip 過濾器 ===
+function optimizeSkipFilter(rules){
+  if(!skipFilterEnabled) return {rules:rules, added:[]};
+  var stats = calcRulesStats(rules, trainFeat, trainResult, trainOdds, trainN);
+  var lossIdx=[], winIdx=[];
+  for(var i=0;i<stats.details.length;i++){
+    var d=stats.details[i];
+    if(d.pred==='skip') continue;
+    if(d.profit<0) lossIdx.push(d.idx); else winIdx.push(d.idx);
+  }
+  if(lossIdx.length < 40 || winIdx.length < 40) return {rules:rules, added:[]};
+
+  var lossTotal = lossIdx.length, winTotal = winIdx.length;
+  var candidates = [];
+  for(var fi=0; fi<FCOUNT; fi++){
+    var ths = getThresholds(fi);
+    for(var op=0; op<4; op++){
+      for(var k=0; k<ths.length; k++){
+        var thr=ths[k];
+        var bs = getCondBS(fi,op,thr);
+        var hitLoss=0, hitWin=0;
+        for(var li=0; li<lossTotal; li++){ var ix=lossIdx[li]; if(bs[ix>>5]&(1<<(ix&31))) hitLoss++; }
+        for(var wi=0; wi<winTotal; wi++){ var ix2=winIdx[wi]; if(bs[ix2>>5]&(1<<(ix2&31))) hitWin++; }
+        if(hitLoss < lossTotal*0.5) continue;
+        if(hitWin > winTotal*0.2) continue;
+        var cnt = bsCount(bs);
+        if(cnt < 40) continue;
+        var pH = profitOfBS(bs,0), pD = profitOfBS(bs,1), pA = profitOfBS(bs,2);
+        if(pH>0 || pD>0 || pA>0) continue;
+        candidates.push({cond:[fi,op,thr], lossHit:hitLoss, winHit:hitWin, cnt:cnt, totalLoss:pH+pD+pA});
+      }
+    }
+  }
+  if(candidates.length===0) return {rules:rules, added:[]};
+
+  candidates.sort(function(a,b){ return (b.lossHit - a.winHit*2) - (a.lossHit - b.winHit*2); });
+  var baseProfit = calcRulesStatsOnEval(rules).totalProfit;
+  var added = [];
+  var usedFi = {};
+  for(var pick=0; pick<2; pick++){
+    var bestC=null, bestGain=0;
+    for(var ci=0; ci<candidates.length && ci<60; ci++){
+      var c = candidates[ci];
+      if(usedFi[c.cond[0]]) continue;
+      var skipRules = added.concat([c]).map(function(x){ return {on:1,then:'skip',thenCode:3,conds:[x.cond]}; });
+      var trial = skipRules.concat(rules);
+      var ev = calcRulesStatsOnEval(trial);
+      var gain = ev.totalProfit - baseProfit;
+      if(gain > bestGain){ bestGain = gain; bestC = c; }
+    }
+    if(!bestC || bestGain <= 0) break;
+    added.push(bestC);
+    usedFi[bestC.cond[0]] = 1;
+    baseProfit += bestGain;
+  }
+  if(added.length===0) return {rules:rules, added:[]};
+  var skipRules = added.map(function(x){ return {on:1,then:'skip',thenCode:3,conds:[x.cond]}; });
+  return {rules: skipRules.concat(rules), added: added};
+}
+
 function calculateModelScore(trainStats,testStats,ruleCount){
   if(!testStats||testStats.totalProfit<=0){
     return {score:0,grade:'F',color:'score-f',text:'❌ 直接丟棄（測試集虧損）',details:''};
@@ -843,7 +886,7 @@ function calculateModelScore(trainStats,testStats,ruleCount){
   var testProfit = testStats.totalProfit;
   var winRate = testStats.winRate;
   var penalty = 1;
-  if (testGames < 50) penalty *= 0.5; 
+  if (testGames < 50) penalty *= 0.5;
   if (winRate < 45) penalty *= 0.8;
   var rawScore = (testProfit * Math.sqrt(testGames)) / 10;
   var score = Math.round(rawScore * penalty);
@@ -892,18 +935,22 @@ function renderRuleTable(rules,trainStats){
   for(var i=0;i<rules.length;i++){
     var r=rules[i];
     var isSkip=r.thenCode===3;
-    var isFallbackDir=(r.conds.length===0&&r.thenCode!==3);
-    var ss=isSkip?'其餘全部（不下注）':(isFallbackDir?'其餘全部（無條件押）':fmtRule(r));
+    var isDirectedSkip=(isSkip && r.conds.length>0);
+    var isFallbackSkip=(isSkip && r.conds.length===0);
+    var isFallbackDir=(r.conds.length===0 && r.thenCode!==3);
+    var ss=isFallbackSkip?'其餘全部（不下注）':(isFallbackDir?'其餘全部（無條件押）':fmtRule(r));
     if(ss.length>90)ss=ss.slice(0,87)+'...';
-    var thenClass=isSkip?'tag-skip':(r.thenCode===0?'tag-h':(r.thenCode===1?'tag-d':'tag-a'));
+    var thenClass=isDirectedSkip?'tag-skipf':(isSkip?'tag-skip':(r.thenCode===0?'tag-h':(r.thenCode===1?'tag-d':'tag-a')));
     var thenTag='<span class="'+thenClass+'">'+r.then+'</span>';
-    var rowLabel=(i===rules.length-1)?(i+1)+' (兜底)':'第 '+(i+1);
+    var rowLabel=isDirectedSkip?'🩺 過濾 '+(i+1):((i===rules.length-1)?(i+1)+' (兜底)':'第 '+(i+1));
     var ind=getIndependentStats(r);
     var tWinRate=ind.tGames>0?(ind.tWins/ind.tGames*100).toFixed(1)+'%':'-';
     var tProfitHtml=ind.tGames===0?'-':(ind.tProfit>=0?'<span class="profit-pos">+'+ind.tProfit+'</span>':'<span class="profit-neg">'+ind.tProfit+'</span>');
     var eProfitHtml=ind.eGames===0?'-':(ind.eProfit>=0?'<span class="profit-pos">+'+ind.eProfit+'</span>':'<span class="profit-neg">'+ind.eProfit+'</span>');
     var statusHtml='';
-    if(ind.tGames>0&&ind.eGames>0){
+    if(isDirectedSkip){
+      statusHtml='<span style="color:#c084fc;font-weight:bold;">🩺 定向過濾</span>';
+    }else if(ind.tGames>0&&ind.eGames>0){
       statusHtml=ind.eProfit>0?'<span style="color:#4ade80;font-weight:bold;">✅ 可用</span>':'<span style="color:#f87171;font-weight:bold;">❌ 毒藥</span>';
     }else if(ind.eGames===0)statusHtml='<span style="color:#94a3b8;">(未觸發)</span>';
     if(r.conds.length===0){
@@ -991,9 +1038,7 @@ function onRatioModeChange(){
   document.getElementById('lblSplit').style.display=showManual?'inline-block':'none';
 }
 function fallbackModeLabel(m){return m==='always-hda'?'🎯 純 HDA（全虧自動 Skip）':'⏸ 純 Skip';}
-function dirLimitLabel(d){return d===0?'無限':('每方向 ≤ '+d+' 條');}
 
-// === v99.0 方案A：自動公式 ===
 function autoSplitRatioA(N_total, R_budget){
   var N_min = 150, r_base = 0.30, k = 10;
   var nTest = Math.max(N_min, Math.ceil(N_total * r_base), k * R_budget);
@@ -1001,8 +1046,6 @@ function autoSplitRatioA(N_total, R_budget){
   if(nTest > N_total - 100) nTest = Math.max(50, N_total - 100);
   return 1 - nTest / N_total;
 }
-
-// === v99.0 方案C：三段切分 ===
 function splitThreeStage(N_total){
   var nVal = Math.max(100, Math.round(N_total * 0.20));
   var nTest = Math.max(150, Math.round(N_total * 0.15));
@@ -1014,49 +1057,37 @@ function splitThreeStage(N_total){
   return {nTrain:nTrain, nVal:nVal, nTest:nTest};
 }
 
-// === v99.0 方案B：學習曲線掃描 ===
 async function runLearningCurveScan(parsedRows, R_budget, allowedCodes){
   var candidates = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80];
   var results = [];
   var scanRounds = Math.max(3, Math.min(8, Math.floor(totalPhases / 10)));
-
-  // 備份所有全局狀態
   var origTrainFeat=trainFeat,origTrainResult=trainResult,origTrainOdds=trainOdds,origTrainN=trainN,origTrainProfitMat=trainProfitMat;
   var origTestFeat=testFeat,origTestResult=testResult,origTestOdds=testOdds,origTestN=testN,origTestProfitMat=testProfitMat;
   var origFeatureCache=featureValueCache,origCondCache=condBSCache,origCondCacheSize=condBSCacheSize;
   var origEvalMat={feat:EVAL_MAT.feat,result:EVAL_MAT.result,odds:EVAL_MAT.odds,N:EVAL_MAT.N,profitMat:EVAL_MAT.profitMat,condCache:EVAL_MAT.condCache,condCacheSize:EVAL_MAT.condCacheSize};
   var origAllowed=allowedDirCodes;
-
   allowedDirCodes = allowedCodes;
-
   try{
     for(var ci=0; ci<candidates.length; ci++){
       if(!running) break;
       var p = candidates[ci];
       var splitIdx = Math.floor(parsedRows.length * p);
       if(parsedRows.length - splitIdx < 60 || splitIdx < 100) continue;
-
       var trRows = parsedRows.slice(0, splitIdx);
       var teRows = parsedRows.slice(splitIdx);
-
       trainN = trRows.length; testN = teRows.length;
       var m1 = extractMeta(trRows,'final');
       trainResult = m1.codes; trainOdds = m1.odds; trainFeat = extractFeatures(trRows);
       trainProfitMat = new Float64Array(3*trainN);
       for(var p1=0;p1<trainN;p1++) for(var c1=0;c1<3;c1++) trainProfitMat[c1*trainN+p1]=(trainResult[p1]===c1)?(trainOdds[p1*3+c1]-100):-100;
-
       var m2 = extractMeta(teRows,'final');
       testResult = m2.codes; testOdds = m2.odds; testFeat = extractFeatures(teRows);
       testProfitMat = new Float64Array(3*testN);
       for(var p2=0;p2<testN;p2++) for(var c2=0;c2<3;c2++) testProfitMat[c2*testN+p2]=(testResult[p2]===c2)?(testOdds[p2*3+c2]-100):-100;
-
       featureValueCache={}; condBSCache={}; condBSCacheSize=0;
       allMask = bsNew(trainN);
       for(var ii=0;ii<trainN;ii++) allMask[ii>>5]|=(1<<(ii&31));
-
-      // 雙集模式：EVAL 指向 test
       EVAL_MAT = {feat:testFeat,result:testResult,odds:testOdds,N:testN,profitMat:testProfitMat,condCache:{},condCacheSize:0};
-
       precomputedSingles = await buildSinglesAsync();
       var bestProfit = -Infinity;
       if(precomputedSingles.length > 0){
@@ -1071,27 +1102,20 @@ async function runLearningCurveScan(parsedRows, R_budget, allowedCodes){
         }
         totalPhases = savedPhases;
       }
-
       results.push({p:p, score:bestProfit, trainN:trainN, testN:testN});
       pushLog('📈 學習曲線：'+Math.round(p*100)+'% → 測試利潤 '+(bestProfit===-Infinity?'N/A':bestProfit)+' (訓練 '+trainN+'/測試 '+testN+')','dim');
       await yieldUI();
     }
   } finally {
-    // 完整恢復
     trainFeat=origTrainFeat;trainResult=origTrainResult;trainOdds=origTrainOdds;trainN=origTrainN;trainProfitMat=origTrainProfitMat;
     testFeat=origTestFeat;testResult=origTestResult;testOdds=origTestOdds;testN=origTestN;testProfitMat=origTestProfitMat;
     featureValueCache=origFeatureCache;condBSCache=origCondCache;condBSCacheSize=origCondCacheSize;
     EVAL_MAT=origEvalMat;
     allowedDirCodes=origAllowed;
   }
-
   if(results.length === 0) return 0.70;
-
-  // 選點策略：在滿足樣本約束的結果中，找「邊際收益開始遞減」的拐點
   var valid = results.filter(function(r){ return r.trainN >= 250 && r.testN >= 100 && r.score > -Infinity; });
   if(valid.length === 0) return 0.70;
-
-  // 從低比例（小訓練）到高比例（大訓練），找第一個邊際增益 < 10% 的點
   var chosen = valid[0].p;
   for(var ri=1; ri<valid.length; ri++){
     var prev = valid[ri-1], curr = valid[ri];
@@ -1101,23 +1125,16 @@ async function runLearningCurveScan(parsedRows, R_budget, allowedCodes){
     }
     chosen = curr.p;
   }
-
-  // 若某個點分數特別高（> 其他 1.3 倍），優先選它
   var bestScore = -Infinity, bestP = chosen;
-  for(var k=0;k<valid.length;k++){
-    if(valid[k].score > bestScore){ bestScore = valid[k].score; bestP = valid[k].p; }
-  }
+  for(var k=0;k<valid.length;k++){ if(valid[k].score > bestScore){ bestScore = valid[k].score; bestP = valid[k].p; } }
   if(bestScore > 0){
-    // 只有當高分點訓練集仍夠大（>= 總數55%）才採用
     var bestEntry = valid.filter(function(r){return r.p===bestP;})[0];
     if(bestEntry && bestEntry.trainN >= Math.floor(parsedRows.length*0.55)) chosen = bestP;
   }
-
   pushLog('📈 學習曲線選定：訓練 '+Math.round(chosen*100)+'% / 測試 '+Math.round((1-chosen)*100)+'%','success');
   return chosen;
 }
 
-// ================= 核心啟動邏輯 =================
 async function start(){
   try{
     var parsed=parseData(document.getElementById('input').value);
@@ -1125,7 +1142,7 @@ async function start(){
 
     ratioMode=document.getElementById('ratioMode').value;
     var splitMode=document.getElementById('splitMode').value;
-
+    skipFilterEnabled = document.getElementById('skipFilter').value === '1';
     algoMode=document.getElementById('algoMode').value;
     optMode=document.getElementById('optMode').value;
     maxCondsLimit=parseInt(document.getElementById('maxConds').value)||0;
@@ -1133,7 +1150,6 @@ async function start(){
     fallbackMode=document.getElementById('fallbackMode').value;
     var uiTrendMode=document.getElementById('trendMode').value;
     isAutoMode = (uiTrendMode === 'AUTO');
-
     var gatePct=parseFloat(document.getElementById('minHitsPct').value)||0;
     totalPhases=parseInt(document.getElementById('runCount').value)||100;
 
@@ -1144,25 +1160,23 @@ async function start(){
     document.getElementById('best').style.display='none';
     updateStats();clearLog();
 
-    pushLog('🚀 v99.0 — '+(algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')),'head');
+    pushLog('🚀 v99.1 — '+(algoMode==='genetic'?'遺傳進化':(algoMode==='hill-climb'?'爬山法':'決策樹')),'head');
     pushLog('🔬 比例模式：'+(ratioMode==='manual'?'手動':ratioMode==='A'?'📐 A 自動公式':ratioMode==='B'?'📈 B 學習曲線':'🧪 C 三段嵌套'),'info');
+    pushLog('🩺 定向 Skip：'+(skipFilterEnabled?'✅ 啟用':'❌ 關閉'),'info');
     await yieldUI();
 
     var N_total = parsed.rows.length;
     var R_budget = dirLimit > 0 ? dirLimit * 3 : 15;
     var ratio, splitIdx;
 
-    // === 決定劃分 ===
     if(ratioMode === 'A'){
       ratio = autoSplitRatioA(N_total, R_budget);
       splitIdx = Math.floor(N_total * ratio);
       pushLog('📐 方案A：自動公式 → 訓練 '+splitIdx+' / 測試 '+(N_total-splitIdx)+'（'+Math.round(ratio*100)+'%）','info');
     }else if(ratioMode === 'B'){
-      // 需要 allowedDirCodes 先定（用 UI 的 trendMode 或 AUTO 最大集）
       var tm = uiTrendMode==='AUTO' ? 'HDA' : uiTrendMode;
       var bcodes = tm==='H'?[0]:tm==='D'?[1]:tm==='A'?[2]:tm==='HD'?[0,1]:tm==='DA'?[1,2]:tm==='HA'?[0,2]:[0,1,2];
       var bR = dirLimit>0 ? dirLimit*bcodes.length : 15;
-      // 初始化 minHitsRequired（用全部場次估）
       minHitsRequired = gatePct>0 ? Math.ceil(N_total*0.7*gatePct) : 0;
       pushLog('📈 方案B：啟動學習曲線掃描（會顯著增加時間）...','warn');
       ratio = await runLearningCurveScan(parsed.rows, bR, bcodes);
@@ -1171,19 +1185,12 @@ async function start(){
       var ts = splitThreeStage(N_total);
       splitIdx = ts.nTrain;
       pushLog('🧪 方案C：三段嵌套 → 訓練 '+ts.nTrain+' / 驗證 '+ts.nVal+' / 測試 '+ts.nTest,'info');
-      // 暫存三段邊界
       start._ts = ts;
     }else{
-      // manual
-      if(splitMode!=='none'){
-        ratio = splitMode==='70-30'?0.7:0.8;
-        splitIdx = Math.floor(N_total*ratio);
-      }else{
-        ratio = 1.0; splitIdx = N_total;
-      }
+      if(splitMode!=='none'){ ratio = splitMode==='70-30'?0.7:0.8; splitIdx = Math.floor(N_total*ratio); }
+      else{ ratio = 1.0; splitIdx = N_total; }
     }
 
-    // === 分配數據 ===
     if(ratioMode === 'C'){
       var ts2 = start._ts;
       rawRowsData = parsed.rows.slice(0, ts2.nTrain);
@@ -1194,20 +1201,13 @@ async function start(){
       if(ratioMode!=='manual' || splitMode!=='none'){
         rawRowsData = parsed.rows.slice(0, splitIdx);
         testRowsData = parsed.rows.slice(splitIdx);
-      }else{
-        rawRowsData = parsed.rows;
-        testRowsData = null;
-      }
+      }else{ rawRowsData = parsed.rows; testRowsData = null; }
       valRowsData = null;
       isThreeStage = false;
     }
-
-    // 依據實際劃分重算 minHitsRequired
     minHitsRequired = gatePct>0 ? Math.ceil(rawRowsData.length*gatePct) : 0;
 
-    // === 構建矩陣 ===
     featureValueCache={};clearCondCache();
-
     trainN = rawRowsData.length;
     var meta=extractMeta(rawRowsData,'final');
     trainResult=meta.codes;trainOdds=meta.odds;
@@ -1216,7 +1216,6 @@ async function start(){
     for(var pi=0;pi<trainN;pi++) for(var ptc=0;ptc<3;ptc++)
       trainProfitMat[ptc*trainN+pi]=(trainResult[pi]===ptc)?(trainOdds[pi*3+ptc]-100):-100;
 
-    // 測試集
     if(testRowsData&&testRowsData.length>0){
       testN=testRowsData.length;
       var metaT=extractMeta(testRowsData,'final');
@@ -1229,7 +1228,6 @@ async function start(){
       testN=0;testFeat=null;testResult=null;testOdds=null;testProfitMat=null;
     }
 
-    // 驗證集（三段用）
     if(isThreeStage && valRowsData && valRowsData.length>0){
       valN=valRowsData.length;
       var metaV=extractMeta(valRowsData,'final');
@@ -1238,12 +1236,10 @@ async function start(){
       valProfitMat=new Float64Array(3*valN);
       for(var pv=0;pv<valN;pv++) for(var pvc=0;pvc<3;pvc++)
         valProfitMat[pvc*valN+pv]=(valResult[pv]===pvc)?(valOdds[pv*3+pvc]-100):-100;
-      // EVAL_MAT → 驗證集
       EVAL_MAT={feat:valFeat,result:valResult,odds:valOdds,N:valN,profitMat:valProfitMat,condCache:{},condCacheSize:0};
       pushLog('🧪 EVAL_MAT 已指向驗證集（搜索目標與最終測試隔離）','success');
     }else{
       valN=0;valFeat=null;valResult=null;valOdds=null;valProfitMat=null;
-      // EVAL_MAT → 測試集（雙集模式）
       EVAL_MAT={feat:testFeat,result:testResult,odds:testOdds,N:testN,profitMat:testProfitMat,condCache:{},condCacheSize:0};
     }
 
@@ -1289,7 +1285,6 @@ async function start(){
           var evalRes=evaluateRuleSet(r.rules);
           var sc,tieBreakVal;
           if(optMode==='test_max'){
-            // C 模式：搜索目標用 val，最終評分用 test
             var evalForSearch = isThreeStage ? calcRulesStats(r.rules,valFeat,valResult,valOdds,valN) : evalRes.test;
             sc=evalForSearch.totalProfit;tieBreakVal=evalRes.train.totalProfit;
           }else if(optMode==='score_max'){
@@ -1338,6 +1333,21 @@ async function start(){
         var fbRes2=applyFallbackLogic(fRules,covered);
         var evalRes3=evaluateRuleSet(fbRes2.rules);
         res={rules:fbRes2.rules,stats:evalRes3.train,fallbackInfo:fbRes2.fallbackInfo};
+      }
+
+      // === v99.1：定向 Skip 過濾器 ===
+      if(res && res.rules && res.rules.length>0 && skipFilterEnabled){
+        var skipOpt = optimizeSkipFilter(res.rules);
+        if(skipOpt.added.length > 0){
+          res.rules = skipOpt.rules;
+          res.stats = calcRulesStats(res.rules, trainFeat, trainResult, trainOdds, trainN);
+          pushLog(nowTime()+' 🩺 模式 '+currentMode+' 加入 '+skipOpt.added.length+' 條定向 Skip 過濾器', 'success');
+          for(var sk=0; sk<skipOpt.added.length; sk++){
+            pushLog('   🩺 '+fmtCond(skipOpt.added[sk].cond)+' → skip（覆蓋 '+skipOpt.added[sk].lossHit+' 虧損場，誤傷 '+skipOpt.added[sk].winHit+' 盈利場）', 'dim');
+          }
+        }else{
+          pushLog(nowTime()+' 🩺 模式 '+currentMode+' 無合適 Skip 過濾器（保持原規則）', 'dim');
+        }
       }
 
       if(res && res.rules && res.rules.length>0){
@@ -1407,9 +1417,7 @@ function viewAutoResult(mode) {
     if(tr.innerHTML.indexOf("'"+mode+"'") > -1) {
       tr.classList.add('active');
       tr.querySelector('.btn-view').classList.add('active');
-    } else {
-      tr.classList.remove('active');
-    }
+    } else { tr.classList.remove('active'); }
   });
   renderSingleResultUI(autoModeResults[mode]);
 }
@@ -1419,7 +1427,6 @@ function renderSingleResultUI(r) {
   var finalTestStats = r.testStats;
   var bestTotal = finalTrainStats.totalProfit;
   var scoreData = r.scoreData;
-
   document.getElementById('best').style.display='block';
   var earnStatus=bestTotal>0?'🟢 訓練集賺錢':'🔴 訓練集蝕本';
   var earnColor=bestTotal>0?'#4ade80':'#f87171';
@@ -1439,15 +1446,16 @@ function renderSingleResultUI(r) {
     fbPanelHtml='<div class="fb-panel"><b>🛟 兜底</b>：✅ 所有場次已被規則完全覆蓋</div>';
   }
 
+  var skipCount = r.rules.filter(function(x){return x.thenCode===3 && x.conds.length>0;}).length;
   document.getElementById('summary').innerHTML=
     '<div style="font-size:16px;color:#cbd5e1;margin-bottom:4px">基於訓練集模擬 (當前展示模式：<b style="color:#facc15">'+r.mode+'</b>)：</div>'+
     '<div style="font-size:36px;color:'+earnColor+';font-weight:bold;margin-bottom:12px;padding:10px;background:rgba(0,0,0,0.2);border-radius:8px;text-align:center;">'+earnStatus+'（'+(bestTotal>0?'+':'')+bestTotal+' 單位）</div>'+
-    '<div style="font-size:14px;color:#cbd5e1;line-height:1.9">結算：<b>尾盤 D/E/F</b>　趨勢模式：<b>'+r.mode+'</b><br>命中率 <b style="color:#c084fc">'+finalTrainStats.winRate.toFixed(2)+'%</b>（'+finalTrainStats.wins+'/'+finalTrainStats.games+'）　共 <b>'+r.rules.length+'</b> 條規則</div>'+fbPanelHtml;
+    '<div style="font-size:14px;color:#cbd5e1;line-height:1.9">結算：<b>尾盤 D/E/F</b>　趨勢模式：<b>'+r.mode+'</b><br>命中率 <b style="color:#c084fc">'+finalTrainStats.winRate.toFixed(2)+'%</b>（'+finalTrainStats.wins+'/'+finalTrainStats.games+'）　共 <b>'+r.rules.length+'</b> 條規則'+(skipCount>0?'　🩺 <b style="color:#c084fc">'+skipCount+'</b> 條定向過濾':'')+'</div>'+fbPanelHtml;
 
   var modeLabel=(optMode==='test_max')?'🔥 雙集極限尋優（測試集最高）':(optMode==='score_max')?'🏆 找出最高評分':'💰 僅看訓練集盈利';
   var fbLabel=fallbackModeLabel(fallbackMode);
   var ratioLabel=(ratioMode==='manual'?'手動':ratioMode==='A'?'📐 A 自動公式':ratioMode==='B'?'📈 B 學習曲線':'🧪 C 三段嵌套');
-  document.getElementById('resultInfo').innerHTML='算法：<b>'+(algoMode==='genetic'?'🧬 遺傳':(algoMode==='hill-climb'?'⛰️ 爬山':'🌳 決策樹'))+'</b>　目標：<b>'+modeLabel+'</b><br>比例：<b>'+ratioLabel+'</b>　兜底：<b>'+fbLabel+'</b>　趨勢模式：<b>'+r.mode+'</b>';
+  document.getElementById('resultInfo').innerHTML='算法：<b>'+(algoMode==='genetic'?'🧬 遺傳':(algoMode==='hill-climb'?'⛰️ 爬山':'🌳 決策樹'))+'</b>　目標：<b>'+modeLabel+'</b><br>比例：<b>'+ratioLabel+'</b>　兜底：<b>'+fbLabel+'</b>　趨勢模式：<b>'+r.mode+'</b>　定向Skip：<b>'+(skipFilterEnabled?'✅':'❌')+'</b>';
 
   renderCompareTable(finalTrainStats,rawRowsData,'final');
   document.getElementById('txtH').value=r.formula;
@@ -1519,29 +1527,23 @@ function extractMeta(rows,payoutMode){
   }
   return {codes:codes,odds:odds};
 }
-
 function copyIt(id){
   var el=document.getElementById(id);if(!el)return;
   var txt=el.value;
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(function(){
-      var m=document.getElementById('msg');
-      m.textContent='✅ 已複製 '+txt.length+' 字元';
-      m.className='ok';m.style.display='block';
-      setTimeout(function(){m.style.display='none';},3000);
+      var m=document.getElementById('msg');m.textContent='✅ 已複製 '+txt.length+' 字元';
+      m.className='ok';m.style.display='block';setTimeout(function(){m.style.display='none';},3000);
     }).catch(function(){fallbackCopy(txt);});
   }else fallbackCopy(txt);
 }
 function fallbackCopy(text){
-  var ta=document.createElement('textarea');
-  ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';
+  var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';
   document.body.appendChild(ta);ta.focus();ta.select();
   var ok=false;try{ok=document.execCommand('copy');}catch(e){}
   document.body.removeChild(ta);
-  var m=document.getElementById('msg');
-  m.textContent=ok?'✅ 已複製 '+text.length+' 字元':'❌ 複製失敗';
-  m.className=ok?'ok':'err';m.style.display='block';
-  setTimeout(function(){m.style.display='none';},3000);
+  var m=document.getElementById('msg');m.textContent=ok?'✅ 已複製 '+text.length+' 字元':'❌ 複製失敗';
+  m.className=ok?'ok':'err';m.style.display='block';setTimeout(function(){m.style.display='none';},3000);
 }
 
 (function(){onAlgoChange();onRatioModeChange();document.getElementById('log').textContent='等待開始...';})();
