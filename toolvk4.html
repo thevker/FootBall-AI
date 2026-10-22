@@ -68,18 +68,19 @@ select:focus,input:focus{outline:none;border-color:#6366f1}
 #log{background:#050914;color:#94a3b8;border-radius:8px;padding:12px;height:220px;overflow-y:auto;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;white-space:pre;line-height:1.55;border:1px solid #1e293b}
 .l-info{color:#38bdf8}.l-success{color:#4ade80;font-weight:600}.l-warn{color:#fbbf24}.l-dim{color:#475569}.l-head{color:#f8fafc;font-weight:700}.l-error{color:#f87171;font-weight:700}
 
-/* TABLES */
+/* TABLES (修复核心) */
 .scroll{max-height:460px;overflow:auto;border:1px solid #1e293b;border-radius:6px}
-table{border-collapse:collapse;width:100%;font-size:11px;background:#111c33}
-th,td{border:1px solid #1e293b;padding:5px 7px;text-align:right;color:#cbd5e1}
-th{background:#0b1120;text-align:center;color:#818cf8;position:sticky;top:0;z-index:5;font-weight:600;font-size:10px}
-td:first-child,td:nth-child(2){text-align:left}
+table{border-collapse:collapse;width:100%;background:#111c33;table-layout:auto}
+th,td{border:1px solid #1e293b;padding:6px 8px;text-align:right;color:#cbd5e1;vertical-align:middle;font-size:11.5px}
+th{background:#0b1120;text-align:center;color:#818cf8;position:sticky;top:0;z-index:5;font-weight:600;font-size:11px}
 tr:nth-child(even){background:#0e1729}
+/* 针对左对齐列（条件、名称等） */
+td.left-align,th.left-align{text-align:left}
 .profit-pos{color:#4ade80;font-weight:700}.profit-neg{color:#f87171;font-weight:700}
-.tag-h{background:#16a34a;color:#fff;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700}
-.tag-d{background:#2563eb;color:#fff;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700}
-.tag-a{background:#dc2626;color:#fff;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700}
-.tag-skip{background:#475569;color:#fff;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700}
+.tag-h{background:#16a34a;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;display:inline-block;margin-left:4px}
+.tag-d{background:#2563eb;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;display:inline-block;margin-left:4px}
+.tag-a{background:#dc2626;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;display:inline-block;margin-left:4px}
+.tag-skip{background:#475569;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;display:inline-block;margin-left:4px}
 
 /* SCORE */
 .score-hero{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
@@ -621,7 +622,6 @@ function metricOfBS(bs,conds,thenCode,mode){
     if(tp<=0)return -999999;
     var r3=evalOnEval(conds,thenCode);
     if(r3.cnt<5)return -999999;
-    // 取兩者較小者為主，避免一邊爆賺一邊虧
     var m=Math.min(r3.profit,tp);
     return m*1.2+(r3.profit+tp)*0.1;
   }
@@ -720,7 +720,6 @@ function kellyFraction(stats){
   if(!stats||stats.games<10)return 0;
   var p=stats.wins/stats.games;
   var q=1-p;
-  // 估算平均賠率
   var totalOdds=0,cnt=0;
   if(stats.details){
     for(var i=0;i<stats.details.length;i++){
@@ -760,7 +759,7 @@ function calculateModelScore(trainStats,testStats,ruleCount,details){
 
   var raw=(profit*Math.sqrt(games))/10;
   var score=Math.round(raw*penalty);
-  score-=ruleCount*2; // 複雜度懲罰
+  score-=ruleCount*2;
   if(score<0)score=0;
 
   var grade='C';
@@ -1005,7 +1004,6 @@ async function runBeamSearch(){
     }
   }
 
-  // 貪心組合
   var finalRules=[],covered=bsNew(trainN),dirCounts=[0,0,0];
   while(true){
     var bestIdx=-1,maxInc=-Infinity;
@@ -1236,7 +1234,6 @@ async function runGeneticEngine(isMemetic){
     var eliteCount=Math.max(6,Math.floor(POP*0.12));
     for(var e=0;e<eliteCount;e++)next.push(cloneInd(pop[e]));
 
-    // 模因：對精英做局部爬山
     if(isMemetic){
       var localN=Math.min(8,eliteCount);
       for(var m=0;m<localN;m++){
@@ -1448,7 +1445,6 @@ function monteCarloTest(details,trials){
   var drop=Math.floor(ps.length*0.1);
   for(var t=0;t<trials;t++){
     var copy=ps.slice();
-    // 隨機移除 10%
     for(var d=0;d<drop;d++){copy.splice(Math.floor(Math.random()*copy.length),1);}
     var s=0;
     for(var k=0;k<copy.length;k++)s+=copy[k];
@@ -1567,7 +1563,6 @@ function genSheetsFormula(rules){
 }
 
 function genExcelFormula(rules){
-  // Excel 365 單行版本（下拉填充）
   if(!rules||rules.length===0)return '=IF(A2="","","")';
   var body=genFormulaRec(rules,0);
   var setup=
@@ -1706,7 +1701,8 @@ function renderRuleTable(rules,trainStats){
     return {tP:tP,tG:tG,tW:tW,eP:eP,eG:eG,eW:eW};
   }
 
-  var html='<thead><tr><th>順序</th><th>條件</th><th>→</th><th colspan="3" style="background:#0b1120">訓練獨立表現</th><th>測試利潤</th><th>狀態</th></tr>'+
+  // 修复：必须包含外部的 <table> 标签
+  var html='<table><thead><tr><th>順序</th><th class="left-align">條件</th><th>→</th><th colspan="3" style="background:#0b1120">訓練獨立表現</th><th>測試利潤</th><th>狀態</th></tr>'+
     '<tr><th></th><th></th><th></th><th>命中</th><th>勝率</th><th>利潤</th><th></th><th></th></tr></thead><tbody>';
 
   for(var i=0;i<rules.length;i++){
@@ -1714,13 +1710,13 @@ function renderRuleTable(rules,trainStats){
     var isSkip=r.thenCode===3;
     var isFb=(r.conds.length===0&&r.thenCode!==3);
     var ss=isSkip?'其餘全部（Skip）':(isFb?'其餘全部（無條件押）':fmtRule(r));
-    if(ss.length>95)ss=ss.slice(0,92)+'...';
+    if(ss.length>100)ss=ss.slice(0,97)+'...';
     var cls=isSkip?'tag-skip':(r.thenCode===0?'tag-h':(r.thenCode===1?'tag-d':'tag-a'));
     var tag='<span class="'+cls+'">'+r.then+'</span>';
     var label=(i===rules.length-1)?(i+1)+' (兜底)':String(i+1);
 
     if(r.conds.length===0){
-      html+='<tr><td>'+label+'</td><td style="color:#64748b">'+ss+'</td><td>'+tag+'</td>'+
+      html+='<tr><td style="text-align:center">'+label+'</td><td class="left-align" style="color:#64748b">'+ss+'</td><td style="text-align:center">'+tag+'</td>'+
         '<td colspan="5" style="text-align:center;color:#475569">全局兜底</td></tr>';
       continue;
     }
@@ -1733,15 +1729,16 @@ function renderRuleTable(rules,trainStats){
     if(st.tG>0&&st.eG>0)status=st.eP>0?'<span style="color:#4ade80;font-weight:700">✅ 可用</span>':'<span style="color:#f87171;font-weight:700">❌ 毒藥</span>';
     else if(st.eG===0)status='<span style="color:#64748b">(未觸發)</span>';
 
-    html+='<tr><td>'+label+'</td><td style="font-size:10px">'+ss+'</td><td>'+tag+'</td>'+
+    html+='<tr><td style="text-align:center">'+label+'</td><td class="left-align" style="font-size:11px;word-break:break-all;">'+ss+'</td><td style="text-align:center">'+tag+'</td>'+
       '<td>'+st.tG+'</td><td>'+wr+'</td><td>'+tpH+'</td><td>'+epH+'</td><td>'+status+'</td></tr>';
   }
-  html+='</tbody>';
+  html+='</tbody></table>';
   document.getElementById('ruleTable').innerHTML=html;
 }
 
 function renderCompareTable(stats,rawRows){
-  var html='<thead><tr><th>#</th><th>A主初</th><th>B和初</th><th>C客初</th><th>D主尾</th><th>E和尾</th><th>F客尾</th><th>賽果</th><th>預測</th><th>賠率</th><th>盈虧</th><th>累計</th></tr></thead><tbody>';
+  // 修复：包裹 <table>
+  var html='<table><thead><tr><th>#</th><th>A主初</th><th>B和初</th><th>C客初</th><th>D主尾</th><th>E和尾</th><th>F客尾</th><th>賽果</th><th>預測</th><th>賠率</th><th>盈虧</th><th>累計</th></tr></thead><tbody>';
   var det=stats.details,cum=0;
   for(var i=0;i<det.length;i++){
     var d=det[i],raw=rawRows[d.idx];
@@ -1757,7 +1754,7 @@ function renderCompareTable(stats,rawRows){
       '<td class="'+predCls+'">'+predStr+'</td><td>'+oddsUsed+'</td><td>'+pStr+'</td>'+
       '<td style="font-weight:700;background:#0b1120">'+cStr+'</td></tr>';
   }
-  html+='</tbody>';
+  html+='</tbody></table>';
   document.getElementById('compareTable').innerHTML=html;
 }
 
@@ -1781,9 +1778,10 @@ function renderRiskPanel(testStats,trainStats){
 
 function renderSegments(stats,rawRows){
   var det=stats.details;
-  if(!det||det.length===0){document.getElementById('segmentTable').innerHTML='<tr><td class="empty">無數據</td></tr>';return;}
+  // 修复：包裹 <table>
+  if(!det||det.length===0){document.getElementById('segmentTable').innerHTML='<table><tbody><tr><td class="empty">無數據</td></tr></tbody></table>';return;}
   var segCount=10,segLen=Math.ceil(det.length/segCount);
-  var html='<thead><tr><th>區段</th><th>場次</th><th>下注</th><th>命中</th><th>勝率</th><th>利潤</th><th>累計</th></tr></thead><tbody>';
+  var html='<table><thead><tr><th>區段</th><th>場次</th><th>下注</th><th>命中</th><th>勝率</th><th>利潤</th><th>累計</th></tr></thead><tbody>';
   var cum=0;
   for(var s=0;s<segCount;s++){
     var start=s*segLen,end=Math.min((s+1)*segLen,det.length);
@@ -1804,7 +1802,7 @@ function renderSegments(stats,rawRows){
       '<td class="'+pcls+'">'+(profit>0?'+':'')+profit+'</td>'+
       '<td style="font-weight:700">'+(cum>0?'+':'')+cum+'</td></tr>';
   }
-  html+='</tbody>';
+  html+='</tbody></table>';
   document.getElementById('segmentTable').innerHTML=html;
 }
 
@@ -1911,7 +1909,6 @@ async function start(){
     var R_budget=dirLimit>0?dirLimit*3:15;
     var ratio=0.7,splitIdx=0;
 
-    /* --- 決定劃分 --- */
     if(ratioMode==='A'){
       ratio=autoSplitRatioA(N,R_budget);
       splitIdx=Math.floor(N*ratio);
@@ -1939,7 +1936,6 @@ async function start(){
       }
     }
 
-    /* --- 分配數據 --- */
     if(ratioMode==='C'){
       var ts2=start._ts;
       rawRowsData=parsed.rows.slice(0,ts2.nTrain);
@@ -1960,7 +1956,6 @@ async function start(){
 
     minHitsRequired=gatePct>0?Math.ceil(rawRowsData.length*gatePct):0;
 
-    /* --- 建矩陣 --- */
     featureValueCache={};clearCondCache();
 
     trainN=rawRowsData.length;
@@ -2003,7 +1998,6 @@ async function start(){
     allMask=bsNew(trainN);
     for(var i=0;i<trainN;i++)allMask[i>>5]|=(1<<(i&31));
 
-    /* --- 逐模式執行 --- */
     var modesToRun=isAutoMode?autoModeList:[uiTrend];
 
     for(var mi=0;mi<modesToRun.length;mi++){
@@ -2135,7 +2129,6 @@ async function start(){
 
     if(!running)return;
 
-    /* --- 渲染結果 --- */
     if(isAutoMode){
       renderRankTable();
       var sorted=Object.keys(autoModeResults).map(function(k){return autoModeResults[k];})
@@ -2164,7 +2157,8 @@ async function start(){
 function renderRankTable(){
   var sorted=Object.keys(autoModeResults).map(function(k){return autoModeResults[k];})
     .sort(function(a,b){return b.scoreData.score-a.scoreData.score;});
-  var html='<thead><tr><th>模式</th><th>評分</th><th>測試利潤</th><th>測試勝率</th><th>訓練利潤</th><th>規則</th><th>操作</th></tr></thead><tbody>';
+  // 修复：包裹 <table>
+  var html='<table class="rank-table"><thead><tr><th>模式</th><th>評分</th><th>測試利潤</th><th>測試勝率</th><th>訓練利潤</th><th>規則</th><th>操作</th></tr></thead><tbody>';
   for(var i=0;i<sorted.length;i++){
     var r=sorted[i];
     var crown=i===0?'👑':'';
@@ -2179,7 +2173,7 @@ function renderRankTable(){
       '<td>'+r.rules.length+'</td>'+
       '<td><button class="mini" style="background:#4f46e5">查看</button></td></tr>';
   }
-  html+='</tbody>';
+  html+='</tbody></table>';
   document.getElementById('autoRankTable').innerHTML=html;
   document.getElementById('autoRankPanel').style.display='block';
 }
@@ -2239,7 +2233,6 @@ function renderResult(r){
 
   document.getElementById('summary').innerHTML=html;
 
-  // 測試面板
   var tp=document.getElementById('testResultPanel');
   if(te){
     var color=te.totalProfit>0?'#4ade80':'#f87171';
@@ -2255,13 +2248,9 @@ function renderResult(r){
 
   document.getElementById('summary').innerHTML+=fbHtml;
 
-  // 風控面板
   renderRiskPanel(te,tr);
-
-  // 規則表
   renderRuleTable(r.rules,tr);
 
-  // 特徵重要性
   var fi=featureImportance(r.rules);
   var maxN=fi.length>0?fi[0].n:1;
   var fiHtml='<div style="display:flex;flex-direction:column;gap:6px">';
@@ -2279,15 +2268,12 @@ function renderResult(r){
   fiHtml+='</div>';
   document.getElementById('featImportance').innerHTML=fiHtml;
 
-  // 公式
   formulaCache=r.formulas;
   switchFormula(currentFormulaType);
 
-  // 明細
   renderCompareTable(tr,rawRowsData);
   document.getElementById('detailBadge').textContent=r.mode+' / 訓練集';
 
-  // 圖表
   setTimeout(function(){
     drawEquityChart(tr.details);
     renderSegments(tr,rawRowsData);
@@ -2490,7 +2476,6 @@ function extractFeatures(rows){
     f[38]=tp_a; f[39]=tp_d; f[40]=rnd2(tp_d-tp_a);
     f[41]=tp_c; f[42]=tp_f; f[43]=rnd2(tp_f-tp_c);
 
-    // === 新增特徵 44-67 ===
     f[44]=rnd2(A?B/A:0);
     f[45]=rnd2(C?B/C:0);
     f[46]=rnd2(B?A/B:0);
@@ -2509,7 +2494,6 @@ function extractFeatures(rows){
     f[59]=rnd2(A-C);
     f[60]=rr_f<88?0:(rr_f<92?1:(rr_f<95?2:3));
 
-    // 滾動：近 10 場主/客勝率
     var h=0,aa=0,cnt=0;
     for(var k=Math.max(0,i-10);k<i;k++){
       var rr=rows[k].result;
@@ -2520,7 +2504,6 @@ function extractFeatures(rows){
     f[61]=cnt?rnd2(h/cnt*100):50;
     f[62]=cnt?rnd2(aa/cnt*100):50;
 
-    // 連號
     if(i>0){
       var prev=rows[i-1].result;
       if(prev===streakDir)streakLen++;
@@ -2528,7 +2511,6 @@ function extractFeatures(rows){
     }else{streakDir=null;streakLen=0;}
     f[63]=streakDir==='H'?streakLen:(streakDir==='A'?-streakLen:0);
 
-    // Z-score
     var wa=[],wc=[];
     for(var k2=Math.max(0,i-20);k2<i;k2++){wa.push(rows[k2].A);wc.push(rows[k2].C);}
     f[64]=zsc(A,wa);
@@ -2601,26 +2583,27 @@ function refreshDB(){
   var list=dbLoad();
   document.getElementById('dbBadge').textContent=list.length;
   if(list.length===0){
-    document.getElementById('dbTable').innerHTML='<tr><td class="empty">模型庫為空 — 跑出結果後點「存入模型庫」</td></tr>';
+    document.getElementById('dbTable').innerHTML='<table><tbody><tr><td class="empty">模型庫為空 — 跑出結果後點「存入模型庫」</td></tr></tbody></table>';
     return;
   }
-  var html='<thead><tr><th>名稱</th><th>時間</th><th>模式</th><th>評分</th><th>測試利潤</th><th>訓練利潤</th><th>規則</th><th>操作</th></tr></thead><tbody>';
+  // 修复：包裹 <table>
+  var html='<table><thead><tr><th>名稱</th><th>時間</th><th>模式</th><th>評分</th><th>測試利潤</th><th>訓練利潤</th><th>規則</th><th>操作</th></tr></thead><tbody>';
   for(var i=0;i<list.length;i++){
     var m=list[i];
     html+='<tr>'+
-      '<td style="color:#c7d2fe;font-weight:600">'+escapeHtml(m.name)+'</td>'+
+      '<td class="left-align" style="color:#c7d2fe;font-weight:600">'+escapeHtml(m.name)+'</td>'+
       '<td style="font-size:10px;color:#64748b">'+m.time+'</td>'+
-      '<td>'+m.trendMode+'</td>'+
+      '<td style="text-align:center">'+m.trendMode+'</td>'+
       '<td style="color:#4ade80;font-weight:700">'+m.score+'</td>'+
       '<td class="'+(m.testProfit>0?'profit-pos':'profit-neg')+'">'+(m.testProfit>0?'+':'')+m.testProfit+'</td>'+
       '<td>'+m.trainProfit+'</td>'+
-      '<td>'+(m.rules?m.rules.length:0)+'</td>'+
-      '<td style="white-space:nowrap">'+
+      '<td style="text-align:center">'+(m.rules?m.rules.length:0)+'</td>'+
+      '<td style="white-space:nowrap;text-align:center">'+
         '<button class="mini" style="background:#4f46e5" onclick="loadModel(\''+m.id+'\')">載入</button> '+
         '<button class="mini" style="background:#7f1d1d" onclick="deleteModel(\''+m.id+'\')">刪除</button>'+
       '</td></tr>';
   }
-  html+='</tbody>';
+  html+='</tbody></table>';
   document.getElementById('dbTable').innerHTML=html;
 }
 function escapeHtml(s){
@@ -2634,7 +2617,6 @@ function loadModel(id){
   for(var i=0;i<list.length;i++){if(list[i].id===id){m=list[i];break;}}
   if(!m){toast('❌ 找不到模型');return;}
 
-  // 重建規則（bs 從 conds 重算）
   var rules=m.rules.map(function(r){
     return {on:r.on,then:r.then,thenCode:r.thenCode,conds:r.conds,bs:null};
   });
@@ -2734,14 +2716,13 @@ function importDB(input){
 function loadDemo(){
   var lines=[];
   var n=800;
-  // 生成有結構的假數據：主隊實力較強時，尾盤主賠下降 → 主勝概率上升
   var seed=12345;
   function rnd(){
     seed=(seed*1103515245+12345)&0x7fffffff;
     return seed/0x7fffffff;
   }
   for(var i=0;i<n;i++){
-    var strength=rnd(); // 0=客強 1=主強
+    var strength=rnd();
     var pHome=0.30+strength*0.35;
     var pDraw=0.28-rnd()*0.06;
     var pAway=1-pHome-pDraw;
@@ -2753,7 +2734,6 @@ function loadDemo(){
     var B=rnd2s(1/Math.max(pDraw,0.03)*1.06);
     var C=rnd2s(1/Math.max(pAway,0.03)*1.06);
 
-    // 尾盤：根據隱含結果微調（模擬市場修正）
     var drift=(rnd()-0.5)*0.10+strength*0.03;
     var D=rnd2s(A*(1-drift)+ (rnd()-0.5)*0.05);
     var E=rnd2s(B*(1+(rnd()-0.5)*0.06));
