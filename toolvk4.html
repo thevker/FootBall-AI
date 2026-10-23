@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🏆 v10.6 — 賠率模式挖掘引擎</title>
+<title>🏆 v10.7 — 賠率模式挖掘引擎</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b1120;color:#e2e8f0;padding:0 0 60px}
@@ -136,7 +136,7 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 
 <header>
   <div class="wrap">
-    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v10.6</span><span class="sub">68 特徵 · 5 算法 · 三段驗證 · 風控指標</span></h1>
+    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v10.7</span><span class="sub">68 特徵 · 5 算法 · 三段驗證 · 風控指標</span></h1>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="tab-setup" onclick="switchTab('tab-setup')">⚙️ 設定</button>
       <button class="tab-btn" data-tab="tab-result" onclick="switchTab('tab-result')">🏆 結果</button>
@@ -806,7 +806,7 @@ function getThresholds(fi){
   vals.sort(function(a,b){return a-b;});
   var ths=[],seen={};
   // 適度採樣，避免手機卡死
-  var step = Math.max(1, Math.floor(vals.length / 50)); 
+  var step = Math.max(1, Math.floor(vals.length / 30)); 
   for(var j=0;j<vals.length;j+=step){
     var v=rnd2(vals[j]);
     if(!seen[v]){seen[v]=1;ths.push(v);}
@@ -822,9 +822,9 @@ function getThresholds(fi){
     var pgrid=[-3,-2,-1,-0.5,0,0.5,1,2,3,-50,-40,-30,-20,-15,-10,-5,-2,-1,0,1,2,5,10,15,20,30,40,50,60,70,80,90,100];
     for(var p=0;p<pgrid.length;p++){if(!seen[pgrid[p]]){seen[pgrid[p]]=1;ths.push(pgrid[p]);}}
   }
-  if(ths.length>100){
-    var step2=ths.length/100,sampled=[];
-    for(var s=0;s<100;s++)sampled.push(ths[Math.floor(s*step2)]);
+  if(ths.length>80){
+    var step2=ths.length/80,sampled=[];
+    for(var s=0;s<80;s++)sampled.push(ths[Math.floor(s*step2)]);
     ths=sampled;
   }
   featureValueCache[fi]=ths;
@@ -832,9 +832,9 @@ function getThresholds(fi){
 }
 
 /* ============================================================
-   8. 單條件候選池
+   8. 單條件候選池 (異步切片)
    ============================================================ */
-function buildSinglesSync(){
+async function buildSinglesAsync(){
   var singles=[];
   for(var fi=0;fi<FCOUNT;fi++){
     var ths=getThresholds(fi);
@@ -850,9 +850,14 @@ function buildSinglesSync(){
         }
       }
     }
+    if(fi%3===0 || fi===FCOUNT-1){
+      pushLog('   ⚙️ 候選池 '+Math.round((fi+1)/FCOUNT*100)+'%（'+singles.length+' 個）','dim');
+      if(shouldYield()) await yieldUI();
+    }
   }
   
   if(singles.length===0){
+    pushLog('   ⚠️ 無法找到正利潤條件，啟動防呆：提取虧損最小的候選...','warn');
     for(var fi2=0;fi2<FCOUNT;fi2+=5){
       var ths2=getThresholds(fi2);
       for(var k2=0;k2<ths2.length;k2+=10){
@@ -868,15 +873,16 @@ function buildSinglesSync(){
     }
     singles.sort(function(a,b){return b.profit-a.profit;});
     singles=singles.slice(0,200);
+    await yieldUI();
   }
 
   return singles;
 }
 
 /* ============================================================
-   9. 爬山退火
+   9. 爬山退火 (異步切片)
    ============================================================ */
-function runHillClimbSync(){
+async function runHillClimbAsync(){
   var singles=precomputedSingles;
   if(!singles||singles.length===0)return {rules:[],fallbackInfo:null};
   var allCondRules=[];
@@ -945,6 +951,8 @@ function runHillClimbSync(){
           else noImprove++;
         }else noImprove++;
         if(noImprove>100)break;
+        
+        if(shouldYield()) await yieldUI();
       }
 
       if(gBest.score>-Infinity&&gBest.bs&&bsCount(gBest.bs)>0){
@@ -958,10 +966,7 @@ function runHillClimbSync(){
   }
 
   var finalRules=[],covered=bsNew(trainN),dirCounts=[0,0,0];
-  var safeCombo=0;
   while(true){
-    safeCombo++;
-    if(safeCombo>500)break;
     var bestIdx=-1,maxInc=-Infinity;
     for(var i=0;i<allCondRules.length;i++){
       var rule=allCondRules[i];
@@ -986,9 +991,9 @@ function runHillClimbSync(){
 }
 
 /* ============================================================
-   10. 束搜索
+   10. 束搜索 (異步切片)
    ============================================================ */
-function runBeamSearchSync(){
+async function runBeamSearchAsync(){
   var singles=precomputedSingles;
   if(!singles||singles.length===0)return {rules:[],fallbackInfo:null};
   var BEAM=16;
@@ -1030,6 +1035,7 @@ function runBeamSearchSync(){
       next.sort(function(a,b){return b.score-a.score;});
       beam=next.slice(0,BEAM);
       if(beam[0].score>bestOverall.score)bestOverall=beam[0];
+      await yieldUI();
     }
     if(bestOverall.score>-Infinity){
       allCondRules.push({on:1,then:RESULTS[tc],thenCode:tc,conds:bestOverall.conds,bs:bestOverall.bs});
@@ -1037,10 +1043,7 @@ function runBeamSearchSync(){
   }
 
   var finalRules=[],covered=bsNew(trainN),dirCounts=[0,0,0];
-  var safeCombo=0;
   while(true){
-    safeCombo++;
-    if(safeCombo>500)break;
     var bestIdx=-1,maxInc=-Infinity;
     for(var i2=0;i2<allCondRules.length;i2++){
       var rule=allCondRules[i2];
@@ -1065,7 +1068,7 @@ function runBeamSearchSync(){
 }
 
 /* ============================================================
-   11. 決策樹
+   11. 決策樹 (異步切片)
    ============================================================ */
 function getBestLeaf(bsMask){
   var total=bsCount(bsMask);
@@ -1080,7 +1083,7 @@ function getBestLeaf(bsMask){
   return {code:bestCode,profit:bestProfit,wins:bestWins,games:total,
     winRate:total>0?bestWins/total*100:0};
 }
-function buildTreeSync(bsMask,depth,limitDepth){
+async function buildTreeAsync(bsMask,depth,limitDepth){
   var leaf=getBestLeaf(bsMask);
   if(depth>=limitDepth)return {isLeaf:true,leafInfo:leaf};
   var curProfit=leaf.profit,bestSplit=null,maxProfit=curProfit;
@@ -1102,10 +1105,11 @@ function buildTreeSync(bsMask,depth,limitDepth){
         if(sp>maxProfit){maxProfit=sp;bestSplit={fi:fi,op:op,thr:thr,leftBS:leftBS,rightBS:rightBS};}
       }
     }
+    if(fi%5===0 && shouldYield())await yieldUI();
   }
   if(!bestSplit)return {isLeaf:true,leafInfo:leaf};
-  var ln=buildTreeSync(bestSplit.leftBS,depth+1,limitDepth);
-  var rn=buildTreeSync(bestSplit.rightBS,depth+1,limitDepth);
+  var ln=await buildTreeAsync(bestSplit.leftBS,depth+1,limitDepth);
+  var rn=await buildTreeAsync(bestSplit.rightBS,depth+1,limitDepth);
   return {isLeaf:false,cond:[bestSplit.fi,bestSplit.op,bestSplit.thr],left:ln,right:rn};
 }
 function extractRules(node,curConds,rules){
@@ -1120,7 +1124,7 @@ function extractRules(node,curConds,rules){
 }
 
 /* ============================================================
-   12. 遺傳 / 模因 (核心修復：統一數組屬性)
+   12. 遺傳 / 模因 (修復結構 + 異步)
    ============================================================ */
 function cloneInd(ind){
   var nr=[];
@@ -1187,7 +1191,6 @@ function createRandomIndividual(pool,maxRules){
     if(!usedFeatures[cand.fi]){
       usedFeatures[cand.fi]=true;
       if(cand.thenCode!==3)dirCounts[cand.thenCode]++;
-      // 這裡必須是 conds: [cand.cond] 數組
       rules.push({on:1,then:RESULTS[cand.thenCode],thenCode:cand.thenCode,conds:[cand.cond],bs:cand.bs});
     }
   }
@@ -1251,7 +1254,7 @@ function mutate(ind,pool,maxRules){
   }
 }
 
-function runGeneticEngineSync(isMemetic){
+async function runGeneticEngineAsync(isMemetic){
   var pool=precomputedSingles;
   if(!pool||pool.length===0)return {rules:[],fallbackInfo:null};
   var POP=50;
@@ -1262,6 +1265,7 @@ function runGeneticEngineSync(isMemetic){
     var ind=createRandomIndividual(pool,maxRules);
     ind.eval=evaluateIndividual(ind);
     pop.push(ind);
+    if(i%10===0) await yieldUI();
   }
   var gBest=null;
 
@@ -1284,6 +1288,7 @@ function runGeneticEngineSync(isMemetic){
           mutate(trial,pool,maxRules);
           trial.eval=evaluateIndividual(trial);
           if(trial.eval.fitness>base.eval.fitness)base=trial;
+          if(lm%5===0 && shouldYield()) await yieldUI();
         }
         if(base.eval.fitness>next[m].eval.fitness)next[m]=base;
       }
@@ -1297,12 +1302,15 @@ function runGeneticEngineSync(isMemetic){
       if(Math.random()<mutRate)mutate(child,pool,maxRules);
       child.eval=evaluateIndividual(child);
       next.push(child);
+      if(next.length%10===0 && shouldYield()) await yieldUI();
     }
     pop=next;
 
     if(gen%2===0||gen===totalPhases){
+      updateStats();
       var p0=pop[0].eval;
       pushLog(nowTime()+' 🧬 第 '+gen+' 代｜盈利 '+p0.profit+'｜勝率 '+p0.winRate.toFixed(1)+'%｜規則 '+pop[0].rules.length+' 條','dim');
+      await yieldUI();
     }
   }
 
@@ -1365,7 +1373,7 @@ function splitThreeStage(N_total){
   return {nTrain:N_total-nVal-nTest,nVal:nVal,nTest:nTest};
 }
 
-function runLearningCurveScanSync(parsedRows,R_budget,allowedCodes){
+async function runLearningCurveScanAsync(parsedRows,R_budget,allowedCodes){
   var candidates=[0.50,0.55,0.60,0.65,0.70,0.75,0.80];
   var results=[];
   var scanRounds=Math.max(3,Math.min(5,Math.floor(totalPhases/2)));
@@ -1391,13 +1399,13 @@ function runLearningCurveScanSync(parsedRows,R_budget,allowedCodes){
 
       trainN=trRows.length;testN=teRows.length;
       var m1=extractMeta(trRows,'final');
-      trainResult=m1.codes;trainOdds=m1.odds;trainFeat=extractFeatures(trRows);
+      trainResult=m1.codes;trainOdds=m1.odds;trainFeat=await extractFeaturesAsync(trRows);
       trainProfitMat=new Float64Array(3*trainN);
       for(var p1=0;p1<trainN;p1++)for(var c1=0;c1<3;c1++)
         trainProfitMat[c1*trainN+p1]=(trainResult[p1]===c1)?(trainOdds[p1*3+c1]-100):-100;
 
       var m2=extractMeta(teRows,'final');
-      testResult=m2.codes;testOdds=m2.odds;testFeat=extractFeatures(teRows);
+      testResult=m2.codes;testOdds=m2.odds;testFeat=await extractFeaturesAsync(teRows);
       testProfitMat=new Float64Array(3*testN);
       for(var p2=0;p2<testN;p2++)for(var c2=0;c2<3;c2++)
         testProfitMat[c2*testN+p2]=(testResult[p2]===c2)?(testOdds[p2*3+c2]-100):-100;
@@ -1409,21 +1417,23 @@ function runLearningCurveScanSync(parsedRows,R_budget,allowedCodes){
       EVAL_MAT={feat:testFeat,result:testResult,odds:testOdds,N:testN,
         profitMat:testProfitMat,condCache:{},condCacheSize:0};
 
-      precomputedSingles=buildSinglesSync();
+      precomputedSingles=await buildSinglesAsync();
       var bestProfit=-Infinity;
       if(precomputedSingles.length>0){
         var saved=totalPhases;
         totalPhases=scanRounds;
         for(var run=1;run<=scanRounds;run++){
           if(!running)break;
-          var rr=runHillClimbSync();
+          var rr=await runHillClimbAsync();
           var ev=evaluateRuleSet(rr.rules);
           if(ev.test&&ev.test.totalProfit>bestProfit)bestProfit=ev.test.totalProfit;
+          await yieldUI();
         }
         totalPhases=saved;
       }
       results.push({p:p,score:bestProfit,trainN:trainN,testN:testN});
       pushLog('📈 學習曲線：'+Math.round(p*100)+'% → 測試利潤 '+(bestProfit===-Infinity?'N/A':bestProfit),'dim');
+      await yieldUI();
     }
   }finally{
     trainFeat=oTF;trainResult=oTR;trainOdds=oTO;trainN=oTN;trainProfitMat=oTP;
@@ -1467,7 +1477,7 @@ function walkForwardTest(rules,rows,folds){
     var part=rows.slice(i*seg,i===folds-1?rows.length:(i+1)*seg);
     if(part.length<20)continue;
     var m=extractMeta(part,'final');
-    var fm=extractFeatures(part);
+    var fm=extractFeaturesSync(part); // 穩健檢驗用同步即可，因為只算一次
     var st=calcRulesStats(rules,fm,m.codes,m.odds,part.length);
     out.push({fold:i+1,n:part.length,profit:st.totalProfit,wr:st.winRate,games:st.games});
   }
@@ -1947,13 +1957,15 @@ function drawEquityChart(details){
 }
 
 /* ============================================================
-   19. 主流程 (全面同步執行，絕不卡死)
+   19. 主流程 (異步)
    ============================================================ */
-function start(){
+async function start(){
   try{
     document.getElementById('btnRun').textContent = '⏳ 計算中...';
     document.getElementById('btnRun').disabled = true;
-    document.getElementById('log').textContent = '正在計算，請稍候...';
+    document.getElementById('log').textContent = '正在解析數據...';
+
+    await yieldUI();
 
     var parsed=parseData(document.getElementById('input').value);
     if(parsed.rows.length<50){
@@ -1984,7 +1996,7 @@ function start(){
     currentResult=null;
     updateStats();clearLog();
 
-    pushLog('🚀 v10.6 — 啟動','head');
+    pushLog('🚀 v10.7 — 啟動','head');
     pushLog('🔬 比例：'+ratioModeLabel(ratioMode)+'｜算法：'+algoLabel(algoMode)+'｜目標：'+optLabel(optMode),'info');
     pushLog('🧬 特徵數：'+FCOUNT+'　場次：'+parsed.rows.length,'info');
     
@@ -2002,7 +2014,7 @@ function start(){
       var bR=dirLimit>0?dirLimit*bcodes.length:15;
       minHitsRequired=gatePct>0?Math.ceil(N*0.7*gatePct):0;
       pushLog('📈 方案B 學習曲線掃描啟動（耗時較長）...','warn');
-      ratio=runLearningCurveScanSync(parsed.rows,bR,bcodes);
+      ratio=await runLearningCurveScanAsync(parsed.rows,bR,bcodes);
       splitIdx=Math.floor(N*ratio);
     }else if(ratioMode==='C'){
       var ts=splitThreeStage(N);
@@ -2042,18 +2054,20 @@ function start(){
     featureValueCache={};clearCondCache();
 
     trainN=rawRowsData.length;
+    pushLog('   ⚙️ 提取訓練集特徵 ('+trainN+' 場)...', 'dim');
     var mT=extractMeta(rawRowsData,'final');
     trainResult=mT.codes;trainOdds=mT.odds;
-    trainFeat=extractFeatures(rawRowsData);
+    trainFeat=await extractFeaturesAsync(rawRowsData);
     trainProfitMat=new Float64Array(3*trainN);
     for(var pi=0;pi<trainN;pi++)for(var ptc=0;ptc<3;ptc++)
       trainProfitMat[ptc*trainN+pi]=(trainResult[pi]===ptc)?(trainOdds[pi*3+ptc]-100):-100;
 
     if(testRowsData&&testRowsData.length>0){
       testN=testRowsData.length;
+      pushLog('   ⚙️ 提取測試集特徵 ('+testN+' 場)...', 'dim');
       var mTe=extractMeta(testRowsData,'final');
       testResult=mTe.codes;testOdds=mTe.odds;
-      testFeat=extractFeatures(testRowsData);
+      testFeat=await extractFeaturesAsync(testRowsData);
       testProfitMat=new Float64Array(3*testN);
       for(var pi2=0;pi2<testN;pi2++)for(var ptc2=0;ptc2<3;ptc2++)
         testProfitMat[ptc2*testN+pi2]=(testResult[pi2]===ptc2)?(testOdds[pi2*3+ptc2]-100):-100;
@@ -2065,7 +2079,7 @@ function start(){
       valN=valRowsData.length;
       var mV=extractMeta(valRowsData,'final');
       valResult=mV.codes;valOdds=mV.odds;
-      valFeat=extractFeatures(valRowsData);
+      valFeat=await extractFeaturesAsync(valRowsData);
       valProfitMat=new Float64Array(3*valN);
       for(var pv=0;pv<valN;pv++)for(var pvc=0;pvc<3;pvc++)
         valProfitMat[pvc*valN+pv]=(valResult[pv]===pvc)?(valOdds[pv*3+pvc]-100):-100;
@@ -2101,7 +2115,7 @@ function start(){
       globalBestScore=-Infinity;globalBestRules=null;globalBestStats=null;globalBestFallback=null;
       globalBestProfit=-Infinity;globalBestWinRate=0;globalBestGames=0;
 
-      precomputedSingles=buildSinglesSync();
+      precomputedSingles=await buildSinglesAsync();
       poolSize=precomputedSingles.length;
       if(precomputedSingles.length===0){
         pushLog('⚠️ 模式 '+curMode+' 候選池為空，跳過','warn');
@@ -2116,7 +2130,8 @@ function start(){
         for(var run=1;run<=totalPhases;run++){
           if(!running)break;
           currentRun=run;
-          var r=(algoMode==='beam')?runBeamSearchSync():runHillClimbSync();
+          await yieldUI();
+          var r=(algoMode==='beam')?await runBeamSearchAsync():await runHillClimbAsync();
           var ev=evaluateRuleSet(r.rules);
           var sc,tie;
           if(optMode==='test_max'){
@@ -2148,13 +2163,13 @@ function start(){
         }
         res={rules:globalBestRules,stats:globalBestStats,fallbackInfo:globalBestFallback};
       }else if(algoMode==='genetic'||algoMode==='memetic'){
-        var rg=runGeneticEngineSync(algoMode==='memetic');
+        var rg=await runGeneticEngineAsync(algoMode==='memetic');
         var ev2=evaluateRuleSet(rg.rules);
         res={rules:rg.rules,stats:ev2.train,fallbackInfo:rg.fallbackInfo};
       }else if(algoMode==='decision-tree'){
         currentRun=1;totalPhases=1;
         var limitDepth=maxCondsLimit===0?20:maxCondsLimit;
-        var tree=buildTreeSync(allMask,0,limitDepth);
+        var tree=await buildTreeAsync(allMask,0,limitDepth);
         var fRules=[];
         extractRules(tree,[],fRules);
         if(dirLimit>0){
@@ -2467,10 +2482,11 @@ function updateRowCount(){
   document.getElementById('rowCountBadge').textContent=parsed.total+' 場';
 }
 
-function extractFeatures(rows){
+async function extractFeaturesAsync(rows){
   var N=rows.length,mat=new Array(N);
   var streakDir=null,streakLen=0;
   for(var i=0;i<N;i++){
+    if(i%500===0) await yieldUI(); // 異步讓出，防大數據卡死
     var r=rows[i];
     var A=r.A,B=r.B,C=r.C,D=r.D,E=r.E,F=r.F;
     var f=new Float64Array(FCOUNT);
@@ -2550,6 +2566,64 @@ function extractFeatures(rows){
     f[66]=rnd2(tp_a-tp_c);
     f[67]=rnd2((F?C/F:0)-(D?A/D:0));
 
+    mat[i]=f;
+  }
+  return mat;
+}
+
+// 穩健性檢驗專用同步版本
+function extractFeaturesSync(rows){
+  var N=rows.length,mat=new Array(N);
+  var streakDir=null,streakLen=0;
+  for(var i=0;i<N;i++){
+    var r=rows[i];
+    var A=r.A,B=r.B,C=r.C,D=r.D,E=r.E,F=r.F;
+    var f=new Float64Array(FCOUNT);
+    var ma=rnd2(A===0?0:(A-D)/A*100);
+    var mb=rnd2(B===0?0:(B-E)/B*100);
+    var mc=rnd2(C===0?0:(C-F)/C*100);
+    f[0]=rnd2(A-D); f[1]=rnd2(D-A); f[2]=ma; f[3]=rnd2(D===0?0:A/D);
+    f[4]=rnd2(B-E); f[5]=rnd2(E-B); f[6]=mb; f[7]=rnd2(E===0?0:B/E);
+    f[8]=rnd2(C-F); f[9]=rnd2(F-C); f[10]=mc; f[11]=rnd2(F===0?0:C/F);
+    f[12]=rnd2(ma-mc); f[13]=rnd2(ma-mb); f[14]=rnd2(mc-mb);
+    f[15]=rnd2((A-D)-(C-F)); f[16]=rnd2((A-D)-(B-E)); f[17]=rnd2((C-F)-(B-E));
+    f[18]=rnd2((A-D)+(F-C)); f[19]=rnd2((C-F)+(D-A));
+    f[20]=A; f[21]=B; f[22]=C; f[23]=D; f[24]=E; f[25]=F;
+    f[26]=rnd2(A-C); f[27]=rnd2(D-F);
+    f[28]=Math.max(A,B,C); f[29]=Math.min(A,B,C);
+    f[30]=D<A?1:(D>A?-1:0); f[31]=E<B?1:(E>B?-1:0); f[32]=F<C?1:(F>C?-1:0);
+    f[33]=rnd2(C===0?0:A/C); f[34]=rnd2(F===0?0:D/F);
+    var invA=A?1/A:0,invB=B?1/B:0,invC=C?1/C:0;
+    var invD=D?1/D:0,invE=E?1/E:0,invF=F?1/F:0;
+    var sumA=invA+invB+invC,sumD=invD+invE+invF;
+    var rr_i=sumA?rnd2(100/sumA):0; var rr_f=sumD?rnd2(100/sumD):0;
+    f[35]=rr_i; f[36]=rr_f; f[37]=rnd2(rr_f-rr_i);
+    var tp_a=sumA?rnd2(invA/sumA*100):0; var tp_d=sumD?rnd2(invD/sumD*100):0;
+    var tp_c=sumA?rnd2(invC/sumA*100):0; var tp_f=sumD?rnd2(invF/sumD*100):0;
+    f[38]=tp_a; f[39]=tp_d; f[40]=rnd2(tp_d-tp_a);
+    f[41]=tp_c; f[42]=tp_f; f[43]=rnd2(tp_f-tp_c);
+    f[44]=rnd2(A?B/A:0); f[45]=rnd2(C?B/C:0); f[46]=rnd2(B?A/B:0); f[47]=rnd2(B?C/B:0);
+    f[48]=rnd2(E?D/E:0); f[49]=rnd2(F?E/F:0); f[50]=rnd2(A-F); f[51]=rnd2(D-C);
+    f[52]=rnd2(A+B+C); f[53]=rnd2(D+E+F); f[54]=rnd2(f[52]-f[53]);
+    f[55]=rnd2(std3(A,B,C)); f[56]=rnd2(std3(D,E,F)); f[57]=rnd2(f[55]-f[56]);
+    f[58]=(A<C)?1:((A>C)?-1:0); f[59]=rnd2(A-C);
+    f[60]=rr_f<88?0:(rr_f<92?1:(rr_f<95?2:3));
+    var h=0,aa=0,cnt=0;
+    for(var k=Math.max(0,i-10);k<i;k++){
+      var rr=rows[k].result;
+      if(rr==='H')h++; else if(rr==='A')aa++; cnt++;
+    }
+    f[61]=cnt?rnd2(h/cnt*100):50; f[62]=cnt?rnd2(aa/cnt*100):50;
+    if(i>0){
+      var prev=rows[i-1].result;
+      if(prev===streakDir)streakLen++;
+      else{streakDir=prev;streakLen=1;}
+    }else{streakDir=null;streakLen=0;}
+    f[63]=streakDir==='H'?streakLen:(streakDir==='A'?-streakLen:0);
+    var wa=[],wc=[];
+    for(var k2=Math.max(0,i-20);k2<i;k2++){wa.push(rows[k2].A);wc.push(rows[k2].C);}
+    f[64]=zsc(A,wa); f[65]=zsc(C,wc);
+    f[66]=rnd2(tp_a-tp_c); f[67]=rnd2((F?C/F:0)-(D?A/D:0));
     mat[i]=f;
   }
   return mat;
@@ -2796,8 +2870,61 @@ function importFile(input){
 }
 
 /* ============================================================
-   24. 初始化
+   24. 基礎日誌與 UI 輔助
    ============================================================ */
+function nowTime(){
+  if(!startTime)return '[00:00.000]';
+  var ms=Date.now()-startTime;
+  var s=Math.floor(ms/1000),m=Math.floor(s/60);
+  return '['+String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0')+'.'+String(ms%1000).padStart(3,'0')+']';
+}
+function pushLog(text,cls){
+  logBuffer.push({text:text,cls:cls||''});
+  if(!logTimer)logTimer=setTimeout(flushLog,80);
+}
+function flushLog(){
+  logTimer=null;
+  if(logBuffer.length===0)return;
+  var el=document.getElementById('log');
+  if(!el.dataset.started){el.innerHTML='';el.dataset.started='1';}
+  var frag=document.createDocumentFragment();
+  for(var i=0;i<logBuffer.length;i++){
+    var e=logBuffer[i],div=document.createElement('div');
+    if(e.cls)div.className='l-'+e.cls;
+    div.textContent=e.text;
+    frag.appendChild(div);
+  }
+  logBuffer=[];
+  el.appendChild(frag);
+  while(el.children.length>LOG_MAX)el.removeChild(el.firstChild);
+  el.scrollTop=el.scrollHeight;
+}
+function flushNow(){if(logTimer){clearTimeout(logTimer);logTimer=null;}flushLog();}
+function clearLog(){
+  var el=document.getElementById('log');
+  el.innerHTML='';el.dataset.started='1';logBuffer=[];
+}
+function updateProgress(){
+  var pct=totalPhases>0?(currentRun/totalPhases)*100:0;
+  if(!running&&startTime>0)pct=100;
+  document.getElementById('progbar').style.width=pct.toFixed(1)+'%';
+  document.getElementById('progText').textContent=pct.toFixed(1)+'%';
+  document.getElementById('progPhase').textContent='第 '+currentRun+' / '+totalPhases+' 輪'+(running?' 尋優中':' 完成');
+}
+function updateStats(){
+  document.getElementById('stat-pool').innerHTML='📦 候選池: <b>'+poolSize+'</b>';
+  document.getElementById('stat-run').innerHTML='🌡️ 輪次: <b>'+currentRun+' / '+totalPhases+'</b>';
+  document.getElementById('stat-win').innerHTML='🎯 最高命中: <b>'+globalBestWinRate.toFixed(1)+'%</b>';
+  document.getElementById('stat-games').innerHTML='📊 場次: <b>'+globalBestGames+'</b>';
+  document.getElementById('stat-profit').innerHTML='💵 最高盈利: <b>'+globalBestProfit+'</b>';
+}
+function yieldUI(){
+  flushNow();updateProgress();updateStats();
+  lastYieldTime=Date.now();
+  return new Promise(function(resolve){setTimeout(resolve,0);});
+}
+function shouldYield(){return Date.now()-lastYieldTime>20;}
+
 (function init(){
   onRatioModeChange();
   onAlgoChange();
