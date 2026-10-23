@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🏆 v11.6 — 賠率模式挖掘引擎</title>
+<title>🏆 v11.7 — 賠率模式挖掘引擎</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b1120;color:#e2e8f0;padding:0 0 60px}
@@ -143,7 +143,7 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 
 <header>
   <div class="wrap">
-    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v11.6</span><span class="sub">68 特徵 · 5 算法 · 模擬尋優</span></h1>
+    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v11.7</span><span class="sub">68 特徵 · 5 算法 · 完美復現模擬</span></h1>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="tab-setup" onclick="switchTab('tab-setup')">⚙️ 設定</button>
       <button class="tab-btn" data-tab="tab-result" onclick="switchTab('tab-result')">🏆 結果</button>
@@ -2035,7 +2035,7 @@ async function start(){
     currentResult=null;
     updateStats();clearLog();
 
-    pushLog('🚀 v11.6 — 啟動','head');
+    pushLog('🚀 v11.7 — 啟動','head');
     pushLog('🔬 比例：'+ratioModeLabel(ratioMode)+'｜算法：'+algoLabel(algoMode)+'｜目標：'+optLabel(optMode),'info');
     pushLog('🧬 特徵數：'+FCOUNT+'　場次：'+parsed.rows.length,'info');
     
@@ -2679,7 +2679,7 @@ function extractMeta(rows,payoutMode){
 }
 
 /* ============================================================
-   22. 模型庫 (精準模擬格式)
+   22. 模型庫 (完美模擬復現)
    ============================================================ */
 var DB_KEY='v10_model_db';
 
@@ -2712,6 +2712,8 @@ function saveCurrentModel(){
     trendMode:document.getElementById('trendMode').value,
     minHitsPct:document.getElementById('minHitsPct').value,
     splitMode:document.getElementById('splitMode').value,
+    trainN: trainN,  // 保存训练集大小，确保复现时切分一致
+    testN: testN,
     rules:JSON.parse(JSON.stringify(r.rules,function(k,v){
       if(k==='bs')return undefined;
       return v;
@@ -2753,18 +2755,21 @@ function escapeHtml(s){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
   });
 }
+
 function loadModel(id){
   var list=dbLoad();
   var m=null;
   for(var i=0;i<list.length;i++){if(list[i].id===id){m=list[i];break;}}
   if(!m){toast('❌ 找不到模型');return;}
 
-  if(!trainFeat){
-    toast('⚠️ 請先在「設定」頁載入數據，才能進行模擬');
+  // 1. 解析当前输入的数据
+  var parsed=parseData(document.getElementById('input').value);
+  if(parsed.rows.length<50){
+    toast('⚠️ 請先在「設定」頁載入足夠數據');
     return;
   }
 
-  // 1. 還原 UI 設定
+  // 2. 还原 UI 配置
   if(m.algo) document.getElementById('algoMode').value = m.algo;
   if(m.optMode) document.getElementById('optMode').value = m.optMode;
   if(m.ratioMode) document.getElementById('ratioMode').value = m.ratioMode;
@@ -2775,40 +2780,74 @@ function loadModel(id){
   if(m.trendMode) document.getElementById('trendMode').value = m.trendMode;
   if(m.minHitsPct) document.getElementById('minHitsPct').value = m.minHitsPct;
   if(m.splitMode) document.getElementById('splitMode').value = m.splitMode;
-
   onRatioModeChange();
   onAlgoChange();
 
+  // 3. 强制重新划分数据（完全复现当时场景）
+  var N = parsed.rows.length;
+  var splitIdx = N;
+  
+  if (m.trainN !== undefined) {
+    // 如果是相同数据量，直接用保存时的 trainN；如果是新数据，按比例缩放
+    if (N === (m.trainN + (m.testN || 0))) {
+      splitIdx = m.trainN;
+    } else {
+      var rRatio = m.trainN / (m.trainN + (m.testN || 1));
+      splitIdx = Math.floor(N * rRatio);
+    }
+  } else {
+    // 兼容旧版模型，按 splitMode 划分
+    if(m.splitMode === '80-20') splitIdx = Math.floor(N * 0.8);
+    else if(m.splitMode === 'none') splitIdx = N;
+    else splitIdx = Math.floor(N * 0.7); // 默认 70%
+  }
+
+  var trRows = parsed.rows.slice(0, splitIdx);
+  var teRows = splitIdx < N ? parsed.rows.slice(splitIdx) : null;
+
+  // 4. 重新提取特征
+  trainN = trRows.length;
+  var mT = extractMeta(trRows,'final');
+  trainResult = mT.codes; trainOdds = mT.odds;
+  trainFeat = extractFeaturesSync(trRows);
+  trainProfitMat = new Float64Array(3*trainN);
+  for(var pi=0;pi<trainN;pi++) for(var ptc=0;ptc<3;ptc++)
+    trainProfitMat[ptc*trainN+pi]=(trainResult[pi]===ptc)?Math.round((trainOdds[pi*3+ptc]-1)*100):-100;
+
+  testN = teRows ? teRows.length : 0;
+  if (teRows) {
+    var mTe = extractMeta(teRows,'final');
+    testResult = mTe.codes; testOdds = mTe.odds;
+    testFeat = extractFeaturesSync(teRows);
+    testProfitMat = new Float64Array(3*testN);
+    for(var pi2=0;pi2<testN;pi2++) for(var ptc2=0;ptc2<3;ptc2++)
+      testProfitMat[ptc2*testN+pi2]=(testResult[pi2]===ptc2)?Math.round((testOdds[pi2*3+ptc2]-1)*100):-100;
+  } else {
+    testFeat = null; testResult = null; testOdds = null; testProfitMat = null;
+  }
+
+  // 5. 旧模型阈值转换
   var isConverted = false;
-  // 2. 終極精準轉換器 (兼容舊版整數模型)
   var rules=(m.rules||[]).map(function(r){
     var cs = (r.conds || []).map(function(c){
       var arr = c.slice();
       if (arr.length >= 3) {
         var fi = arr[0], val = arr[2];
         var isScaled = false;
-
         if (fi >= 20 && fi <= 25 && Math.abs(val) > 10) isScaled = true;
         else if ((fi === 0 || fi === 1 || fi === 4 || fi === 5 || fi === 8 || fi === 9 || fi === 26 || fi === 27 || fi === 50 || fi === 51) && Math.abs(val) > 5) isScaled = true;
         else if ((fi === 28 || fi === 29 || fi === 52 || fi === 53) && Math.abs(val) > 10) isScaled = true;
         else if ((fi === 35 || fi === 36) && Math.abs(val) > 200) isScaled = true;
         else if (fi === 37 && Math.abs(val) > 50) isScaled = true;
-
-        if (isScaled) {
-          arr[2] = Math.round(val) / 100;
-          isConverted = true;
-        }
+        if (isScaled) { arr[2] = Math.round(val) / 100; isConverted = true; }
       }
       return arr;
     });
     return {on:1,then:r.then,thenCode:r.thenCode,conds:cs,bs:null};
   });
+  if (isConverted) toast('✅ 舊版整數模型已自動轉換為新版閾值');
 
-  if (isConverted) {
-    toast('✅ 舊版整數模型已自動轉換為新版閾值');
-  }
-
-  // 3. 重新構建位集
+  // 6. 重新构建位集
   for(var i2=0;i2<rules.length;i2++){
     var rule=rules[i2];
     if(!rule.conds||rule.conds.length===0){rule.bs=null;continue;}
@@ -2821,24 +2860,24 @@ function loadModel(id){
     rule.bs=ok?bs:null;
   }
 
-  // 4. 用當前的訓練/測試數據重新計算！
-  var tr=calcRulesStats(rules,trainFeat,trainResult,trainOdds,trainN);
-  var te=testFeat?calcRulesStats(rules,testFeat,testResult,testOdds,testN):null;
+  // 7. 重新模拟
+  var tr = calcRulesStats(rules, trainFeat, trainResult, trainOdds, trainN);
+  var te = testFeat ? calcRulesStats(rules, testFeat, testResult, testOdds, testN) : null;
 
-  var result={
-    mode:m.trendMode,
-    rules:rules,
-    trainStats:tr,
-    testStats:te,
-    valStats:null,
-    fallbackInfo:null,
-    scoreData:calculateModelScore(tr,te,rules.length),
-    formulas:m.formulas
+  var result = {
+    mode: m.trendMode,
+    rules: rules,
+    trainStats: tr,
+    testStats: te,
+    valStats: null,
+    fallbackInfo: null,
+    scoreData: calculateModelScore(tr, te, rules.length),
+    formulas: m.formulas
   };
   
   renderResult(result);
   switchTab('tab-result');
-  toast('✅ 已還原設定，並基於當前數據重新模擬：'+m.name);
+  toast('✅ 已還原設定，並基於當前數據重新模擬：' + m.name);
 }
 function deleteModel(id){
   if(!confirm('確定刪除此模型？'))return;
