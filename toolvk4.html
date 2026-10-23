@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🏆 v10.3 ULTIMATE — 賠率模式挖掘引擎</title>
+<title>🏆 v10.4 ULTIMATE — 賠率模式挖掘引擎</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b1120;color:#e2e8f0;padding:0 0 60px}
@@ -138,7 +138,7 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 
 <header>
   <div class="wrap">
-    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v10.3 ULTIMATE</span><span class="sub">80 特徵 · 5 算法 · 極限尋優</span></h1>
+    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v10.4 ULTIMATE</span><span class="sub">80 特徵 · 5 算法 · 極限尋優</span></h1>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="tab-setup" onclick="switchTab('tab-setup')">⚙️ 設定</button>
       <button class="tab-btn" data-tab="tab-result" onclick="switchTab('tab-result')">🏆 結果</button>
@@ -331,6 +331,11 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
         <div id="summary"></div>
         <div id="testResultPanel" style="margin-top:12px"></div>
         <div id="riskPanel"></div>
+      </div>
+
+      <div class="card" id="oddsRangePanel" style="display:none">
+        <h3>🎯 命中賠率核心區間 <span class="badge" style="background:#0ea5e9">H / D / A</span></h3>
+        <div id="oddsRangeContent"></div>
       </div>
 
       <div class="card">
@@ -1835,6 +1840,51 @@ function renderRiskPanel(testStats,trainStats){
   document.getElementById('riskPanel').innerHTML=html;
 }
 
+function renderOddsRange(details, rawRows) {
+    var oddsStats = [
+        { name: 'H (主勝)', cls: 'tag-h', val: [], maxOdd: 0 },
+        { name: 'D (和局)', cls: 'tag-d', val: [], maxOdd: 0 },
+        { name: 'A (客勝)', cls: 'tag-a', val: [], maxOdd: 0 }
+    ];
+    
+    for(var i=0; i<details.length; i++){
+        var d = details[i];
+        if(d.pred !== 'skip' && d.pred === d.actual){
+            var r = rawRows[d.idx];
+            if(d.pred === 0) oddsStats[0].val.push(r.D);
+            else if(d.pred === 1) oddsStats[1].val.push(r.E);
+            else if(d.pred === 2) oddsStats[2].val.push(r.F);
+        }
+    }
+    
+    var html = '<div style="display:flex;flex-wrap:wrap;gap:16px;">';
+    for(var k=0; k<3; k++){
+        var stat = oddsStats[k];
+        if(stat.val.length === 0) {
+            html += '<div class="kpi" style="flex:1;min-width:200px"><div class="lbl"><span class="'+stat.cls+'">'+stat.name+'</span></div><div class="sub">無命中場次</div></div>';
+            continue;
+        }
+        stat.val.sort(function(a,b){return a-b;});
+        var len = stat.val.length;
+        var avg = 0;
+        for(var j=0; j<len; j++) avg += stat.val[j];
+        avg = (avg / len).toFixed(2);
+        
+        var p15 = stat.val[Math.floor(len * 0.15)].toFixed(2);
+        var p85 = stat.val[Math.floor(len * 0.85)].toFixed(2);
+        
+        html += '<div class="kpi" style="flex:1;min-width:200px">';
+        html += '<div class="lbl"><span class="'+stat.cls+'">'+stat.name+'</span> 命中 '+len+' 場</div>';
+        html += '<div class="val" style="font-size:22px;color:#e2e8f0">'+avg+'</div>';
+        html += '<div class="sub" style="color:#94a3b8;font-size:11px;margin-top:4px">核心區間：<b>'+p15+' ~ '+p85+'</b></div>';
+        html += '</div>';
+    }
+    html += '</div>';
+    
+    document.getElementById('oddsRangeContent').innerHTML = html;
+    document.getElementById('oddsRangePanel').style.display = 'block';
+}
+
 function renderSegments(stats,rawRows){
   var det=stats.details;
   if(!det||det.length===0){document.getElementById('segmentTable').innerHTML='<table><tbody><tr><td class="empty">無數據</td></tr></tbody></table>';return;}
@@ -1954,11 +2004,12 @@ async function start(){
     document.getElementById('resultBody').style.display='none';
     document.getElementById('resultEmpty').style.display='block';
     document.getElementById('liveLogCard').style.display='block'; // 顯示日誌卡片
+    document.getElementById('oddsRangePanel').style.display='none';
     autoModeResults={};
     currentResult=null;
     updateStats();clearLog();
 
-    pushLog('🚀 v10.3 ULTIMATE — 啟動','head');
+    pushLog('🚀 v10.4 ULTIMATE — 啟動','head');
     pushLog('🔬 比例：'+ratioModeLabel(ratioMode)+'｜算法：'+algoLabel(algoMode)+'｜目標：'+optLabel(optMode),'info');
     pushLog('🧬 特徵數：'+FCOUNT+'　場次：'+parsed.rows.length,'info');
     switchTab('tab-result');
@@ -2129,15 +2180,15 @@ async function start(){
         var ev2=evaluateRuleSet(rg.rules);
         res={rules:rg.rules,stats:ev2.train,fallbackInfo:rg.fallbackInfo};
       }else if(algoMode==='decision-tree'){
-        currentRun=1;totalPhases=1;
-        var limitDepth=maxCondsLimit===0?20:maxCondsLimit;
+        currentRun=1;totalPhases=Rules1;
+        var limitDepth=maxCondsLimit===0?20:maxConds.lengthLimit;
         var tree=await buildTree(allMask,0,limitDepth);
-        var fRules=[];
+       ; var fRules=[];
         extractRules(tree,[],fRules);
-        if(dirLimit>0){
-          var dc=[0,0,0],filtered=[];
-          for(var f2=0;f2<fRules.length;f2++){
-            var rr=fRules[f2];
+        iff(dirLimit>0){
+          var2 dc=[++){
+0,0,0],filtered=[];
+          for(var f2=0;f2<f            var rr=fRules[f2];
             if(rr.thenCode!==3&&dc[rr.thenCode]>=dirLimit)continue;
             filtered.push(rr);
             if(rr.thenCode!==3)dc[rr.thenCode]++;
@@ -2304,6 +2355,7 @@ function renderResult(r){
   document.getElementById('summary').innerHTML+=fbHtml;
 
   renderRiskPanel(te,tr);
+  renderOddsRange(tr.details, rawRowsData);
   renderRuleTable(r.rules,tr);
 
   var fi=featureImportance(r.rules);
@@ -2419,7 +2471,7 @@ function nowTime(){
 }
 function pushLog(text,cls){
   logBuffer.push({text:text,cls:cls||''});
-  if(!logTimer)logTimer=setTimeout(flushLog,80);
+  if(!logTimer)logTimer=setTimeout(flushLog,150); // 降低刷新頻率，減少卡頓
 }
 function flushLog(){
   logTimer=null;
