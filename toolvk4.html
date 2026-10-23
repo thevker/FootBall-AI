@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🏆 v11.8 — 賠率模式挖掘引擎（120 特徵 · 極致候選池）</title>
+<title>🏆 v11.8 — 賠率模式挖掘引擎</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b1120;color:#e2e8f0;padding:0 0 60px}
@@ -110,7 +110,7 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 
 <header>
   <div class="wrap">
-    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v11.8</span><span class="sub">120 特徵 · 極致候選池 · 5 算法</span></h1>
+    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v11.8</span><span class="sub">68 特徵 · 5 算法 · 完美復現模擬</span></h1>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="tab-setup" onclick="switchTab('tab-setup')">⚙️ 設定</button>
       <button class="tab-btn" data-tab="tab-result" onclick="switchTab('tab-result')">🏆 結果</button>
@@ -139,7 +139,7 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
     <div class="stat" id="stat-win">🎯 最高命中: <b>-</b></div>
     <div class="stat" id="stat-games">📊 場次: <b>-</b></div>
     <div class="stat" id="stat-profit">💵 最高盈利: <b>-</b></div>
-    <div class="stat" id="stat-feat">🧬 特徵: <b>120</b></div>
+    <div class="stat" id="stat-feat">🧬 特徵: <b>68</b></div>
   </div>
 
   <section id="tab-setup" class="tab-panel active">
@@ -213,10 +213,9 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
         <div class="field">
           <label>🎚️ 閾值密度（每特徵）</label>
           <select id="threshDensity">
-            <option value="200">200（快）</option>
-            <option value="500">500（中）</option>
-            <option value="1000" selected>1000（推薦）</option>
-            <option value="1500">1500（極致，耗時）</option>
+            <option value="100" selected>100（推薦）</option>
+            <option value="200">200（更多）</option>
+            <option value="300">300（極致）</option>
           </select>
         </div>
         <div class="field" id="runCountField">
@@ -358,7 +357,7 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 'use strict';
 
 /* ============================================================
-   1. 特徵定義（120 個：原 68 + 新 52）
+   1. 特徵定義（68 個）
    ============================================================ */
 var FEATURES=[
   'A-D','D-A','MA_PCT','A/D','B-E','E-B','MB_PCT','B/E','C-F','F-C','MC_PCT','C/F',
@@ -368,18 +367,7 @@ var FEATURES=[
   'B/A','B/C','A/B','C/B','D/E','E/F','A-F','D-C',
   'SUM_ABC','SUM_DEF','SUM_DIFF','STD_ABC','STD_DEF','STD_DIFF',
   'HOT_SIDE','HOT_GAP','RR_BAND','ROLL_H10','ROLL_A10','STREAK','Z_A','Z_C',
-  'TP_GAP','MBC_MA',
-  /* 68-119 新增 */
-  'ABC_RANGE','DEF_RANGE','RANGE_DIFF','A_MINUS_B','B_MINUS_C','D_MINUS_E','E_MINUS_F',
-  'PROB_RATIO_AC','PROB_RATIO_DF','TP_D_GAP','TP_BC','RR_RATIO',
-  'TP_RATIO_DA','TP_RATIO_FC','HOT_PROB','COLD_PROB','TP_HOT_GAP',
-  'ENTROPY_INIT','ENTROPY_FINAL','ENTROPY_DIFF','SIGN_SUM',
-  'MA_PLUS_MC','MB_MINUS_MA','MB_MINUS_MC','AC_MINUS_2B','DF_MINUS_2E',
-  'B_SQUEEZE','E_SQUEEZE','SQUEEZE_DIFF','A_REL_MEAN','D_REL_MEAN','REL_DIFF',
-  'RR_I_MINUS_100','RR_F_MINUS_100','TP_A_MINUS_33','TP_D_MINUS_33','TP_C_MINUS_33',
-  'MA_ABS','MC_ABS','MA_MC_ABS_DIFF','LOG_RATIO_AC','LOG_RATIO_DF','LOG_RATIO_DIFF',
-  'A_TIMES_C','D_TIMES_F','ABC_PRODUCT','DEF_PRODUCT','PRODUCT_RATIO',
-  'B_OVER_AVG_AC','E_OVER_AVG_DF','HOT_SIDE_STRENGTH','B_DELTA_SQUEEZE'
+  'TP_GAP','MBC_MA'
 ];
 var FEATURE_NAMES=[
   '主跌(A-D)','主升(D-A)','主跌幅%','主倍率(A/D)','和跌(B-E)','和升(E-B)','和跌幅%','和倍率(B/E)',
@@ -391,22 +379,7 @@ var FEATURE_NAMES=[
   'B/A','B/C','A/B','C/B','D/E','E/F','A-F','D-C',
   '初盤總和','尾盤總和','總和差','初盤離散度','尾盤離散度','離散度差',
   '熱門方','熱門差(A-C)','返還率區間','近10場主勝率','近10場客勝率','連號強度','主賠Z分','客賠Z分',
-  '真實概率差(主-客)','倍率差(客-主)',
-  /* 新增 68-119 */
-  '主和三賠極差','尾三賠極差','初尾極差變化',
-  'A-B','B-C','D-E','E-F',
-  '主客概率比','主客尾概率比','和尾-客尾概率差','主客概率和','尾初返還比',
-  '和主尾概率比','客尾概率比','熱門概率','冷門概率','冷熱概率差',
-  '初盤熵','尾盤熵','熵變化','三向方向合',
-  '主客跌幅和','和-主跌幅差','和-客跌幅差',
-  '主客減雙和','尾主客減雙和','和初擠壓','和尾擠壓','和擠壓變化',
-  '主初均值偏離','主尾均值偏離','均值偏離變化',
-  '初盤返還超額','尾盤返還超額',
-  '主概率超均衡','和概率超均衡','客概率超均衡',
-  '主跌幅絕對值','客跌幅絕對值','主客跌幅絕對差',
-  '主客對數比','主客尾對數比','對數比變化',
-  '主客乘積','主客尾乘積','初盤乘積','尾盤乘積','尾初乘積比',
-  '和相對主客均值','和尾相對均值','熱門側強度','和跌幅擠壓'
+  '真實概率差(主-客)','倍率差(客-主)'
 ];
 var FCOUNT=FEATURES.length;
 
@@ -418,9 +391,9 @@ var RESULT_CODES={H:0,D:1,A:2};
 /* ============================================================
    2. 全局狀態
    ============================================================ */
-var THRESHOLD_TARGET=1000;        /* ← 新增：閾值密度上限 */
-var COND_CACHE_MAX=2000000;       /* ← 放大：訓練條件快取 */
-var TEST_COND_CACHE_MAX=1000000;  /* ← 放大：測試條件快取 */
+var THRESHOLD_TARGET=100;
+var COND_CACHE_MAX=2000000;
+var TEST_COND_CACHE_MAX=1000000;
 
 var rawRowsData=[],testRowsData=null,valRowsData=null;
 var trainFeat=null,trainResult=null,trainOdds=null,trainN=0,trainProfitMat=null;
@@ -777,7 +750,7 @@ function calculateModelScore(trainStats,testStats,ruleCount,details){
 }
 
 /* ============================================================
-   7. 門檻生成（關鍵改動：上限 80 → THRESHOLD_TARGET，加入多層網格）
+   7. 門檻生成（v11.7 原版，只把 80 改成 THRESHOLD_TARGET）
    ============================================================ */
 function getThresholds(fi){
   if(featureValueCache[fi])return featureValueCache[fi];
@@ -785,54 +758,26 @@ function getThresholds(fi){
   for(var i=0;i<trainN;i++)vals.push(trainFeat[i][fi]);
   vals.sort(function(a,b){return a-b;});
   var ths=[],seen={};
-
-  /* (a) 資料採樣：目標 THRESHOLD_TARGET 個 */
-  var target=Math.min(THRESHOLD_TARGET,Math.max(40,vals.length));
-  var step=Math.max(1,Math.floor(vals.length/target));
+  var step=Math.max(1,Math.floor(vals.length/30));
   for(var j=0;j<vals.length;j+=step){
     var v=rnd2(vals[j]);
     if(!seen[v]){seen[v]=1;ths.push(v);}
   }
-
-  /* (b) 分位數：每 1% 一檔 */
-  for(var q=1;q<=99;q++){
-    var qi=Math.floor(vals.length*q/100);
-    if(qi>=0&&qi<vals.length){
-      var qv=rnd2(vals[qi]);
-      if(!seen[qv]){seen[qv]=1;ths.push(qv);}
-    }
-  }
-  if(vals.length>0){
-    var vmin=rnd2(vals[0]),vmax=rnd2(vals[vals.length-1]);
-    if(!seen[vmin]){seen[vmin]=1;ths.push(vmin);}
-    if(!seen[vmax]){seen[vmax]=1;ths.push(vmax);}
-  }
-
   var fn=FEATURES[fi];
   var isChange=(fn.indexOf('-')>=0||fn.indexOf('+')>=0);
   if(isChange){
-    /* 差值類型：密集網格 */
-    var grid=[];
-    for(var g=-100;g<=100;g+=1)grid.push(g);
-    for(var g2=-300;g2<=300;g2+=3)grid.push(g2);
-    for(var g3=-1000;g3<=1000;g3+=50)grid.push(g3);
-    for(var gi=0;gi<grid.length;gi++){
-      if(!seen[grid[gi]]){seen[grid[gi]]=1;ths.push(grid[gi]);}
-    }
+    var grid=[-300,-200,-150,-100,-75,-50,-40,-30,-20,-15,-10,-8,-5,-3,-1,0,1,3,5,8,10,15,20,30,40,50,75,100,150,200,300];
+    for(var g=0;g<grid.length;g++){if(!seen[grid[g]]){seen[grid[g]]=1;ths.push(grid[g]);}}
   }
-  var isPct=(fn.indexOf('%')>=0||fn.indexOf('率')>=0||fn.indexOf('Z')>=0||
-             fn.indexOf('PROB')>=0||fn.indexOf('RATIO')>=0||fn.indexOf('ENTROPY')>=0||
-             fn.indexOf('LOG')>=0||fn.indexOf('ABS')>=0||fn.indexOf('SQUEEZE')>=0||
-             fn.indexOf('HOT')>=0||fn.indexOf('COLD')>=0);
+  var isPct=(fn.indexOf('%')>=0||fn.indexOf('率')>=0||fn.indexOf('Z')>=0);
   if(isPct){
-    /* 百分比/比率類型：多層網格 */
-    var pgrid=[];
-    for(var p=-50;p<=50;p+=1)pgrid.push(p);
-    for(var p2=-10;p2<=10;p2+=0.2)pgrid.push(Math.round(p2*10)/10);
-    for(var p3=-2;p3<=2;p3+=0.05)pgrid.push(Math.round(p3*100)/100);
-    for(var pi2=0;pi2<pgrid.length;pi2++){
-      if(!seen[pgrid[pi2]]){seen[pgrid[pi2]]=1;ths.push(pgrid[pi2]);}
-    }
+    var pgrid=[-3,-2,-1,-0.5,0,0.5,1,2,3,-50,-40,-30,-20,-15,-10,-5,-2,-1,0,1,2,5,10,15,20,30,40,50,60,70,80,90,100];
+    for(var p=0;p<pgrid.length;p++){if(!seen[pgrid[p]]){seen[pgrid[p]]=1;ths.push(pgrid[p]);}}
+  }
+  if(ths.length>THRESHOLD_TARGET){
+    var step2=ths.length/THRESHOLD_TARGET,sampled=[];
+    for(var s=0;s<THRESHOLD_TARGET;s++)sampled.push(ths[Math.floor(s*step2)]);
+    ths=sampled;
   }
   featureValueCache[fi]=ths;
   return ths;
@@ -888,7 +833,7 @@ async function buildSinglesAsync(){
 }
 
 /* ============================================================
-   9. 爬山退火（完全保留 v11.7 原版邏輯，僅 restarts 上限微調）
+   9. 爬山退火（v11.7 原版）
    ============================================================ */
 async function runHillClimbAsync(){
   var singles=precomputedSingles;
@@ -999,7 +944,7 @@ async function runHillClimbAsync(){
 }
 
 /* ============================================================
-   10. 束搜索（保留 v11.7）
+   10. 束搜索（v11.7 原版）
    ============================================================ */
 async function runBeamSearchAsync(){
   var singles=precomputedSingles;
@@ -1076,7 +1021,7 @@ async function runBeamSearchAsync(){
 }
 
 /* ============================================================
-   11. 決策樹（保留 v11.7）
+   11. 決策樹（v11.7 原版）
    ============================================================ */
 function getBestLeaf(bsMask){
   var total=bsCount(bsMask);
@@ -1132,7 +1077,7 @@ function extractRules(node,curConds,rules){
 }
 
 /* ============================================================
-   12. 遺傳 / 模因（保留 v11.7）
+   12. 遺傳 / 模因（v11.7 原版）
    ============================================================ */
 function cloneInd(ind){
   var nr=[];
@@ -1329,7 +1274,7 @@ async function runGeneticEngineAsync(isMemetic){
 }
 
 /* ============================================================
-   13. 兜底（保留 v11.7）
+   13. 兜底（v11.7 原版）
    ============================================================ */
 function applyFallbackLogic(finalRules,covered){
   var remainingBS=bsAndNot(allMask,covered);
@@ -1373,7 +1318,7 @@ function applyFallbackLogic(finalRules,covered){
 }
 
 /* ============================================================
-   14. 比例模式（保留 v11.7）
+   14. 比例模式（v11.7 原版）
    ============================================================ */
 function autoSplitRatioA(N_total,R_budget){
   var N_min=150,r_base=0.30,k=10;
@@ -1487,7 +1432,7 @@ async function runLearningCurveScanAsync(parsedRows,R_budget,allowedCodes){
 }
 
 /* ============================================================
-   15. 穩健性檢驗（保留 v11.7）
+   15. 穩健性檢驗（v11.7 原版）
    ============================================================ */
 function walkForwardTest(rules,rows,folds){
   var seg=Math.floor(rows.length/folds),out=[];
@@ -1526,7 +1471,7 @@ function monteCarloTest(details,trials){
 }
 
 /* ============================================================
-   16. 特徵重要性（保留 v11.7）
+   16. 特徵重要性（v11.7 原版）
    ============================================================ */
 function featureImportance(rules){
   var cnt={};
@@ -1544,7 +1489,7 @@ function featureImportance(rules){
 }
 
 /* ============================================================
-   17. 公式生成（保留 v11.7，新特徵會返回 '0' 但不影響原有規則）
+   17. 公式生成（v11.7 原版）
    ============================================================ */
 function featToExpr(fi){
   var fn=FEATURES[fi];
@@ -1927,7 +1872,7 @@ function drawEquityChart(details){
 }
 
 /* ============================================================
-   19. 主流程（保留 v11.7，唯一新增：讀取 threshDensity）
+   19. 主流程（v11.7 原版，只新增 threshDensity 讀取）
    ============================================================ */
 async function start(){
   try{
@@ -1945,7 +1890,7 @@ async function start(){
       return;
     }
 
-    THRESHOLD_TARGET=parseInt(document.getElementById('threshDensity').value)||1000;
+    THRESHOLD_TARGET=parseInt(document.getElementById('threshDensity').value)||100;
     ratioMode=document.getElementById('ratioMode').value;
     algoMode=document.getElementById('algoMode').value;
     optMode=document.getElementById('optMode').value;
@@ -2084,7 +2029,7 @@ async function start(){
       globalBestScore=-Infinity;globalBestRules=null;globalBestStats=null;globalBestFallback=null;
       globalBestProfit=-Infinity;globalBestWinRate=0;globalBestGames=0;
 
-      pushLog('   ⚙️ 構建候選池（目標 '+THRESHOLD_TARGET+' 閾值/特徵，'+FCOUNT+' 特徵 × 4 op）...','dim');
+      pushLog('   ⚙️ 構建候選池（'+THRESHOLD_TARGET+' 閾值/特徵，'+FCOUNT+' 特徵 × 4 op）...','dim');
       precomputedSingles=await buildSinglesAsync();
       poolSize=precomputedSingles.length;
       pushLog('   ✅ 候選池完成：'+poolSize+' 個單條件候選','success');
@@ -2427,7 +2372,7 @@ function updateRowCount(){
 }
 
 /* ============================================================
-   21. 特徵提取（核心：完全保留 v11.7 結構，只在 f[67] 之後追加）
+   21. 特徵提取（v11.7 原版，68 個特徵）
    ============================================================ */
 async function extractFeaturesAsync(rows){
   var N=rows.length,mat=new Array(N);
@@ -2513,68 +2458,6 @@ async function extractFeaturesAsync(rows){
     f[66]=rnd2(tp_a-tp_c);
     f[67]=rnd2((F?C/F:0)-(D?A/D:0));
 
-    /* ===== 68-119 新特徵追加 ===== */
-    var mxabc=f[28],mnabc=f[29];
-    f[68]=rnd2(mxabc-mnabc);
-    var mxdef=Math.max(D,E,F),mndef=Math.min(D,E,F);
-    f[69]=rnd2(mxdef-mndef);
-    f[70]=rnd2(f[69]-f[68]);
-    f[71]=rnd2(A-B);
-    f[72]=rnd2(B-C);
-    f[73]=rnd2(D-E);
-    f[74]=rnd2(E-F);
-    f[75]=rnd2(tp_c===0?0:tp_a/tp_c);
-    f[76]=rnd2(tp_f===0?0:tp_d/tp_f);
-    f[77]=rnd2(tp_f-tp_c);
-    f[78]=rnd2(tp_a+tp_c);
-    f[79]=rnd2(rr_i===0?0:rr_f/rr_i);
-    f[80]=rnd2(tp_d===0?0:tp_a/tp_d);
-    f[81]=rnd2(tp_f===0?0:tp_c/tp_f);
-    f[82]=Math.max(tp_a,tp_d,tp_c);
-    f[83]=Math.min(tp_a,tp_d,tp_c);
-    f[84]=rnd2(f[82]-f[83]);
-    var ei=0,ef=0;
-    var psArr=[tp_a,tp_d,tp_c],pdfArr=[tp_d,tp_f,tp_a];
-    for(var q=0;q<3;q++){
-      var pi=psArr[q];
-      if(pi>0)ei-=pi/100*Math.log(pi/100);
-      var pf=pdfArr[q];
-      if(pf>0)ef-=pf/100*Math.log(pf/100);
-    }
-    f[85]=rnd2(ei); f[86]=rnd2(ef); f[87]=rnd2(ef-ei);
-    f[88]=f[30]+f[31]+f[32];
-    f[89]=rnd2(ma+mc);
-    f[90]=rnd2(mb-ma);
-    f[91]=rnd2(mb-mc);
-    f[92]=rnd2(f[71]-2*(tp_a-tp_d));
-    f[93]=rnd2(f[73]-2*(tp_d-tp_f));
-    f[94]=rnd2(B-2*(A+C)/2);
-    f[95]=rnd2(E-2*(D+F)/2);
-    f[96]=rnd2(f[95]-f[94]);
-    f[97]=rnd2(A-(A+B+C)/3);
-    f[98]=rnd2(D-(D+E+F)/3);
-    f[99]=rnd2(f[98]-f[97]);
-    f[100]=rnd2(rr_i-100);
-    f[101]=rnd2(rr_f-100);
-    f[102]=rnd2(tp_a-33.33);
-    f[103]=rnd2(tp_d-33.33);
-    f[104]=rnd2(tp_c-33.33);
-    f[105]=Math.abs(ma);
-    f[106]=Math.abs(mc);
-    f[107]=rnd2(Math.abs(ma)-Math.abs(mc));
-    f[108]=rnd2(A===0||C===0?0:Math.log(A/C));
-    f[109]=rnd2(D===0||F===0?0:Math.log(D/F));
-    f[110]=rnd2(f[109]-f[108]);
-    f[111]=rnd2(A*C);
-    f[112]=rnd2(D*F);
-    f[113]=rnd2(A*B*C);
-    f[114]=rnd2(D*E*F);
-    f[115]=rnd2(f[114]===0?0:f[113]/f[114]);
-    f[116]=rnd2(B===0?0:B/((A+C)/2));
-    f[117]=rnd2(E===0?0:E/((D+F)/2));
-    f[118]=rnd2(Math.abs(A-C));
-    f[119]=rnd2(B-E);
-
     mat[i]=f;
   }
   return mat;
@@ -2632,42 +2515,6 @@ function extractFeaturesSync(rows){
     for(var k2=Math.max(0,i-20);k2<i;k2++){wa.push(rows[k2].A);wc.push(rows[k2].C);}
     f[64]=zsc(A,wa); f[65]=zsc(C,wc);
     f[66]=rnd2(tp_a-tp_c); f[67]=rnd2((F?C/F:0)-(D?A/D:0));
-
-    /* ===== 68-119 新特徵追加 ===== */
-    f[68]=rnd2(f[28]-f[29]);
-    var mxdef=Math.max(D,E,F),mndef=Math.min(D,E,F);
-    f[69]=rnd2(mxdef-mndef);
-    f[70]=rnd2(f[69]-f[68]);
-    f[71]=rnd2(A-B); f[72]=rnd2(B-C); f[73]=rnd2(D-E); f[74]=rnd2(E-F);
-    f[75]=rnd2(tp_c===0?0:tp_a/tp_c); f[76]=rnd2(tp_f===0?0:tp_d/tp_f);
-    f[77]=rnd2(tp_f-tp_c); f[78]=rnd2(tp_a+tp_c);
-    f[79]=rnd2(rr_i===0?0:rr_f/rr_i);
-    f[80]=rnd2(tp_d===0?0:tp_a/tp_d); f[81]=rnd2(tp_f===0?0:tp_c/tp_f);
-    f[82]=Math.max(tp_a,tp_d,tp_c); f[83]=Math.min(tp_a,tp_d,tp_c);
-    f[84]=rnd2(f[82]-f[83]);
-    var ei=0,ef=0;
-    var psArr=[tp_a,tp_d,tp_c],pdfArr=[tp_d,tp_f,tp_a];
-    for(var q=0;q<3;q++){
-      var pi=psArr[q]; if(pi>0)ei-=pi/100*Math.log(pi/100);
-      var pf=pdfArr[q]; if(pf>0)ef-=pf/100*Math.log(pf/100);
-    }
-    f[85]=rnd2(ei); f[86]=rnd2(ef); f[87]=rnd2(ef-ei);
-    f[88]=f[30]+f[31]+f[32];
-    f[89]=rnd2(ma+mc); f[90]=rnd2(mb-ma); f[91]=rnd2(mb-mc);
-    f[92]=rnd2(f[71]-2*(tp_a-tp_d)); f[93]=rnd2(f[73]-2*(tp_d-tp_f));
-    f[94]=rnd2(B-(A+C)); f[95]=rnd2(E-(D+F)); f[96]=rnd2(f[95]-f[94]);
-    f[97]=rnd2(A-(A+B+C)/3); f[98]=rnd2(D-(D+E+F)/3); f[99]=rnd2(f[98]-f[97]);
-    f[100]=rnd2(rr_i-100); f[101]=rnd2(rr_f-100);
-    f[102]=rnd2(tp_a-33.33); f[103]=rnd2(tp_d-33.33); f[104]=rnd2(tp_c-33.33);
-    f[105]=Math.abs(ma); f[106]=Math.abs(mc); f[107]=rnd2(Math.abs(ma)-Math.abs(mc));
-    f[108]=rnd2((A===0||C===0)?0:Math.log(A/C));
-    f[109]=rnd2((D===0||F===0)?0:Math.log(D/F));
-    f[110]=rnd2(f[109]-f[108]);
-    f[111]=rnd2(A*C); f[112]=rnd2(D*F); f[113]=rnd2(A*B*C); f[114]=rnd2(D*E*F);
-    f[115]=rnd2(f[114]===0?0:f[113]/f[114]);
-    f[116]=rnd2(B===0?0:B/((A+C)/2)); f[117]=rnd2(E===0?0:E/((D+F)/2));
-    f[118]=rnd2(Math.abs(A-C)); f[119]=rnd2(B-E);
-
     mat[i]=f;
   }
   return mat;
@@ -2684,7 +2531,7 @@ function extractMeta(rows,payoutMode){
 }
 
 /* ============================================================
-   22. 模型庫（保留 v11.7，增加 threshDensity 存檔）
+   22. 模型庫（v11.7 原版 + threshDensity）
    ============================================================ */
 var DB_KEY='v10_model_db';
 function dbLoad(){try{var raw=localStorage.getItem(DB_KEY);return raw?JSON.parse(raw):[];}catch(e){return [];}}
