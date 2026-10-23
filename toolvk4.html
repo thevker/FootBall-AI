@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🏆 v11.5 — 賠率模式挖掘引擎</title>
+<title>🏆 v11.6 — 賠率模式挖掘引擎</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b1120;color:#e2e8f0;padding:0 0 60px}
@@ -143,7 +143,7 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 
 <header>
   <div class="wrap">
-    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v11.5</span><span class="sub">68 特徵 · 5 算法 · 模擬格式</span></h1>
+    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v11.6</span><span class="sub">68 特徵 · 5 算法 · 模擬尋優</span></h1>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="tab-setup" onclick="switchTab('tab-setup')">⚙️ 設定</button>
       <button class="tab-btn" data-tab="tab-result" onclick="switchTab('tab-result')">🏆 結果</button>
@@ -2035,7 +2035,7 @@ async function start(){
     currentResult=null;
     updateStats();clearLog();
 
-    pushLog('🚀 v11.5 — 啟動','head');
+    pushLog('🚀 v11.6 — 啟動','head');
     pushLog('🔬 比例：'+ratioModeLabel(ratioMode)+'｜算法：'+algoLabel(algoMode)+'｜目標：'+optLabel(optMode),'info');
     pushLog('🧬 特徵數：'+FCOUNT+'　場次：'+parsed.rows.length,'info');
     
@@ -2702,11 +2702,20 @@ function saveCurrentModel(){
     id:'m'+Date.now(),
     name:name||('模型 '+(list.length+1)),
     time:new Date().toLocaleString('zh-TW'),
+    algo:document.getElementById('algoMode').value,
+    optMode:document.getElementById('optMode').value,
+    ratioMode:document.getElementById('ratioMode').value,
+    runCount:document.getElementById('runCount').value,
+    maxConds:document.getElementById('maxConds').value,
+    dirLimit:document.getElementById('dirLimit').value,
+    fallbackMode:document.getElementById('fallbackMode').value,
+    trendMode:document.getElementById('trendMode').value,
+    minHitsPct:document.getElementById('minHitsPct').value,
+    splitMode:document.getElementById('splitMode').value,
     rules:JSON.parse(JSON.stringify(r.rules,function(k,v){
       if(k==='bs')return undefined;
       return v;
     })),
-    trendMode:r.mode,
     formulas:r.formulas
   };
   list.unshift(entry);
@@ -2755,8 +2764,23 @@ function loadModel(id){
     return;
   }
 
+  // 1. 還原 UI 設定
+  if(m.algo) document.getElementById('algoMode').value = m.algo;
+  if(m.optMode) document.getElementById('optMode').value = m.optMode;
+  if(m.ratioMode) document.getElementById('ratioMode').value = m.ratioMode;
+  if(m.runCount) document.getElementById('runCount').value = m.runCount;
+  if(m.maxConds) document.getElementById('maxConds').value = m.maxConds;
+  if(m.dirLimit) document.getElementById('dirLimit').value = m.dirLimit;
+  if(m.fallbackMode) document.getElementById('fallbackMode').value = m.fallbackMode;
+  if(m.trendMode) document.getElementById('trendMode').value = m.trendMode;
+  if(m.minHitsPct) document.getElementById('minHitsPct').value = m.minHitsPct;
+  if(m.splitMode) document.getElementById('splitMode').value = m.splitMode;
+
+  onRatioModeChange();
+  onAlgoChange();
+
   var isConverted = false;
-  // 終極精準轉換器 (兼容舊版整數模型)
+  // 2. 終極精準轉換器 (兼容舊版整數模型)
   var rules=(m.rules||[]).map(function(r){
     var cs = (r.conds || []).map(function(c){
       var arr = c.slice();
@@ -2764,15 +2788,10 @@ function loadModel(id){
         var fi = arr[0], val = arr[2];
         var isScaled = false;
 
-        // 1. 基本賠率 (A~F) > 10
         if (fi >= 20 && fi <= 25 && Math.abs(val) > 10) isScaled = true;
-        // 2. 差值特徵 (A-D, B-E, C-F, D-F 等) > 5
         else if ((fi === 0 || fi === 1 || fi === 4 || fi === 5 || fi === 8 || fi === 9 || fi === 26 || fi === 27 || fi === 50 || fi === 51) && Math.abs(val) > 5) isScaled = true;
-        // 3. Max, Min, Sum (如 975, 440, 204) > 10
         else if ((fi === 28 || fi === 29 || fi === 52 || fi === 53) && Math.abs(val) > 10) isScaled = true;
-        // 4. 返还率 (超过 200 说明是旧版没除100的)
         else if ((fi === 35 || fi === 36) && Math.abs(val) > 200) isScaled = true;
-        // 5. 返还率变化 (超过 50 说明是旧版没除100的)
         else if (fi === 37 && Math.abs(val) > 50) isScaled = true;
 
         if (isScaled) {
@@ -2789,7 +2808,7 @@ function loadModel(id){
     toast('✅ 舊版整數模型已自動轉換為新版閾值');
   }
 
-  // 重新構建位集
+  // 3. 重新構建位集
   for(var i2=0;i2<rules.length;i2++){
     var rule=rules[i2];
     if(!rule.conds||rule.conds.length===0){rule.bs=null;continue;}
@@ -2802,7 +2821,7 @@ function loadModel(id){
     rule.bs=ok?bs:null;
   }
 
-  // 用當前的訓練/測試數據重新計算！
+  // 4. 用當前的訓練/測試數據重新計算！
   var tr=calcRulesStats(rules,trainFeat,trainResult,trainOdds,trainN);
   var te=testFeat?calcRulesStats(rules,testFeat,testResult,testOdds,testN):null;
 
@@ -2819,7 +2838,7 @@ function loadModel(id){
   
   renderResult(result);
   switchTab('tab-result');
-  toast('✅ 已基於當前數據重新模擬：'+m.name);
+  toast('✅ 已還原設定，並基於當前數據重新模擬：'+m.name);
 }
 function deleteModel(id){
   if(!confirm('確定刪除此模型？'))return;
