@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🏆 v11.0 — 賠率模式挖掘引擎</title>
+<title>🏆 v11.2 — 賠率模式挖掘引擎</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b1120;color:#e2e8f0;padding:0 0 60px}
@@ -143,7 +143,7 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 
 <header>
   <div class="wrap">
-    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v11.0</span><span class="sub">68 特徵 · 5 算法 · 三段驗證 · 風控指標</span></h1>
+    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v11.2</span><span class="sub">68 特徵 · 5 算法 · 三段驗證 · 風控指標</span></h1>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="tab-setup" onclick="switchTab('tab-setup')">⚙️ 設定</button>
       <button class="tab-btn" data-tab="tab-result" onclick="switchTab('tab-result')">🏆 結果</button>
@@ -781,7 +781,19 @@ function calculateModelScore(trainStats,testStats,ruleCount,details){
   if(games<50)penalty*=0.5;
   if(games<20)penalty*=0.6;
   if(wr<45)penalty*=0.8;
-  if(profit>0&&rm.maxDD/Math.max(profit,1)>0.8)penalty*=0.7;
+  
+  // 嚴格風控：訓練集虧損，說明模型沒學到東西，靠運氣。嚴厲懲罰！
+  if (trainStats && trainStats.totalProfit <= 0) {
+    penalty *= 0.1; 
+  }
+  
+  // 嚴格風控：最大回撤超過利潤 2 倍，極度危險！
+  if(profit>0 && rm.maxDD > profit * 2) {
+    penalty *= 0.2;
+  } else if (profit>0&&rm.maxDD/Math.max(profit,1)>0.8){
+    penalty*=0.7;
+  }
+
   if(boot.lo<=0)penalty*=0.85;
 
   var raw=(profit*Math.sqrt(games))/10;
@@ -794,6 +806,13 @@ function calculateModelScore(trainStats,testStats,ruleCount,details){
   else if(score>=100)grade='S';
   else if(score>=50)grade='A';
   else if(score>=20)grade='B';
+  
+  // 即使分數高，如果訓練集是虧的，強制降級
+  if (trainStats && trainStats.totalProfit <= 0) {
+    if (grade === 'S+' || grade === 'S') grade = 'A';
+    else if (grade === 'A') grade = 'B';
+    else grade = 'C';
+  }
 
   out.score=score;out.grade=grade;out.raw=raw;out.penalty=penalty;
 
@@ -817,7 +836,6 @@ function getThresholds(fi){
   for(var i=0;i<trainN;i++)vals.push(trainFeat[i][fi]);
   vals.sort(function(a,b){return a-b;});
   var ths=[],seen={};
-  // 適度採樣，避免手機卡死
   var step = Math.max(1, Math.floor(vals.length / 30)); 
   for(var j=0;j<vals.length;j+=step){
     var v=rnd2(vals[j]);
@@ -1339,6 +1357,7 @@ async function runGeneticEngineAsync(isMemetic){
 function applyFallbackLogic(finalRules,covered){
   var remainingBS=bsAndNot(allMask,covered);
   var remainCnt=bsCount(remainingBS),fallbackInfo=null;
+  
   if(remainCnt>0){
     var dirProfits=[],bestDir=0,bestDirProfit=-Infinity;
     for(var tc=0;tc<3;tc++){
@@ -1347,10 +1366,22 @@ function applyFallbackLogic(finalRules,covered){
       if(p>bestDirProfit){bestDirProfit=p;bestDir=tc;}
     }
     var useHDA=false,reason='';
+    
     if(fallbackMode==='always-hda'){
-      if(bestDirProfit>0){useHDA=true;reason='剩餘場次 EV>0，押最高方向';}
-      else{useHDA=false;reason='剩餘場次全虧，自動 Skip';}
-    }else{reason='純 Skip 模式';}
+      // 新增風控：如果剩餘場次超過 30%，說明規則覆蓋率太低，強制 Skip
+      if (remainCnt > trainN * 0.3) {
+        useHDA = false;
+        reason = '剩餘場次過多 ('+remainCnt+'/'+trainN+')，強制 Skip 以防爆倉';
+      } else if(bestDirProfit>0){
+        useHDA=true;
+        reason='剩餘場次 EV>0，押最高方向';
+      } else {
+        useHDA=false;
+        reason='剩餘場次全虧，自動 Skip';
+      }
+    }else{
+      reason='純 Skip 模式';
+    }
 
     if(useHDA){
       finalRules.push({on:1,then:RESULTS[bestDir],thenCode:bestDir,conds:[],bs:remainingBS});
@@ -2008,7 +2039,7 @@ async function start(){
     currentResult=null;
     updateStats();clearLog();
 
-    pushLog('🚀 v11.0 — 啟動','head');
+    pushLog('🚀 v11.2 — 啟動','head');
     pushLog('🔬 比例：'+ratioModeLabel(ratioMode)+'｜算法：'+algoLabel(algoMode)+'｜目標：'+optLabel(optMode),'info');
     pushLog('🧬 特徵數：'+FCOUNT+'　場次：'+parsed.rows.length,'info');
     
@@ -2735,17 +2766,20 @@ function loadModel(id){
 
   var isConverted = false;
 
-  // 兼容修復：處理歷史存儲的單數 cond 或缺失 conds，並自動縮放舊版閾值
+  // 精準轉換：只針對舊版的整數賠率進行縮放
   var rules=m.rules.map(function(r){
     var cs = r.conds ? r.conds : (r.cond ? [r.cond] : []);
     var newCs = cs.map(function(c){
       var arr = c.slice();
       if (arr.length >= 3) {
         var fi = arr[0], val = arr[2];
-        // 絕對數值或絕對差值，如果是大於 10 的整數，說明是舊版模型
-        if (fi >= 20 && fi <= 25 && val > 10) { arr[2] = rnd2(val / 100); isConverted = true; }
-        else if ((fi === 0 || fi === 1 || fi === 4 || fi === 5 || fi === 8 || fi === 9 || fi === 26 || fi === 27) && Math.abs(val) > 10) {
-          arr[2] = rnd2(val / 100);
+        // 賠率特徵 (A, B, C, D, E, F) 或 賠率差值特徵 (A-D, C-F 等)
+        var isOddsFeature = (fi >= 20 && fi <= 25) || 
+                            (fi === 0 || fi === 1 || fi === 4 || fi === 5 || fi === 8 || fi === 9 || fi === 26 || fi === 27 || fi === 50 || fi === 51);
+        
+        // 如果是賠率特徵，且數值大於 10，說明是舊版的整數 (例如 167)，將其轉為 1.67
+        if (isOddsFeature && Math.abs(val) > 10) {
+          arr[2] = Math.round(val) / 100;
           isConverted = true;
         }
       }
@@ -2755,7 +2789,7 @@ function loadModel(id){
   });
 
   if (isConverted) {
-    toast('✅ 已自動將舊版整數模型轉換為新版小數閾值');
+    toast('✅ 舊版整數模型已自動轉換為新版小數閾值');
   }
 
   if(trainFeat){
