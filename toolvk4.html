@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🏆 v11.4 — 賠率模式挖掘引擎</title>
+<title>🏆 v11.5 — 賠率模式挖掘引擎</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b1120;color:#e2e8f0;padding:0 0 60px}
@@ -135,16 +135,15 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 .db-table td:nth-child(1) { text-align: left; white-space: nowrap; font-weight: bold; color: #c7d2fe; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
 .db-table td:nth-child(2) { font-size: 10px; color: #64748b; white-space: nowrap; }
 .db-table td:nth-child(3) { text-align: center; white-space: nowrap; }
-.db-table td:nth-child(4) { text-align: center; white-space: nowrap; color: #94a3b8; }
-.db-table td:nth-child(5) { text-align: center; white-space: nowrap; }
-.db-table td:nth-child(6) { white-space: nowrap; text-align: center; }
+.db-table td:nth-child(4) { text-align: center; white-space: nowrap; }
+.db-table td:nth-child(5) { white-space: nowrap; text-align: center; }
 </style>
 </head>
 <body>
 
 <header>
   <div class="wrap">
-    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v11.4</span><span class="sub">68 特徵 · 5 算法 · 模擬格式</span></h1>
+    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v11.5</span><span class="sub">68 特徵 · 5 算法 · 模擬格式</span></h1>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="tab-setup" onclick="switchTab('tab-setup')">⚙️ 設定</button>
       <button class="tab-btn" data-tab="tab-result" onclick="switchTab('tab-result')">🏆 結果</button>
@@ -783,12 +782,10 @@ function calculateModelScore(trainStats,testStats,ruleCount,details){
   if(games<20)penalty*=0.6;
   if(wr<45)penalty*=0.8;
   
-  // 嚴格風控：訓練集虧損，說明模型沒學到東西，靠運氣。嚴厲懲罰！
   if (trainStats && trainStats.totalProfit <= 0) {
     penalty *= 0.1; 
   }
   
-  // 嚴格風控：最大回撤超過利潤 2 倍，極度危險！
   if(profit>0 && rm.maxDD > profit * 2) {
     penalty *= 0.2;
   } else if (profit>0&&rm.maxDD/Math.max(profit,1)>0.8){
@@ -808,7 +805,6 @@ function calculateModelScore(trainStats,testStats,ruleCount,details){
   else if(score>=50)grade='A';
   else if(score>=20)grade='B';
   
-  // 即使分數高，如果訓練集是虧的，強制降級
   if (trainStats && trainStats.totalProfit <= 0) {
     if (grade === 'S+' || grade === 'S') grade = 'A';
     else if (grade === 'A') grade = 'B';
@@ -2039,7 +2035,7 @@ async function start(){
     currentResult=null;
     updateStats();clearLog();
 
-    pushLog('🚀 v11.4 — 啟動','head');
+    pushLog('🚀 v11.5 — 啟動','head');
     pushLog('🔬 比例：'+ratioModeLabel(ratioMode)+'｜算法：'+algoLabel(algoMode)+'｜目標：'+optLabel(optMode),'info');
     pushLog('🧬 特徵數：'+FCOUNT+'　場次：'+parsed.rows.length,'info');
     
@@ -2199,7 +2195,7 @@ async function start(){
             globalBestProfit=ev.train.totalProfit;
             globalBestWinRate=ev.train.winRate;
             globalBestGames=ev.train.games;
-            globalBest:Rules=r.rules;
+            globalBestRules=r.rules;
             globalBestStats=ev.train;
             globalBestFallback=r.fallbackInfo;
           }
@@ -2305,7 +2301,7 @@ function renderRankTable(){
     var r=sorted[i];
     var crown=i===0?'👑':'';
     var teP=r.testStats?r.testStats.totalProfit:0;
-    var teW=r.testStats?r.testStats.winRate0;
+    var teW=r.testStats?r.testStats.winRate:0;
     html+='<tr class="rank-row'+(i===0?' active':'')+'" data-mode="'+r.mode+'" onclick="viewAutoResult(\''+r.mode+'\')">'+
       '<td style="color:'+(i===0?'#facc15':'#cbd5e1')+'">'+r.mode+' '+crown+'</td>'+
       '<td style="color:#4ade80;font-weight:700">'+r.scoreData.score+'</td>'+
@@ -2761,9 +2757,8 @@ function loadModel(id){
 
   var isConverted = false;
   // 終極精準轉換器 (兼容舊版整數模型)
-  var rules=m.rules.map(function(r){
-    var cs = r.conds || [];
-    var newCs = cs.map(function(c){
+  var rules=(m.rules||[]).map(function(r){
+    var cs = (r.conds || []).map(function(c){
       var arr = c.slice();
       if (arr.length >= 3) {
         var fi = arr[0], val = arr[2];
@@ -2787,7 +2782,7 @@ function loadModel(id){
       }
       return arr;
     });
-    return {on:1,then:r.then,thenCode:r.thenCode,conds:newCs,bs:null};
+    return {on:1,then:r.then,thenCode:r.thenCode,conds:cs,bs:null};
   });
 
   if (isConverted) {
