@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🏆 v11.2 — 賠率模式挖掘引擎</title>
+<title>🏆 v11.4 — 賠率模式挖掘引擎</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b1120;color:#e2e8f0;padding:0 0 60px}
@@ -135,15 +135,16 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 .db-table td:nth-child(1) { text-align: left; white-space: nowrap; font-weight: bold; color: #c7d2fe; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
 .db-table td:nth-child(2) { font-size: 10px; color: #64748b; white-space: nowrap; }
 .db-table td:nth-child(3) { text-align: center; white-space: nowrap; }
-.db-table td:nth-child(7) { text-align: center; white-space: nowrap; }
-.db-table td:nth-child(8) { white-space: nowrap; text-align: center; }
+.db-table td:nth-child(4) { text-align: center; white-space: nowrap; color: #94a3b8; }
+.db-table td:nth-child(5) { text-align: center; white-space: nowrap; }
+.db-table td:nth-child(6) { white-space: nowrap; text-align: center; }
 </style>
 </head>
 <body>
 
 <header>
   <div class="wrap">
-    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v11.2</span><span class="sub">68 特徵 · 5 算法 · 三段驗證 · 風控指標</span></h1>
+    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v11.4</span><span class="sub">68 特徵 · 5 算法 · 模擬格式</span></h1>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="tab-setup" onclick="switchTab('tab-setup')">⚙️ 設定</button>
       <button class="tab-btn" data-tab="tab-result" onclick="switchTab('tab-result')">🏆 結果</button>
@@ -1368,7 +1369,6 @@ function applyFallbackLogic(finalRules,covered){
     var useHDA=false,reason='';
     
     if(fallbackMode==='always-hda'){
-      // 新增風控：如果剩餘場次超過 30%，說明規則覆蓋率太低，強制 Skip
       if (remainCnt > trainN * 0.3) {
         useHDA = false;
         reason = '剩餘場次過多 ('+remainCnt+'/'+trainN+')，強制 Skip 以防爆倉';
@@ -1520,7 +1520,7 @@ function walkForwardTest(rules,rows,folds){
     var part=rows.slice(i*seg,i===folds-1?rows.length:(i+1)*seg);
     if(part.length<20)continue;
     var m=extractMeta(part,'final');
-    var fm=extractFeaturesSync(part); // 穩健檢驗用同步即可，因為只算一次
+    var fm=extractFeaturesSync(part); 
     var st=calcRulesStats(rules,fm,m.codes,m.odds,part.length);
     out.push({fold:i+1,n:part.length,profit:st.totalProfit,wr:st.winRate,games:st.games});
   }
@@ -2039,7 +2039,7 @@ async function start(){
     currentResult=null;
     updateStats();clearLog();
 
-    pushLog('🚀 v11.2 — 啟動','head');
+    pushLog('🚀 v11.4 — 啟動','head');
     pushLog('🔬 比例：'+ratioModeLabel(ratioMode)+'｜算法：'+algoLabel(algoMode)+'｜目標：'+optLabel(optMode),'info');
     pushLog('🧬 特徵數：'+FCOUNT+'　場次：'+parsed.rows.length,'info');
     
@@ -2199,7 +2199,7 @@ async function start(){
             globalBestProfit=ev.train.totalProfit;
             globalBestWinRate=ev.train.winRate;
             globalBestGames=ev.train.games;
-            globalBestRules=r.rules;
+            globalBest:Rules=r.rules;
             globalBestStats=ev.train;
             globalBestFallback=r.fallbackInfo;
           }
@@ -2305,7 +2305,7 @@ function renderRankTable(){
     var r=sorted[i];
     var crown=i===0?'👑':'';
     var teP=r.testStats?r.testStats.totalProfit:0;
-    var teW=r.testStats?r.testStats.winRate:0;
+    var teW=r.testStats?r.testStats.winRate0;
     html+='<tr class="rank-row'+(i===0?' active':'')+'" data-mode="'+r.mode+'" onclick="viewAutoResult(\''+r.mode+'\')">'+
       '<td style="color:'+(i===0?'#facc15':'#cbd5e1')+'">'+r.mode+' '+crown+'</td>'+
       '<td style="color:#4ade80;font-weight:700">'+r.scoreData.score+'</td>'+
@@ -2683,7 +2683,7 @@ function extractMeta(rows,payoutMode){
 }
 
 /* ============================================================
-   22. 模型庫
+   22. 模型庫 (精準模擬格式)
    ============================================================ */
 var DB_KEY='v10_model_db';
 
@@ -2706,18 +2706,11 @@ function saveCurrentModel(){
     id:'m'+Date.now(),
     name:name||('模型 '+(list.length+1)),
     time:new Date().toLocaleString('zh-TW'),
-    algo:algoMode,optMode:optMode,ratioMode:ratioMode,
-    trendMode:r.mode,
-    score:r.scoreData.score,
-    grade:r.scoreData.grade,
-    trainProfit:r.trainStats.totalProfit,
-    testProfit:r.testStats?r.testStats.totalProfit:0,
-    trainWr:r.trainStats.winRate,
-    testWr:r.testStats?r.testStats.winRate:0,
     rules:JSON.parse(JSON.stringify(r.rules,function(k,v){
       if(k==='bs')return undefined;
       return v;
     })),
+    trendMode:r.mode,
     formulas:r.formulas
   };
   list.unshift(entry);
@@ -2734,19 +2727,16 @@ function refreshDB(){
     document.getElementById('dbTable').innerHTML='<table><tbody><tr><td class="empty">模型庫為空 — 跑出結果後點「存入模型庫」</td></tr></tbody></table>';
     return;
   }
-  var html='<table><thead><tr><th>名稱</th><th>時間</th><th>模式</th><th>評分</th><th>測試利潤</th><th>訓練利潤</th><th>規則</th><th>操作</th></tr></thead><tbody>';
+  var html='<table><thead><tr><th>名稱</th><th>時間</th><th>模式</th><th>規則數</th><th>操作</th></tr></thead><tbody>';
   for(var i=0;i<list.length;i++){
     var m=list[i];
     html+='<tr>'+
       '<td class="left-align" style="color:#c7d2fe;font-weight:600">'+escapeHtml(m.name)+'</td>'+
       '<td style="font-size:10px;color:#64748b">'+m.time+'</td>'+
       '<td style="text-align:center">'+m.trendMode+'</td>'+
-      '<td style="color:#4ade80;font-weight:700">'+m.score+'</td>'+
-      '<td class="'+(m.testProfit>0?'profit-pos':'profit-neg')+'">'+(m.testProfit>0?'+':'')+m.testProfit+'</td>'+
-      '<td>'+m.trainProfit+'</td>'+
-      '<td style="text-align:center">'+(m.rules?m.rules.length:0)+'</td>'+
+      '<td style="color:#4ade80;font-weight:700">'+(m.rules?m.rules.length:0)+' 條</td>'+
       '<td style="white-space:nowrap;text-align:center">'+
-        '<button class="mini" style="background:#4f46e5" onclick="loadModel(\''+m.id+'\')">載入</button> '+
+        '<button class="mini" style="background:#4f46e5" onclick="loadModel(\''+m.id+'\')">模擬</button> '+
         '<button class="mini" style="background:#7f1d1d" onclick="deleteModel(\''+m.id+'\')">刪除</button>'+
       '</td></tr>';
   }
@@ -2764,21 +2754,33 @@ function loadModel(id){
   for(var i=0;i<list.length;i++){if(list[i].id===id){m=list[i];break;}}
   if(!m){toast('❌ 找不到模型');return;}
 
-  var isConverted = false;
+  if(!trainFeat){
+    toast('⚠️ 請先在「設定」頁載入數據，才能進行模擬');
+    return;
+  }
 
-  // 精準轉換：只針對舊版的整數賠率進行縮放
+  var isConverted = false;
+  // 終極精準轉換器 (兼容舊版整數模型)
   var rules=m.rules.map(function(r){
-    var cs = r.conds ? r.conds : (r.cond ? [r.cond] : []);
+    var cs = r.conds || [];
     var newCs = cs.map(function(c){
       var arr = c.slice();
       if (arr.length >= 3) {
         var fi = arr[0], val = arr[2];
-        // 賠率特徵 (A, B, C, D, E, F) 或 賠率差值特徵 (A-D, C-F 等)
-        var isOddsFeature = (fi >= 20 && fi <= 25) || 
-                            (fi === 0 || fi === 1 || fi === 4 || fi === 5 || fi === 8 || fi === 9 || fi === 26 || fi === 27 || fi === 50 || fi === 51);
-        
-        // 如果是賠率特徵，且數值大於 10，說明是舊版的整數 (例如 167)，將其轉為 1.67
-        if (isOddsFeature && Math.abs(val) > 10) {
+        var isScaled = false;
+
+        // 1. 基本賠率 (A~F) > 10
+        if (fi >= 20 && fi <= 25 && Math.abs(val) > 10) isScaled = true;
+        // 2. 差值特徵 (A-D, B-E, C-F, D-F 等) > 5
+        else if ((fi === 0 || fi === 1 || fi === 4 || fi === 5 || fi === 8 || fi === 9 || fi === 26 || fi === 27 || fi === 50 || fi === 51) && Math.abs(val) > 5) isScaled = true;
+        // 3. Max, Min, Sum (如 975, 440, 204) > 10
+        else if ((fi === 28 || fi === 29 || fi === 52 || fi === 53) && Math.abs(val) > 10) isScaled = true;
+        // 4. 返还率 (超过 200 说明是旧版没除100的)
+        else if ((fi === 35 || fi === 36) && Math.abs(val) > 200) isScaled = true;
+        // 5. 返还率变化 (超过 50 说明是旧版没除100的)
+        else if (fi === 37 && Math.abs(val) > 50) isScaled = true;
+
+        if (isScaled) {
           arr[2] = Math.round(val) / 100;
           isConverted = true;
         }
@@ -2789,30 +2791,25 @@ function loadModel(id){
   });
 
   if (isConverted) {
-    toast('✅ 舊版整數模型已自動轉換為新版小數閾值');
+    toast('✅ 舊版整數模型已自動轉換為新版閾值');
   }
 
-  if(trainFeat){
-    for(var i2=0;i2<rules.length;i2++){
-      var rule=rules[i2];
-      if(!rule.conds||rule.conds.length===0){rule.bs=null;continue;}
-      var bs=null,ok=true;
-      for(var c=0;c<rule.conds.length;c++){
-        var cb=getCondBS(rule.conds[c][0],rule.conds[c][1],rule.conds[c][2]);
-        if(!cb){ok=false;break;}
-        bs=bs===null?cb:bsAnd(bs,cb);
-      }
-      rule.bs=ok?bs:null;
+  // 重新構建位集
+  for(var i2=0;i2<rules.length;i2++){
+    var rule=rules[i2];
+    if(!rule.conds||rule.conds.length===0){rule.bs=null;continue;}
+    var bs=null,ok=true;
+    for(var c=0;c<rule.conds.length;c++){
+      var cb=getCondBS(rule.conds[c][0],rule.conds[c][1],rule.conds[c][2]);
+      if(!cb){ok=false;break;}
+      bs=bs===null?cb:bsAnd(bs,cb);
     }
+    rule.bs=ok?bs:null;
   }
 
-  var tr=trainFeat?calcRulesStats(rules,trainFeat,trainResult,trainOdds,trainN):null;
+  // 用當前的訓練/測試數據重新計算！
+  var tr=calcRulesStats(rules,trainFeat,trainResult,trainOdds,trainN);
   var te=testFeat?calcRulesStats(rules,testFeat,testResult,testOdds,testN):null;
-
-  if(!tr){
-    toast('⚠️ 請先載入數據後再載入模型');
-    return;
-  }
 
   var result={
     mode:m.trendMode,
@@ -2824,9 +2821,10 @@ function loadModel(id){
     scoreData:calculateModelScore(tr,te,rules.length),
     formulas:m.formulas
   };
+  
   renderResult(result);
   switchTab('tab-result');
-  toast('✅ 已載入：'+m.name);
+  toast('✅ 已基於當前數據重新模擬：'+m.name);
 }
 function deleteModel(id){
   if(!confirm('確定刪除此模型？'))return;
