@@ -1717,7 +1717,6 @@ function fmtRule(r){
   return parts.join(' & ')+' → '+r.then;
 }
 
-/* 全新的卡片式規則渲染 */
 function renderRuleTable(rules,trainStats){
   function indepStats(rule){
     var tP=0,tG=0,tW=0,eP=0,eG=0,eW=0;
@@ -1841,6 +1840,7 @@ function renderRiskPanel(testStats,trainStats){
 }
 
 function renderOddsRange(details, rawRows) {
+    if(!details || !rawRows) return;
     var oddsStats = [
         { name: 'H (主勝)', cls: 'tag-h', val: [], maxOdd: 0 },
         { name: 'D (和局)', cls: 'tag-d', val: [], maxOdd: 0 },
@@ -1881,8 +1881,10 @@ function renderOddsRange(details, rawRows) {
     }
     html += '</div>';
     
-    document.getElementById('oddsRangeContent').innerHTML = html;
-    document.getElementById('oddsRangePanel').style.display = 'block';
+    var el = document.getElementById('oddsRangeContent');
+    if(el) el.innerHTML = html;
+    var panel = document.getElementById('oddsRangePanel');
+    if(panel) panel.style.display = 'block';
 }
 
 function renderSegments(stats,rawRows){
@@ -2180,15 +2182,15 @@ async function start(){
         var ev2=evaluateRuleSet(rg.rules);
         res={rules:rg.rules,stats:ev2.train,fallbackInfo:rg.fallbackInfo};
       }else if(algoMode==='decision-tree'){
-        currentRun=1;totalPhases=Rules1;
-        var limitDepth=maxCondsLimit===0?20:maxConds.lengthLimit;
+        currentRun=1;totalPhases=1;
+        var limitDepth=maxCondsLimit===0?20:maxCondsLimit;
         var tree=await buildTree(allMask,0,limitDepth);
-       ; var fRules=[];
+        var fRules=[];
         extractRules(tree,[],fRules);
-        iff(dirLimit>0){
-          var2 dc=[++){
-0,0,0],filtered=[];
-          for(var f2=0;f2<f            var rr=fRules[f2];
+        if(dirLimit>0){
+          var dc=[0,0,0],filtered=[];
+          for(var f2=0;f2<fRules.length;f2++){
+            var rr=fRules[f2];
             if(rr.thenCode!==3&&dc[rr.thenCode]>=dirLimit)continue;
             filtered.push(rr);
             if(rr.thenCode!==3)dc[rr.thenCode]++;
@@ -2471,7 +2473,7 @@ function nowTime(){
 }
 function pushLog(text,cls){
   logBuffer.push({text:text,cls:cls||''});
-  if(!logTimer)logTimer=setTimeout(flushLog,150); // 降低刷新頻率，減少卡頓
+  if(!logTimer)logTimer=setTimeout(flushLog,150);
 }
 function flushLog(){
   logTimer=null;
@@ -2480,24 +2482,28 @@ function flushLog(){
   var el1=document.getElementById('log');
   var el2=document.getElementById('runLog');
   
-  var frag=document.createDocumentFragment();
-  for(var i=0;i<logBuffer.length;i++){
-    var e=logBuffer[i],div=document.createElement('div');
-    if(e.cls)div.className='l-'+e.cls;
-    div.textContent=e.text;
-    frag.appendChild(div);
-  }
-  
   if(el1){
     if(!el1.dataset.started){el1.innerHTML='';el1.dataset.started='1';}
-    el1.appendChild(frag.cloneNode(true));
+    for(var i=0;i<logBuffer.length;i++){
+      var e=logBuffer[i];
+      var div=document.createElement('div');
+      if(e.cls)div.className='l-'+e.cls;
+      div.textContent=e.text;
+      el1.appendChild(div);
+    }
     while(el1.children.length>LOG_MAX)el1.removeChild(el1.firstChild);
     el1.scrollTop=el1.scrollHeight;
   }
   
   if(el2){
     if(!el2.dataset.started){el2.innerHTML='';el2.dataset.started='1';}
-    el2.appendChild(frag.cloneNode(true));
+    for(var j=0;j<logBuffer.length;j++){
+      var e2=logBuffer[j];
+      var div2=document.createElement('div');
+      if(e2.cls)div2.className='l-'+e2.cls;
+      div2.textContent=e2.text;
+      el2.appendChild(div2);
+    }
     while(el2.children.length>LOG_MAX)el2.removeChild(el2.firstChild);
     el2.scrollTop=el2.scrollHeight;
   }
