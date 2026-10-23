@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🏆 v11.8 — 賠率模式挖掘引擎</title>
+<title>🏆 v11.9 — 賠率模式挖掘引擎（68 特徵 · 極限候選池）</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b1120;color:#e2e8f0;padding:0 0 60px}
@@ -110,7 +110,7 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 
 <header>
   <div class="wrap">
-    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v11.8</span><span class="sub">68 特徵 · 5 算法 · 完美復現模擬</span></h1>
+    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v11.9</span><span class="sub">68 特徵 · 極限候選池 · 5 算法</span></h1>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="tab-setup" onclick="switchTab('tab-setup')">⚙️ 設定</button>
       <button class="tab-btn" data-tab="tab-result" onclick="switchTab('tab-result')">🏆 結果</button>
@@ -208,14 +208,6 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
             <option value="DA">DA（和/客）</option>
             <option value="HA">HA（主/客）</option>
             <option value="HDA">HDA（全方向）</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>🎚️ 閾值密度（每特徵）</label>
-          <select id="threshDensity">
-            <option value="100" selected>100（推薦）</option>
-            <option value="200">200（更多）</option>
-            <option value="300">300（極致）</option>
           </select>
         </div>
         <div class="field" id="runCountField">
@@ -391,7 +383,7 @@ var RESULT_CODES={H:0,D:1,A:2};
 /* ============================================================
    2. 全局狀態
    ============================================================ */
-var THRESHOLD_TARGET=100;
+var THRESHOLD_TARGET=2000;
 var COND_CACHE_MAX=2000000;
 var TEST_COND_CACHE_MAX=1000000;
 
@@ -750,7 +742,7 @@ function calculateModelScore(trainStats,testStats,ruleCount,details){
 }
 
 /* ============================================================
-   7. 門檻生成（v11.7 原版，只把 80 改成 THRESHOLD_TARGET）
+   7. 門檻生成（極限版：目標 2000 個閾值/特徵）
    ============================================================ */
 function getThresholds(fi){
   if(featureValueCache[fi])return featureValueCache[fi];
@@ -758,27 +750,64 @@ function getThresholds(fi){
   for(var i=0;i<trainN;i++)vals.push(trainFeat[i][fi]);
   vals.sort(function(a,b){return a-b;});
   var ths=[],seen={};
-  var step=Math.max(1,Math.floor(vals.length/30));
+
+  /* 1) 數據採樣：目標直接對齊 THRESHOLD_TARGET */
+  var target=Math.min(THRESHOLD_TARGET,Math.max(40,vals.length));
+  var step=Math.max(1,Math.floor(vals.length/target));
   for(var j=0;j<vals.length;j+=step){
     var v=rnd2(vals[j]);
     if(!seen[v]){seen[v]=1;ths.push(v);}
   }
+
+  /* 2) 分位數：每 1% 一檔 */
+  for(var q=1;q<=99;q++){
+    var qi=Math.floor(vals.length*q/100);
+    if(qi>=0&&qi<vals.length){
+      var qv=rnd2(vals[qi]);
+      if(!seen[qv]){seen[qv]=1;ths.push(qv);}
+    }
+  }
+
+  /* 3) 最小/最大值 */
+  if(vals.length>0){
+    var vmin=rnd2(vals[0]),vmax=rnd2(vals[vals.length-1]);
+    if(!seen[vmin]){seen[vmin]=1;ths.push(vmin);}
+    if(!seen[vmax]){seen[vmax]=1;ths.push(vmax);}
+  }
+
   var fn=FEATURES[fi];
+
+  /* 4) 差值類型：密集網格 */
   var isChange=(fn.indexOf('-')>=0||fn.indexOf('+')>=0);
   if(isChange){
-    var grid=[-300,-200,-150,-100,-75,-50,-40,-30,-20,-15,-10,-8,-5,-3,-1,0,1,3,5,8,10,15,20,30,40,50,75,100,150,200,300];
-    for(var g=0;g<grid.length;g++){if(!seen[grid[g]]){seen[grid[g]]=1;ths.push(grid[g]);}}
+    var grid=[];
+    for(var g=-100;g<=100;g+=1)grid.push(g);
+    for(var g2=-300;g2<=300;g2+=3)grid.push(g2);
+    for(var g3=-1000;g3<=1000;g3+=20)grid.push(g3);
+    for(var gi=0;gi<grid.length;gi++){
+      if(!seen[grid[gi]]){seen[grid[gi]]=1;ths.push(grid[gi]);}
+    }
   }
+
+  /* 5) 百分比 / 比率 / Z 分數：密集網格 */
   var isPct=(fn.indexOf('%')>=0||fn.indexOf('率')>=0||fn.indexOf('Z')>=0);
   if(isPct){
-    var pgrid=[-3,-2,-1,-0.5,0,0.5,1,2,3,-50,-40,-30,-20,-15,-10,-5,-2,-1,0,1,2,5,10,15,20,30,40,50,60,70,80,90,100];
-    for(var p=0;p<pgrid.length;p++){if(!seen[pgrid[p]]){seen[pgrid[p]]=1;ths.push(pgrid[p]);}}
+    var pgrid=[];
+    for(var p=-50;p<=50;p+=1)pgrid.push(p);
+    for(var p2=-10;p2<=10;p2+=0.2)pgrid.push(rnd2(p2));
+    for(var p3=-2;p3<=2;p3+=0.05)pgrid.push(rnd2(p3));
+    for(var pi2=0;pi2<pgrid.length;pi2++){
+      if(!seen[pgrid[pi2]]){seen[pgrid[pi2]]=1;ths.push(pgrid[pi2]);}
+    }
   }
+
+  /* 6) 截斷到 THRESHOLD_TARGET */
   if(ths.length>THRESHOLD_TARGET){
     var step2=ths.length/THRESHOLD_TARGET,sampled=[];
     for(var s=0;s<THRESHOLD_TARGET;s++)sampled.push(ths[Math.floor(s*step2)]);
     ths=sampled;
   }
+
   featureValueCache[fi]=ths;
   return ths;
 }
@@ -803,7 +832,7 @@ async function buildSinglesAsync(){
         }
       }
     }
-    if(fi%5===0||fi===FCOUNT-1){
+    if(fi%3===0||fi===FCOUNT-1){
       var pct=Math.round((fi+1)/FCOUNT*100);
       var el=((Date.now()-t0)/1000).toFixed(1);
       pushLog('   ⚙️ 候選池 '+pct+'%（'+singles.length+' 個｜'+el+'s）','dim');
@@ -833,7 +862,7 @@ async function buildSinglesAsync(){
 }
 
 /* ============================================================
-   9. 爬山退火（v11.7 原版）
+   9. 爬山退火
    ============================================================ */
 async function runHillClimbAsync(){
   var singles=precomputedSingles;
@@ -944,7 +973,7 @@ async function runHillClimbAsync(){
 }
 
 /* ============================================================
-   10. 束搜索（v11.7 原版）
+   10. 束搜索
    ============================================================ */
 async function runBeamSearchAsync(){
   var singles=precomputedSingles;
@@ -1021,7 +1050,7 @@ async function runBeamSearchAsync(){
 }
 
 /* ============================================================
-   11. 決策樹（v11.7 原版）
+   11. 決策樹
    ============================================================ */
 function getBestLeaf(bsMask){
   var total=bsCount(bsMask);
@@ -1077,7 +1106,7 @@ function extractRules(node,curConds,rules){
 }
 
 /* ============================================================
-   12. 遺傳 / 模因（v11.7 原版）
+   12. 遺傳 / 模因
    ============================================================ */
 function cloneInd(ind){
   var nr=[];
@@ -1274,7 +1303,7 @@ async function runGeneticEngineAsync(isMemetic){
 }
 
 /* ============================================================
-   13. 兜底（v11.7 原版）
+   13. 兜底
    ============================================================ */
 function applyFallbackLogic(finalRules,covered){
   var remainingBS=bsAndNot(allMask,covered);
@@ -1318,7 +1347,7 @@ function applyFallbackLogic(finalRules,covered){
 }
 
 /* ============================================================
-   14. 比例模式（v11.7 原版）
+   14. 比例模式
    ============================================================ */
 function autoSplitRatioA(N_total,R_budget){
   var N_min=150,r_base=0.30,k=10;
@@ -1432,7 +1461,7 @@ async function runLearningCurveScanAsync(parsedRows,R_budget,allowedCodes){
 }
 
 /* ============================================================
-   15. 穩健性檢驗（v11.7 原版）
+   15. 穩健性檢驗
    ============================================================ */
 function walkForwardTest(rules,rows,folds){
   var seg=Math.floor(rows.length/folds),out=[];
@@ -1471,7 +1500,7 @@ function monteCarloTest(details,trials){
 }
 
 /* ============================================================
-   16. 特徵重要性（v11.7 原版）
+   16. 特徵重要性
    ============================================================ */
 function featureImportance(rules){
   var cnt={};
@@ -1489,7 +1518,7 @@ function featureImportance(rules){
 }
 
 /* ============================================================
-   17. 公式生成（v11.7 原版）
+   17. 公式生成
    ============================================================ */
 function featToExpr(fi){
   var fn=FEATURES[fi];
@@ -1872,7 +1901,7 @@ function drawEquityChart(details){
 }
 
 /* ============================================================
-   19. 主流程（v11.7 原版，只新增 threshDensity 讀取）
+   19. 主流程
    ============================================================ */
 async function start(){
   try{
@@ -1890,7 +1919,6 @@ async function start(){
       return;
     }
 
-    THRESHOLD_TARGET=parseInt(document.getElementById('threshDensity').value)||100;
     ratioMode=document.getElementById('ratioMode').value;
     algoMode=document.getElementById('algoMode').value;
     optMode=document.getElementById('optMode').value;
@@ -1911,9 +1939,9 @@ async function start(){
     currentResult=null;
     updateStats();clearLog();
 
-    pushLog('🚀 v11.8 — 啟動','head');
+    pushLog('🚀 v11.9 — 啟動（極限候選池）','head');
     pushLog('🔬 比例：'+ratioModeLabel(ratioMode)+'｜算法：'+algoLabel(algoMode)+'｜目標：'+optLabel(optMode),'info');
-    pushLog('🧬 特徵數：'+FCOUNT+'　閾值密度：'+THRESHOLD_TARGET+'/特徵　場次：'+parsed.rows.length,'info');
+    pushLog('🧬 特徵數：'+FCOUNT+'　閾值上限：'+THRESHOLD_TARGET+'/特徵　場次：'+parsed.rows.length,'info');
 
     var N=parsed.rows.length;
     var R_budget=dirLimit>0?dirLimit*3:15;
@@ -1935,8 +1963,9 @@ async function start(){
       var ts=splitThreeStage(N);
       splitIdx=ts.nTrain;
       threeStageCfg=ts;
-      pushLog('🧪 方案C 三段嵌套 → 訓練 '+ts.nTrain+' / 驗證 '+ts.nVal+' / 測試 '+ts.nTest,'info');
-    }else{
+      pushLog('🧪 方案C (train三段嵌套 → 訓練 '+ts.nNTrain);
++' / 驗證 '+       ts.nVal+' / 測試 for '+ts.nTest,'info');
+   (var }else{
       var sm=document.getElementById('splitMode').value;
       if(sm!=='none'){
         ratio=(sm==='70-30')?0.7:0.8;
@@ -2029,7 +2058,7 @@ async function start(){
       globalBestScore=-Infinity;globalBestRules=null;globalBestStats=null;globalBestFallback=null;
       globalBestProfit=-Infinity;globalBestWinRate=0;globalBestGames=0;
 
-      pushLog('   ⚙️ 構建候選池（'+THRESHOLD_TARGET+' 閾值/特徵，'+FCOUNT+' 特徵 × 4 op）...','dim');
+      pushLog('   ⚙️ 構建候選池（極限模式）...','dim');
       precomputedSingles=await buildSinglesAsync();
       poolSize=precomputedSingles.length;
       pushLog('   ✅ 候選池完成：'+poolSize+' 個單條件候選','success');
@@ -2098,8 +2127,7 @@ async function start(){
           }
           fRules=filtered;
         }
-        var covered=bsNew(trainN);
-        for(var r3=0;r3<fRules.length;r3++){
+        var covered=bsNew r3=0;r3<fRules.length;r3++){
           var rbs=null,fail=false;
           for(var c3=0;c3<fRules[r3].conds.length;c3++){
             var cb3=getCondBS(fRules[r3].conds[c3][0],fRules[r3].conds[c3][1],fRules[r3].conds[c3][2]);
@@ -2372,7 +2400,7 @@ function updateRowCount(){
 }
 
 /* ============================================================
-   21. 特徵提取（v11.7 原版，68 個特徵）
+   21. 特徵提取（68 特徵）
    ============================================================ */
 async function extractFeaturesAsync(rows){
   var N=rows.length,mat=new Array(N);
@@ -2531,7 +2559,7 @@ function extractMeta(rows,payoutMode){
 }
 
 /* ============================================================
-   22. 模型庫（v11.7 原版 + threshDensity）
+   22. 模型庫
    ============================================================ */
 var DB_KEY='v10_model_db';
 function dbLoad(){try{var raw=localStorage.getItem(DB_KEY);return raw?JSON.parse(raw):[];}catch(e){return [];}}
@@ -2556,7 +2584,6 @@ function saveCurrentModel(){
     trendMode:document.getElementById('trendMode').value,
     minHitsPct:document.getElementById('minHitsPct').value,
     splitMode:document.getElementById('splitMode').value,
-    threshDensity:THRESHOLD_TARGET,
     trainN:trainN,testN:testN,
     rules:JSON.parse(JSON.stringify(r.rules,function(k,v){if(k==='bs')return undefined;return v;})),
     formulas:r.formulas
@@ -2608,7 +2635,6 @@ function loadModel(id){
   if(m.trendMode)document.getElementById('trendMode').value=m.trendMode;
   if(m.minHitsPct)document.getElementById('minHitsPct').value=m.minHitsPct;
   if(m.splitMode)document.getElementById('splitMode').value=m.splitMode;
-  if(m.threshDensity)document.getElementById('threshDensity').value=m.threshDensity;
   onRatioModeChange();onAlgoChange();
 
   var N=parsed.rows.length;
@@ -2731,12 +2757,12 @@ function loadDemo(){
     var pDraw=0.28-rnd()*0.06;
     var pAway=1-pHome-pDraw;
     if(pAway<0.08)pAway=0.08;
-    var sum=pHome+pDraw+pAway;
+    var sum=pHome+pDraw+pA03way;
     pHome/=sum;pDraw/=sum;pAway/=sum;
 
     var A=rnd2s(1/Math.max(pHome,0.03)*1.06*100);
     var B=rnd2s(1/Math.max(pDraw,0.03)*1.06*100);
-    var C=rnd2s(1/Math.max(pAway,0.03)*1.06*100);
+    var C=rnd2s(1/Math.max(pAway,0.)*1.06*100);
 
     var drift=(rnd()-0.5)*0.10+strength*0.03;
     var D=rnd2s((A/100)*(1-drift)*100+(rnd()-0.5)*5);
