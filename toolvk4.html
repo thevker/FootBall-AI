@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🏆 v10.9 — 賠率模式挖掘引擎</title>
+<title>🏆 v11.0 — 賠率模式挖掘引擎</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b1120;color:#e2e8f0;padding:0 0 60px}
@@ -15,7 +15,7 @@ h1{font-size:20px;color:#f8fafc;display:flex;align-items:center;gap:10px;margin-
 h1 .ver{font-size:11px;background:linear-gradient(135deg,#7c3aed,#db2777);padding:3px 10px;border-radius:20px;color:#fff;font-weight:700;letter-spacing:.5px}
 h1 .sub{font-size:11px;color:#818cf8;font-weight:400;margin-left:auto}
 
-/* TABS (調緊湊) */
+/* TABS */
 .tabs{display:flex;gap:2px;overflow-x:auto;padding-bottom:0;justify-content:space-between}
 .tab-btn{background:transparent;border:none;color:#94a3b8;padding:10px 8px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:.15s;border-radius:6px 6px 0 0;flex:1;text-align:center}
 .tab-btn:hover{color:#e2e8f0;background:rgba(99,102,241,.1)}
@@ -130,13 +130,20 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 .stab-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:10px}
 .stab-card{background:#0b1120;border:1px solid #334155;border-radius:6px;padding:10px;font-size:12px;line-height:1.8}
 .stab-card h4{color:#818cf8;margin-bottom:6px;font-size:12px}
+
+/* 模型庫優化 */
+.db-table td:nth-child(1) { text-align: left; white-space: nowrap; font-weight: bold; color: #c7d2fe; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+.db-table td:nth-child(2) { font-size: 10px; color: #64748b; white-space: nowrap; }
+.db-table td:nth-child(3) { text-align: center; white-space: nowrap; }
+.db-table td:nth-child(7) { text-align: center; white-space: nowrap; }
+.db-table td:nth-child(8) { white-space: nowrap; text-align: center; }
 </style>
 </head>
 <body>
 
 <header>
   <div class="wrap">
-    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v10.9</span><span class="sub">68 特徵 · 5 算法 · 三段驗證 · 風控指標</span></h1>
+    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v11.0</span><span class="sub">68 特徵 · 5 算法 · 三段驗證 · 風控指標</span></h1>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="tab-setup" onclick="switchTab('tab-setup')">⚙️ 設定</button>
       <button class="tab-btn" data-tab="tab-result" onclick="switchTab('tab-result')">🏆 結果</button>
@@ -387,7 +394,7 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
         <button class="ghost mini" style="background:#7f1d1d" onclick="clearDB()">🗑️ 清空全部</button>
       </div>
       <div class="scroll" style="max-height:560px">
-        <table id="dbTable"></table>
+        <table id="dbTable" class="db-table"></table>
       </div>
     </div>
   </section>
@@ -2001,7 +2008,7 @@ async function start(){
     currentResult=null;
     updateStats();clearLog();
 
-    pushLog('🚀 v10.9 — 啟動','head');
+    pushLog('🚀 v11.0 — 啟動','head');
     pushLog('🔬 比例：'+ratioModeLabel(ratioMode)+'｜算法：'+algoLabel(algoMode)+'｜目標：'+optLabel(optMode),'info');
     pushLog('🧬 特徵數：'+FCOUNT+'　場次：'+parsed.rows.length,'info');
     
@@ -2726,10 +2733,30 @@ function loadModel(id){
   for(var i=0;i<list.length;i++){if(list[i].id===id){m=list[i];break;}}
   if(!m){toast('❌ 找不到模型');return;}
 
+  var isConverted = false;
+
+  // 兼容修復：處理歷史存儲的單數 cond 或缺失 conds，並自動縮放舊版閾值
   var rules=m.rules.map(function(r){
     var cs = r.conds ? r.conds : (r.cond ? [r.cond] : []);
-    return {on:1,then:r.then,thenCode:r.thenCode,conds:cs,bs:null};
+    var newCs = cs.map(function(c){
+      var arr = c.slice();
+      if (arr.length >= 3) {
+        var fi = arr[0], val = arr[2];
+        // 絕對數值或絕對差值，如果是大於 10 的整數，說明是舊版模型
+        if (fi >= 20 && fi <= 25 && val > 10) { arr[2] = rnd2(val / 100); isConverted = true; }
+        else if ((fi === 0 || fi === 1 || fi === 4 || fi === 5 || fi === 8 || fi === 9 || fi === 26 || fi === 27) && Math.abs(val) > 10) {
+          arr[2] = rnd2(val / 100);
+          isConverted = true;
+        }
+      }
+      return arr;
+    });
+    return {on:1,then:r.then,thenCode:r.thenCode,conds:newCs,bs:null};
   });
+
+  if (isConverted) {
+    toast('✅ 已自動將舊版整數模型轉換為新版小數閾值');
+  }
 
   if(trainFeat){
     for(var i2=0;i2<rules.length;i2++){
