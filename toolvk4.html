@@ -76,10 +76,23 @@ th{background:#0b1120;text-align:center;color:#818cf8;position:sticky;top:0;z-in
 tr:nth-child(even){background:#0e1729}
 td.left-align,th.left-align{text-align:left}
 .profit-pos{color:#4ade80;font-weight:700}.profit-neg{color:#f87171;font-weight:700}
-.tag-h{background:#16a34a;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;display:inline-block;margin-left:4px}
-.tag-d{background:#2563eb;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;display:inline-block;margin-left:4px}
-.tag-a{background:#dc2626;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;display:inline-block;margin-left:4px}
-.tag-skip{background:#475569;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;display:inline-block;margin-left:4px}
+.tag-h{background:#16a34a;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;display:inline-block}
+.tag-d{background:#2563eb;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;display:inline-block}
+.tag-a{background:#dc2626;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;display:inline-block}
+.tag-skip{background:#475569;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;display:inline-block}
+
+/* 明細表縮小 */
+.compact-table th, .compact-table td {
+  padding: 3px 4px !important;
+  font-size: 10.5px !important;
+}
+
+/* 規則卡片 */
+.rule-card-list { display: flex; flex-direction: column; gap: 8px; }
+.rule-card { background: #0b1120; border: 1px solid #1e293b; border-radius: 6px; overflow: hidden; }
+.rule-header { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #0e1729; border-bottom: 1px solid #1e293b; font-size: 11px; }
+.rule-body { padding: 8px 10px; font-size: 12px; color: #cbd5e1; line-height: 1.6; word-break: break-all; }
+.rule-idx { font-weight: 700; color: #818cf8; margin-right: 8px; font-size: 12px; }
 
 /* SCORE */
 .score-hero{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
@@ -315,7 +328,7 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 
       <div class="card">
         <h3>📋 最終規則順序（含獨立體檢）</h3>
-        <div class="scroll" id="ruleTable"></div>
+        <div class="scroll" id="ruleTable" style="max-height:600px; padding: 4px;"></div>
       </div>
 
       <div class="card">
@@ -341,7 +354,7 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
     <div class="card">
       <h3>📊 全場次模擬明細 <span class="badge" id="detailBadge">-</span></h3>
       <div class="scroll" style="max-height:600px">
-        <table id="compareTable"></table>
+        <table id="compareTable" class="compact-table"></table>
       </div>
     </div>
   </section>
@@ -653,7 +666,7 @@ function calcRulesStats(rules,featMat,resArr,oddsArr,N){
       profit=oddsArr[i*3+pred]-100;
       totalProfit+=profit;ruleStats[hr].profit+=profit;
     }else{
-      losses:ruleStats[hr].losses++;
+      ruleStats[hr].losses++;
       totalProfit-=100;ruleStats[hr].profit-=100;
       profit=-100;
     }
@@ -1478,6 +1491,13 @@ function featureImportance(rules){
   return arr.slice(0,8);
 }
 
+function toggleAllFeatures(){
+  var p=document.getElementById('allFeaturesPanel');
+  if(p){
+    p.style.display = p.style.display==='none' ? 'block' : 'none';
+  }
+}
+
 /* ============================================================
    17. 公式生成
    ============================================================ */
@@ -1669,6 +1689,7 @@ function fmtRule(r){
   return parts.join(' & ')+' → '+r.then;
 }
 
+/* 全新的卡片式規則渲染 */
 function renderRuleTable(rules,trainStats){
   function indepStats(rule){
     var tP=0,tG=0,tW=0,eP=0,eG=0,eW=0;
@@ -1700,22 +1721,25 @@ function renderRuleTable(rules,trainStats){
     return {tP:tP,tG:tG,tW:tW,eP:eP,eG:eG,eW:eW};
   }
 
-  var html='<table><thead><tr><th>順序</th><th class="left-align">條件</th><th>→</th><th colspan="3" style="background:#0b1120">訓練獨立表現</th><th>測試利潤</th><th>狀態</th></tr>'+
-    '<tr><th></th><th></th><th></th><th>命中</th><th>勝率</th><th>利潤</th><th></th><th></th></tr></thead><tbody>';
-
+  var html='<div class="rule-card-list">';
+  
   for(var i=0;i<rules.length;i++){
     var r=rules[i];
     var isSkip=r.thenCode===3;
     var isFb=(r.conds.length===0&&r.thenCode!==3);
     var ss=isSkip?'其餘全部（Skip）':(isFb?'其餘全部（無條件押）':fmtRule(r));
-    if(ss.length>160)ss=ss.slice(0,157)+'...';
     var cls=isSkip?'tag-skip':(r.thenCode===0?'tag-h':(r.thenCode===1?'tag-d':'tag-a'));
     var tag='<span class="'+cls+'">'+r.then+'</span>';
     var label=(i===rules.length-1)?(i+1)+' (兜底)':String(i+1);
 
     if(r.conds.length===0){
-      html+='<tr><td style="text-align:center">'+label+'</td><td class="left-align" style="color:#64748b;white-space:nowrap">'+ss+'</td><td style="text-align:center">'+tag+'</td>'+
-        '<td colspan="5" style="text-align:center;color:#475569">全局兜底</td></tr>';
+      html+='<div class="rule-card">';
+      html+='<div class="rule-header">';
+      html+='<div><span class="rule-idx">#'+label+'</span>'+tag+'</div>';
+      html+='<div style="color:#64748b;font-size:10px;">全局兜底</div>';
+      html+='</div>';
+      html+='<div class="rule-body" style="color:#64748b;">'+ss+'</div>';
+      html+='</div>';
       continue;
     }
 
@@ -1727,15 +1751,29 @@ function renderRuleTable(rules,trainStats){
     if(st.tG>0&&st.eG>0)status=st.eP>0?'<span style="color:#4ade80;font-weight:700">✅ 可用</span>':'<span style="color:#f87171;font-weight:700">❌ 毒藥</span>';
     else if(st.eG===0)status='<span style="color:#64748b">(未觸發)</span>';
 
-    html+='<tr><td style="text-align:center">'+label+'</td><td class="left-align" style="font-size:11px;white-space:nowrap;">'+ss+'</td><td style="text-align:center">'+tag+'</td>'+
-      '<td>'+st.tG+'</td><td>'+wr+'</td><td>'+tpH+'</td><td>'+epH+'</td><td>'+status+'</td></tr>';
+    html+='<div class="rule-card">';
+    // 第一行：標題、狀態、數據
+    html+='<div class="rule-header">';
+    html+='<div style="display:flex;align-items:center;gap:8px;">';
+    html+='<span class="rule-idx">#'+label+'</span>';
+    html+=tag;
+    html+=status;
+    html+='</div>';
+    html+='<div style="display:flex;gap:12px;color:#94a3b8;font-size:10px;">';
+    html+='<div>訓練：'+st.tG+'注 / '+wr+' / '+tpH+'</div>';
+    html+='<div>測試：'+epH+'</div>';
+    html+='</div>';
+    html+='</div>';
+    // 第二行：完整規則條件
+    html+='<div class="rule-body">'+ss+'</div>';
+    html+='</div>';
   }
-  html+='</tbody></table>';
+  html+='</div>';
   document.getElementById('ruleTable').innerHTML=html;
 }
 
 function renderCompareTable(stats,rawRows){
-  var html='<table><thead><tr><th>#</th><th>A主初</th><th>B和初</th><th>C客初</th><th>D主尾</th><th>E和尾</th><th>F客尾</th><th>賽果</th><th>預測</th><th>賠率</th><th>盈虧</th><th>累計</th></tr></thead><tbody>';
+  var html='<table class="compact-table"><thead><tr><th>#</th><th>A主初</th><th>B和初</th><th>C客初</th><th>D主尾</th><th>E和尾</th><th>F客尾</th><th>賽果</th><th>預測</th><th>賠率</th><th>盈虧</th><th>累計</th></tr></thead><tbody>';
   var det=stats.details,cum=0;
   for(var i=0;i<det.length;i++){
     var d=det[i],raw=rawRows[d.idx];
