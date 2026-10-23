@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🏆 v10.7 — 賠率模式挖掘引擎</title>
+<title>🏆 v10.8 — 賠率模式挖掘引擎</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b1120;color:#e2e8f0;padding:0 0 60px}
@@ -136,7 +136,7 @@ canvas{width:100%;height:280px;display:block;background:#0b1120;border-radius:8p
 
 <header>
   <div class="wrap">
-    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v10.7</span><span class="sub">68 特徵 · 5 算法 · 三段驗證 · 風控指標</span></h1>
+    <h1>🏆 賠率模式挖掘引擎 <span class="ver">v10.8</span><span class="sub">68 特徵 · 5 算法 · 三段驗證 · 風控指標</span></h1>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="tab-setup" onclick="switchTab('tab-setup')">⚙️ 設定</button>
       <button class="tab-btn" data-tab="tab-result" onclick="switchTab('tab-result')">🏆 結果</button>
@@ -526,7 +526,10 @@ function profitOfBS(bs,thenCode){
       var x0=bs[w0],b0=w0<<5;
       while(x0){
         var l0=x0&-x0,p0=31-Math.clz32(l0),i0=b0+p0;
-        if(i0<trainN){if(trainResult[i0]===thenCode)t0+=trainOdds[i0*3+thenCode]-100;else t0-=100;}
+        if(i0<trainN){
+          if(trainResult[i0]===thenCode) t0+=(trainOdds[i0*3+thenCode]-1)*100;
+          else t0-=100;
+        }
         x0^=l0;
       }
     }
@@ -598,7 +601,7 @@ function evalIndividualOnEval(rules){
     }
     if(pred<0||pred===3)continue;
     games++;
-    if(EVAL_MAT.result[i]===pred){wins++;totalProfit+=EVAL_MAT.odds[i*3+pred]-100;}
+    if(EVAL_MAT.result[i]===pred){wins++;totalProfit+=(EVAL_MAT.odds[i*3+pred]-1)*100;}
     else totalProfit-=100;
   }
   var score=(games>0&&totalProfit>0)?Math.round((totalProfit/games)*100):0;
@@ -666,7 +669,7 @@ function calcRulesStats(rules,featMat,resArr,oddsArr,N){
     games++;ruleStats[hr].hit++;
     if(actual===pred){
       wins++;ruleStats[hr].wins++;
-      profit=oddsArr[i*3+pred]-100;
+      profit=(oddsArr[i*3+pred]-1)*100;
       totalProfit+=profit;ruleStats[hr].profit+=profit;
     }else{
       ruleStats[hr].losses++;
@@ -743,8 +746,8 @@ function kellyFraction(stats){
     }
   }
   if(cnt===0)return 0;
-  var avgWin=totalOdds/cnt;
-  var b=(avgWin-100)/100;
+  var avgWin=totalOdds/cnt; // 這裡 avgWin 是百分制，如 167
+  var b=(avgWin-100)/100; // 轉為小數賠率-1，如 0.67
   if(b<=0)return 0;
   var f=(p*b-q)/b;
   return Math.max(0,f);
@@ -1402,13 +1405,13 @@ async function runLearningCurveScanAsync(parsedRows,R_budget,allowedCodes){
       trainResult=m1.codes;trainOdds=m1.odds;trainFeat=await extractFeaturesAsync(trRows);
       trainProfitMat=new Float64Array(3*trainN);
       for(var p1=0;p1<trainN;p1++)for(var c1=0;c1<3;c1++)
-        trainProfitMat[c1*trainN+p1]=(trainResult[p1]===c1)?(trainOdds[p1*3+c1]-100):-100;
+        trainProfitMat[c1*trainN+p1]=(trainResult[p1]===c1)?((trainOdds[p1*3+c1]-1)*100):-100;
 
       var m2=extractMeta(teRows,'final');
       testResult=m2.codes;testOdds=m2.odds;testFeat=await extractFeaturesAsync(teRows);
       testProfitMat=new Float64Array(3*testN);
       for(var p2=0;p2<testN;p2++)for(var c2=0;c2<3;c2++)
-        testProfitMat[c2*testN+p2]=(testResult[p2]===c2)?(testOdds[p2*3+c2]-100):-100;
+        testProfitMat[c2*testN+p2]=(testResult[p2]===c2)?((testOdds[p2*3+c2]-1)*100):-100;
 
       featureValueCache={};condBSCache={};condBSCacheSize=0;
       allMask=bsNew(trainN);
@@ -1721,7 +1724,7 @@ function renderRuleTable(rules,trainStats){
       }
       if(ok){
         tG++;
-        if(trainResult[i]===rule.thenCode){tW++;tP+=trainOdds[i*3+rule.thenCode]-100;}
+        if(trainResult[i]===rule.thenCode){tW++;tP+=(trainOdds[i*3+rule.thenCode]-1)*100;}
         else tP-=100;
       }
     }
@@ -1733,7 +1736,7 @@ function renderRuleTable(rules,trainStats){
         }
         if(ok2){
           eG++;
-          if(testResult[i2]===rule.thenCode){eW++;eP+=testOdds[i2*3+rule.thenCode]-100;}
+          if(testResult[i2]===rule.thenCode){eW++;eP+=(testOdds[i2*3+rule.thenCode]-1)*100;}
           else eP-=100;
         }
       }
@@ -1801,9 +1804,9 @@ function renderCompareTable(stats,rawRows){
     cum+=d.profit;
     var cStr=cum>0?'<span class="profit-pos">+'+cum+'</span>':(cum<0?'<span class="profit-neg">'+cum+'</span>':'0');
     var oddsUsed='-';
-    if(d.pred!=='skip')oddsUsed=(d.pred===0?raw.D:(d.pred===1?raw.E:raw.F));
-    html+='<tr><td>'+(i+1)+'</td><td>'+raw.A+'</td><td>'+raw.B+'</td><td>'+raw.C+'</td>'+
-      '<td>'+raw.D+'</td><td>'+raw.E+'</td><td>'+raw.F+'</td><td><b>'+raw.result+'</b></td>'+
+    if(d.pred!=='skip')oddsUsed=(d.pred===0?raw.D.toFixed(2):(d.pred===1?raw.E.toFixed(2):raw.F.toFixed(2)));
+    html+='<tr><td>'+(i+1)+'</td><td>'+raw.A.toFixed(2)+'</td><td>'+raw.B.toFixed(2)+'</td><td>'+raw.C.toFixed(2)+'</td>'+
+      '<td>'+raw.D.toFixed(2)+'</td><td>'+raw.E.toFixed(2)+'</td><td>'+raw.F.toFixed(2)+'</td><td><b>'+raw.result+'</b></td>'+
       '<td class="'+predCls+'">'+predStr+'</td><td>'+oddsUsed+'</td><td>'+pStr+'</td>'+
       '<td style="font-weight:700;background:#0b1120">'+cStr+'</td></tr>';
   }
@@ -1957,7 +1960,7 @@ function drawEquityChart(details){
 }
 
 /* ============================================================
-   19. 主流程 (異步)
+   19. 主流程
    ============================================================ */
 async function start(){
   try{
@@ -1996,7 +1999,7 @@ async function start(){
     currentResult=null;
     updateStats();clearLog();
 
-    pushLog('🚀 v10.7 — 啟動','head');
+    pushLog('🚀 v10.8 — 啟動','head');
     pushLog('🔬 比例：'+ratioModeLabel(ratioMode)+'｜算法：'+algoLabel(algoMode)+'｜目標：'+optLabel(optMode),'info');
     pushLog('🧬 特徵數：'+FCOUNT+'　場次：'+parsed.rows.length,'info');
     
@@ -2060,7 +2063,7 @@ async function start(){
     trainFeat=await extractFeaturesAsync(rawRowsData);
     trainProfitMat=new Float64Array(3*trainN);
     for(var pi=0;pi<trainN;pi++)for(var ptc=0;ptc<3;ptc++)
-      trainProfitMat[ptc*trainN+pi]=(trainResult[pi]===ptc)?(trainOdds[pi*3+ptc]-100):-100;
+      trainProfitMat[ptc*trainN+pi]=(trainResult[pi]===ptc)?((trainOdds[pi*3+ptc]-1)*100):-100;
 
     if(testRowsData&&testRowsData.length>0){
       testN=testRowsData.length;
@@ -2070,7 +2073,7 @@ async function start(){
       testFeat=await extractFeaturesAsync(testRowsData);
       testProfitMat=new Float64Array(3*testN);
       for(var pi2=0;pi2<testN;pi2++)for(var ptc2=0;ptc2<3;ptc2++)
-        testProfitMat[ptc2*testN+pi2]=(testResult[pi2]===ptc2)?(testOdds[pi2*3+ptc2]-100):-100;
+        testProfitMat[ptc2*testN+pi2]=(testResult[pi2]===ptc2)?((testOdds[pi2*3+ptc2]-1)*100):-100;
     }else{
       testN=0;testFeat=null;testResult=null;testOdds=null;testProfitMat=null;
     }
@@ -2082,7 +2085,7 @@ async function start(){
       valFeat=await extractFeaturesAsync(valRowsData);
       valProfitMat=new Float64Array(3*valN);
       for(var pv=0;pv<valN;pv++)for(var pvc=0;pvc<3;pvc++)
-        valProfitMat[pvc*valN+pv]=(valResult[pv]===pvc)?(valOdds[pv*3+pvc]-100):-100;
+        valProfitMat[pvc*valN+pv]=(valResult[pv]===pvc)?((valOdds[pv*3+pvc]-1)*100):-100;
       EVAL_MAT={feat:valFeat,result:valResult,odds:valOdds,N:valN,
         profitMat:valProfitMat,condCache:{},condCacheSize:0};
       pushLog('🧪 EVAL_MAT → 驗證集（搜索目標與最終測試完全隔離）','success');
