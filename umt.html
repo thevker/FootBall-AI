@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>終極魔塔 - 前十層</title>
+<title>終極魔塔 - 前十層（圖形版）</title>
 <style>
   *{box-sizing:border-box;}
   html,body{margin:0;height:100%;background:#0b0b10;color:#cfefff;font-family:system-ui,sans-serif;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;overflow:hidden;
     touch-action:none;user-select:none;-webkit-user-select:none;}
-  #hud{display:flex;gap:10px;font-size:13px;padding:5px 10px;background:#15151f;
+  #hud{display:flex;gap:8px;font-size:13px;padding:5px 10px;background:#15151f;
     border:1px solid #333;border-radius:8px;flex-wrap:wrap;justify-content:center;}
   #hud span{white-space:nowrap;}
-  #msg{font-size:13px;color:#ffd070;min-height:18px;text-align:center;padding:0 8px;}
-  canvas{border:2px solid #444;display:block;max-width:96vw;height:auto;}
+  #msg{font-size:13px;color:#ffd070;min-height:18px;text-align:center;padding:0 8px;max-width:96vw;}
+  canvas{border:2px solid #444;display:block;max-width:96vw;height:auto;image-rendering:pixelated;}
   #dpad{display:grid;grid-template-columns:repeat(3,56px);grid-template-rows:repeat(3,56px);gap:6px;}
   #dpad button{font-size:22px;color:#cfefff;background:#22222e;border:2px solid #3c3c4e;border-radius:12px;
     display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;
@@ -53,219 +53,607 @@ canvas.width = COLS * TILE;
 canvas.height = ROWS * TILE;
 const ctx = canvas.getContext('2d');
 
-// ===== 怪物 =====
-const MONSTERS = {
-  1:{name:'綠頭怪',hp:20,atk:8,def:2,color:'#5fbf5f'},
-  2:{name:'紅頭怪',hp:40,atk:15,def:5,color:'#d05050'},
-  3:{name:'小蝙蝠',hp:30,atk:12,def:3,color:'#a070d0'},
-  4:{name:'骷髏人',hp:60,atk:20,def:8,color:'#d0d0d0'},
-  5:{name:'獸人',hp:100,atk:28,def:12,color:'#c08040'},
-  6:{name:'石頭人',hp:150,atk:35,def:18,color:'#808080'},
-  7:{name:'鬼戰士',hp:200,atk:45,def:22,color:'#4060c0'},
-  8:{name:'大魔王',hp:500,atk:55,def:28,color:'#ff3030'}
+/* ============================================================
+   像素畫素材（16x16）
+   ============================================================ */
+
+// —— 英雄 ——
+const HERO = {
+  art: [
+    "................",
+    ".....hhhhhh.....",
+    "....hhhhhhhh....",
+    "....hssssssh....",
+    "....hsessesh....",
+    "....hssssssh....",
+    ".....ssssss.....",
+    "....aAAAAAAa....",
+    "...aaAAAAAAaa...",
+    "...aaAaaaAaaa...",
+    "...aaAAAAAAaa...",
+    "....aaAAAAaa....",
+    "....aa....aa....",
+    "....bb....bb....",
+    "...bbb....bbb...",
+    "................"
+  ],
+  pal: { h:'#8a5a2b', s:'#ffd9b3', e:'#1a1a2e', a:'#3a6fd8', A:'#7fb6ff', b:'#5c3a1e' }
 };
 
-// ===== 關卡資料 =====
-const LEVELS = [
-  // 第 1 層
-  {
-    tiles:[
-      "###########",
-      "#h........#",
-      "#..#...#..#",
-      "#...y.....#",
-      "#..#...#..#",
-      "#....>....#",
-      "#..#...#..#",
-      "#........a#",
-      "#..#...#..#",
-      "#....S....#",
-      "###########"
-    ],
-    monsters:{"5,7":1,"4,8":1,"6,8":1,"3,3":2}
-  },
-  // 第 2 層
-  {
-    tiles:[
-      "###########",
-      "#..y.<....#",
-      "#......a..#",
-      "#.#######.#",
-      "#.#.....#.#",
-      "#.#..>..#.#",
-      "#.#.....#.#",
-      "#.###Y###.#",
-      "#.d.......#",
-      "#........h#",
-      "###########"
-    ],
-    monsters:{"2,2":2,"8,2":2,"5,4":3,"1,6":1}
-  },
-  // 第 3 層
-  {
-    tiles:[
-      "###########",
-      "#....<....#",
-      "#..#...#..#",
-      "#..y...y..#",
-      "#..#.Y.#..#",
-      "#....>....#",
-      "#..#...#..#",
-      "#..a...d..#",
-      "#..#...#..#",
-      "#....b....#",
-      "###########"
-    ],
-    monsters:{"2,2":4,"8,2":4,"5,8":3,"4,6":4}
-  },
-  // 第 4 層
-  {
-    tiles:[
-      "###########",
-      "#d...<....#",
-      "#..#...#..#",
-      "#..b......#",
-      "#..#.B.#..#",
-      "#....>....#",
-      "#..#...#..#",
-      "#h.......H#",
-      "#..#...#..#",
-      "#....a....#",
-      "###########"
-    ],
-    monsters:{"2,3":5,"8,3":5,"4,6":4,"6,6":4,"5,8":5}
-  },
-  // 第 5 層
-  {
-    tiles:[
-      "###########",
-      "#....<....#",
-      "#..#...#..#",
-      "#..y...y..#",
-      "#..#.Y.#..#",
-      "#....>....#",
-      "#..#...#..#",
-      "#..a...d..#",
-      "#..#...#..#",
-      "#....b....#",
-      "###########"
-    ],
-    monsters:{"2,2":5,"8,2":5,"4,6":6,"6,6":6,"5,8":5}
-  },
-  // 第 6 層
-  {
-    tiles:[
-      "###########",
-      "#d...<....#",
-      "#..#...#..#",
-      "#..b......#",
-      "#..#.B.#..#",
-      "#....>....#",
-      "#..#...#..#",
-      "#h.......H#",
-      "#..#...#..#",
-      "#....a....#",
-      "###########"
-    ],
-    monsters:{"2,3":6,"8,3":6,"4,6":6,"6,6":6,"5,8":6}
-  },
-  // 第 7 層
-  {
-    tiles:[
-      "###########",
-      "#....<....#",
-      "#..#...#..#",
-      "#..r......#",
-      "#..#.R.#..#",
-      "#....>....#",
-      "#..#...#..#",
-      "#..a...d..#",
-      "#..#...#..#",
-      "#....b....#",
-      "###########"
-    ],
-    monsters:{"2,3":7,"8,3":7,"4,6":7,"6,6":7,"5,8":7}
-  },
-  // 第 8 層
-  {
-    tiles:[
-      "###########",
-      "#d...<....#",
-      "#..#...#..#",
-      "#..b...b..#",
-      "#..#.B.#..#",
-      "#....>....#",
-      "#..#...#..#",
-      "#h.......H#",
-      "#..#...#..#",
-      "#....a....#",
-      "###########"
-    ],
-    monsters:{"2,3":7,"8,3":7,"4,6":7,"6,6":7,"5,8":7}
-  },
-  // 第 9 層
-  {
-    tiles:[
-      "###########",
-      "#....<....#",
-      "#..#...#..#",
-      "#..r...r..#",
-      "#..#.R.#..#",
-      "#....>....#",
-      "#..#...#..#",
-      "#..a...d..#",
-      "#..#...#..#",
-      "#....b....#",
-      "###########"
-    ],
-    monsters:{"2,3":7,"8,3":7,"4,6":7,"6,6":7,"5,8":7}
-  },
-  // 第 10 層
-  {
-    tiles:[
-      "###########",
-      "#....<....#",
-      "#.........#",
-      "#.........#",
-      "#.........#",
-      "#.........#",
-      "#.........#",
-      "#.........#",
-      "#.........#",
-      "#.........#",
-      "###########"
-    ],
-    monsters:{"5,5":8}
-  }
-];
+// —— 綠頭怪 ——
+const GOBLIN = {
+  art: [
+    "................",
+    "................",
+    ".....gggggg.....",
+    "....gggggggg....",
+    "...gggggggggg...",
+    "...gGggggggGg...",
+    "...geggggggeg...",
+    "...gggggggggg...",
+    "...gggmmmmggg...",
+    "...gggggggggg...",
+    "....gggggggg....",
+    "....gg....gg....",
+    "....gg....gg....",
+    "...ggg....ggg...",
+    "................",
+    "................"
+  ],
+  pal: { g:'#3fa03f', G:'#7fe07f', e:'#0d1a0d', m:'#1d3d1d' }
+};
 
-// ===== 主角 =====
-let player, gameOver, victory;
+// —— 紅頭怪 ——
+const REDHEAD = {
+  art: [
+    "................",
+    "...r........r...",
+    "...rr......rr...",
+    "....rrrrrrrr....",
+    "...rrrrrrrrrr...",
+    "...rRrrrrrrRr...",
+    "...rerrrrrrer...",
+    "...rrrrrrrrrr...",
+    "...rrrwwwwrrr...",
+    "...rrrrrrrrrr...",
+    "....rrrrrrrr....",
+    "....rr....rr....",
+    "....rr....rr....",
+    "...rrr....rrr...",
+    "................",
+    "................"
+  ],
+  pal: { r:'#c03030', R:'#ff7070', e:'#2a0808', w:'#4a1010' }
+};
+
+// —— 蝙蝠 ——
+const BAT = {
+  art: [
+    "................",
+    "................",
+    ".pp..........pp.",
+    ".ppp........ppp.",
+    ".pppp......pppp.",
+    ".pppppppppppppp.",
+    ".pppppppppppppp.",
+    ".pppeppppppeppp.",
+    ".pppppppppppppp.",
+    "..pppppppppppp..",
+    "...pppppppppp...",
+    "....pppppppp....",
+    ".....pppppp.....",
+    "......pppp......",
+    ".......pp.......",
+    "................"
+  ],
+  pal: { p:'#9a5ecf', e:'#ffe040' }
+};
+
+// —— 骷髏人 ——
+const SKELETON = {
+  art: [
+    "................",
+    ".....wwwwww.....",
+    "....wwwwwwww....",
+    "...wwwwwwwwww...",
+    "...weewwwweew...",
+    "...weewwwweew...",
+    "...wwwwwwwwww...",
+    "....wwwwwwww....",
+    ".....wwkkww.....",
+    "....wwwwwwww....",
+    "...wwwwwwwwww...",
+    "..ww.wwwwww.ww..",
+    "..ww.wwwwww.ww..",
+    "..ww..wwww..ww..",
+    "................",
+    "................"
+  ],
+  pal: { w:'#e8e8f0', e:'#202030', k:'#404050' }
+};
+
+// —— 獸人 ——
+const ORC = {
+  art: [
+    "................",
+    "..bbbbbbbbbbbb..",
+    ".bbbbbbbbbbbbbb.",
+    ".bbeebbbbbbeebb.",
+    ".bbbbbbbbbbbbbb.",
+    ".bbbbwwwwwwbbbb.",
+    ".bbbbbbbbbbbbbb.",
+    "..bbbbbbbbbbbb..",
+    "..bb.bbbbbb.bb..",
+    "..bb.bbbbbb.bb..",
+    "..bb.bbbbbb.bb..",
+    "..bb..bbbb..bb..",
+    "..bb..bbbb..bb..",
+    "...b..bbbb..b...",
+    "................",
+    "................"
+  ],
+  pal: { b:'#a06a30', e:'#ffe040', w:'#4a2a10' }
+};
+
+// —— 石頭人 ——
+const GOLEM = {
+  art: [
+    "................",
+    "................",
+    "...gggggggggg...",
+    "..gggggggggggg..",
+    ".gggggggggggggg.",
+    ".gggddggggddggg.",
+    ".gggggggggggggg.",
+    ".gggggddddggggg.",
+    ".gggggggggggggg.",
+    "..gggggggggggg..",
+    "..ggg.gggg.ggg..",
+    "..ggg.gggg.ggg..",
+    "..ggg.gggg.ggg..",
+    "..ggg..gg..ggg..",
+    "................",
+    "................"
+  ],
+  pal: { g:'#7a7a8a', d:'#4a4a58' }
+};
+
+// —— 鬼戰士 ——
+const GHOST = {
+  art: [
+    "................",
+    "................",
+    ".....wwwwww.....",
+    "....wwwwwwww....",
+    "...wwwwwwwwww...",
+    "...wbbwwwwbbw...",
+    "...wbbwwwwbbw...",
+    "...wwwwwwwwww...",
+    "....wwwwwwww....",
+    "...wwwwwwwwww...",
+    "..wwwwwwwwwwww..",
+    "..ww.wwwwww.ww..",
+    "..ww.wwwwww.ww..",
+    "..w..wwwwww..w..",
+    ".....wwwwww.....",
+    "................"
+  ],
+  pal: { w:'#b0e0ff', b:'#3070c0' }
+};
+
+// —— 大魔王 ——
+const DEMON = {
+  art: [
+    "................",
+    "..r..........r..",
+    "..rr........rr..",
+    "..rrr......rrr..",
+    "...rrrrrrrrrr...",
+    "..rrrrrrrrrrrr..",
+    ".rrrrrrrrrrrrrr.",
+    ".rryyrrrrrryyrr.",
+    ".rryyrrrrrryyrr.",
+    ".rrrrrrrrrrrrrr.",
+    ".rrrrkkkkkkrrrr.",
+    ".rrrrrrrrrrrrrr.",
+    "..rrrrrrrrrrrr..",
+    "..rrr..rr..rrr..",
+    "..rrr..rr..rrr..",
+    "................"
+  ],
+  pal: { r:'#d02020', y:'#ffe040', k:'#400010' }
+};
+
+// —— 鑰匙 ——
+const KEY = {
+  art: [
+    "................",
+    "................",
+    ".....kkkk.......",
+    "....kkkkkk......",
+    "....kk..kk......",
+    "....kkkkkk......",
+    ".....kkkk.......",
+    "......kk........",
+    "......kk........",
+    "......kkkk......",
+    "......kk........",
+    "......kkkk......",
+    "......kk........",
+    "......kkk.......",
+    "................",
+    "................"
+  ]
+};
+
+// —— 藥水 ——
+const POTION = {
+  art: [
+    "................",
+    "......bb........",
+    "......bb........",
+    ".....pppp.......",
+    ".....pppp.......",
+    "....pppppp......",
+    "....pppppp......",
+    "...pppppppp.....",
+    "...pppppppp.....",
+    "...pppppppp.....",
+    "...pppppppp.....",
+    "....pppppp......",
+    "....pppppp......",
+    ".....pppp.......",
+    "................",
+    "................"
+  ],
+  pal: { b:'#d0d0e0', p:'#d04040' }
+};
+
+// —— 劍（攻擊寶石） ——
+const SWORD = {
+  art: [
+    "................",
+    "..........ww....",
+    ".........wwww...",
+    "........wwww....",
+    ".......wwww.....",
+    "......wwww......",
+    ".....wwww.......",
+    "....wwww........",
+    "...wwww.........",
+    "..gwwww.........",
+    ".ggggw..........",
+    "..gggg..........",
+    "...ggg..........",
+    "....gg..........",
+    "................",
+    "................"
+  ],
+  pal: { w:'#dfe6ff', g:'#e0a020' }
+};
+
+// —— 盾（防禦寶石） ——
+const SHIELD = {
+  art: [
+    "................",
+    "...ssssssssss...",
+    "..ssssssssssss..",
+    "..ssssssssssss..",
+    "..ssssssssssss..",
+    "..ssssssssssss..",
+    "..ssssssssssss..",
+    "...ssssssssss...",
+    "...ssssssssss...",
+    "....ssssssss....",
+    ".....ssssss.....",
+    "......ssss......",
+    ".......ss.......",
+    "................",
+    "................",
+    "................"
+  ],
+  pal: { s:'#30c0b0' }
+};
+
+// —— 門 ——
+const DOOR = {
+  art: [
+    "................",
+    "..dddddddddddd..",
+    "..dwwwwwwwwwwd..",
+    "..dwddddddddwd..",
+    "..dwddddddddwd..",
+    "..dwddddddddwd..",
+    "..dwddddddddwd..",
+    "..dwddddddddwd..",
+    "..dwddddddddwd..",
+    "..dwwwwwwwwwwd..",
+    "..dddddddddddd..",
+    "..ddddkkdddddd..",
+    "..dddddddddddd..",
+    "..dddddddddddd..",
+    "................",
+    "................"
+  ]
+};
+
+// —— 樓梯 ——
+const STAIR = {
+  art: [
+    "................",
+    "..........ssss..",
+    ".........sssss..",
+    "........ssssss..",
+    ".......sssssss..",
+    "......ssssssss..",
+    ".....sssssssss..",
+    "....ssssssssss..",
+    "...sssssssssss..",
+    "..ssssssssssss..",
+    ".sssssssssssss..",
+    ".sssssssssssss..",
+    "................",
+    "................",
+    "................",
+    "................"
+  ],
+  pal: { s:'#70d070' }
+};
+
+/* ============================================================
+   精靈繪製
+   ============================================================ */
+function drawSprite(sprite, px, py, size, flip) {
+  const art = sprite.art, pal = sprite.pal;
+  const rows = art.length, cols = art[0].length;
+  const sw = size / cols, sh = size / rows;
+  for (let r = 0; r < rows; r++) {
+    const row = art[r];
+    for (let c = 0; c < cols; c++) {
+      const ch = row[c];
+      if (ch === '.') continue;
+      const col = pal[ch];
+      if (!col) continue;
+      ctx.fillStyle = col;
+      const dc = flip ? cols - 1 - c : c;
+      ctx.fillRect(Math.floor(px + dc * sw), Math.floor(py + r * sh),
+                   Math.ceil(sw), Math.ceil(sh));
+    }
+  }
+}
+
+/* ============================================================
+   場景繪製
+   ============================================================ */
+function drawWall(px, py) {
+  ctx.save();
+  ctx.beginPath(); ctx.rect(px, py, TILE, TILE); ctx.clip();
+  ctx.fillStyle = '#23232f'; ctx.fillRect(px, py, TILE, TILE);
+  const bh = TILE / 4, bw = TILE / 2;
+  for (let r = 0; r < 4; r++) {
+    const off = (r % 2) ? bw / 2 : 0;
+    for (let c = -1; c < 3; c++) {
+      ctx.fillStyle = '#35354a';
+      ctx.fillRect(px + c * bw + off + 1, py + r * bh + 1, bw - 2, bh - 2);
+    }
+  }
+  ctx.restore();
+}
+
+function drawFloor(px, py, x, y) {
+  ctx.fillStyle = '#16161f';
+  ctx.fillRect(px, py, TILE, TILE);
+  ctx.fillStyle = ((x + y) % 2 === 0) ? '#1c1c28' : '#181822';
+  ctx.fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
+}
+
+/* ============================================================
+   怪物資料
+   ============================================================ */
+const MONSTERS = {
+  1:{name:'綠頭怪', hp:20,  atk:8,  def:2,  sprite:GOBLIN},
+  2:{name:'紅頭怪', hp:40,  atk:15, def:5,  sprite:REDHEAD},
+  3:{name:'小蝙蝠', hp:30,  atk:12, def:3,  sprite:BAT},
+  4:{name:'骷髏人', hp:60,  atk:20, def:8,  sprite:SKELETON},
+  5:{name:'獸人',   hp:100, atk:28, def:12, sprite:ORC},
+  6:{name:'石頭人', hp:150, atk:35, def:18, sprite:GOLEM},
+  7:{name:'鬼戰士', hp:200, atk:45, def:22, sprite:GHOST},
+  8:{name:'大魔王', hp:500, atk:55, def:28, sprite:DEMON}
+};
+
+/* ============================================================
+   關卡生成
+   ============================================================ */
+function buildLevels() {
+  return [
+    // 第 1 層
+    {
+      tiles: [
+        "###########",
+        "#h........#",
+        "#..#...#..#",
+        "#...y.....#",
+        "#..#...#..#",
+        "#....>....#",
+        "#..#...#..#",
+        "#........a#",
+        "#..#...#..#",
+        "#.........#",
+        "###########"
+      ],
+      monsters: {"5,7":1,"4,8":1,"6,8":1,"3,3":2}
+    },
+    // 第 2 層
+    {
+      tiles: [
+        "###########",
+        "#..y.<....#",
+        "#......a..#",
+        "#.#######.#",
+        "#.#.....#.#",
+        "#.#..>..#.#",
+        "#.#.....#.#",
+        "#.###Y###.#",
+        "#.d.......#",
+        "#........h#",
+        "###########"
+      ],
+      monsters: {"2,2":2,"8,2":2,"5,4":3,"1,6":1}
+    },
+    // 第 3 層
+    {
+      tiles: [
+        "###########",
+        "#....<....#",
+        "#..#...#..#",
+        "#..y...y..#",
+        "#..#.Y.#..#",
+        "#....>....#",
+        "#..#...#..#",
+        "#..a...d..#",
+        "#..#...#..#",
+        "#....b....#",
+        "###########"
+      ],
+      monsters: {"2,2":4,"8,2":4,"5,8":3,"4,6":4}
+    },
+    // 第 4 層
+    {
+      tiles: [
+        "###########",
+        "#d...<....#",
+        "#..#...#..#",
+        "#..b......#",
+        "#..#.B.#..#",
+        "#....>....#",
+        "#..#...#..#",
+        "#h.......H#",
+        "#..#...#..#",
+        "#....a....#",
+        "###########"
+      ],
+      monsters: {"2,3":5,"8,3":5,"4,6":4,"6,6":4,"5,8":5}
+    },
+    // 第 5 層
+    {
+      tiles: [
+        "###########",
+        "#....<....#",
+        "#..#...#..#",
+        "#..y...y..#",
+        "#..#.Y.#..#",
+        "#....>....#",
+        "#..#...#..#",
+        "#..a...d..#",
+        "#..#...#..#",
+        "#....b....#",
+        "###########"
+      ],
+      monsters: {"2,2":5,"8,2":5,"4,6":6,"6,6":6,"5,8":5}
+    },
+    // 第 6 層
+    {
+      tiles: [
+        "###########",
+        "#d...<....#",
+        "#..#...#..#",
+        "#..b......#",
+        "#..#.B.#..#",
+        "#....>....#",
+        "#..#...#..#",
+        "#h.......H#",
+        "#..#...#..#",
+        "#....a....#",
+        "###########"
+      ],
+      monsters: {"2,3":6,"8,3":6,"4,6":6,"6,6":6,"5,8":6}
+    },
+    // 第 7 層
+    {
+      tiles: [
+        "###########",
+        "#....<....#",
+        "#..#...#..#",
+        "#..r......#",
+        "#..#.R.#..#",
+        "#....>....#",
+        "#..#...#..#",
+        "#..a...d..#",
+        "#..#...#..#",
+        "#....b....#",
+        "###########"
+      ],
+      monsters: {"2,3":7,"8,3":7,"4,6":7,"6,6":7,"5,8":7}
+    },
+    // 第 8 層
+    {
+      tiles: [
+        "###########",
+        "#d...<....#",
+        "#..#...#..#",
+        "#..b...b..#",
+        "#..#.B.#..#",
+        "#....>....#",
+        "#..#...#..#",
+        "#h.......H#",
+        "#..#...#..#",
+        "#....a....#",
+        "###########"
+      ],
+      monsters: {"2,3":7,"8,3":7,"4,6":7,"6,6":7,"5,8":7}
+    },
+    // 第 9 層
+    {
+      tiles: [
+        "###########",
+        "#....<....#",
+        "#..#...#..#",
+        "#..r...r..#",
+        "#..#.R.#..#",
+        "#....>....#",
+        "#..#...#..#",
+        "#..a...d..#",
+        "#..#...#..#",
+        "#....b....#",
+        "###########"
+      ],
+      monsters: {"2,3":7,"8,3":7,"4,6":7,"6,6":7,"5,8":7}
+    },
+    // 第 10 層
+    {
+      tiles: [
+        "###########",
+        "#....<....#",
+        "#.........#",
+        "#.........#",
+        "#.........#",
+        "#.........#",
+        "#.........#",
+        "#.........#",
+        "#.........#",
+        "#.........#",
+        "###########"
+      ],
+      monsters: {"5,5":8}
+    }
+  ];
+}
+
+/* ============================================================
+   遊戲狀態
+   ============================================================ */
+let LEVELS, player, gameOver, victory;
 
 function initGame() {
+  LEVELS = buildLevels();
   player = { hp:1000, atk:10, def:10, keys:0, bkeys:0, rkeys:0, x:5, y:9, floor:0 };
   gameOver = false;
   victory = false;
-  // 重置關卡資料（深拷貝）
-  LEVELS.forEach((lv, i) => {
-    if (i === 0) {
-      lv.tiles = [
-        "###########","#h........#","#..#...#..#","#...y.....#",
-        "#..#...#..#","#....>....#","#..#...#..#","#........a#",
-        "#..#...#..#","#....S....#","###########"
-      ];
-      lv.monsters = {"5,7":1,"4,8":1,"6,8":1,"3,3":2};
-    }
-  });
-  // 完整重置所有樓層（簡化：重新載入頁面最保險，這裡只重置第一層以外的狀態靠重新整理）
   document.getElementById('restart').style.display = 'none';
   updateHUD();
   draw();
-  message('使用方向鍵移動，找到上樓梯！');
+  message('使用方向鍵移動，找到上樓梯前往下一層！');
 }
-
-// 為了完全重置，重新整理頁面
-document.getElementById('restart').addEventListener('click', () => location.reload());
 
 function message(t) { document.getElementById('msg').textContent = t; }
 
@@ -293,11 +681,13 @@ function setTile(floorIdx, x, y, ch) {
   lv.tiles[y] = lv.tiles[y].substring(0, x) + ch + lv.tiles[y].substring(x + 1);
 }
 
-// ===== 戰鬥 =====
+/* ============================================================
+   戰鬥
+   ============================================================ */
 function fight(monsterId, mx, my) {
   const m = MONSTERS[monsterId];
   const dmgToMonster = Math.max(1, player.atk - m.def);
-  const dmgToPlayer = Math.max(0, m.atk - player.def);
+  const dmgToPlayer  = Math.max(0, m.atk - player.def);
   const turns = Math.ceil(m.hp / dmgToMonster);
   const totalDamage = turns * dmgToPlayer;
 
@@ -316,7 +706,7 @@ function fight(monsterId, mx, my) {
 
   if (monsterId === 8) {
     gameOver = true; victory = true;
-    message('🎉 擊敗大魔王！恭喜通關！');
+    message('🎉 擊敗大魔王！恭喜通關全部十層！');
     document.getElementById('restart').style.display = 'block';
   } else {
     message(`擊敗${m.name}，損失 ${totalDamage} HP`);
@@ -324,7 +714,9 @@ function fight(monsterId, mx, my) {
   updateHUD(); draw();
 }
 
-// ===== 移動 =====
+/* ============================================================
+   移動
+   ============================================================ */
 function move(dx, dy) {
   if (gameOver) return;
   const nx = player.x + dx, ny = player.y + dy;
@@ -336,11 +728,8 @@ function move(dx, dy) {
   const monsterId = lv.monsters[mKey];
 
   if (tile === '#') return;
-
-  // 怪物
   if (monsterId) { fight(monsterId, nx, ny); return; }
 
-  // 門與道具
   if (tile === 'Y') {
     if (player.keys <= 0) { message('需要黃鑰匙'); return; }
     player.keys--; setTile(player.floor, nx, ny, '.');
@@ -364,16 +753,16 @@ function move(dx, dy) {
     message('獲得紅鑰匙');
   } else if (tile === 'h') {
     player.hp += 100; setTile(player.floor, nx, ny, '.');
-    message('紅血瓶 +100 HP');
+    message('紅藥水 +100 HP');
   } else if (tile === 'H') {
     player.hp += 300; setTile(player.floor, nx, ny, '.');
-    message('藍血瓶 +300 HP');
+    message('藍藥水 +300 HP');
   } else if (tile === 'a') {
     player.atk += 3; setTile(player.floor, nx, ny, '.');
-    message('攻擊寶石 +3 ATK');
+    message('撿到劍！攻擊 +3');
   } else if (tile === 'd') {
     player.def += 3; setTile(player.floor, nx, ny, '.');
-    message('防禦寶石 +3 DEF');
+    message('撿到盾！防禦 +3');
   } else if (tile === '>') {
     if (player.floor < LEVELS.length - 1) {
       player.floor++;
@@ -396,65 +785,55 @@ function move(dx, dy) {
   updateHUD(); draw();
 }
 
-// ===== 渲染 =====
+/* ============================================================
+   渲染
+   ============================================================ */
 function draw() {
   const lv = LEVELS[player.floor];
 
+  // 地面與牆 + 道具
   for (let y = 0; y < ROWS; y++) {
     for (let x = 0; x < COLS; x++) {
       const tile = lv.tiles[y][x];
       const px = x * TILE, py = y * TILE;
-      const cx = px + TILE / 2, cy = py + TILE / 2;
 
-      // 地板 / 牆
-      ctx.fillStyle = tile === '#' ? '#3c3c4e' : '#1c1c26';
-      ctx.fillRect(px, py, TILE, TILE);
-      ctx.strokeStyle = '#26262f';
-      ctx.strokeRect(px + 0.5, py + 0.5, TILE - 1, TILE - 1);
+      if (tile === '#') { drawWall(px, py); continue; }
+      drawFloor(px, py, x, y);
 
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      if (tile === 'Y') {
-        ctx.fillStyle = '#d4a017'; ctx.fillRect(px+9, py+9, TILE-18, TILE-18);
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 16px sans-serif'; ctx.fillText('Y', cx, cy);
-      } else if (tile === 'B') {
-        ctx.fillStyle = '#3060d0'; ctx.fillRect(px+9, py+9, TILE-18, TILE-18);
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 16px sans-serif'; ctx.fillText('B', cx, cy);
-      } else if (tile === 'R') {
-        ctx.fillStyle = '#d03030'; ctx.fillRect(px+9, py+9, TILE-18, TILE-18);
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 16px sans-serif'; ctx.fillText('R', cx, cy);
-      } else if (tile === 'y') {
-        ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#8a6d00'; ctx.font = 'bold 13px sans-serif'; ctx.fillText('K', cx, cy);
-      } else if (tile === 'b') {
-        ctx.fillStyle = '#4a90ff'; ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif'; ctx.fillText('K', cx, cy);
-      } else if (tile === 'r') {
-        ctx.fillStyle = '#ff5050'; ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif'; ctx.fillText('K', cx, cy);
-      } else if (tile === 'h') {
-        ctx.fillStyle = '#d04040'; ctx.beginPath(); ctx.arc(cx, cy, 12, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.fillText('+', cx, cy);
-      } else if (tile === 'H') {
-        ctx.fillStyle = '#4070d0'; ctx.beginPath(); ctx.arc(cx, cy, 12, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.fillText('+', cx, cy);
-      } else if (tile === 'a') {
-        ctx.fillStyle = '#ffb030';
-        ctx.beginPath();
-        ctx.moveTo(cx, cy-12); ctx.lineTo(cx+12, cy);
-        ctx.lineTo(cx, cy+12); ctx.lineTo(cx-12, cy);
-        ctx.closePath(); ctx.fill();
-      } else if (tile === 'd') {
-        ctx.fillStyle = '#30c0b0';
-        ctx.beginPath();
-        ctx.moveTo(cx, cy-12); ctx.lineTo(cx+12, cy);
-        ctx.lineTo(cx, cy+12); ctx.lineTo(cx-12, cy);
-        ctx.closePath(); ctx.fill();
-      } else if (tile === '>') {
-        ctx.fillStyle = '#70d070'; ctx.font = 'bold 28px sans-serif'; ctx.fillText('▲', cx, cy);
-      } else if (tile === '<') {
-        ctx.fillStyle = '#70d070'; ctx.font = 'bold 28px sans-serif'; ctx.fillText('▼', cx, cy);
+      switch (tile) {
+        case 'h': drawSprite(POTION, px, py, TILE); break;
+        case 'H': {
+          const p = { art: POTION.art, pal: { b:'#d0d0e0', p:'#4070d0' } };
+          drawSprite(p, px, py, TILE); break;
+        }
+        case 'a': drawSprite(SWORD, px, py, TILE); break;
+        case 'd': drawSprite(SHIELD, px, py, TILE); break;
+        case 'y': {
+          const k = { art: KEY.art, pal: { k:'#ffd700' } };
+          drawSprite(k, px, py, TILE); break;
+        }
+        case 'b': {
+          const k = { art: KEY.art, pal: { k:'#4a90ff' } };
+          drawSprite(k, px, py, TILE); break;
+        }
+        case 'r': {
+          const k = { art: KEY.art, pal: { k:'#ff5050' } };
+          drawSprite(k, px, py, TILE); break;
+        }
+        case 'Y': {
+          const d = { art: DOOR.art, pal: { d:'#b8860b', w:'#ffd700', k:'#5c4300' } };
+          drawSprite(d, px, py, TILE); break;
+        }
+        case 'B': {
+          const d = { art: DOOR.art, pal: { d:'#2a4fa0', w:'#6fa8ff', k:'#0a1a40' } };
+          drawSprite(d, px, py, TILE); break;
+        }
+        case 'R': {
+          const d = { art: DOOR.art, pal: { d:'#a02020', w:'#ff6060', k:'#400000' } };
+          drawSprite(d, px, py, TILE); break;
+        }
+        case '>': drawSprite(STAIR, px, py, TILE); break;
+        case '<': drawSprite(STAIR, px, py, TILE, false); break;
       }
     }
   }
@@ -463,35 +842,35 @@ function draw() {
   for (const key in lv.monsters) {
     const [mx, my] = key.split(',').map(Number);
     const m = MONSTERS[lv.monsters[key]];
-    const cx = mx * TILE + TILE / 2;
-    const cy = my * TILE + TILE / 2;
-    ctx.beginPath();
-    ctx.arc(cx, cy, TILE * 0.34, 0, Math.PI * 2);
-    ctx.fillStyle = m.color;
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#111';
-    ctx.stroke();
-    ctx.fillStyle = '#111';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText(m.hp, cx, cy + 1);
+    const px = mx * TILE, py = my * TILE;
+
+    // 大魔王稍微放大
+    const size = (lv.monsters[key] === 8) ? TILE * 1.15 : TILE;
+    const off = (TILE - size) / 2;
+    drawSprite(m.sprite, px + off, py + off, size);
+
+    // 血條
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(px + 4, py + TILE - 7, TILE - 8, 4);
+    ctx.fillStyle = '#e04040';
+    ctx.fillRect(px + 4, py + TILE - 7, (TILE - 8) * Math.min(1, m.hp / 500), 4);
   }
 
-  // 主角
+  // 英雄
   if (!gameOver || victory) {
-    const cx = player.x * TILE + TILE / 2;
-    const cy = player.y * TILE + TILE / 2;
+    const px = player.x * TILE, py = player.y * TILE;
+    // 影子
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
     ctx.beginPath();
-    ctx.arc(cx, cy, TILE * 0.34, 0, Math.PI * 2);
-    ctx.fillStyle = '#4fd1ff';
+    ctx.ellipse(px + TILE/2, py + TILE - 5, TILE*0.28, TILE*0.10, 0, 0, Math.PI*2);
     ctx.fill();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = '#a8ecff';
-    ctx.stroke();
+    drawSprite(HERO, px, py, TILE);
   }
 }
 
-// ===== 鍵盤 =====
+/* ============================================================
+   輸入
+   ============================================================ */
 document.addEventListener('keydown', (e) => {
   if (gameOver) return;
   switch (e.key) {
@@ -504,7 +883,6 @@ document.addEventListener('keydown', (e) => {
   e.preventDefault();
 });
 
-// ===== 虛擬按鍵 =====
 document.querySelectorAll('#dpad button').forEach(btn => {
   btn.addEventListener('pointerdown', (e) => {
     e.preventDefault();
@@ -517,7 +895,11 @@ document.querySelectorAll('#dpad button').forEach(btn => {
   });
 });
 
-// ===== 啟動 =====
+document.getElementById('restart').addEventListener('click', initGame);
+
+/* ============================================================
+   啟動
+   ============================================================ */
 initGame();
 </script>
 </body>
