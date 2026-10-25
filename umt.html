@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>終極魔塔 - 第一層</title>
+<style>
+  html,body{margin:0;height:100%;background:#0b0b10;display:flex;align-items:center;justify-content:center;}
+  canvas{border:2px solid #444;display:block;}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<script>
+const TILE = 48;
+const COLS = 11, ROWS = 11;
+
+const canvas = document.getElementById('game');
+canvas.width  = COLS * TILE;
+canvas.height = ROWS * TILE;
+const ctx = canvas.getContext('2d');
+
+// 地圖：0 = 地板，1 = 牆
+const map = [
+  [1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,1,1,0,0,1,1,0,1],
+  [1,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,1,1,0,0,1,1,0,1],
+  [1,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,1,1]
+];
+
+// 主角
+const player = { x: 5, y: 5 };
+
+function isWall(x, y) {
+  if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return true;
+  return map[y][x] === 1;
+}
+
+function move(dx, dy) {
+  const nx = player.x + dx;
+  const ny = player.y + dy;
+  if (isWall(nx, ny)) return;
+  player.x = nx;
+  player.y = ny;
+  draw();
+}
+
+function draw() {
+  // 地板與牆
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      ctx.fillStyle = map[y][x] === 1 ? '#3c3c4e' : '#1c1c26';
+      ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+      ctx.strokeStyle = '#26262f';
+      ctx.strokeRect(x * TILE + 0.5, y * TILE + 0.5, TILE - 1, TILE - 1);
+    }
+  }
+
+  // 主角
+  const cx = player.x * TILE + TILE / 2;
+  const cy = player.y * TILE + TILE / 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, TILE * 0.34, 0, Math.PI * 2);
+  ctx.fillStyle = '#4fd1ff';
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#a8ecff';
+  ctx.stroke();
+}
+
+// 鍵盤操作
+document.addEventListener('keydown', (e) => {
+  switch (e.key) {
+    case 'ArrowUp':    case 'w': case 'W': move(0, -1); break;
+    case 'ArrowDown':  case 's': case 'S': move(0,  1); break;
+    case 'ArrowLeft':  case 'a': case 'A': move(-1, 0); break;
+    case 'ArrowRight': case 'd': case 'D': move( 1, 0); break;
+    default: return;
+  }
+  e.preventDefault();
+});
+
+draw();
+</script>
+</body>
+</html>
