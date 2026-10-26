@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 賽事分析器 (四維實力判定版)</title>
+    <title>xG 賽事分析器 (四維百分比判定版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -53,8 +53,9 @@
         .result-box {
             text-align: center; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px dashed;
         }
-        .result-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #fff; }
-        .result-value { font-size: 32px; font-weight: bold; }
+        .result-title { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #aaa; }
+        .result-value { font-size: 32px; font-weight: bold; margin-bottom: 10px; }
+        .result-diff { font-size: 13px; color: #aaa; }
 
         /* 球隊評級區塊 */
         .section-box { background: #252525; border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
@@ -63,14 +64,18 @@
         .team-rating-block { margin-bottom: 20px; }
         .team-rating-block:last-child { margin-bottom: 0; }
         
-        /* 球隊名稱與風格標籤 */
+        /* 球隊名稱與標籤群組 */
         .team-name { 
-            font-size: 15px; font-weight: bold; color: #4da6ff; margin-bottom: 10px; text-align: center; display: flex; justify-content: center; align-items: center; gap: 8px;
-        }
-        .team-style { 
-            font-size: 12px; padding: 3px 10px; border-radius: 12px; font-weight: bold; 
+            font-size: 15px; font-weight: bold; color: #4da6ff; margin-bottom: 10px; 
+            display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap;
         }
         
+        /* 通用標籤樣式 */
+        .badge { 
+            font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; 
+        }
+
+        /* 橫條行 */
         .rating-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 12px; }
         .rating-label { width: 50px; font-weight: bold; color: #aaa; }
         
@@ -85,11 +90,9 @@
         .bar-odds { background: linear-gradient(90deg, #ce93d8 0%, #9c27b0 100%); }    /* 賠率紫 */
         
         /* 評級顯示 */
-        .rating-display { width: 70px; text-align: right; font-weight: bold; font-size: 13px; display: flex; justify-content: flex-end; gap: 4px; align-items: center; }
-        .rating-grade { font-size: 15px; font-weight: 900; }
-        .rating-val { color: #ccc; font-size: 12px; font-weight: normal; }
+        .rating-display { width: 85px; text-align: right; font-weight: bold; font-size: 13px; display: flex; justify-content: flex-end; align-items: center; }
         
-        .overall-row { display: flex; justify-content: space-between; background: #1e1e1e; padding: 10px; border-radius: 6px; margin-top: 15px; border: 1px solid #444; }
+        .overall-row { display: flex; justify-content: space-between; background: #1e1e1e; padding: 10px; border-radius: 6px; margin-top: 15px; border: 1px solid #444; align-items: center; }
         .overall-label { font-weight: bold; color: #ccc; font-size: 13px; }
         .overall-value { font-weight: bold; font-size: 18px; }
     </style>
@@ -98,7 +101,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 四維實力判定</p>
+    <p class="subtitle">深色模式 | 四維百分比評級</p>
     
     <!-- 主隊數據 -->
     <div class="input-group">
@@ -153,6 +156,7 @@
         <div class="result-box" id="matchResultBox">
             <div class="result-title">預測賽果</div>
             <div class="result-value" id="matchResultValue">-</div>
+            <div class="result-diff" id="matchResultDiff">差距值：-</div>
         </div>
 
         <!-- 球隊四維評級 -->
@@ -163,31 +167,33 @@
             <div class="team-rating-block">
                 <div class="team-name">
                     <span>🏠 主隊</span>
-                    <span class="team-style" id="hStyle">-</span>
+                    <span class="badge" id="hStyle">-</span>
+                    <span class="badge" id="hStatusBadge">-</span>
+                    <span class="badge" id="hOddsBadge" style="display:none;">-</span>
                 </div>
                 <div class="rating-row">
                     <div class="rating-label">進攻</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="hAttBar"></div></div>
-                    <div class="rating-display"><span class="rating-grade" id="hAttGrade">-</span><span class="rating-val" id="hAttVal">0.00</span></div>
+                    <div class="rating-display" id="hAttDisplay">-</div>
                 </div>
                 <div class="rating-row">
                     <div class="rating-label">防守</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="hDefBar"></div></div>
-                    <div class="rating-display"><span class="rating-grade" id="hDefGrade">-</span><span class="rating-val" id="hDefVal">0.00</span></div>
+                    <div class="rating-display" id="hDefDisplay">-</div>
                 </div>
                 <div class="rating-row">
                     <div class="rating-label">狀態</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="hStatBar"></div></div>
-                    <div class="rating-display"><span class="rating-grade" id="hStatGrade">-</span><span class="rating-val" id="hStatVal">0.00</span></div>
+                    <div class="rating-display" id="hStatDisplay">-</div>
                 </div>
                 <div class="rating-row">
                     <div class="rating-label">賠率</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="hOddsBar"></div></div>
-                    <div class="rating-display"><span class="rating-grade" id="hOddsGrade">-</span><span class="rating-val" id="hOddsVal">0.00</span></div>
+                    <div class="rating-display" id="hOddsDisplay">-</div>
                 </div>
                 <div class="overall-row">
-                    <span class="overall-label">綜合總實力 (四項平均)</span>
-                    <span class="overall-value" id="hOverall">0.00</span>
+                    <span class="overall-label">綜合總實力 (四項平均百分比)</span>
+                    <span class="overall-value" id="hOverall">F (0.0)</span>
                 </div>
             </div>
 
@@ -195,38 +201,39 @@
             <div class="team-rating-block">
                 <div class="team-name">
                     <span>✈️ 客隊</span>
-                    <span class="team-style" id="aStyle">-</span>
+                    <span class="badge" id="aStyle">-</span>
+                    <span class="badge" id="aStatusBadge">-</span>
+                    <span class="badge" id="aOddsBadge" style="display:none;">-</span>
                 </div>
                 <div class="rating-row">
                     <div class="rating-label">進攻</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="aAttBar"></div></div>
-                    <div class="rating-display"><span class="rating-grade" id="aAttGrade">-</span><span class="rating-val" id="aAttVal">0.00</span></div>
+                    <div class="rating-display" id="aAttDisplay">-</div>
                 </div>
                 <div class="rating-row">
                     <div class="rating-label">防守</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="aDefBar"></div></div>
-                    <div class="rating-display"><span class="rating-grade" id="aDefGrade">-</span><span class="rating-val" id="aDefVal">0.00</span></div>
+                    <div class="rating-display" id="aDefDisplay">-</div>
                 </div>
                 <div class="rating-row">
                     <div class="rating-label">狀態</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="aStatBar"></div></div>
-                    <div class="rating-display"><span class="rating-grade" id="aStatGrade">-</span><span class="rating-val" id="aStatVal">0.00</span></div>
+                    <div class="rating-display" id="aStatDisplay">-</div>
                 </div>
                 <div class="rating-row">
                     <div class="rating-label">賠率</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="aOddsBar"></div></div>
-                    <div class="rating-display"><span class="rating-grade" id="aOddsGrade">-</span><span class="rating-val" id="aOddsVal">0.00</span></div>
+                    <div class="rating-display" id="aOddsDisplay">-</div>
                 </div>
                 <div class="overall-row">
-                    <span class="overall-label">綜合總實力 (四項平均)</span>
-                    <span class="overall-value" id="aOverall">0.00</span>
+                    <span class="overall-label">綜合總實力 (四項平均百分比)</span>
+                    <span class="overall-value" id="aOverall">F (0.0)</span>
                 </div>
             </div>
 
             <div style="font-size: 11px; color: #777; margin-top: 15px; text-align: right;">
-                *防守力得分 = 3.0 - xGA<br>
-                *狀態橫條：0.0 - 3.0<br>
-                *賠率橫條：1.0 (最右) - 6.0 (最左)，數值越低越強
+                *橫條右側顯示為 0-100 分的百分比，並套用 F-EX 評級 <br>
+                *綜合總實力 = (四條橫條長度 % 總和) / 4
             </div>
         </div>
 
@@ -280,17 +287,18 @@
         document.getElementById('result').style.display = 'none';
     }
 
-    // 取得評級與顏色 (通用)
-    function getRatingData(value) {
+    // 根據百分比取得評級與顏色 (12.5% 間隔)
+    function getGradeByPercent(pct) {
         let grade = ''; let color = '';
-        if (value < 1.0) { grade = 'E'; color = '#c0c0c0'; }
-        else if (value < 1.2) { grade = 'D'; color = '#cd7f32'; }
-        else if (value < 1.4) { grade = 'C'; color = '#ff4d4d'; }
-        else if (value < 1.6) { grade = 'B'; color = '#4ade80'; }
-        else if (value < 1.8) { grade = 'A'; color = '#4da6ff'; }
-        else if (value < 2.0) { grade = 'S'; color = '#FFD700'; }
+        if (pct < 12.5) { grade = 'F'; color = '#9e9e9e'; }
+        else if (pct < 25.0) { grade = 'E'; color = '#c0c0c0'; }
+        else if (pct < 37.5) { grade = 'D'; color = '#cd7f32'; }
+        else if (pct < 50.0) { grade = 'C'; color = '#ff4d4d'; }
+        else if (pct < 62.5) { grade = 'B'; color = '#4ade80'; }
+        else if (pct < 75.0) { grade = 'A'; color = '#4da6ff'; }
+        else if (pct < 87.5) { grade = 'S'; color = '#FFD700'; }
         else { grade = 'EX'; color = '#9b59b6'; }
-        return { grade, color, value: value.toFixed(2) };
+        return { grade, color };
     }
 
     function getTeamStyle(attValue, defValue) {
@@ -301,53 +309,52 @@
     }
 
     // 更新單一球隊的 UI
-    function updateTeamUI(prefix, att, def, status, oddsInput, overall) {
-        // 1. 進攻
-        const attData = getRatingData(att);
+    function updateTeamUI(prefix, att, def, status, odds, oppOdds) {
+        // 1. 計算各項目的百分比 (0-100)
         let attPct = ((att - 1.0) / 1.0) * 100;
-        attPct = Math.min(Math.max(attPct, 5), 100);
-        document.getElementById(prefix + 'AttBar').style.width = attPct + '%';
-        document.getElementById(prefix + 'AttGrade').innerText = attData.grade;
-        document.getElementById(prefix + 'AttGrade').style.color = attData.color;
-        document.getElementById(prefix + 'AttVal').innerText = attData.value;
+        attPct = Math.min(Math.max(attPct, 0), 100);
 
-        // 2. 防守
-        const defData = getRatingData(def);
         let defPct = ((def - 1.0) / 1.0) * 100;
-        defPct = Math.min(Math.max(defPct, 5), 100);
-        document.getElementById(prefix + 'DefBar').style.width = defPct + '%';
-        document.getElementById(prefix + 'DefGrade').innerText = defData.grade;
-        document.getElementById(prefix + 'DefGrade').style.color = defData.color;
-        document.getElementById(prefix + 'DefVal').innerText = defData.value;
+        defPct = Math.min(Math.max(defPct, 0), 100);
 
-        // 3. 狀態 (0-3)
-        const statData = getRatingData(status);
         let statPct = (status / 3.0) * 100;
-        statPct = Math.min(Math.max(statPct, 5), 100);
+        statPct = Math.min(Math.max(statPct, 0), 100);
+
+        let oddsPct = ((6.0 - odds) / 5.0) * 100;
+        oddsPct = Math.min(Math.max(oddsPct, 0), 100);
+
+        // 2. 更新橫條寬度
+        document.getElementById(prefix + 'AttBar').style.width = attPct + '%';
+        document.getElementById(prefix + 'DefBar').style.width = defPct + '%';
         document.getElementById(prefix + 'StatBar').style.width = statPct + '%';
-        document.getElementById(prefix + 'StatGrade').innerText = statData.grade;
-        document.getElementById(prefix + 'StatGrade').style.color = statData.color;
-        document.getElementById(prefix + 'StatVal').innerText = statData.value;
-
-        // 4. 賠率 (1-6)，反向映射：1最強(100%)，6最弱(0%)
-        // 為了畫面和諧，把賠率轉換為等效分數 (7 - odds)，這樣 1.0 變 6.0 (EX)，6.0 變 1.0 (E)
-        const oddsScore = Math.max(1.0, 7.0 - oddsInput);
-        const oddsData = getRatingData(oddsScore);
-        let oddsPct = ((oddsInput - 1.0) / 5.0) * 100; // 1是0%, 6是100%
-        oddsPct = 100 - oddsPct; // 反轉：1變成100%, 6變成0%
-        oddsPct = Math.min(Math.max(oddsPct, 5), 100);
         document.getElementById(prefix + 'OddsBar').style.width = oddsPct + '%';
-        document.getElementById(prefix + 'OddsGrade').innerText = oddsData.grade;
-        document.getElementById(prefix + 'OddsGrade').style.color = oddsData.color;
-        document.getElementById(prefix + 'OddsVal').innerText = oddsInput.toFixed(2);
 
-        // 5. 綜合總實力 (四項平均)
-        const overallData = getRatingData(overall);
+        // 3. 取得各項評級並更新文字顯示
+        const attData = getGradeByPercent(attPct);
+        const defData = getGradeByPercent(defPct);
+        const statData = getGradeByPercent(statPct);
+        const oddsData = getGradeByPercent(oddsPct);
+
+        document.getElementById(prefix + 'AttDisplay').innerText = `${attData.grade} (${attPct.toFixed(1)})`;
+        document.getElementById(prefix + 'AttDisplay').style.color = attData.color;
+
+        document.getElementById(prefix + 'DefDisplay').innerText = `${defData.grade} (${defPct.toFixed(1)})`;
+        document.getElementById(prefix + 'DefDisplay').style.color = defData.color;
+
+        document.getElementById(prefix + 'StatDisplay').innerText = `${statData.grade} (${statPct.toFixed(1)})`;
+        document.getElementById(prefix + 'StatDisplay').style.color = statData.color;
+
+        document.getElementById(prefix + 'OddsDisplay').innerText = `${oddsData.grade} (${oddsPct.toFixed(1)})`;
+        document.getElementById(prefix + 'OddsDisplay').style.color = oddsData.color;
+
+        // 4. 計算綜合總實力
+        const overallPct = (attPct + defPct + statPct + oddsPct) / 4;
+        const overallData = getGradeByPercent(overallPct);
         const overallEl = document.getElementById(prefix + 'Overall');
-        overallEl.innerText = `${overallData.grade} (${overallData.value})`;
+        overallEl.innerText = `${overallData.grade} (${overallPct.toFixed(1)})`;
         overallEl.style.color = overallData.color;
 
-        // 6. 風格
+        // 5. 風格標籤
         const styleEl = document.getElementById(prefix + 'Style');
         const styleText = getTeamStyle(att, def);
         styleEl.innerText = styleText;
@@ -361,6 +368,39 @@
         } else {
             styleEl.style.color = "#ccc";
             styleEl.style.backgroundColor = "#333";
+        }
+
+        // 6. 新增：狀態標籤
+        const statusBadge = document.getElementById(prefix + 'StatusBadge');
+        if (status < 1.0) {
+            statusBadge.innerText = "狀態欠佳";
+            statusBadge.style.color = "#ff4d4d";
+            statusBadge.style.backgroundColor = "#3b1c1c";
+        } else if (status < 2.0) {
+            statusBadge.innerText = "狀態一般";
+            statusBadge.style.color = "#ffd700";
+            statusBadge.style.backgroundColor = "#3b331c";
+        } else {
+            statusBadge.innerText = "狀態良好";
+            statusBadge.style.color = "#4ade80";
+            statusBadge.style.backgroundColor = "#1c3b24";
+        }
+
+        // 7. 新增：盤口標籤
+        const oddsBadge = document.getElementById(prefix + 'OddsBadge');
+        if (odds > 0 && oppOdds > 0 && odds !== oppOdds) {
+            oddsBadge.style.display = "inline-block";
+            if (odds < oppOdds) {
+                oddsBadge.innerText = "上盤";
+                oddsBadge.style.color = "#f39c12"; // 亮橙色
+                oddsBadge.style.backgroundColor = "#3b2b1c"; // 暗橙底
+            } else {
+                oddsBadge.innerText = "下盤";
+                oddsBadge.style.color = "#cd7f32"; // 銅色
+                oddsBadge.style.backgroundColor = "#2b1d15"; // 深銅底
+            }
+        } else {
+            oddsBadge.style.display = "none";
         }
     }
 
@@ -376,47 +416,41 @@
         const aStatus = parseFloat(document.getElementById('awayStatus').value) || 0;
         const aOdds = parseFloat(document.getElementById('awayOdds').value) || 0;
 
-        // 1. 計算攻防基礎分
+        // 1. 計算攻防基礎分 (防守力 3.0 - xGA)
         const hDef = Math.max(0, 3.0 - hXga);
         const aDef = Math.max(0, 3.0 - aXga);
 
-        // 2. 綜合總實力 = (攻 + 防 + 狀態 + 賠率轉化) / 4
-        // 賠率轉化：1.0 算 6 分，6.0 算 1 分
-        const hOddsScore = Math.max(1.0, Math.min(6.0, 7.0 - hOdds || 1.0)); 
-        const aOddsScore = Math.max(1.0, Math.min(6.0, 7.0 - aOdds || 1.0));
-        
-        const hOverall = (hXg + hDef + hStatus + hOddsScore) / 4;
-        const aOverall = (aXg + aDef + aStatus + aOddsScore) / 4;
-
         // 更新 UI
-        updateTeamUI('h', hXg, hDef, hStatus, hOdds, hOverall);
-        updateTeamUI('a', aXg, aDef, aStatus, aOdds, aOverall);
+        updateTeamUI('h', hXg, hDef, hStatus, hOdds, aOdds);
+        updateTeamUI('a', aXg, aDef, aStatus, aOdds, hOdds);
 
-        // 3. 全新勝負判定邏輯
-        // 主優勢 = max(0, 主攻 - 客防)
+        // 2. 勝負判定邏輯
         const hAdvantage = Math.max(0, hXg - aDef);
-        // 客優勢 = max(0, 客攻 - 主防)
         const aAdvantage = Math.max(0, aXg - hDef);
 
-        // 🔥 修正：為了讓客隊能贏，必須相減，不能相加
         const diff = hAdvantage - aAdvantage;
 
         const resultBox = document.getElementById('matchResultBox');
         const resultValue = document.getElementById('matchResultValue');
+        const resultDiff = document.getElementById('matchResultDiff');
+
+        // 格式化差距值顯示 (+0.30 / -0.20)
+        const diffStr = (diff > 0 ? '+' : '') + diff.toFixed(2);
+        resultDiff.innerText = `差距值：${diffStr}`;
 
         if (diff >= 0.1) {
             resultValue.innerText = "主勝";
-            resultValue.style.color = "#4ade80"; // 綠色
+            resultValue.style.color = "#4ade80";
             resultBox.style.borderColor = "#4ade80";
             resultBox.style.backgroundColor = "#1a3324";
         } else if (diff <= -0.1) {
             resultValue.innerText = "客勝";
-            resultValue.style.color = "#f87171"; // 紅色
+            resultValue.style.color = "#f87171";
             resultBox.style.borderColor = "#f87171";
             resultBox.style.backgroundColor = "#331a1a";
         } else {
             resultValue.innerText = "和局";
-            resultValue.style.color = "#ffd700"; // 黃色
+            resultValue.style.color = "#ffd700";
             resultBox.style.borderColor = "#ffd700";
             resultBox.style.backgroundColor = "#332d1a";
         }
