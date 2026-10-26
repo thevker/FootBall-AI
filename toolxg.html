@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 賽事分析器 (四維百分比判定版)</title>
+    <title>xG 賽事分析器 (賠率佔比與防呆版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -28,6 +28,20 @@
         h2 { text-align: center; color: #ffffff; margin-top: 0; font-size: 22px; }
         p.subtitle { font-size: 13px; color: #aaaaaa; text-align: center; margin-bottom: 20px; }
         
+        /* 錯誤提示 */
+        #errorMessage {
+            display: none; background-color: #331a1a; color: #ff4d4d; padding: 12px; 
+            border-radius: 6px; text-align: center; font-weight: bold; margin-bottom: 15px;
+            border: 1px solid #7a3a3a; animation: shake 0.4s;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+
         /* 輸入區 */
         .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
         .input-box { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -101,8 +115,11 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 四維百分比評級</p>
+    <p class="subtitle">深色模式 | 賠率佔比與防呆</p>
     
+    <!-- 錯誤提示區塊 -->
+    <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
+
     <!-- 主隊數據 -->
     <div class="input-group">
         <div class="input-box">
@@ -232,7 +249,7 @@
             </div>
 
             <div style="font-size: 11px; color: #777; margin-top: 15px; text-align: right;">
-                *橫條右側顯示為 0-100 分的百分比，並套用 F-EX 評級 <br>
+                *賠率得分 = 對手賠率 / (主賠 + 客賠) * 100% <br>
                 *綜合總實力 = (四條橫條長度 % 總和) / 4
             </div>
         </div>
@@ -285,6 +302,7 @@
         const ids = ['homeXg', 'homeXga', 'homeStatus', 'homeOdds', 'awayXg', 'awayXga', 'awayStatus', 'awayOdds'];
         ids.forEach(id => document.getElementById(id).value = '');
         document.getElementById('result').style.display = 'none';
+        document.getElementById('errorMessage').style.display = 'none';
     }
 
     // 根據百分比取得評級與顏色 (12.5% 間隔)
@@ -309,7 +327,7 @@
     }
 
     // 更新單一球隊的 UI
-    function updateTeamUI(prefix, att, def, status, odds, oppOdds) {
+    function updateTeamUI(prefix, att, def, status, oddsPct, isHome) {
         // 1. 計算各項目的百分比 (0-100)
         let attPct = ((att - 1.0) / 1.0) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100);
@@ -320,10 +338,7 @@
         let statPct = (status / 3.0) * 100;
         statPct = Math.min(Math.max(statPct, 0), 100);
 
-        let oddsPct = ((6.0 - odds) / 5.0) * 100;
-        oddsPct = Math.min(Math.max(oddsPct, 0), 100);
-
-        // 2. 更新橫條寬度
+        // 2. 更新橫條寬度 (賠率已由外部計算好傳入)
         document.getElementById(prefix + 'AttBar').style.width = attPct + '%';
         document.getElementById(prefix + 'DefBar').style.width = defPct + '%';
         document.getElementById(prefix + 'StatBar').style.width = statPct + '%';
@@ -370,7 +385,7 @@
             styleEl.style.backgroundColor = "#333";
         }
 
-        // 6. 新增：狀態標籤
+        // 6. 狀態標籤
         const statusBadge = document.getElementById(prefix + 'StatusBadge');
         if (status < 1.0) {
             statusBadge.innerText = "狀態欠佳";
@@ -386,19 +401,18 @@
             statusBadge.style.backgroundColor = "#1c3b24";
         }
 
-        // 7. 新增：盤口標籤
+        // 7. 盤口標籤 (改為基於賠率佔比分數，>50% 為上盤)
         const oddsBadge = document.getElementById(prefix + 'OddsBadge');
-        if (odds > 0 && oppOdds > 0 && odds !== oppOdds) {
+        if (oddsPct > 50) {
             oddsBadge.style.display = "inline-block";
-            if (odds < oppOdds) {
-                oddsBadge.innerText = "上盤";
-                oddsBadge.style.color = "#f39c12"; // 亮橙色
-                oddsBadge.style.backgroundColor = "#3b2b1c"; // 暗橙底
-            } else {
-                oddsBadge.innerText = "下盤";
-                oddsBadge.style.color = "#cd7f32"; // 銅色
-                oddsBadge.style.backgroundColor = "#2b1d15"; // 深銅底
-            }
+            oddsBadge.innerText = "上盤";
+            oddsBadge.style.color = "#f39c12"; 
+            oddsBadge.style.backgroundColor = "#3b2b1c"; 
+        } else if (oddsPct < 50) {
+            oddsBadge.style.display = "inline-block";
+            oddsBadge.innerText = "下盤";
+            oddsBadge.style.color = "#cd7f32"; 
+            oddsBadge.style.backgroundColor = "#2b1d15"; 
         } else {
             oddsBadge.style.display = "none";
         }
@@ -406,25 +420,50 @@
 
     function calculate() {
         // 獲取輸入值
-        const hXg = parseFloat(document.getElementById('homeXg').value) || 0;
-        const hXga = parseFloat(document.getElementById('homeXga').value) || 0;
-        const hStatus = parseFloat(document.getElementById('homeStatus').value) || 0;
-        const hOdds = parseFloat(document.getElementById('homeOdds').value) || 0;
+        const hXgStr = document.getElementById('homeXg').value;
+        const hXgaStr = document.getElementById('homeXga').value;
+        const hStatusStr = document.getElementById('homeStatus').value;
+        const hOddsStr = document.getElementById('homeOdds').value;
 
-        const aXg = parseFloat(document.getElementById('awayXg').value) || 0;
-        const aXga = parseFloat(document.getElementById('awayXga').value) || 0;
-        const aStatus = parseFloat(document.getElementById('awayStatus').value) || 0;
-        const aOdds = parseFloat(document.getElementById('awayOdds').value) || 0;
+        const aXgStr = document.getElementById('awayXg').value;
+        const aXgaStr = document.getElementById('awayXga').value;
+        const aStatusStr = document.getElementById('awayStatus').value;
+        const aOddsStr = document.getElementById('awayOdds').value;
+
+        // 驗證輸入是否完整
+        if (!hXgStr || !hXgaStr || !hStatusStr || !hOddsStr || 
+            !aXgStr || !aXgaStr || !aStatusStr || !aOddsStr) {
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            return;
+        }
+
+        document.getElementById('errorMessage').style.display = 'none';
+
+        const hXg = parseFloat(hXgStr) || 0;
+        const hXga = parseFloat(hXgaStr) || 0;
+        const hStatus = parseFloat(hStatusStr) || 0;
+        const hOdds = parseFloat(hOddsStr) || 0;
+
+        const aXg = parseFloat(aXgStr) || 0;
+        const aXga = parseFloat(aXgaStr) || 0;
+        const aStatus = parseFloat(aStatusStr) || 0;
+        const aOdds = parseFloat(aOddsStr) || 0;
 
         // 1. 計算攻防基礎分 (防守力 3.0 - xGA)
         const hDef = Math.max(0, 3.0 - hXga);
         const aDef = Math.max(0, 3.0 - aXga);
 
-        // 更新 UI
-        updateTeamUI('h', hXg, hDef, hStatus, hOdds, aOdds);
-        updateTeamUI('a', aXg, aDef, aStatus, aOdds, hOdds);
+        // 2. 計算賠率佔比 (例如主 2.00 客 3.00 -> 主 60% 客 40%)
+        const totalOdds = hOdds + aOdds;
+        const hOddsPct = totalOdds > 0 ? (aOdds / totalOdds) * 100 : 50;
+        const aOddsPct = totalOdds > 0 ? (hOdds / totalOdds) * 100 : 50;
 
-        // 2. 勝負判定邏輯
+        // 更新 UI
+        updateTeamUI('h', hXg, hDef, hStatus, hOddsPct, true);
+        updateTeamUI('a', aXg, aDef, aStatus, aOddsPct, false);
+
+        // 3. 勝負判定邏輯
         const hAdvantage = Math.max(0, hXg - aDef);
         const aAdvantage = Math.max(0, aXg - hDef);
 
@@ -434,7 +473,6 @@
         const resultValue = document.getElementById('matchResultValue');
         const resultDiff = document.getElementById('matchResultDiff');
 
-        // 格式化差距值顯示 (+0.30 / -0.20)
         const diffStr = (diff > 0 ? '+' : '') + diff.toFixed(2);
         resultDiff.innerText = `差距值：${diffStr}`;
 
