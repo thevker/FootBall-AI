@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 全方位預測分析器 (Dark Mode)</title>
+    <title>xG 全方位預測分析器 (深色評級版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -33,58 +33,26 @@
         .input-box { flex: 1; display: flex; flex-direction: column; min-width: 0; }
         label { font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #bbbbbb; }
         input { 
-            width: 100%;
-            padding: 10px; 
-            background-color: #2d2d2d; 
-            border: 1px solid #444; 
-            color: #ffffff; 
-            border-radius: 6px; 
-            font-size: 16px; 
-            outline: none; 
-            transition: border 0.2s; 
+            width: 100%; padding: 10px; background-color: #2d2d2d; border: 1px solid #444; color: #ffffff; border-radius: 6px; font-size: 16px; outline: none; transition: border 0.2s; 
         }
         input:focus { border-color: #4da6ff; }
         button { 
-            width: 100%; 
-            padding: 12px; 
-            background: #3a7bd5; 
-            color: white; 
-            border: none; 
-            border-radius: 6px; 
-            font-size: 16px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            margin-top: 10px; 
-            transition: background 0.2s; 
+            width: 100%; padding: 12px; background: #3a7bd5; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: background 0.2s; 
         }
         button:hover { background: #2a5fa5; }
         
         /* 結果區 */
         #result { margin-top: 25px; display: none; padding-top: 20px; border-top: 1px solid #333; }
         
-        /* 公式展示區 (修復出界問題) */
+        /* 公式展示區 */
         .formula-box { 
-            background: #332d1a; 
-            border: 1px solid #665c33; 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin-bottom: 15px; 
-            font-size: 13px; 
-            color: #e5c07b; 
-            line-height: 1.8; 
-            word-wrap: break-word; 
-            overflow-wrap: break-word;
+            background: #332d1a; border: 1px solid #665c33; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #e5c07b; line-height: 1.8; word-wrap: break-word; overflow-wrap: break-word;
         }
         .formula-title { font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #ffd700; }
 
         /* 預測淨勝球區塊 */
         .margin-box { 
-            background: #2a2a2a; 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin-bottom: 15px; 
-            text-align: center; 
-            border-left: 5px solid #6c757d; 
+            background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center; border-left: 5px solid #6c757d; 
         }
         .margin-title { font-size: 14px; font-weight: bold; color: #aaaaaa; }
         .margin-value { font-size: 28px; font-weight: bold; margin: 5px 0; }
@@ -99,31 +67,28 @@
         .prob-title { font-size: 13px; font-weight: bold; }
         .prob-value { font-size: 22px; font-weight: bold; margin-top: 5px; }
 
-        /* 共用區塊樣式 */
+        /* 球隊評級區塊 */
         .section-box { background: #252525; border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .section-title { font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #dddddd; border-left: 4px solid #4da6ff; padding-left: 8px; }
+        .section-title { font-size: 14px; font-weight: bold; margin-bottom: 15px; color: #dddddd; border-left: 4px solid #4da6ff; padding-left: 8px; }
         
-        /* 數據對比網格 */
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; }
-        .stat-item { background: #1e1e1e; padding: 10px; border-radius: 6px; border: 1px solid #333; text-align: center; }
-        .stat-label { font-weight: bold; color: #999; margin-bottom: 5px; font-size: 12px; }
-        .stat-val { font-size: 18px; font-weight: bold; }
-        .stat-sub { font-size: 12px; color: #777; margin-top: 5px; }
-
-        /* 波膽表格 */
-        .score-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .score-table th, .score-table td { padding: 8px; text-align: center; border-bottom: 1px solid #333; }
-        .score-table th { background: #1e1e1e; color: #999; font-weight: bold; }
-        .score-table tr:last-child td { border-bottom: none; }
-        .score-val { font-weight: bold; font-size: 16px; color: #fff; }
-        .score-pct { color: #ff6b6b; font-weight: bold; }
+        .team-rating-block { margin-bottom: 20px; }
+        .team-rating-block:last-child { margin-bottom: 0; }
+        .team-name { font-size: 15px; font-weight: bold; color: #4da6ff; margin-bottom: 10px; text-align: center; }
         
-        /* 入球數進度條 */
-        .goals-row { display: flex; align-items: center; margin-bottom: 10px; font-size: 13px; }
-        .goals-label { width: 70px; font-weight: bold; color: #aaa; }
-        .goals-bar-bg { flex: 1; background: #333; height: 14px; border-radius: 7px; overflow: hidden; margin: 0 10px; }
-        .goals-bar-fill { height: 100%; background: #17a2b8; border-radius: 7px; transition: width 0.5s ease; }
-        .goals-value { width: 50px; text-align: right; font-weight: bold; color: #17a2b8; }
+        .rating-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 12px; }
+        .rating-label { width: 50px; font-weight: bold; color: #aaa; }
+        .rating-bar-bg { flex: 1; background: #333; height: 16px; border-radius: 8px; overflow: hidden; margin: 0 10px; position: relative; }
+        .rating-bar-fill { height: 100%; border-radius: 8px; transition: width 0.5s ease; }
+        .bar-attack { background: linear-gradient(90deg, #ff4d4d, #cc0000); } /* 紅色漸變 */
+        .bar-defense { background: linear-gradient(90deg, #4da6ff, #0056b3); } /* 藍色漸變 */
+        
+        .rating-grade { width: 35px; text-align: center; font-weight: bold; font-size: 14px; }
+        .grade-attack { color: #ff6b6b; }
+        .grade-defense { color: #4da6ff; }
+        
+        .overall-row { display: flex; justify-content: space-between; background: #1e1e1e; padding: 8px 10px; border-radius: 6px; margin-top: 12px; border: 1px solid #444; }
+        .overall-label { font-weight: bold; color: #ccc; }
+        .overall-value { font-weight: bold; color: #ffd700; font-size: 16px; }
 
         .conclusion { font-size: 16px; font-weight: bold; text-align: center; color: #4da6ff; padding: 15px; background: #1a2633; border-radius: 8px; margin-top: 15px; border: 1px dashed #4da6ff; word-wrap: break-word; }
     </style>
@@ -131,8 +96,8 @@
 <body>
 
 <div class="container">
-    <h2>📊 xG 全方位預測分析器</h2>
-    <p class="subtitle">深色模式 | 自動推算淨勝球、波膽及入球數概率</p>
+    <h2>📊 xG 賽事分析器</h2>
+    <p class="subtitle">深色模式 | 快速計算淨勝球、勝平負與球隊評級</p>
     
     <div class="input-group">
         <div class="input-box">
@@ -162,10 +127,10 @@
         
         <!-- 公式展示區 -->
         <div class="formula-box">
-            <div class="formula-title">💡 計算公式揭秘：</div>
+            <div class="formula-title">💡 預測公式：</div>
             主預期進球 = (主 xG + 客 xGA) ÷ 2 = <span id="fHome"></span><br>
             客預期進球 = (客 xG + 主 xGA) ÷ 2 = <span id="fAway"></span><br>
-            <strong>預測淨勝球 = 主預期進球 - 客預期進球 = <span id="fMargin" style="color:#ff6b6b;"></span></strong>
+            <strong>預測淨勝球 = <span id="fMargin" style="color:#ff6b6b;"></span></strong>
         </div>
 
         <!-- 預測淨勝球 -->
@@ -191,38 +156,51 @@
             </div>
         </div>
 
-        <!-- 球隊風格與 xGD 對比 -->
+        <!-- 球隊攻守評級與總實力 -->
         <div class="section-box">
-            <div class="section-title">🛡️ 球隊風格與整體實力 (基於自身 xG-xGA)</div>
-            <div class="stat-grid">
-                <div class="stat-item">
-                    <div class="stat-label">主隊自身 xGD</div>
-                    <div class="stat-val" id="homeXgdVal">0.00</div>
-                    <div class="stat-sub" id="homeStyle">加載中...</div>
+            <div class="section-title">📊 球隊實力評級 (基於自身數據)</div>
+            
+            <!-- 主隊評級 -->
+            <div class="team-rating-block">
+                <div class="team-name">🏠 主隊</div>
+                <div class="rating-row">
+                    <div class="rating-label">進攻</div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="hAttBar"></div></div>
+                    <div class="rating-grade grade-attack" id="hAttGrade">-</div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-label">客隊自身 xGD</div>
-                    <div class="stat-val" id="awayXgdVal">0.00</div>
-                    <div class="stat-sub" id="awayStyle">加載中...</div>
+                <div class="rating-row">
+                    <div class="rating-label">防守</div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="hDefBar"></div></div>
+                    <div class="rating-grade grade-defense" id="hDefGrade">-</div>
+                </div>
+                <div class="overall-row">
+                    <span class="overall-label">綜合總實力 (進攻+防守)/2</span>
+                    <span class="overall-value" id="hOverall">0.00</span>
                 </div>
             </div>
-        </div>
 
-        <!-- 波膽預測 -->
-        <div class="section-box">
-            <div class="section-title">📋 最有可能波膽 (Top 5)</div>
-            <table class="score-table" id="scoreTable">
-                <thead>
-                    <tr><th>排名</th><th>比分 (主-客)</th><th>出現概率</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+            <!-- 客隊評級 -->
+            <div class="team-rating-block">
+                <div class="team-name">✈️ 客隊</div>
+                <div class="rating-row">
+                    <div class="rating-label">進攻</div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="aAttBar"></div></div>
+                    <div class="rating-grade grade-attack" id="aAttGrade">-</div>
+                </div>
+                <div class="rating-row">
+                    <div class="rating-label">防守</div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="aDefBar"></div></div>
+                    <div class="rating-grade grade-defense" id="aDefGrade">-</div>
+                </div>
+                <div class="overall-row">
+                    <span class="overall-label">綜合總實力 (進攻+防守)/2</span>
+                    <span class="overall-value" id="aOverall">0.00</span>
+                </div>
+            </div>
 
-        <!-- 總入球數預測 -->
-        <div class="section-box">
-            <div class="section-title">⚽ 全場總入球數概率</div>
-            <div id="goalsContainer"></div>
+            <div style="font-size: 11px; color: #777; margin-top: 15px; text-align: right;">
+                *防守力得分 = 3.0 - xGA (數值越高防守越好)
+            </div>
         </div>
 
         <div class="conclusion" id="conclusion"></div>
@@ -230,7 +208,7 @@
 </div>
 
 <script>
-    // 階乘計算
+    // 階乘
     function factorial(n) {
         if (n === 0 || n === 1) return 1;
         let res = 1;
@@ -243,15 +221,33 @@
         return (Math.pow(Math.E, -lambda) * Math.pow(lambda, k)) / factorial(k);
     }
 
-    // 判斷球隊風格
-    function getStyleText(xg, xga) {
-        const xgd = xg - xga;
-        if (xg > 1.6 && xga < 1.0) return "頂級強隊 (攻守兼備)";
-        if (xg > 1.6 && xga >= 1.0) return "進攻強勢，防守有隱患";
-        if (xg <= 1.6 && xga < 1.0) return "防守穩健，偏向保守";
-        if (xgd > 0.3) return "實力佔優，攻守平衡";
-        if (xgd < -0.3) return "實力偏弱，防守吃力";
-        return "中規中矩，勝負難料";
+    // 取得評級字母 (E ~ EX)
+    function getGrade(value) {
+        if (value < 1.0) return 'E';
+        if (value < 1.2) return 'D';
+        if (value < 1.4) return 'C';
+        if (value < 1.6) return 'B';
+        if (value < 1.8) return 'A';
+        if (value < 2.0) return 'S';
+        return 'EX';
+    }
+
+    // 更新橫條 UI 的函數
+    function updateRatingBars(prefix, attValue, defValue) {
+        // 條的長度映射：最低 0.5 到最高 2.5 (對應 0% - 100%)
+        // 為了讓視覺更明顯，最低設 0.5 為 10%，最高設 2.5 為 100%
+        let attPct = Math.min(Math.max((attValue - 0.5) / 2.0 * 100, 10), 100);
+        let defPct = Math.min(Math.max((defValue - 0.5) / 2.0 * 100, 10), 100);
+
+        document.getElementById(prefix + 'AttBar').style.width = attPct + '%';
+        document.getElementById(prefix + 'DefBar').style.width = defPct + '%';
+        
+        document.getElementById(prefix + 'AttGrade').innerText = getGrade(attValue);
+        document.getElementById(prefix + 'DefGrade').innerText = getGrade(defValue);
+        
+        // 計算總實力
+        const overall = (attValue + defValue) / 2;
+        document.getElementById(prefix + 'Overall').innerText = getGrade(overall) + ' (' + overall.toFixed(2) + ')';
     }
 
     function calculate() {
@@ -260,12 +256,11 @@
         const aXg = parseFloat(document.getElementById('awayXg').value) || 0;
         const aXga = parseFloat(document.getElementById('awayXga').value) || 0;
 
-        // 1. 計算交叉預期進球
+        // 1. 計算交叉預期進球與淨勝球
         const expHome = (hXg + aXga) / 2;
         const expAway = (aXg + hXga) / 2;
         const predMargin = expHome - expAway;
 
-        // 更新公式顯示區
         document.getElementById('fHome').innerText = `(${hXg} + ${aXga}) ÷ 2 = ${expHome.toFixed(2)}`;
         document.getElementById('fAway').innerText = `(${aXg} + ${hXga}) ÷ 2 = ${expAway.toFixed(2)}`;
         document.getElementById('fMargin').innerText = `${expHome.toFixed(2)} - ${expAway.toFixed(2)} = ${predMargin > 0 ? '+' : ''}${predMargin.toFixed(2)}`;
@@ -275,11 +270,11 @@
         const marginDescEl = document.getElementById('marginDesc');
         if (predMargin > 0) {
             marginEl.innerText = `+${predMargin.toFixed(2)}`;
-            marginEl.style.color = "#4ade80"; // 亮綠色
+            marginEl.style.color = "#4ade80";
             marginDescEl.innerText = `預計主隊淨勝 ${predMargin.toFixed(2)} 球`;
         } else if (predMargin < 0) {
             marginEl.innerText = `${predMargin.toFixed(2)}`;
-            marginEl.style.color = "#f87171"; // 亮紅色
+            marginEl.style.color = "#f87171";
             marginDescEl.innerText = `預計客隊淨勝 ${Math.abs(predMargin).toFixed(2)} 球`;
         } else {
             marginEl.innerText = `0.00`;
@@ -287,21 +282,17 @@
             marginDescEl.innerText = `預計雙方平手`;
         }
 
-        // 2. 更新自身 xGD 與風格
-        const hXgd = hXg - hXga;
-        const aXgd = aXg - aXga;
-        document.getElementById('homeXgdVal').innerText = (hXgd > 0 ? '+' : '') + hXgd.toFixed(2);
-        document.getElementById('homeXgdVal').style.color = hXgd >= 0 ? '#4ade80' : '#f87171';
-        document.getElementById('homeStyle').innerText = getStyleText(hXg, hXga);
+        // 2. 更新球隊評級 (進攻 = xG, 防守 = 3.0 - xGA)
+        const hAttack = hXg;
+        const hDefense = Math.max(0, 3.0 - hXga); 
+        const aAttack = aXg;
+        const aDefense = Math.max(0, 3.0 - aXga);
+        
+        updateRatingBars('h', hAttack, hDefense);
+        updateRatingBars('a', aAttack, aDefense);
 
-        document.getElementById('awayXgdVal').innerText = (aXgd > 0 ? '+' : '') + aXgd.toFixed(2);
-        document.getElementById('awayXgdVal').style.color = aXgd >= 0 ? '#4ade80' : '#f87171';
-        document.getElementById('awayStyle').innerText = getStyleText(aXg, aXga);
-
-        // 3. 泊松分佈計算比分
+        // 3. 泊松分佈計算勝平負概率
         let homeWin = 0, draw = 0, awayWin = 0;
-        let scores = [];
-        let totalGoalsProbs = { '0-1': 0, '2-3': 0, '4+': 0 };
         const maxGoals = 6;
 
         for (let i = 0; i <= maxGoals; i++) {
@@ -313,46 +304,12 @@
                 if (i > j) homeWin += prob;
                 else if (i === j) draw += prob;
                 else awayWin += prob;
-
-                const totalG = i + j;
-                if (totalG <= 1) totalGoalsProbs['0-1'] += prob;
-                else if (totalG <= 3) totalGoalsProbs['2-3'] += prob;
-                else totalGoalsProbs['4+'] += prob;
-
-                scores.push({ score: `${i}-${j}`, prob: prob });
             }
         }
 
-        // 更新勝平負
         document.getElementById('homeProb').innerText = (homeWin * 100).toFixed(1) + '%';
         document.getElementById('drawProb').innerText = (draw * 100).toFixed(1) + '%';
         document.getElementById('awayProb').innerText = (awayWin * 100).toFixed(1) + '%';
-
-        // 波膽 Top 5
-        scores.sort((a, b) => b.prob - a.prob);
-        const scoreTbody = document.querySelector('#scoreTable tbody');
-        scoreTbody.innerHTML = '';
-        scores.slice(0, 5).forEach((item, index) => {
-            let tr = document.createElement('tr');
-            tr.innerHTML = `<td>${index + 1}</td><td class="score-val">${item.score}</td><td class="score-pct">${(item.prob * 100).toFixed(1)}%</td>`;
-            scoreTbody.appendChild(tr);
-        });
-
-        // 入球數進度條
-        const goalsContainer = document.getElementById('goalsContainer');
-        goalsContainer.innerHTML = '';
-        const goalsLabels = { '0-1': '0 - 1 球', '2-3': '2 - 3 球', '4+': '4 球以上' };
-        for (let key in totalGoalsProbs) {
-            const probPct = totalGoalsProbs[key] * 100;
-            const row = document.createElement('div');
-            row.className = 'goals-row';
-            row.innerHTML = `
-                <div class="goals-label">${goalsLabels[key]}</div>
-                <div class="goals-bar-bg"><div class="goals-bar-fill" style="width: ${probPct}%;"></div></div>
-                <div class="goals-value">${probPct.toFixed(1)}%</div>
-            `;
-            goalsContainer.appendChild(row);
-        }
 
         // 結論文字
         let conclusionText = "";
