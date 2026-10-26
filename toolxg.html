@@ -56,18 +56,16 @@
         .formula-title { font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #ffd700; }
 
         /* 測試分共用樣式 */
-        .test-box {
-            padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center;
-        }
+        .test-box { padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
         .test-title { font-size: 14px; font-weight: bold; margin-bottom: 5px; }
         .test-value { font-size: 28px; font-weight: bold; margin: 5px 0; }
         .test-desc { font-size: 13px; color: #a0a0a0; }
 
-        /* 入球傾向測試分 (原來的) */
+        /* 入球傾向測試分 */
         .goals-test-box { background: #1c263b; border: 1px solid #2a4066; }
         .goals-test-box .test-title { color: #8cb8ff; }
 
-        /* 主客強弱測試分 (新增的) */
+        /* 主客強弱測試分 */
         .home-away-test-box { background: #2e1c2e; border: 1px solid #5e2c5e; }
         .home-away-test-box .test-title { color: #d48cf0; }
 
@@ -169,14 +167,14 @@
             <strong>預測淨勝球 = <span id="fMargin" style="color:#ff6b6b;"></span></strong>
         </div>
 
-        <!-- 入球傾向測試分 (原來的) -->
+        <!-- 入球傾向測試分 -->
         <div class="test-box goals-test-box">
             <div class="test-title">🧪 入球傾向測試分</div>
             <div class="test-value" id="goalsTestScoreValue">0.00</div>
             <div class="test-desc" id="goalsTestScoreDesc">計算中...</div>
         </div>
 
-        <!-- 主客強弱測試分 (新增的) -->
+        <!-- 主客強弱測試分 -->
         <div class="test-box home-away-test-box">
             <div class="test-title">⚔️ 主客強弱測試分</div>
             <div class="test-value" id="haTestScoreValue">0.00</div>
@@ -277,16 +275,14 @@
 </div>
 
 <script>
-    // 🟢 輸入時：限制最多 3 個數字（小數點不計）
+    // 輸入時：限制最多 3 個數字（小數點不計）
     function limitInput(input) {
         let val = input.value;
         val = val.replace(/[^0-9.]/g, '');
-        
         let parts = val.split('.');
         if (parts.length > 2) {
             val = parts[0] + '.' + parts.slice(1).join('');
         }
-        
         let digitCount = val.replace(/\./g, '').length;
         if (digitCount > 3) {
             let newVal = '';
@@ -300,18 +296,16 @@
             }
             val = newVal;
         }
-        
         input.value = val;
     }
 
-    // 🟢 離開焦點時：自動補全與格式化
+    // 離開焦點時：自動補全與格式化
     function formatInput(input) {
         let val = input.value;
         if (!val || val === '.') {
             input.value = '';
             return;
         }
-        
         if (!val.includes('.')) {
             if (val.length === 3) {
                 val = val.substring(0, 1) + '.' + val.substring(1);
@@ -332,7 +326,6 @@
             decimalPart = decimalPart.padEnd(2, '0').substring(0, 2);
             val = integerPart + '.' + decimalPart;
         }
-        
         let num = parseFloat(val);
         if (isNaN(num)) num = 0;
         input.value = num.toFixed(2);
@@ -352,26 +345,28 @@
         let grade = '';
         let color = '';
         
-        if (value < 1.0) { grade = 'E'; color = '#c0c0c0'; } 
-        else if (value < 1.2) { grade = 'D'; color = '#cd7f32'; } 
-        else if (value < 1.4) { grade = 'C'; color = '#ff4d4d'; } 
-        else if (value < 1.6) { grade = 'B'; color = '#4ade80'; } 
-        else if (value < 1.8) { grade = 'A'; color = '#4da6ff'; } 
-        else if (value < 2.0) { grade = 'S'; color = '#FFD700'; } 
-        else { grade = 'EX'; color = '#9b59b6'; } 
+        if (value < 1.0) { grade = 'E'; color = '#c0c0c0'; } // 銀色
+        else if (value < 1.2) { grade = 'D'; color = '#cd7f32'; } // 銅色
+        else if (value < 1.4) { grade = 'C'; color = '#ff4d4d'; } // 紅色
+        else if (value < 1.6) { grade = 'B'; color = '#4ade80'; } // 綠色
+        else if (value < 1.8) { grade = 'A'; color = '#4da6ff'; } // 藍色
+        else if (value < 2.0) { grade = 'S'; color = '#FFD700'; } // 黃色
+        else { grade = 'EX'; color = '#9b59b6'; } // 紫色
 
         return { grade, color, value: value.toFixed(2) };
     }
 
-    // 判斷球隊風格 (基於長條百分比長度)
-    function getTeamStyle(attPct, defPct) {
-        if (attPct >= defPct * 2) return "進攻型";
-        if (defPct >= attPct * 2) return "防守型";
+    // 🔥 修改：判斷球隊風格 (基於原始數值差值，門檻設為 0.5)
+    function getTeamStyle(attValue, defValue) {
+        const diff = attValue - defValue;
+        if (diff >= 0.5) return "進攻型";
+        if (diff <= -0.5) return "防守型";
         return "平衡型";
     }
 
     // 更新橫條 UI 的函數
     function updateRatingBars(prefix, attValue, defValue) {
+        // 1. 處理進攻 (xG)
         const attData = getRatingData(attValue);
         let attPct = ((attValue - 1.0) / 1.0) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100); 
@@ -382,6 +377,7 @@
         document.getElementById(prefix + 'AttGrade').style.color = attData.color;
         document.getElementById(prefix + 'AttVal').innerText = attData.value;
 
+        // 2. 處理防守 (3.0 - xGA)
         const defData = getRatingData(defValue);
         let defPct = ((defValue - 1.0) / 1.0) * 100;
         defPct = Math.min(Math.max(defPct, 0), 100);
@@ -392,14 +388,16 @@
         document.getElementById(prefix + 'DefGrade').style.color = defData.color;
         document.getElementById(prefix + 'DefVal').innerText = defData.value;
 
+        // 3. 計算總實力
         const overallValue = (attValue + defValue) / 2;
         const overallData = getRatingData(overallValue);
         const overallEl = document.getElementById(prefix + 'Overall');
         overallEl.innerText = `${overallData.grade} (${overallData.value})`;
         overallEl.style.color = overallData.color;
 
+        // 4. 更新球隊風格標籤
         const styleEl = document.getElementById(prefix + 'Style');
-        const styleText = getTeamStyle(attPct, defPct);
+        const styleText = getTeamStyle(attValue, defValue); // 👈 這裡傳入原始數值
         styleEl.innerText = styleText;
         
         if (styleText === "進攻型") {
@@ -451,7 +449,6 @@
         }
 
         // 3. 計算主客強弱測試分 (主攻 - 客防) + (主防 - 客攻)
-        // 化簡後 = (主攻 + 主防) - (客攻 + 客防)，即「主隊綜合實力 - 客隊綜合實力」
         const haTestScore = (hXg - aDef) + (hDef - aXg);
         const haTestEl = document.getElementById('haTestScoreValue');
         const haTestDescEl = document.getElementById('haTestScoreDesc');
