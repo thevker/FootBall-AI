@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 全方位預測分析器 (終極版)</title>
+    <title>xG 全方位預測分析器 (雙測試分版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -65,17 +65,9 @@
         .goals-test-box { background: #1c263b; border: 1px solid #2a4066; }
         .goals-test-box .test-title { color: #8cb8ff; }
 
-        /* 主客強弱測試分 */
+        /* 主客強弱測試分 (取代原本的淨勝球區塊) */
         .home-away-test-box { background: #2e1c2e; border: 1px solid #5e2c5e; }
         .home-away-test-box .test-title { color: #d48cf0; }
-
-        /* 預測淨勝球區塊 */
-        .margin-box { 
-            background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center; border-left: 5px solid #6c757d; 
-        }
-        .margin-title { font-size: 14px; font-weight: bold; color: #aaaaaa; }
-        .margin-value { font-size: 28px; font-weight: bold; margin: 5px 0; }
-        .margin-desc { font-size: 13px; color: #888; }
 
         /* 勝平負機率 */
         .probs { display: flex; justify-content: space-between; text-align: center; margin-bottom: 20px; gap: 8px; }
@@ -130,7 +122,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 評級與橫條可視化</p>
+    <p class="subtitle">深色模式 | 雙測試分與可視化評級</p>
     
     <div class="input-group">
         <div class="input-box">
@@ -164,7 +156,7 @@
             <div class="formula-title">💡 預測公式：</div>
             主預期進球 = (主 xG + 客 xGA) ÷ 2 = <span id="fHome"></span><br>
             客預期進球 = (客 xG + 主 xGA) ÷ 2 = <span id="fAway"></span><br>
-            <strong>預測淨勝球 = <span id="fMargin" style="color:#ff6b6b;"></span></strong>
+            <strong>主客強弱測試分 = (主攻 - 客防) + (主防 - 客攻) = <span id="fHa" style="color:#d48cf0;"></span></strong>
         </div>
 
         <!-- 入球傾向測試分 -->
@@ -179,13 +171,6 @@
             <div class="test-title">⚔️ 主客強弱測試分</div>
             <div class="test-value" id="haTestScoreValue">0.00</div>
             <div class="test-desc" id="haTestScoreDesc">計算中...</div>
-        </div>
-
-        <!-- 預測淨勝球 -->
-        <div class="margin-box">
-            <div class="margin-title">📊 預測全場淨勝球</div>
-            <div class="margin-value" id="marginValue">+0.00</div>
-            <div class="margin-desc" id="marginDesc">主隊淨勝 / 客隊淨勝</div>
         </div>
 
         <!-- 勝平負機率 -->
@@ -275,23 +260,17 @@
 </div>
 
 <script>
-    // 輸入時：限制最多 3 個數字（小數點不計）
+    // 輸入限制與格式化
     function limitInput(input) {
         let val = input.value;
         val = val.replace(/[^0-9.]/g, '');
         let parts = val.split('.');
-        if (parts.length > 2) {
-            val = parts[0] + '.' + parts.slice(1).join('');
-        }
+        if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
         let digitCount = val.replace(/\./g, '').length;
         if (digitCount > 3) {
-            let newVal = '';
-            let count = 0;
+            let newVal = ''; let count = 0;
             for (let char of val) {
-                if (char !== '.') {
-                    if (count >= 3) break;
-                    count++;
-                }
+                if (char !== '.') { if (count >= 3) break; count++; }
                 newVal += char;
             }
             val = newVal;
@@ -299,26 +278,16 @@
         input.value = val;
     }
 
-    // 離開焦點時：自動補全與格式化
     function formatInput(input) {
         let val = input.value;
-        if (!val || val === '.') {
-            input.value = '';
-            return;
-        }
+        if (!val || val === '.') { input.value = ''; return; }
         if (!val.includes('.')) {
-            if (val.length === 3) {
-                val = val.substring(0, 1) + '.' + val.substring(1);
-            } else if (val.length === 2) {
+            if (val.length === 3) val = val.substring(0, 1) + '.' + val.substring(1);
+            else if (val.length === 2) {
                 let num = parseInt(val);
-                if (num > 30) {
-                    val = '0.' + val;
-                } else {
-                    val = val.substring(0, 1) + '.' + val.substring(1) + '0';
-                }
-            } else if (val.length === 1) {
-                val = val + '.00';
-            }
+                if (num > 30) val = '0.' + val;
+                else val = val.substring(0, 1) + '.' + val.substring(1) + '0';
+            } else if (val.length === 1) val = val + '.00';
         } else {
             let parts = val.split('.');
             let integerPart = parts[0] || '0';
@@ -331,7 +300,6 @@
         input.value = num.toFixed(2);
     }
 
-    // 清除數據
     function clearData() {
         document.getElementById('homeXg').value = '';
         document.getElementById('homeXga').value = '';
@@ -340,23 +308,19 @@
         document.getElementById('result').style.display = 'none';
     }
 
-    // 取得評級與顏色
     function getRatingData(value) {
-        let grade = '';
-        let color = '';
-        
-        if (value < 1.0) { grade = 'E'; color = '#c0c0c0'; } // 銀色
-        else if (value < 1.2) { grade = 'D'; color = '#cd7f32'; } // 銅色
-        else if (value < 1.4) { grade = 'C'; color = '#ff4d4d'; } // 紅色
-        else if (value < 1.6) { grade = 'B'; color = '#4ade80'; } // 綠色
-        else if (value < 1.8) { grade = 'A'; color = '#4da6ff'; } // 藍色
-        else if (value < 2.0) { grade = 'S'; color = '#FFD700'; } // 黃色
-        else { grade = 'EX'; color = '#9b59b6'; } // 紫色
-
+        let grade = ''; let color = '';
+        if (value < 1.0) { grade = 'E'; color = '#c0c0c0'; }
+        else if (value < 1.2) { grade = 'D'; color = '#cd7f32'; }
+        else if (value < 1.4) { grade = 'C'; color = '#ff4d4d'; }
+        else if (value < 1.6) { grade = 'B'; color = '#4ade80'; }
+        else if (value < 1.8) { grade = 'A'; color = '#4da6ff'; }
+        else if (value < 2.0) { grade = 'S'; color = '#FFD700'; }
+        else { grade = 'EX'; color = '#9b59b6'; }
         return { grade, color, value: value.toFixed(2) };
     }
 
-    // 🔥 修改：判斷球隊風格 (基於原始數值差值，門檻設為 0.5)
+    // 判斷球隊風格 (閾值 0.5)
     function getTeamStyle(attValue, defValue) {
         const diff = attValue - defValue;
         if (diff >= 0.5) return "進攻型";
@@ -364,40 +328,33 @@
         return "平衡型";
     }
 
-    // 更新橫條 UI 的函數
     function updateRatingBars(prefix, attValue, defValue) {
-        // 1. 處理進攻 (xG)
         const attData = getRatingData(attValue);
         let attPct = ((attValue - 1.0) / 1.0) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100); 
         if (attPct < 5) attPct = 5;
-
         document.getElementById(prefix + 'AttBar').style.width = attPct + '%';
         document.getElementById(prefix + 'AttGrade').innerText = attData.grade;
         document.getElementById(prefix + 'AttGrade').style.color = attData.color;
         document.getElementById(prefix + 'AttVal').innerText = attData.value;
 
-        // 2. 處理防守 (3.0 - xGA)
         const defData = getRatingData(defValue);
         let defPct = ((defValue - 1.0) / 1.0) * 100;
         defPct = Math.min(Math.max(defPct, 0), 100);
         if (defPct < 5) defPct = 5;
-
         document.getElementById(prefix + 'DefBar').style.width = defPct + '%';
         document.getElementById(prefix + 'DefGrade').innerText = defData.grade;
         document.getElementById(prefix + 'DefGrade').style.color = defData.color;
         document.getElementById(prefix + 'DefVal').innerText = defData.value;
 
-        // 3. 計算總實力
         const overallValue = (attValue + defValue) / 2;
         const overallData = getRatingData(overallValue);
         const overallEl = document.getElementById(prefix + 'Overall');
         overallEl.innerText = `${overallData.grade} (${overallData.value})`;
         overallEl.style.color = overallData.color;
 
-        // 4. 更新球隊風格標籤
         const styleEl = document.getElementById(prefix + 'Style');
-        const styleText = getTeamStyle(attValue, defValue); // 👈 這裡傳入原始數值
+        const styleText = getTeamStyle(attValue, defValue);
         styleEl.innerText = styleText;
         
         if (styleText === "進攻型") {
@@ -418,75 +375,66 @@
         const aXg = parseFloat(document.getElementById('awayXg').value) || 0;
         const aXga = parseFloat(document.getElementById('awayXga').value) || 0;
 
-        // 防守力得分 (3.0 - xGA)
         const hDef = Math.max(0, 3.0 - hXga);
         const aDef = Math.max(0, 3.0 - aXga);
 
-        // 1. 計算交叉預期進球與淨勝球
+        // 計算交叉預期進球 (用於泊松分佈算勝平負)
         const expHome = (hXg + aXga) / 2;
         const expAway = (aXg + hXga) / 2;
-        const predMargin = expHome - expAway;
 
-        document.getElementById('fHome').innerText = `(${hXg} + ${aXga}) ÷ 2 = ${expHome.toFixed(2)}`;
-        document.getElementById('fAway').innerText = `(${aXg} + ${hXga}) ÷ 2 = ${expAway.toFixed(2)}`;
-        document.getElementById('fMargin').innerText = `${expHome.toFixed(2)} - ${expAway.toFixed(2)} = ${predMargin > 0 ? '+' : ''}${predMargin.toFixed(2)}`;
-
-        // 2. 計算入球傾向測試分 (主攻 - 客防) + (客攻 - 主防)
-        const goalsTestScore = (hXg - aDef) + (aXg - hDef);
-        const goalsTestEl = document.getElementById('goalsTestScoreValue');
-        const goalsTestDescEl = document.getElementById('goalsTestScoreDesc');
-        
-        goalsTestEl.innerText = (goalsTestScore > 0 ? '+' : '') + goalsTestScore.toFixed(2);
-        if (goalsTestScore > 0.5) {
-            goalsTestEl.style.color = "#4ade80"; // 綠色
-            goalsTestDescEl.innerText = "雙方進攻火力大於防守，入球數偏多";
-        } else if (goalsTestScore < -0.5) {
-            goalsTestEl.style.color = "#f87171"; // 紅色
-            goalsTestDescEl.innerText = "雙方防守較穩，或進攻便秘，入球數偏少";
-        } else {
-            goalsTestEl.style.color = "#8cb8ff"; // 藍色
-            goalsTestDescEl.innerText = "攻防相對平衡，勝負取決於臨場發揮";
-        }
-
-        // 3. 計算主客強弱測試分 (主攻 - 客防) + (主防 - 客攻)
+        // 🔥 主客強弱測試分 (取代原本的淨勝球顯示)
         const haTestScore = (hXg - aDef) + (hDef - aXg);
         const haTestEl = document.getElementById('haTestScoreValue');
         const haTestDescEl = document.getElementById('haTestScoreDesc');
         
         haTestEl.innerText = (haTestScore > 0 ? '+' : '') + haTestScore.toFixed(2);
-        if (haTestScore > 0.5) {
+        if (haTestScore > 1.0) {
             haTestEl.style.color = "#4ade80"; // 綠色
-            haTestDescEl.innerText = "主隊綜合實力明顯優於客隊";
-        } else if (haTestScore < -0.5) {
+            haTestDescEl.innerText = "主隊綜合實力明顯碾壓客隊";
+        } else if (haTestScore > 0) {
+            haTestEl.style.color = "#8cb8ff"; // 藍色
+            haTestDescEl.innerText = "主隊綜合實力稍佔上風";
+        } else if (haTestScore < -1.0) {
             haTestEl.style.color = "#f87171"; // 紅色
-            haTestDescEl.innerText = "客隊綜合實力明顯優於主隊";
-        } else {
+            haTestDescEl.innerText = "客隊綜合實力明顯碾壓主隊";
+        } else if (haTestScore < 0) {
             haTestEl.style.color = "#d48cf0"; // 紫色
-            haTestDescEl.innerText = "雙方綜合實力接近，競爭激烈";
-        }
-
-        // 更新淨勝球區塊
-        const marginEl = document.getElementById('marginValue');
-        const marginDescEl = document.getElementById('marginDesc');
-        if (predMargin > 0) {
-            marginEl.innerText = `+${predMargin.toFixed(2)}`;
-            marginEl.style.color = "#4ade80";
-            marginDescEl.innerText = `預計主隊淨勝 ${predMargin.toFixed(2)} 球`;
-        } else if (predMargin < 0) {
-            marginEl.innerText = `${predMargin.toFixed(2)}`;
-            marginEl.style.color = "#f87171";
-            marginDescEl.innerText = `預計客隊淨勝 ${Math.abs(predMargin).toFixed(2)} 球`;
+            haTestDescEl.innerText = "客隊綜合實力稍佔上風";
         } else {
-            marginEl.innerText = `0.00`;
-            marginEl.style.color = "#aaaaaa";
-            marginDescEl.innerText = `預計雙方平手`;
+            haTestEl.style.color = "#ccc";
+            haTestDescEl.innerText = "雙方綜合實力完全均等";
         }
 
-        // 4. 更新球隊評級
+        // 更新公式區塊文字
+        document.getElementById('fHome').innerText = `(${hXg} + ${aXga}) ÷ 2 = ${expHome.toFixed(2)}`;
+        document.getElementById('fAway').innerText = `(${aXg} + ${hXga}) ÷ 2 = ${expAway.toFixed(2)}`;
+        document.getElementById('fHa').innerText = (haTestScore > 0 ? '+' : '') + haTestScore.toFixed(2);
+
+        // 🔥 入球傾向測試分 (加入不低於0的邏輯)
+        const homeAttackAdvantage = Math.max(0, hXg - aDef); 
+        const awayAttackAdvantage = Math.max(0, aXg - hDef); 
+        const goalsTestScore = homeAttackAdvantage + awayAttackAdvantage;
+
+        const goalsTestEl = document.getElementById('goalsTestScoreValue');
+        const goalsTestDescEl = document.getElementById('goalsTestScoreDesc');
+        
+        goalsTestEl.innerText = '+' + goalsTestScore.toFixed(2);
+        if (goalsTestScore > 0.5) {
+            goalsTestEl.style.color = "#4ade80"; // 綠色
+            goalsTestDescEl.innerText = "雙方進攻火力大於防守，入球數偏多";
+        } else if (goalsTestScore > 0) {
+            goalsTestEl.style.color = "#8cb8ff"; // 藍色
+            goalsTestDescEl.innerText = "雙方互有攻守，但防守整體較穩";
+        } else {
+            goalsTestEl.style.color = "#f87171"; // 紅色
+            goalsTestDescEl.innerText = "雙方防守完全壓制進攻，極大機會是入球極少的悶局";
+        }
+
+        // 更新球隊評級
         updateRatingBars('h', hXg, hDef);
         updateRatingBars('a', aXg, aDef);
 
-        // 5. 泊松分佈計算勝平負概率
+        // 泊松分佈計算勝平負概率
         let homeWin = 0, draw = 0, awayWin = 0;
         const maxGoals = 6;
         const poisson = (k, lambda) => (Math.pow(Math.E, -lambda) * Math.pow(lambda, k)) / factorial(k);
@@ -507,10 +455,10 @@
 
         // 結論文字
         let conclusionText = "";
-        if (predMargin > 0.8) conclusionText = "🔥 主隊優勢明顯，預計能淨勝一球以上。";
-        else if (predMargin > 0.2) conclusionText = "⚖️ 主隊稍佔上風，小勝或和局機會較大。";
-        else if (predMargin < -0.8) conclusionText = "🔥 客隊優勢明顯，預計能淨勝一球以上。";
-        else if (predMargin < -0.2) conclusionText = "⚖️ 客隊稍佔上風，小勝或和局機會較大。";
+        if (haTestScore > 1.6) conclusionText = "🔥 主隊優勢極大，預計能輕鬆取勝。";
+        else if (haTestScore > 0.4) conclusionText = "⚖️ 主隊稍佔上風，小勝或和局機會較大。";
+        else if (haTestScore < -1.6) conclusionText = "🔥 客隊優勢極大，預計能輕鬆取勝。";
+        else if (haTestScore < -0.4) conclusionText = "⚖️ 客隊稍佔上風，小勝或和局機會較大。";
         else conclusionText = "🤝 雙方勢均力敵，和局概率極高。";
 
         document.getElementById('conclusion').innerText = conclusionText;
