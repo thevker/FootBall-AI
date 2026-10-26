@@ -94,10 +94,10 @@
         .rating-bar-bg { flex: 1; background: #1a1a1a; height: 16px; border-radius: 8px; overflow: hidden; margin: 0 10px; position: relative; border: 1px solid #333; }
         .rating-bar-fill { height: 100%; border-radius: 8px; transition: width 0.5s ease; }
         
-        /* 🔴 進攻：一律淺紅，右邊微深 */
+        /* 🔴 進攻：淺紅微漸變 */
         .bar-attack { background: linear-gradient(90deg, #ff8c8c 0%, #ff6b6b 100%); } 
         
-        /* 🔵 防守：一律淺藍，右邊微深 */
+        /* 🔵 防守：淺藍微漸變 */
         .bar-defense { background: linear-gradient(90deg, #8cb8ff 0%, #6b9fff 100%); } 
         
         /* 評級顯示 (字母 + 數值) */
@@ -272,10 +272,10 @@
         return { grade, color, value: value.toFixed(2) };
     }
 
-    // 判斷球隊風格
-    function getTeamStyle(attValue, defValue) {
-        if (attValue >= defValue * 2) return "進攻型";
-        if (defValue >= attValue * 2) return "防守型";
+    // 🔥 修正：判斷球隊風格 (基於長條百分比長度)
+    function getTeamStyle(attPct, defPct) {
+        if (attPct >= defPct * 2) return "進攻型";
+        if (defPct >= attPct * 2) return "防守型";
         return "平衡型";
     }
 
@@ -283,9 +283,10 @@
     function updateRatingBars(prefix, attValue, defValue) {
         // 1. 處理進攻 (xG)
         const attData = getRatingData(attValue);
+        // 計算長條百分比：1.0 為 0%，2.0 為 100%，限制在 0-100
         let attPct = ((attValue - 1.0) / 1.0) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100); 
-        if (attPct < 5) attPct = 5;
+        if (attPct < 5) attPct = 5; // 1.0以下給個最小5%讓視覺可見
 
         document.getElementById(prefix + 'AttBar').style.width = attPct + '%';
         document.getElementById(prefix + 'AttGrade').innerText = attData.grade;
@@ -294,6 +295,7 @@
 
         // 2. 處理防守 (3.0 - xGA)
         const defData = getRatingData(defValue);
+        // 計算長條百分比
         let defPct = ((defValue - 1.0) / 1.0) * 100;
         defPct = Math.min(Math.max(defPct, 0), 100);
         if (defPct < 5) defPct = 5;
@@ -310,9 +312,9 @@
         overallEl.innerText = `${overallData.grade} (${overallData.value})`;
         overallEl.style.color = overallData.color;
 
-        // 4. 更新球隊風格標籤 (淺紅、淺藍)
+        // 4. 更新球隊風格標籤 (傳入長條百分比進行比較)
         const styleEl = document.getElementById(prefix + 'Style');
-        const styleText = getTeamStyle(attValue, defValue);
+        const styleText = getTeamStyle(attPct, defPct);
         styleEl.innerText = styleText;
         
         if (styleText === "進攻型") {
