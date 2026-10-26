@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 全方位預測分析器 (比例修正版)</title>
+    <title>xG 全方位預測分析器 (攻+15% 防-15%版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -120,7 +120,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 比例修正算法</p>
+    <p class="subtitle">深色模式 | 進攻+15% 防守-15% 權重</p>
     
     <div class="input-group">
         <div class="input-box">
@@ -151,22 +151,22 @@
         
         <!-- 公式展示區 -->
         <div class="formula-box">
-            <div class="formula-title">💡 預測公式 (已加入比例修正)：</div>
-            主預期進球 = (主 xG + 客 xGA) ÷ 2 = <span id="fHome"></span><br>
-            客預期進球 = (客 xG + 主 xGA) ÷ 2 = <span id="fAway"></span><br>
-            <strong>主客強弱測試分 = (主攻有效 + 主防有效) - (客攻有效 + 客防有效) = <span id="fHa" style="color:#d48cf0;"></span></strong>
+            <div class="formula-title">💡 預測公式：</div>
+            主預期進球 = (主 xG×1.15 + 客 xGA×1.15) ÷ 2 = <span id="fHome"></span><br>
+            客預期進球 = (客 xG×1.15 + 主 xGA×1.15) ÷ 2 = <span id="fAway"></span><br>
+            <strong>主客強弱測試分 = <span id="fHa" style="color:#d48cf0;"></span></strong>
         </div>
 
-        <!-- 入球傾向測試分 (總有效火力) -->
+        <!-- 入球傾向測試分 -->
         <div class="test-box goals-test-box">
-            <div class="test-title">🧪 入球傾向測試分 (雙方有效火力總和)</div>
+            <div class="test-title">🧪 入球傾向測試分</div>
             <div class="test-value" id="goalsTestScoreValue">0.00</div>
             <div class="test-desc" id="goalsTestScoreDesc">計算中...</div>
         </div>
 
-        <!-- 主客強弱測試分 (有效實力差) -->
+        <!-- 主客強弱測試分 -->
         <div class="test-box home-away-test-box">
-            <div class="test-title">⚔️ 主客強弱測試分 (有效實力差值)</div>
+            <div class="test-title">⚔️ 主客強弱測試分</div>
             <div class="test-value" id="haTestScoreValue">0.00</div>
             <div class="test-desc" id="haTestScoreDesc">計算中...</div>
         </div>
@@ -189,7 +189,7 @@
 
         <!-- 球隊攻守評級與總實力 -->
         <div class="section-box">
-            <div class="section-title">📊 球隊實力評級 (基於自身數據)</div>
+            <div class="section-title">📊 球隊實力評級 (加權後數值)</div>
             
             <!-- 主隊評級 -->
             <div class="team-rating-block">
@@ -248,7 +248,8 @@
             </div>
 
             <div style="font-size: 11px; color: #777; margin-top: 15px; text-align: right;">
-                *防守力得分 = 3.0 - xGA (數值越高防守越好) <br>
+                *進攻得分 = xG * 1.15 <br>
+                *防守得分 = (3.0 - xGA) * 0.85 <br>
                 *橫條長度：1.0 (最左) 至 2.0 (最右)
             </div>
         </div>
@@ -358,7 +359,7 @@
             styleEl.style.backgroundColor = "#3b1c1c"; 
         } else if (styleText === "防守型") {
             styleEl.style.color = "#8cb8ff";      
-            styleEl.style.backgroundColor = "#1c263b"; 
+            styleEl.style.backgroundColor = "#1a2633"; 
         } else {
             styleEl.style.color = "#ccc";
             styleEl.style.backgroundColor = "#333";
@@ -371,75 +372,68 @@
         const aXg = parseFloat(document.getElementById('awayXg').value) || 0;
         const aXga = parseFloat(document.getElementById('awayXga').value) || 0;
 
-        const hDef = Math.max(0, 3.0 - hXga);
-        const aDef = Math.max(0, 3.0 - aXga);
+        // 🔥 套用權重：進攻乘 1.15，防守乘 0.85
+        const hAtt = hXg * 1.15;
+        const aAtt = aXg * 1.15;
+        const hDef = Math.max(0, 3.0 - hXga) * 0.85;
+        const aDef = Math.max(0, 3.0 - aXga) * 0.85;
 
-        // 計算交叉預期進球
-        const expHome = (hXg + aXga) / 2;
-        const expAway = (aXg + hXga) / 2;
+        // 計算交叉預期進球 (基於加權後的進攻與防守)
+        // 因為 xGA 代表失球，防守被削弱 15% 意味著預期失球增加 15%
+        const expHome = (hAtt + (aXga * 1.15)) / 2;
+        const expAway = (aAtt + (hXga * 1.15)) / 2;
 
-        // 🔥 全新比例算法 (採用你提出的概念，將基數設為 2.0 以符合 xG 區間)
-        const PROPORTION_BASE = 2.0; 
-        
-        // 有效進攻力 (面對對方防守時的折損)
-        const hEffectiveAtt = hXg * (PROPORTION_BASE / (aDef + PROPORTION_BASE));
-        const aEffectiveAtt = aXg * (PROPORTION_BASE / (hDef + PROPORTION_BASE));
-        
-        // 有效防守力 (面對對方進攻時的折損)
-        const hEffectiveDef = hDef * (PROPORTION_BASE / (aXg + PROPORTION_BASE));
-        const aEffectiveDef = aDef * (PROPORTION_BASE / (hXg + PROPORTION_BASE));
-
-        // 1. 入球傾向測試分 (雙方有效進攻總和)
-        const goalsTestScore = hEffectiveAtt + aEffectiveAtt;
-        const goalsTestEl = document.getElementById('goalsTestScoreValue');
-        const goalsTestDescEl = document.getElementById('goalsTestScoreDesc');
-        
-        goalsTestEl.innerText = goalsTestScore.toFixed(2);
-        if (goalsTestScore > 2.8) {
-            goalsTestEl.style.color = "#4ade80"; // 綠色
-            goalsTestDescEl.innerText = "雙方有效火力強勁，預計入球數偏多";
-        } else if (goalsTestScore > 2.0) {
-            goalsTestEl.style.color = "#8cb8ff"; // 藍色
-            goalsTestDescEl.innerText = "雙方攻守平衡，入球數預計在正常範圍";
-        } else {
-            goalsTestEl.style.color = "#f87171"; // 紅色
-            goalsTestDescEl.innerText = "防守壓制力極強，極大機會是入球偏少的悶局";
-        }
-
-        // 2. 主客強弱測試分 (雙方有效綜合實力的差值)
-        const hOverallStrength = hEffectiveAtt + hEffectiveDef;
-        const aOverallStrength = aEffectiveAtt + aEffectiveDef;
-        const haTestScore = hOverallStrength - aOverallStrength;
-        
+        // 主客強弱測試分 (差值法)
+        const haTestScore = (hAtt - aDef) + (hDef - aAtt);
         const haTestEl = document.getElementById('haTestScoreValue');
         const haTestDescEl = document.getElementById('haTestScoreDesc');
         
         haTestEl.innerText = (haTestScore > 0 ? '+' : '') + haTestScore.toFixed(2);
-        if (haTestScore > 0.5) {
+        if (haTestScore > 1.0) {
             haTestEl.style.color = "#4ade80";
-            haTestDescEl.innerText = "主隊有效綜合實力明顯優於客隊";
+            haTestDescEl.innerText = "主隊綜合實力明顯碾壓客隊";
         } else if (haTestScore > 0) {
             haTestEl.style.color = "#8cb8ff";
-            haTestDescEl.innerText = "主隊有效綜合實力稍佔上風";
-        } else if (haTestScore < -0.5) {
+            haTestDescEl.innerText = "主隊綜合實力稍佔上風";
+        } else if (haTestScore < -1.0) {
             haTestEl.style.color = "#f87171";
-            haTestDescEl.innerText = "客隊有效綜合實力明顯優於主隊";
+            haTestDescEl.innerText = "客隊綜合實力明顯碾壓主隊";
         } else if (haTestScore < 0) {
             haTestEl.style.color = "#d48cf0";
-            haTestDescEl.innerText = "客隊有效綜合實力稍佔上風";
+            haTestDescEl.innerText = "客隊綜合實力稍佔上風";
         } else {
             haTestEl.style.color = "#ccc";
-            haTestDescEl.innerText = "雙方有效綜合實力完全均等";
+            haTestDescEl.innerText = "雙方綜合實力完全均等";
         }
 
         // 更新公式區塊文字
-        document.getElementById('fHome').innerText = `(${hXg} + ${aXga}) ÷ 2 = ${expHome.toFixed(2)}`;
-        document.getElementById('fAway').innerText = `(${aXg} + ${hXga}) ÷ 2 = ${expAway.toFixed(2)}`;
+        document.getElementById('fHome').innerText = `${expHome.toFixed(2)}`;
+        document.getElementById('fAway').innerText = `${expAway.toFixed(2)}`;
         document.getElementById('fHa').innerText = (haTestScore > 0 ? '+' : '') + haTestScore.toFixed(2);
 
-        // 更新球隊評級 (這裡使用原始的 xG 與防守力來顯示靜態面板)
-        updateRatingBars('h', hXg, hDef);
-        updateRatingBars('a', aXg, aDef);
+        // 入球傾向測試分
+        const homeAttackAdvantage = Math.max(0, hAtt - aDef); 
+        const awayAttackAdvantage = Math.max(0, aAtt - hDef); 
+        const goalsTestScore = homeAttackAdvantage + awayAttackAdvantage;
+
+        const goalsTestEl = document.getElementById('goalsTestScoreValue');
+        const goalsTestDescEl = document.getElementById('goalsTestScoreDesc');
+        
+        goalsTestEl.innerText = '+' + goalsTestScore.toFixed(2);
+        if (goalsTestScore > 0.5) {
+            goalsTestEl.style.color = "#4ade80"; 
+            goalsTestDescEl.innerText = "雙方進攻火力大於防守，入球數偏多";
+        } else if (goalsTestScore > 0) {
+            goalsTestEl.style.color = "#8cb8ff"; 
+            goalsTestDescEl.innerText = "雙方互有攻守，但防守整體較穩";
+        } else {
+            goalsTestEl.style.color = "#f87171"; 
+            goalsTestDescEl.innerText = "雙方防守完全壓制進攻，極大機會是入球極少的悶局";
+        }
+
+        // 更新球隊評級 (傳入加權後的 hAtt, hDef)
+        updateRatingBars('h', hAtt, hDef);
+        updateRatingBars('a', aAtt, aDef);
 
         // 泊松分佈計算勝平負概率
         let homeWin = 0, draw = 0, awayWin = 0;
