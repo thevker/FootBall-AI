@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 勝負預測分析器</title>
+    <title>xG 勝負與波膽預測分析器</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f9; color: #333; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        .container { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
         h2 { text-align: center; color: #1a1a1a; margin-top: 0; }
         .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
         .input-box { flex: 1; display: flex; flex-direction: column; }
@@ -16,8 +16,9 @@
         button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
         button:hover { background: #0056b3; }
         
-        /* 結果顯示區 */
         #result { margin-top: 25px; display: none; padding-top: 20px; border-top: 1px solid #eee; }
+        
+        /* 勝平負機率 */
         .probs { display: flex; justify-content: space-between; text-align: center; margin-bottom: 20px; }
         .prob-box { flex: 1; padding: 10px; border-radius: 8px; margin: 0 5px; color: white; }
         .home { background: #28a745; }
@@ -26,15 +27,32 @@
         .prob-title { font-size: 14px; font-weight: bold; }
         .prob-value { font-size: 24px; font-weight: bold; margin-top: 5px; }
         
-        .expected { background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; line-height: 1.6; }
-        .conclusion { font-size: 16px; font-weight: bold; text-align: center; color: #007bff; padding: 10px; background: #e6f2ff; border-radius: 8px; }
+        /* 共用區塊樣式 */
+        .section-box { background: #f8f9fa; border: 1px solid #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .section-title { font-size: 15px; font-weight: bold; margin-bottom: 10px; color: #495057; border-left: 4px solid #007bff; padding-left: 8px; }
+        
+        /* 波膽表格 */
+        .score-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .score-table th, .score-table td { padding: 8px; text-align: center; border-bottom: 1px solid #dee2e6; }
+        .score-table th { background: #e9ecef; color: #495057; font-weight: bold; }
+        .score-table tr:last-child td { border-bottom: none; }
+        
+        /* 入球數進度條 */
+        .goals-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 14px; }
+        .goals-label { width: 80px; font-weight: bold; color: #555; }
+        .goals-bar-bg { flex: 1; background: #e9ecef; height: 16px; border-radius: 8px; overflow: hidden; margin: 0 10px; }
+        .goals-bar-fill { height: 100%; background: #17a2b8; border-radius: 8px; }
+        .goals-value { width: 50px; text-align: right; font-weight: bold; color: #17a2b8; }
+
+        .expected { background: #e6f2ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; line-height: 1.6; color: #004085; }
+        .conclusion { font-size: 16px; font-weight: bold; text-align: center; color: #007bff; padding: 10px; background: #e6f2ff; border-radius: 8px; margin-top: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>📊 xG 賽事預測分析</h2>
-    <p style="font-size: 13px; color: #666; text-align: center;">輸入雙方 xG 與 xGA，系統將結合泊松分佈計算勝平負概率。</p>
+    <h2>📊 xG 勝負與波膽預測分析器</h2>
+    <p style="font-size: 13px; color: #666; text-align: center;">輸入雙方 xG 與 xGA，系統將計算預期入球數、波膽及總入球數概率。</p>
     
     <div class="input-group">
         <div class="input-box">
@@ -61,6 +79,14 @@
     <button onclick="calculate()">開始分析</button>
 
     <div id="result">
+        <!-- 預期進球 -->
+        <div class="expected">
+            <strong>📈 預期進球測算：</strong><br>
+            主隊預期進球: <span id="expHome" style="font-weight:bold;">0.00</span> 球<br>
+            客隊預期進球: <span id="expAway" style="font-weight:bold;">0.00</span> 球
+        </div>
+
+        <!-- 勝平負機率 -->
         <div class="probs">
             <div class="prob-box home">
                 <div class="prob-title">主勝</div>
@@ -76,10 +102,29 @@
             </div>
         </div>
 
-        <div class="expected">
-            <strong>📈 預期進球測算：</strong><br>
-            主隊預期進球: <span id="expHome">0.00</span> 球<br>
-            客隊預期進球: <span id="expAway">0.00</span> 球
+        <!-- 波膽預測 -->
+        <div class="section-box">
+            <div class="section-title">🎯 最有可能波膽 (Top 5)</div>
+            <table class="score-table" id="scoreTable">
+                <thead>
+                    <tr>
+                        <th>排名</th>
+                        <th>比分 (主-客)</th>
+                        <th>出現概率</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- JS 動態填充 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 總入球數預測 -->
+        <div class="section-box">
+            <div class="section-title">⚽ 全場總入球數概率</div>
+            <div id="goalsContainer">
+                <!-- JS 動態填充 -->
+            </div>
         </div>
 
         <div class="conclusion" id="conclusion"></div>
@@ -107,37 +152,75 @@
         const aXg = parseFloat(document.getElementById('awayXg').value) || 0;
         const aXga = parseFloat(document.getElementById('awayXga').value) || 0;
 
-        // 懶人包結合公式：本隊預期進球 = (本隊 xG + 對手 xGA) / 2
+        // 結合公式：本隊預期進球 = (本隊 xG + 對手 xGA) / 2
         const expHome = (hXg + aXga) / 2;
         const expAway = (aXg + hXga) / 2;
 
-        // 使用泊松分佈計算比分概率矩陣 (簡化計算 0-5 球)
+        // 用於存儲各種比分和入球數的機率
         let homeWin = 0, draw = 0, awayWin = 0;
+        let scores = [];
+        let totalGoalsProbs = { '0-1': 0, '2-3': 0, '4+': 0 };
 
-        for (let i = 0; i <= 5; i++) {
-            for (let j = 0; j <= 5; j++) {
-                const pHome = poisson(i, expHome); // 主隊進 i 球
-                const pAway = poisson(j, expAway); // 客隊進 j 球
-                const prob = pHome * pAway; // 該比分出現的機率
+        // 計算 0-6 球的比分矩陣 (簡化計算)
+        const maxGoals = 6;
 
+        for (let i = 0; i <= maxGoals; i++) {
+            for (let j = 0; j <= maxGoals; j++) {
+                const pHome = poisson(i, expHome);
+                const pAway = poisson(j, expAway);
+                const prob = pHome * pAway; 
+
+                // 勝平負累加
                 if (i > j) homeWin += prob;
                 else if (i === j) draw += prob;
                 else awayWin += prob;
+
+                // 總入球數分類累加
+                const totalG = i + j;
+                if (totalG <= 1) totalGoalsProbs['0-1'] += prob;
+                else if (totalG <= 3) totalGoalsProbs['2-3'] += prob;
+                else totalGoalsProbs['4+'] += prob;
+
+                // 存儲比分
+                scores.push({ score: `${i}-${j}`, prob: prob });
             }
         }
 
         // 轉換為百分比
-        const hPercent = (homeWin * 100).toFixed(1);
-        const dPercent = (draw * 100).toFixed(1);
-        const aPercent = (awayWin * 100).toFixed(1);
-
-        // 更新 DOM
-        document.getElementById('homeProb').innerText = hPercent + '%';
-        document.getElementById('drawProb').innerText = dPercent + '%';
-        document.getElementById('awayProb').innerText = aPercent + '%';
+        document.getElementById('homeProb').innerText = (homeWin * 100).toFixed(1) + '%';
+        document.getElementById('drawProb').innerText = (draw * 100).toFixed(1) + '%';
+        document.getElementById('awayProb').innerText = (awayWin * 100).toFixed(1) + '%';
         
         document.getElementById('expHome').innerText = expHome.toFixed(2);
         document.getElementById('expAway').innerText = expAway.toFixed(2);
+
+        // 處理波膽：排序取前 5
+        scores.sort((a, b) => b.prob - a.prob);
+        const top5Scores = scores.slice(0, 5);
+        const scoreTbody = document.querySelector('#scoreTable tbody');
+        scoreTbody.innerHTML = '';
+        top5Scores.forEach((item, index) => {
+            let tr = document.createElement('tr');
+            tr.innerHTML = `<td>${index + 1}</td><td style="font-weight:bold; font-size:16px;">${item.score}</td><td style="color:#dc3545; font-weight:bold;">${(item.prob * 100).toFixed(1)}%</td>`;
+            scoreTbody.appendChild(tr);
+        });
+
+        // 處理總入球數進度條
+        const goalsContainer = document.getElementById('goalsContainer');
+        goalsContainer.innerHTML = '';
+        const goalsLabels = { '0-1': '0 - 1 球', '2-3': '2 - 3 球', '4+': '4 球或以上' };
+        
+        for (let key in totalGoalsProbs) {
+            const probPct = totalGoalsProbs[key] * 100;
+            const row = document.createElement('div');
+            row.className = 'goals-row';
+            row.innerHTML = `
+                <div class="goals-label">${goalsLabels[key]}</div>
+                <div class="goals-bar-bg"><div class="goals-bar-fill" style="width: ${probPct}%;"></div></div>
+                <div class="goals-value">${probPct.toFixed(1)}%</div>
+            `;
+            goalsContainer.appendChild(row);
+        }
 
         // 產生結論文字
         let conclusionText = "";
