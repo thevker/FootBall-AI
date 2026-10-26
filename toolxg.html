@@ -129,22 +129,22 @@
     <div class="input-group">
         <div class="input-box">
             <label>主隊 xG (預期進球)</label>
-            <input type="text" id="homeXg" maxlength="3" placeholder="例：1.41" onblur="formatInput(this)">
+            <input type="text" id="homeXg" placeholder="例：1.41" oninput="limitInput(this)" onblur="formatInput(this)">
         </div>
         <div class="input-box">
             <label>主隊 xGA (預期失球)</label>
-            <input type="text" id="homeXga" maxlength="3" placeholder="例：1.29" onblur="formatInput(this)">
+            <input type="text" id="homeXga" placeholder="例：1.29" oninput="limitInput(this)" onblur="formatInput(this)">
         </div>
     </div>
 
     <div class="input-group">
         <div class="input-box">
             <label>客隊 xG (預期進球)</label>
-            <input type="text" id="awayXg" maxlength="3" placeholder="例：1.26" onblur="formatInput(this)">
+            <input type="text" id="awayXg" placeholder="例：1.26" oninput="limitInput(this)" onblur="formatInput(this)">
         </div>
         <div class="input-box">
             <label>客隊 xGA (預期失球)</label>
-            <input type="text" id="awayXga" maxlength="3" placeholder="例：1.67" onblur="formatInput(this)">
+            <input type="text" id="awayXga" placeholder="例：1.67" oninput="limitInput(this)" onblur="formatInput(this)">
         </div>
     </div>
 
@@ -262,23 +262,49 @@
 </div>
 
 <script>
-    // 輸入框自動格式化
-    function formatInput(input) {
+    // 🟢 輸入時：限制最多 3 個數字（小數點不計）
+    function limitInput(input) {
         let val = input.value;
-        if (!val) return;
         
-        // 移除非數字和非小數點的字符
+        // 只保留數字和小數點
         val = val.replace(/[^0-9.]/g, '');
         
-        if (val.includes('.')) {
-            // 如果已有小數點，確保小數點後兩位
-            let parts = val.split('.');
-            let integerPart = parts[0] || '0';
-            let decimalPart = parts[1] || '00';
-            decimalPart = decimalPart.padEnd(2, '0').substring(0, 2);
-            val = integerPart + '.' + decimalPart;
-        } else {
-            // 沒有小數點的自動補全邏輯
+        // 處理多個小數點，只保留第一個
+        let parts = val.split('.');
+        if (parts.length > 2) {
+            val = parts[0] + '.' + parts.slice(1).join('');
+        }
+        
+        // 計算純數字字符的數量
+        let digitCount = val.replace(/\./g, '').length;
+        
+        // 如果數字超過 3 個，則截斷
+        if (digitCount > 3) {
+            let newVal = '';
+            let count = 0;
+            for (let char of val) {
+                if (char !== '.') {
+                    if (count >= 3) break;
+                    count++;
+                }
+                newVal += char;
+            }
+            val = newVal;
+        }
+        
+        input.value = val;
+    }
+
+    // 🟢 離開焦點時：自動補全與格式化
+    function formatInput(input) {
+        let val = input.value;
+        if (!val || val === '.') {
+            input.value = '';
+            return;
+        }
+        
+        // 如果沒有小數點，根據數字長度自動推算
+        if (!val.includes('.')) {
             if (val.length === 3) {
                 // 125 -> 1.25
                 val = val.substring(0, 1) + '.' + val.substring(1);
@@ -294,6 +320,13 @@
                 // 2 -> 2.00
                 val = val + '.00';
             }
+        } else {
+            // 如果有小數點，補齊到兩位
+            let parts = val.split('.');
+            let integerPart = parts[0] || '0';
+            let decimalPart = parts[1] || '';
+            decimalPart = decimalPart.padEnd(2, '0').substring(0, 2); // 補零並限制最多兩位
+            val = integerPart + '.' + decimalPart;
         }
         
         let num = parseFloat(val);
