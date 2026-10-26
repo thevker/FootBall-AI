@@ -65,15 +65,15 @@
         .goals-test-box { background: #1c263b; border: 1px solid #2a4066; }
         .goals-test-box .test-title { color: #8cb8ff; }
 
-        /* 主客強弱測試分 (取代原本的淨勝球區塊) */
+        /* 主客強弱測試分 */
         .home-away-test-box { background: #2e1c2e; border: 1px solid #5e2c5e; }
         .home-away-test-box .test-title { color: #d48cf0; }
 
         /* 勝平負機率 */
         .probs { display: flex; justify-content: space-between; text-align: center; margin-bottom: 20px; gap: 8px; }
-        .prob-box { flex: 1; padding: 12px 5px; border-radius: 8px; color: white; }
+        .prob-box { flex: 1; padding: 12px 5px; border-radius: 8px; color: white; } /* 預設全白字 */
         .home { background: #218838; }
-        .draw { background: #d39e00; color: #222; }
+        .draw { background: #d39e00; }
         .away { background: #c82333; }
         .prob-title { font-size: 13px; font-weight: bold; }
         .prob-value { font-size: 22px; font-weight: bold; margin-top: 5px; }
@@ -114,8 +114,6 @@
         .overall-row { display: flex; justify-content: space-between; background: #1e1e1e; padding: 8px 10px; border-radius: 6px; margin-top: 12px; border: 1px solid #444; }
         .overall-label { font-weight: bold; color: #ccc; }
         .overall-value { font-weight: bold; font-size: 16px; }
-
-        .conclusion { font-size: 16px; font-weight: bold; text-align: center; color: #4da6ff; padding: 15px; background: #1a2633; border-radius: 8px; margin-top: 15px; border: 1px dashed #4da6ff; word-wrap: break-word; }
     </style>
 </head>
 <body>
@@ -255,7 +253,6 @@
             </div>
         </div>
 
-        <div class="conclusion" id="conclusion"></div>
     </div>
 </div>
 
@@ -382,23 +379,23 @@
         const expHome = (hXg + aXga) / 2;
         const expAway = (aXg + hXga) / 2;
 
-        // 🔥 主客強弱測試分 (取代原本的淨勝球顯示)
+        // 主客強弱測試分
         const haTestScore = (hXg - aDef) + (hDef - aXg);
         const haTestEl = document.getElementById('haTestScoreValue');
         const haTestDescEl = document.getElementById('haTestScoreDesc');
         
         haTestEl.innerText = (haTestScore > 0 ? '+' : '') + haTestScore.toFixed(2);
         if (haTestScore > 1.0) {
-            haTestEl.style.color = "#4ade80"; // 綠色
+            haTestEl.style.color = "#4ade80";
             haTestDescEl.innerText = "主隊綜合實力明顯碾壓客隊";
         } else if (haTestScore > 0) {
-            haTestEl.style.color = "#8cb8ff"; // 藍色
+            haTestEl.style.color = "#8cb8ff";
             haTestDescEl.innerText = "主隊綜合實力稍佔上風";
         } else if (haTestScore < -1.0) {
-            haTestEl.style.color = "#f87171"; // 紅色
+            haTestEl.style.color = "#f87171";
             haTestDescEl.innerText = "客隊綜合實力明顯碾壓主隊";
         } else if (haTestScore < 0) {
-            haTestEl.style.color = "#d48cf0"; // 紫色
+            haTestEl.style.color = "#d48cf0";
             haTestDescEl.innerText = "客隊綜合實力稍佔上風";
         } else {
             haTestEl.style.color = "#ccc";
@@ -410,7 +407,7 @@
         document.getElementById('fAway').innerText = `(${aXg} + ${hXga}) ÷ 2 = ${expAway.toFixed(2)}`;
         document.getElementById('fHa').innerText = (haTestScore > 0 ? '+' : '') + haTestScore.toFixed(2);
 
-        // 🔥 入球傾向測試分 (加入不低於0的邏輯)
+        // 入球傾向測試分
         const homeAttackAdvantage = Math.max(0, hXg - aDef); 
         const awayAttackAdvantage = Math.max(0, aXg - hDef); 
         const goalsTestScore = homeAttackAdvantage + awayAttackAdvantage;
@@ -420,13 +417,13 @@
         
         goalsTestEl.innerText = '+' + goalsTestScore.toFixed(2);
         if (goalsTestScore > 0.5) {
-            goalsTestEl.style.color = "#4ade80"; // 綠色
+            goalsTestEl.style.color = "#4ade80"; 
             goalsTestDescEl.innerText = "雙方進攻火力大於防守，入球數偏多";
         } else if (goalsTestScore > 0) {
-            goalsTestEl.style.color = "#8cb8ff"; // 藍色
+            goalsTestEl.style.color = "#8cb8ff"; 
             goalsTestDescEl.innerText = "雙方互有攻守，但防守整體較穩";
         } else {
-            goalsTestEl.style.color = "#f87171"; // 紅色
+            goalsTestEl.style.color = "#f87171"; 
             goalsTestDescEl.innerText = "雙方防守完全壓制進攻，極大機會是入球極少的悶局";
         }
 
@@ -453,15 +450,6 @@
         document.getElementById('drawProb').innerText = (draw * 100).toFixed(1) + '%';
         document.getElementById('awayProb').innerText = (awayWin * 100).toFixed(1) + '%';
 
-        // 結論文字
-        let conclusionText = "";
-        if (haTestScore > 1.6) conclusionText = "🔥 主隊優勢極大，預計能輕鬆取勝。";
-        else if (haTestScore > 0.4) conclusionText = "⚖️ 主隊稍佔上風，小勝或和局機會較大。";
-        else if (haTestScore < -1.6) conclusionText = "🔥 客隊優勢極大，預計能輕鬆取勝。";
-        else if (haTestScore < -0.4) conclusionText = "⚖️ 客隊稍佔上風，小勝或和局機會較大。";
-        else conclusionText = "🤝 雙方勢均力敵，和局概率極高。";
-
-        document.getElementById('conclusion').innerText = conclusionText;
         document.getElementById('result').style.display = 'block';
     }
 </script>
