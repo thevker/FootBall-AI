@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xG 勝負預測分析器</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f9; color: #333; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h2 { text-align: center; color: #1a1a1a; margin-top: 0; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .input-box { flex: 1; display: flex; flex-direction: column; }
+        label { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #555; }
+        input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; outline: none; transition: border 0.2s; }
+        input:focus { border-color: #007bff; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
+        button:hover { background: #0056b3; }
+        
+        /* 結果顯示區 */
+        #result { margin-top: 25px; display: none; padding-top: 20px; border-top: 1px solid #eee; }
+        .probs { display: flex; justify-content: space-between; text-align: center; margin-bottom: 20px; }
+        .prob-box { flex: 1; padding: 10px; border-radius: 8px; margin: 0 5px; color: white; }
+        .home { background: #28a745; }
+        .draw { background: #ffc107; color: #333; }
+        .away { background: #dc3545; }
+        .prob-title { font-size: 14px; font-weight: bold; }
+        .prob-value { font-size: 24px; font-weight: bold; margin-top: 5px; }
+        
+        .expected { background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; line-height: 1.6; }
+        .conclusion { font-size: 16px; font-weight: bold; text-align: center; color: #007bff; padding: 10px; background: #e6f2ff; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📊 xG 賽事預測分析</h2>
+    <p style="font-size: 13px; color: #666; text-align: center;">輸入雙方 xG 與 xGA，系統將結合泊松分佈計算勝平負概率。</p>
+    
+    <div class="input-group">
+        <div class="input-box">
+            <label>主隊 xG (預期進球)</label>
+            <input type="number" id="homeXg" step="0.01" placeholder="例：1.95">
+        </div>
+        <div class="input-box">
+            <label>主隊 xGA (預期失球)</label>
+            <input type="number" id="homeXga" step="0.01" placeholder="例：1.28">
+        </div>
+    </div>
+
+    <div class="input-group">
+        <div class="input-box">
+            <label>客隊 xG (預期進球)</label>
+            <input type="number" id="awayXg" step="0.01" placeholder="例：1.50">
+        </div>
+        <div class="input-box">
+            <label>客隊 xGA (預期失球)</label>
+            <input type="number" id="awayXga" step="0.01" placeholder="例：1.80">
+        </div>
+    </div>
+
+    <button onclick="calculate()">開始分析</button>
+
+    <div id="result">
+        <div class="probs">
+            <div class="prob-box home">
+                <div class="prob-title">主勝</div>
+                <div class="prob-value" id="homeProb">0%</div>
+            </div>
+            <div class="prob-box draw">
+                <div class="prob-title">和局</div>
+                <div class="prob-value" id="drawProb">0%</div>
+            </div>
+            <div class="prob-box away">
+                <div class="prob-title">客勝</div>
+                <div class="prob-value" id="awayProb">0%</div>
+            </div>
+        </div>
+
+        <div class="expected">
+            <strong>📈 預期進球測算：</strong><br>
+            主隊預期進球: <span id="expHome">0.00</span> 球<br>
+            客隊預期進球: <span id="expAway">0.00</span> 球
+        </div>
+
+        <div class="conclusion" id="conclusion"></div>
+    </div>
+</div>
+
+<script>
+    // 階乘計算
+    function factorial(n) {
+        if (n === 0 || n === 1) return 1;
+        let res = 1;
+        for (let i = 2; i <= n; i++) res *= i;
+        return res;
+    }
+
+    // 泊松分佈機率：計算進 k 球的機率
+    function poisson(k, lambda) {
+        return (Math.pow(Math.E, -lambda) * Math.pow(lambda, k)) / factorial(k);
+    }
+
+    function calculate() {
+        // 獲取輸入值
+        const hXg = parseFloat(document.getElementById('homeXg').value) || 0;
+        const hXga = parseFloat(document.getElementById('homeXga').value) || 0;
+        const aXg = parseFloat(document.getElementById('awayXg').value) || 0;
+        const aXga = parseFloat(document.getElementById('awayXga').value) || 0;
+
+        // 懶人包結合公式：本隊預期進球 = (本隊 xG + 對手 xGA) / 2
+        const expHome = (hXg + aXga) / 2;
+        const expAway = (aXg + hXga) / 2;
+
+        // 使用泊松分佈計算比分概率矩陣 (簡化計算 0-5 球)
+        let homeWin = 0, draw = 0, awayWin = 0;
+
+        for (let i = 0; i <= 5; i++) {
+            for (let j = 0; j <= 5; j++) {
+                const pHome = poisson(i, expHome); // 主隊進 i 球
+                const pAway = poisson(j, expAway); // 客隊進 j 球
+                const prob = pHome * pAway; // 該比分出現的機率
+
+                if (i > j) homeWin += prob;
+                else if (i === j) draw += prob;
+                else awayWin += prob;
+            }
+        }
+
+        // 轉換為百分比
+        const hPercent = (homeWin * 100).toFixed(1);
+        const dPercent = (draw * 100).toFixed(1);
+        const aPercent = (awayWin * 100).toFixed(1);
+
+        // 更新 DOM
+        document.getElementById('homeProb').innerText = hPercent + '%';
+        document.getElementById('drawProb').innerText = dPercent + '%';
+        document.getElementById('awayProb').innerText = aPercent + '%';
+        
+        document.getElementById('expHome').innerText = expHome.toFixed(2);
+        document.getElementById('expAway').innerText = expAway.toFixed(2);
+
+        // 產生結論文字
+        let conclusionText = "";
+        if (homeWin > draw && homeWin > awayWin) {
+            if (homeWin > 0.55) conclusionText = "🔥 主隊優勢明顯，看好主勝。";
+            else conclusionText = "⚖️ 主隊稍佔上風，但需防和局。";
+        } else if (awayWin > homeWin && awayWin > draw) {
+            if (awayWin > 0.55) conclusionText = "🔥 客隊優勢明顯，看好客勝。";
+            else conclusionText = "⚖️ 客隊稍佔上風，但需防和局。";
+        } else {
+            if (draw > 0.30) conclusionText = "🤝 雙方勢均力敵，和局概率較高。";
+            else conclusionText = "⚠️ 勝負難料，建議觀望。";
+        }
+
+        document.getElementById('conclusion').innerText = conclusionText;
+        document.getElementById('result').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
