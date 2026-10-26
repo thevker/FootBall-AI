@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 全方位預測分析器 (彩色評級版)</title>
+    <title>xG 全方位預測分析器 (終極版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -77,9 +77,14 @@
         
         .rating-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 12px; }
         .rating-label { width: 40px; font-weight: bold; color: #aaa; }
-        /* 橫條背景，加點內陰影更有立體感 */
+        
+        /* 橫條背景 */
         .rating-bar-bg { flex: 1; background: #1a1a1a; height: 16px; border-radius: 8px; overflow: hidden; margin: 0 10px; position: relative; border: 1px solid #333; }
         .rating-bar-fill { height: 100%; border-radius: 8px; transition: width 0.5s ease; }
+        
+        /* 🔴 固定進攻紅色、🔵 固定防守藍色 */
+        .bar-attack { background: linear-gradient(90deg, #ff4d4d, #cc0000); } 
+        .bar-defense { background: linear-gradient(90deg, #4da6ff, #0056b3); } 
         
         /* 評級顯示 (字母 + 數值) */
         .rating-display { width: 65px; text-align: right; font-weight: bold; font-size: 13px; display: flex; justify-content: flex-end; gap: 4px; align-items: center; }
@@ -97,7 +102,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 彩色評級與數值顯示</p>
+    <p class="subtitle">深色模式 | 評級與橫條可視化</p>
     
     <div class="input-group">
         <div class="input-box">
@@ -165,7 +170,7 @@
                 <div class="team-name">🏠 主隊</div>
                 <div class="rating-row">
                     <div class="rating-label">進攻</div>
-                    <div class="rating-bar-bg"><div class="rating-bar-fill" id="hAttBar"></div></div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="hAttBar"></div></div>
                     <div class="rating-display">
                         <span class="rating-grade" id="hAttGrade">-</span>
                         <span class="rating-val" id="hAttVal">0.00</span>
@@ -173,7 +178,7 @@
                 </div>
                 <div class="rating-row">
                     <div class="rating-label">防守</div>
-                    <div class="rating-bar-bg"><div class="rating-bar-fill" id="hDefBar"></div></div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="hDefBar"></div></div>
                     <div class="rating-display">
                         <span class="rating-grade" id="hDefGrade">-</span>
                         <span class="rating-val" id="hDefVal">0.00</span>
@@ -190,7 +195,7 @@
                 <div class="team-name">✈️ 客隊</div>
                 <div class="rating-row">
                     <div class="rating-label">進攻</div>
-                    <div class="rating-bar-bg"><div class="rating-bar-fill" id="aAttBar"></div></div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="aAttBar"></div></div>
                     <div class="rating-display">
                         <span class="rating-grade" id="aAttGrade">-</span>
                         <span class="rating-val" id="aAttVal">0.00</span>
@@ -198,7 +203,7 @@
                 </div>
                 <div class="rating-row">
                     <div class="rating-label">防守</div>
-                    <div class="rating-bar-bg"><div class="rating-bar-fill" id="aDefBar"></div></div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="aDefBar"></div></div>
                     <div class="rating-display">
                         <span class="rating-grade" id="aDefGrade">-</span>
                         <span class="rating-val" id="aDefVal">0.00</span>
@@ -211,7 +216,7 @@
             </div>
 
             <div style="font-size: 11px; color: #777; margin-top: 15px; text-align: right;">
-                *防守力得分 = 2.8 - xGA (數值越高防守越好) <br>
+                *防守力得分 = 3.0 - xGA (數值越高防守越好) <br>
                 *橫條長度：1.0 (最左) 至 2.0 (最右)
             </div>
         </div>
@@ -221,7 +226,7 @@
 </div>
 
 <script>
-    // 取得評級、顏色與數值
+    // 取得評級與顏色
     function getRatingData(value) {
         let grade = '';
         let color = '';
@@ -231,7 +236,7 @@
         else if (value < 1.4) { grade = 'C'; color = '#ff4d4d'; } // 紅色
         else if (value < 1.6) { grade = 'B'; color = '#4ade80'; } // 綠色
         else if (value < 1.8) { grade = 'A'; color = '#4da6ff'; } // 藍色
-        else if (value < 2.0) { grade = 'S'; color = '#ff9f43'; } // 橙色
+        else if (value < 2.0) { grade = 'S'; color = '#FFD700'; } // ✨ S 改為黃色
         else { grade = 'EX'; color = '#9b59b6'; } // 紫色
 
         return { grade, color, value: value.toFixed(2) };
@@ -241,25 +246,24 @@
     function updateRatingBars(prefix, attValue, defValue) {
         // 1. 處理進攻 (xG)
         const attData = getRatingData(attValue);
-        // 計算百分比：1.0 為 0%，2.0 為 100%，限制在 0-100
         let attPct = ((attValue - 1.0) / 1.0) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100); 
         if (attPct < 5) attPct = 5; // 1.0以下給個最小5%讓視覺可見
 
         document.getElementById(prefix + 'AttBar').style.width = attPct + '%';
-        document.getElementById(prefix + 'AttBar').style.backgroundColor = attData.color;
+        // 注意：這裡不再動態設定 backgroundColor，保留 CSS 的紅色
         document.getElementById(prefix + 'AttGrade').innerText = attData.grade;
         document.getElementById(prefix + 'AttGrade').style.color = attData.color;
         document.getElementById(prefix + 'AttVal').innerText = attData.value;
 
-        // 2. 處理防守 (2.8 - xGA)
+        // 2. 處理防守
         const defData = getRatingData(defValue);
         let defPct = ((defValue - 1.0) / 1.0) * 100;
         defPct = Math.min(Math.max(defPct, 0), 100);
         if (defPct < 5) defPct = 5;
 
         document.getElementById(prefix + 'DefBar').style.width = defPct + '%';
-        document.getElementById(prefix + 'DefBar').style.backgroundColor = defData.color;
+        // 注意：這裡不再動態設定 backgroundColor，保留 CSS 的藍色
         document.getElementById(prefix + 'DefGrade').innerText = defData.grade;
         document.getElementById(prefix + 'DefGrade').style.color = defData.color;
         document.getElementById(prefix + 'DefVal').innerText = defData.value;
@@ -304,11 +308,11 @@
             marginDescEl.innerText = `預計雙方平手`;
         }
 
-        // 2. 更新球隊評級 (防守力 = 2.8 - xGA)
+        // 2. 更新球隊評級 (防守力 = 3.0 - xGA)
         const hAttack = hXg;
-        const hDefense = Math.max(0, 2.8 - hXga); 
+        const hDefense = Math.max(0, 3.0 - hXga); // 改回 3.0
         const aAttack = aXg;
-        const aDefense = Math.max(0, 2.8 - aXga);
+        const aDefense = Math.max(0, 3.0 - aXga); // 改回 3.0
         
         updateRatingBars('h', hAttack, hDefense);
         updateRatingBars('a', aAttack, aDefense);
