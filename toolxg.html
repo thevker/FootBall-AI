@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 全方位預測分析器 (攻+10% 防-10%版)</title>
+    <title>xG 全方位預測分析器 (自訂權重版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -32,16 +32,24 @@
         .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
         .input-box { flex: 1; display: flex; flex-direction: column; min-width: 0; }
         label { font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #bbbbbb; }
-        input { 
+        input, select { 
             width: 100%; padding: 10px; background-color: #2d2d2d; border: 1px solid #444; color: #ffffff; border-radius: 6px; font-size: 16px; outline: none; transition: border 0.2s; 
         }
-        input:focus { border-color: #4da6ff; }
+        input:focus, select:focus { border-color: #4da6ff; }
         
+        /* 權重選擇區 */
+        .weight-group {
+            display: flex; align-items: center; justify-content: space-between; 
+            background: #252525; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #333;
+        }
+        .weight-label { font-size: 14px; font-weight: bold; color: #ffd700; }
+        .weight-group select { width: 120px; padding: 8px; font-size: 14px; cursor: pointer; }
+
         /* 按鈕區 */
         button { 
             width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; 
         }
-        .btn-calculate { background: #3a7bd5; color: white; margin-top: 10px; }
+        .btn-calculate { background: #3a7bd5; color: white; }
         .btn-calculate:hover { background: #2a5fa5; }
         .btn-clear { background: #5a2a2a; color: #ff9999; margin-top: 10px; border: 1px solid #7a3a3a; }
         .btn-clear:hover { background: #7a3a3a; color: white; }
@@ -120,7 +128,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 進攻+10% 防守-10% 權重</p>
+    <p class="subtitle">深色模式 | 自訂權重調整</p>
     
     <div class="input-group">
         <div class="input-box">
@@ -144,6 +152,18 @@
         </div>
     </div>
 
+    <!-- 權重選擇 -->
+    <div class="weight-group">
+        <span class="weight-label">⚖️ 調整進攻/防守權重</span>
+        <select id="weightSelect">
+            <option value="0">0% (預設)</option>
+            <option value="0.05">5%</option>
+            <option value="0.10">10%</option>
+            <option value="0.15">15%</option>
+            <option value="0.20">20%</option>
+        </select>
+    </div>
+
     <button class="btn-calculate" onclick="calculate()">開始分析</button>
     <button class="btn-clear" onclick="clearData()">清除數據</button>
 
@@ -152,8 +172,9 @@
         <!-- 公式展示區 -->
         <div class="formula-box">
             <div class="formula-title">💡 預測公式：</div>
-            主預期進球 = (主 xG×1.10 + 客 xGA×1.10) ÷ 2 = <span id="fHome"></span><br>
-            客預期進球 = (客 xG×1.10 + 主 xGA×1.10) ÷ 2 = <span id="fAway"></span><br>
+            <span id="fWeightText"></span><br>
+            主預期進球 = (主 xG×加權 + 客 xGA×加權) ÷ 2 = <span id="fHome"></span><br>
+            客預期進球 = (客 xG×加權 + 主 xGA×加權) ÷ 2 = <span id="fAway"></span><br>
             <strong>主客強弱測試分 = <span id="fHa" style="color:#d48cf0;"></span></strong>
         </div>
 
@@ -189,7 +210,7 @@
 
         <!-- 球隊攻守評級與總實力 -->
         <div class="section-box">
-            <div class="section-title">📊 球隊實力評級 (加權後數值)</div>
+            <div class="section-title">📊 球隊實力評級 (已套用權重)</div>
             
             <!-- 主隊評級 -->
             <div class="team-rating-block">
@@ -248,8 +269,6 @@
             </div>
 
             <div style="font-size: 11px; color: #777; margin-top: 15px; text-align: right;">
-                *進攻得分 = xG * 1.10 <br>
-                *防守得分 = (3.0 - xGA) * 0.90 <br>
                 *橫條長度：1.0 (最左) 至 2.0 (最右)
             </div>
         </div>
@@ -371,26 +390,30 @@
         const hXga = parseFloat(document.getElementById('homeXga').value) || 0;
         const aXg = parseFloat(document.getElementById('awayXg').value) || 0;
         const aXga = parseFloat(document.getElementById('awayXga').value) || 0;
+        
+        // 🔥 取得權重
+        const weight = parseFloat(document.getElementById('weightSelect').value) || 0;
+        const multiplierAtt = 1 + weight;
+        const multiplierDef = 1 - weight;
 
-        // 🔥 套用權重：進攻乘 1.10，防守乘 0.90
-        const hAtt = hXg * 1.10;
-        const aAtt = aXg * 1.10;
-        const hDef = Math.max(0, 3.0 - hXga) * 0.90;
-        const aDef = Math.max(0, 3.0 - aXga) * 0.90;
+        // 套用權重
+        const hAtt = hXg * multiplierAtt;
+        const aAtt = aXg * multiplierAtt;
+        const hDef = Math.max(0, 3.0 - hXga) * multiplierDef;
+        const aDef = Math.max(0, 3.0 - aXga) * multiplierDef;
 
         // 計算交叉預期進球 (基於加權後的數值)
-        // 因為防守被削弱，所以預期失球數增加，這裡直接把 xGA 也乘上 1.10 代表進攻方更容易進球
-        const expHome = (hAtt + (aXga * 1.10)) / 2;
-        const expAway = (aAtt + (hXga * 1.10)) / 2;
+        // 因為防守被削弱，預期失球 (對手進球) 也會被放大
+        const expHome = (hAtt + (aXga * multiplierAtt)) / 2;
+        const expAway = (aAtt + (hXga * multiplierAtt)) / 2;
 
-        // 主客強弱測試分 (差值法)
+        // 主客強弱測試分
         const haTestScore = (hAtt - aDef) + (hDef - aAtt);
         const haTestEl = document.getElementById('haTestScoreValue');
         const haTestDescEl = document.getElementById('haTestScoreDesc');
         
         haTestEl.innerText = (haTestScore > 0 ? '+' : '') + haTestScore.toFixed(2);
         
-        // 🔥 修改判斷區間：-0.5 到 +0.5 之間建議和局
         if (haTestScore > 0.5) {
             haTestEl.style.color = "#4ade80";
             haTestDescEl.innerText = "主隊綜合實力明顯佔優";
@@ -398,11 +421,13 @@
             haTestEl.style.color = "#f87171";
             haTestDescEl.innerText = "客隊綜合實力明顯佔優";
         } else {
-            haTestEl.style.color = "#d48cf0"; // 紫色代表和局
+            haTestEl.style.color = "#d48cf0"; 
             haTestDescEl.innerText = "雙方實力非常接近，建議和局";
         }
 
-        // 更新公式區塊文字
+        // 更新公式文字
+        const weightPercent = (weight * 100).toFixed(0);
+        document.getElementById('fWeightText').innerText = weight === 0 ? "未套用權重 (0%)" : `目前權重：進攻 +${weightPercent}%，防守 -${weightPercent}%`;
         document.getElementById('fHome').innerText = `${expHome.toFixed(2)}`;
         document.getElementById('fAway').innerText = `${expAway.toFixed(2)}`;
         document.getElementById('fHa').innerText = (haTestScore > 0 ? '+' : '') + haTestScore.toFixed(2);
