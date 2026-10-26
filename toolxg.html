@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 全方位預測分析器 (純數據版)</title>
+    <title>xG 全方位預測分析器 (攻防修正版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -32,16 +32,31 @@
         .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
         .input-box { flex: 1; display: flex; flex-direction: column; min-width: 0; }
         label { font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #bbbbbb; }
-        input { 
+        input[type="text"] { 
             width: 100%; padding: 10px; background-color: #2d2d2d; border: 1px solid #444; color: #ffffff; border-radius: 6px; font-size: 16px; outline: none; transition: border 0.2s; 
         }
-        input:focus { border-color: #4da6ff; }
+        input[type="text"]:focus { border-color: #4da6ff; }
+
+        /* 開關設定區 */
+        .toggle-group {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #252525; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 15px;
+        }
+        .toggle-label { font-size: 14px; font-weight: bold; color: #ddd; }
         
+        /* 自訂開關樣式 */
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 26px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #3a7bd5; }
+        input:checked + .slider:before { transform: translateX(24px); }
+
         /* 按鈕區 */
         button { 
             width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; 
         }
-        .btn-calculate { background: #3a7bd5; color: white; margin-top: 5px; }
+        .btn-calculate { background: #3a7bd5; color: white; }
         .btn-calculate:hover { background: #2a5fa5; }
         .btn-clear { background: #5a2a2a; color: #ff9999; margin-top: 10px; border: 1px solid #7a3a3a; }
         .btn-clear:hover { background: #7a3a3a; color: white; }
@@ -120,7 +135,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 純數據計算</p>
+    <p class="subtitle">深色模式 | 數據與攻防修正</p>
     
     <div class="input-group">
         <div class="input-box">
@@ -144,6 +159,15 @@
         </div>
     </div>
 
+    <!-- 攻防修正開關 -->
+    <div class="toggle-group">
+        <span class="toggle-label">⚖️ 攻防修正 (進攻+10% / 防守-10%)</span>
+        <label class="switch">
+            <input type="checkbox" id="adjustToggle">
+            <span class="slider"></span>
+        </label>
+    </div>
+
     <button class="btn-calculate" onclick="calculate()">開始分析</button>
     <button class="btn-clear" onclick="clearData()">清除數據</button>
 
@@ -152,8 +176,9 @@
         <!-- 公式展示區 -->
         <div class="formula-box">
             <div class="formula-title">💡 預測公式：</div>
-            主預期進球 = (主 xG + 客 xGA) ÷ 2 = <span id="fHome"></span><br>
-            客預期進球 = (客 xG + 主 xGA) ÷ 2 = <span id="fAway"></span><br>
+            <span id="fSettingText" style="color: #ffd700; font-weight: bold;"></span><br><br>
+            主預期進球 = <span id="fHome"></span><br>
+            客預期進球 = <span id="fAway"></span><br>
             <strong>主客強弱測試分 = <span id="fHa" style="color:#d48cf0;"></span></strong>
         </div>
 
@@ -189,7 +214,7 @@
 
         <!-- 球隊攻守評級與總實力 -->
         <div class="section-box">
-            <div class="section-title">📊 球隊實力評級 (基於自身數據)</div>
+            <div class="section-title">📊 球隊實力評級</div>
             
             <!-- 主隊評級 -->
             <div class="team-rating-block">
@@ -302,6 +327,7 @@
         document.getElementById('homeXga').value = '';
         document.getElementById('awayXg').value = '';
         document.getElementById('awayXga').value = '';
+        document.getElementById('adjustToggle').checked = false; // 重設開關
         document.getElementById('result').style.display = 'none';
     }
 
@@ -370,17 +396,32 @@
         const hXga = parseFloat(document.getElementById('homeXga').value) || 0;
         const aXg = parseFloat(document.getElementById('awayXg').value) || 0;
         const aXga = parseFloat(document.getElementById('awayXga').value) || 0;
+        
+        // 讀取攻防修正開關
+        const isAdjustOn = document.getElementById('adjustToggle').checked;
+        
+        // 判斷是否套用乘數
+        const attMultiplier = isAdjustOn ? 1.10 : 1.0;
+        const defMultiplier = isAdjustOn ? 0.90 : 1.0;
 
-        // 原始防守力 (3.0 - xGA)
-        const hDef = Math.max(0, 3.0 - hXga);
-        const aDef = Math.max(0, 3.0 - aXga);
+        // 1. 計算基礎防守力 (3.0 - xGA) 並套用修正
+        const hDef = Math.max(0, 3.0 - hXga) * defMultiplier;
+        const aDef = Math.max(0, 3.0 - aXga) * defMultiplier;
 
-        // 計算交叉預期進球
-        const expHome = (hXg + aXga) / 2;
-        const expAway = (aXg + hXga) / 2;
+        // 2. 計算進攻力並套用修正
+        const hAtt = hXg * attMultiplier;
+        const aAtt = aXg * attMultiplier;
 
-        // 主客強弱測試分
-        const haTestScore = (hXg - aDef) + (hDef - aXg);
+        // 3. 轉換回等效 xGA (用於計算預期進球，防守力提升代表等效失球減少)
+        const hXgaAdj = Math.max(0, 3.0 - hDef);
+        const aXgaAdj = Math.max(0, 3.0 - aDef);
+
+        // 4. 計算交叉預期進球
+        const expHome = (hAtt + aXgaAdj) / 2;
+        const expAway = (aAtt + hXgaAdj) / 2;
+
+        // 5. 主客強弱測試分
+        const haTestScore = (hAtt - aDef) + (hDef - aAtt);
         const haTestEl = document.getElementById('haTestScoreValue');
         const haTestDescEl = document.getElementById('haTestScoreDesc');
         
@@ -397,14 +438,15 @@
             haTestDescEl.innerText = "雙方實力非常接近，建議和局";
         }
 
-        // 更新公式文字
-        document.getElementById('fHome').innerText = `(${hXg} + ${aXga}) ÷ 2 = ${expHome.toFixed(2)}`;
-        document.getElementById('fAway').innerText = `(${aXg} + ${hXga}) ÷ 2 = ${expAway.toFixed(2)}`;
+        // 6. 更新公式文字
+        document.getElementById('fSettingText').innerText = isAdjustOn ? "✅ 已開啟攻防修正 (進攻 +10% / 防守 -10%)" : "❌ 未套用攻防修正 (使用原始數據)";
+        document.getElementById('fHome').innerText = `${expHome.toFixed(2)}`;
+        document.getElementById('fAway').innerText = `${expAway.toFixed(2)}`;
         document.getElementById('fHa').innerText = (haTestScore > 0 ? '+' : '') + haTestScore.toFixed(2);
 
-        // 入球傾向測試分
-        const homeAttackAdvantage = Math.max(0, hXg - aDef); 
-        const awayAttackAdvantage = Math.max(0, aXg - hDef); 
+        // 7. 入球傾向測試分
+        const homeAttackAdvantage = Math.max(0, hAtt - aDef); 
+        const awayAttackAdvantage = Math.max(0, aAtt - hDef); 
         const goalsTestScore = homeAttackAdvantage + awayAttackAdvantage;
 
         const goalsTestEl = document.getElementById('goalsTestScoreValue');
@@ -422,11 +464,11 @@
             goalsTestDescEl.innerText = "雙方防守完全壓制進攻，極大機會是入球極少的悶局";
         }
 
-        // 更新球隊評級
-        updateRatingBars('h', hXg, hDef);
-        updateRatingBars('a', aXg, aDef);
+        // 8. 更新球隊評級
+        updateRatingBars('h', hAtt, hDef);
+        updateRatingBars('a', aAtt, aDef);
 
-        // 泊松分佈計算勝平負概率
+        // 9. 泊松分佈計算勝平負概率
         let homeWin = 0, draw = 0, awayWin = 0;
         const maxGoals = 6;
         const poisson = (k, lambda) => (Math.pow(Math.E, -lambda) * Math.pow(lambda, k)) / factorial(k);
