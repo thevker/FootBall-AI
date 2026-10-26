@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 全方位預測分析器 (攻防修正版)</title>
+    <title>xG 全方位預測分析器 (智能結論版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -85,13 +85,19 @@
         .home-away-test-box .test-title { color: #d48cf0; }
 
         /* 勝平負機率 */
-        .probs { display: flex; justify-content: space-between; text-align: center; margin-bottom: 20px; gap: 8px; }
-        .prob-box { flex: 1; padding: 12px 5px; border-radius: 8px; color: white; }
+        .probs { display: flex; justify-content: space-between; text-align: center; margin-bottom: 15px; gap: 8px; }
+        .prob-box { flex: 1; padding: 12px 5px; border-radius: 8px; color: white; opacity: 0.6; transition: 0.3s; }
+        .prob-box.active { opacity: 1; transform: scale(1.05); box-shadow: 0 0 15px rgba(255,255,255,0.2); border: 2px solid white; }
         .home { background: #218838; }
         .draw { background: #d39e00; }
         .away { background: #c82333; }
         .prob-title { font-size: 13px; font-weight: bold; }
         .prob-value { font-size: 22px; font-weight: bold; margin-top: 5px; }
+
+        /* 新增：智能結論框 */
+        .smart-conclusion {
+            text-align: center; font-size: 16px; font-weight: bold; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed;
+        }
 
         /* 球隊評級區塊 */
         .section-box { background: #252525; border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
@@ -135,7 +141,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 數據與攻防修正</p>
+    <p class="subtitle">深色模式 | 智能結論與攻防修正</p>
     
     <div class="input-group">
         <div class="input-box">
@@ -198,19 +204,22 @@
 
         <!-- 勝平負機率 -->
         <div class="probs">
-            <div class="prob-box home">
+            <div class="prob-box home" id="boxHome">
                 <div class="prob-title">主勝</div>
                 <div class="prob-value" id="homeProb">0%</div>
             </div>
-            <div class="prob-box draw">
+            <div class="prob-box draw" id="boxDraw">
                 <div class="prob-title">和局</div>
                 <div class="prob-value" id="drawProb">0%</div>
             </div>
-            <div class="prob-box away">
+            <div class="prob-box away" id="boxAway">
                 <div class="prob-title">客勝</div>
                 <div class="prob-value" id="awayProb">0%</div>
             </div>
         </div>
+
+        <!-- 🔥 新增：智能結論框 -->
+        <div class="smart-conclusion" id="smartConclusion"></div>
 
         <!-- 球隊攻守評級與總實力 -->
         <div class="section-box">
@@ -327,7 +336,7 @@
         document.getElementById('homeXga').value = '';
         document.getElementById('awayXg').value = '';
         document.getElementById('awayXga').value = '';
-        document.getElementById('adjustToggle').checked = false; // 重設開關
+        document.getElementById('adjustToggle').checked = false;
         document.getElementById('result').style.display = 'none';
     }
 
@@ -397,54 +406,57 @@
         const aXg = parseFloat(document.getElementById('awayXg').value) || 0;
         const aXga = parseFloat(document.getElementById('awayXga').value) || 0;
         
-        // 讀取攻防修正開關
         const isAdjustOn = document.getElementById('adjustToggle').checked;
-        
-        // 判斷是否套用乘數
         const attMultiplier = isAdjustOn ? 1.10 : 1.0;
         const defMultiplier = isAdjustOn ? 0.90 : 1.0;
 
-        // 1. 計算基礎防守力 (3.0 - xGA) 並套用修正
+        // 計算防守力並套用修正
         const hDef = Math.max(0, 3.0 - hXga) * defMultiplier;
         const aDef = Math.max(0, 3.0 - aXga) * defMultiplier;
 
-        // 2. 計算進攻力並套用修正
+        // 計算進攻力並套用修正
         const hAtt = hXg * attMultiplier;
         const aAtt = aXg * attMultiplier;
 
-        // 3. 轉換回等效 xGA (用於計算預期進球，防守力提升代表等效失球減少)
+        // 轉換回等效 xGA
         const hXgaAdj = Math.max(0, 3.0 - hDef);
         const aXgaAdj = Math.max(0, 3.0 - aDef);
 
-        // 4. 計算交叉預期進球
+        // 計算交叉預期進球
         const expHome = (hAtt + aXgaAdj) / 2;
         const expAway = (aAtt + hXgaAdj) / 2;
 
-        // 5. 主客強弱測試分
+        // 主客強弱測試分 (單純顯示強度差，不再給出「建議和局」的死板文字)
         const haTestScore = (hAtt - aDef) + (hDef - aAtt);
         const haTestEl = document.getElementById('haTestScoreValue');
         const haTestDescEl = document.getElementById('haTestScoreDesc');
         
         haTestEl.innerText = (haTestScore > 0 ? '+' : '') + haTestScore.toFixed(2);
         
-        if (haTestScore > 0.5) {
+        if (haTestScore > 0.8) {
             haTestEl.style.color = "#4ade80";
-            haTestDescEl.innerText = "主隊綜合實力明顯佔優";
-        } else if (haTestScore < -0.5) {
+            haTestDescEl.innerText = "主隊綜合實力明顯碾壓";
+        } else if (haTestScore > 0.2) {
+            haTestEl.style.color = "#8cb8ff";
+            haTestDescEl.innerText = "主隊綜合實力稍佔上風";
+        } else if (haTestScore < -0.8) {
             haTestEl.style.color = "#f87171";
-            haTestDescEl.innerText = "客隊綜合實力明顯佔優";
-        } else {
+            haTestDescEl.innerText = "客隊綜合實力明顯碾壓";
+        } else if (haTestScore < -0.2) {
             haTestEl.style.color = "#d48cf0"; 
-            haTestDescEl.innerText = "雙方實力非常接近，建議和局";
+            haTestDescEl.innerText = "客隊綜合實力稍佔上風";
+        } else {
+            haTestEl.style.color = "#ccc"; 
+            haTestDescEl.innerText = "雙方綜合實力極度接近";
         }
 
-        // 6. 更新公式文字
+        // 更新公式文字
         document.getElementById('fSettingText').innerText = isAdjustOn ? "✅ 已開啟攻防修正 (進攻 +10% / 防守 -10%)" : "❌ 未套用攻防修正 (使用原始數據)";
         document.getElementById('fHome').innerText = `${expHome.toFixed(2)}`;
         document.getElementById('fAway').innerText = `${expAway.toFixed(2)}`;
         document.getElementById('fHa').innerText = (haTestScore > 0 ? '+' : '') + haTestScore.toFixed(2);
 
-        // 7. 入球傾向測試分
+        // 入球傾向測試分
         const homeAttackAdvantage = Math.max(0, hAtt - aDef); 
         const awayAttackAdvantage = Math.max(0, aAtt - hDef); 
         const goalsTestScore = homeAttackAdvantage + awayAttackAdvantage;
@@ -464,11 +476,11 @@
             goalsTestDescEl.innerText = "雙方防守完全壓制進攻，極大機會是入球極少的悶局";
         }
 
-        // 8. 更新球隊評級
+        // 更新球隊評級
         updateRatingBars('h', hAtt, hDef);
         updateRatingBars('a', aAtt, aDef);
 
-        // 9. 泊松分佈計算勝平負概率
+        // 泊松分佈計算勝平負概率
         let homeWin = 0, draw = 0, awayWin = 0;
         const maxGoals = 6;
         const poisson = (k, lambda) => (Math.pow(Math.E, -lambda) * Math.pow(lambda, k)) / factorial(k);
@@ -483,9 +495,40 @@
             }
         }
 
-        document.getElementById('homeProb').innerText = (homeWin * 100).toFixed(1) + '%';
-        document.getElementById('drawProb').innerText = (draw * 100).toFixed(1) + '%';
-        document.getElementById('awayProb').innerText = (awayWin * 100).toFixed(1) + '%';
+        const homePct = homeWin * 100;
+        const drawPct = draw * 100;
+        const awayPct = awayWin * 100;
+
+        document.getElementById('homeProb').innerText = homePct.toFixed(1) + '%';
+        document.getElementById('drawProb').innerText = drawPct.toFixed(1) + '%';
+        document.getElementById('awayProb').innerText = awayPct.toFixed(1) + '%';
+
+        // 🔥 智能結論判定與 UI 高亮
+        document.getElementById('boxHome').classList.remove('active');
+        document.getElementById('boxDraw').classList.remove('active');
+        document.getElementById('boxAway').classList.remove('active');
+
+        const conclusionEl = document.getElementById('smartConclusion');
+        
+        if (homePct >= drawPct && homePct >= awayPct) {
+            document.getElementById('boxHome').classList.add('active');
+            conclusionEl.innerText = "🔥 數據顯示主勝機率最高，建議博主勝。";
+            conclusionEl.style.color = "#4ade80";
+            conclusionEl.style.background = "#1a3324";
+            conclusionEl.style.borderColor = "#4ade80";
+        } else if (awayPct >= homePct && awayPct >= drawPct) {
+            document.getElementById('boxAway').classList.add('active');
+            conclusionEl.innerText = "🔥 數據顯示客勝機率最高，建議博客勝。";
+            conclusionEl.style.color = "#f87171";
+            conclusionEl.style.background = "#331a1a";
+            conclusionEl.style.borderColor = "#f87171";
+        } else {
+            document.getElementById('boxDraw').classList.add('active');
+            conclusionEl.innerText = "🤝 數據顯示和局機率最高，建議博和局。";
+            conclusionEl.style.color = "#ffd700";
+            conclusionEl.style.background = "#332d1a";
+            conclusionEl.style.borderColor = "#ffd700";
+        }
 
         document.getElementById('result').style.display = 'block';
     }
