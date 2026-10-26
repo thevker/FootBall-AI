@@ -36,10 +36,15 @@
             width: 100%; padding: 10px; background-color: #2d2d2d; border: 1px solid #444; color: #ffffff; border-radius: 6px; font-size: 16px; outline: none; transition: border 0.2s; 
         }
         input:focus { border-color: #4da6ff; }
+        
+        /* 按鈕區 */
         button { 
-            width: 100%; padding: 12px; background: #3a7bd5; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: background 0.2s; 
+            width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; 
         }
-        button:hover { background: #2a5fa5; }
+        .btn-calculate { background: #3a7bd5; color: white; margin-top: 10px; }
+        .btn-calculate:hover { background: #2a5fa5; }
+        .btn-clear { background: #5a2a2a; color: #ff9999; margin-top: 10px; border: 1px solid #7a3a3a; }
+        .btn-clear:hover { background: #7a3a3a; color: white; }
         
         /* 結果區 */
         #result { margin-top: 25px; display: none; padding-top: 20px; border-top: 1px solid #333; }
@@ -73,7 +78,14 @@
         
         .team-rating-block { margin-bottom: 20px; }
         .team-rating-block:last-child { margin-bottom: 0; }
-        .team-name { font-size: 15px; font-weight: bold; color: #4da6ff; margin-bottom: 10px; text-align: center; }
+        
+        /* 球隊名稱與風格標籤 */
+        .team-name { 
+            font-size: 15px; font-weight: bold; color: #4da6ff; margin-bottom: 10px; text-align: center; display: flex; justify-content: center; align-items: center; gap: 8px;
+        }
+        .team-style { 
+            font-size: 12px; padding: 2px 8px; border-radius: 12px; background: #333; color: #ccc; font-weight: normal;
+        }
         
         .rating-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 12px; }
         .rating-label { width: 40px; font-weight: bold; color: #aaa; }
@@ -82,9 +94,11 @@
         .rating-bar-bg { flex: 1; background: #1a1a1a; height: 16px; border-radius: 8px; overflow: hidden; margin: 0 10px; position: relative; border: 1px solid #333; }
         .rating-bar-fill { height: 100%; border-radius: 8px; transition: width 0.5s ease; }
         
-        /* 🔴 固定進攻紅色、🔵 固定防守藍色 */
-        .bar-attack { background: linear-gradient(90deg, #ff4d4d, #cc0000); } 
-        .bar-defense { background: linear-gradient(90deg, #4da6ff, #0056b3); } 
+        /* 🔴 進攻：淺粉紅 -> 亮紅 */
+        .bar-attack { background: linear-gradient(90deg, #ff9999, #ff4d4d); } 
+        
+        /* 🔵 防守：淺天藍 -> 亮藍 */
+        .bar-defense { background: linear-gradient(90deg, #99ccff, #4da6ff); } 
         
         /* 評級顯示 (字母 + 數值) */
         .rating-display { width: 65px; text-align: right; font-weight: bold; font-size: 13px; display: flex; justify-content: flex-end; gap: 4px; align-items: center; }
@@ -126,7 +140,8 @@
         </div>
     </div>
 
-    <button onclick="calculate()">開始分析</button>
+    <button class="btn-calculate" onclick="calculate()">開始分析</button>
+    <button class="btn-clear" onclick="clearData()">清除數據</button>
 
     <div id="result">
         
@@ -167,7 +182,10 @@
             
             <!-- 主隊評級 -->
             <div class="team-rating-block">
-                <div class="team-name">🏠 主隊</div>
+                <div class="team-name">
+                    <span>🏠 主隊</span>
+                    <span class="team-style" id="hStyle">-</span>
+                </div>
                 <div class="rating-row">
                     <div class="rating-label">進攻</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="hAttBar"></div></div>
@@ -192,7 +210,10 @@
 
             <!-- 客隊評級 -->
             <div class="team-rating-block">
-                <div class="team-name">✈️ 客隊</div>
+                <div class="team-name">
+                    <span>✈️ 客隊</span>
+                    <span class="team-style" id="aStyle">-</span>
+                </div>
                 <div class="rating-row">
                     <div class="rating-label">進攻</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="aAttBar"></div></div>
@@ -226,6 +247,15 @@
 </div>
 
 <script>
+    // 清除數據
+    function clearData() {
+        document.getElementById('homeXg').value = '';
+        document.getElementById('homeXga').value = '';
+        document.getElementById('awayXg').value = '';
+        document.getElementById('awayXga').value = '';
+        document.getElementById('result').style.display = 'none';
+    }
+
     // 取得評級與顏色
     function getRatingData(value) {
         let grade = '';
@@ -236,10 +266,17 @@
         else if (value < 1.4) { grade = 'C'; color = '#ff4d4d'; } // 紅色
         else if (value < 1.6) { grade = 'B'; color = '#4ade80'; } // 綠色
         else if (value < 1.8) { grade = 'A'; color = '#4da6ff'; } // 藍色
-        else if (value < 2.0) { grade = 'S'; color = '#FFD700'; } // ✨ S 改為黃色
+        else if (value < 2.0) { grade = 'S'; color = '#FFD700'; } // 黃色
         else { grade = 'EX'; color = '#9b59b6'; } // 紫色
 
         return { grade, color, value: value.toFixed(2) };
+    }
+
+    // 判斷球隊風格
+    function getTeamStyle(attValue, defValue) {
+        if (attValue >= defValue * 2) return "進攻型";
+        if (defValue >= attValue * 2) return "防守型";
+        return "平衡型";
     }
 
     // 更新橫條 UI 的函數
@@ -251,19 +288,17 @@
         if (attPct < 5) attPct = 5; // 1.0以下給個最小5%讓視覺可見
 
         document.getElementById(prefix + 'AttBar').style.width = attPct + '%';
-        // 注意：這裡不再動態設定 backgroundColor，保留 CSS 的紅色
         document.getElementById(prefix + 'AttGrade').innerText = attData.grade;
         document.getElementById(prefix + 'AttGrade').style.color = attData.color;
         document.getElementById(prefix + 'AttVal').innerText = attData.value;
 
-        // 2. 處理防守
+        // 2. 處理防守 (3.0 - xGA)
         const defData = getRatingData(defValue);
         let defPct = ((defValue - 1.0) / 1.0) * 100;
         defPct = Math.min(Math.max(defPct, 0), 100);
         if (defPct < 5) defPct = 5;
 
         document.getElementById(prefix + 'DefBar').style.width = defPct + '%';
-        // 注意：這裡不再動態設定 backgroundColor，保留 CSS 的藍色
         document.getElementById(prefix + 'DefGrade').innerText = defData.grade;
         document.getElementById(prefix + 'DefGrade').style.color = defData.color;
         document.getElementById(prefix + 'DefVal').innerText = defData.value;
@@ -274,6 +309,23 @@
         const overallEl = document.getElementById(prefix + 'Overall');
         overallEl.innerText = `${overallData.grade} (${overallData.value})`;
         overallEl.style.color = overallData.color;
+
+        // 4. 更新球隊風格標籤
+        const styleEl = document.getElementById(prefix + 'Style');
+        const styleText = getTeamStyle(attValue, defValue);
+        styleEl.innerText = styleText;
+        
+        // 根據風格給予不同顏色
+        if (styleText === "進攻型") {
+            styleEl.style.color = "#ff9999";
+            styleEl.style.backgroundColor = "#331a1a";
+        } else if (styleText === "防守型") {
+            styleEl.style.color = "#99ccff";
+            styleEl.style.backgroundColor = "#1a2633";
+        } else {
+            styleEl.style.color = "#ccc";
+            styleEl.style.backgroundColor = "#333";
+        }
     }
 
     function calculate() {
@@ -310,14 +362,14 @@
 
         // 2. 更新球隊評級 (防守力 = 3.0 - xGA)
         const hAttack = hXg;
-        const hDefense = Math.max(0, 3.0 - hXga); // 改回 3.0
+        const hDefense = Math.max(0, 3.0 - hXga); 
         const aAttack = aXg;
-        const aDefense = Math.max(0, 3.0 - aXga); // 改回 3.0
+        const aDefense = Math.max(0, 3.0 - aXga); 
         
         updateRatingBars('h', hAttack, hDefense);
         updateRatingBars('a', aAttack, aDefense);
 
-        // 3. 泊松分佈計算勝平負概率 (簡化版)
+        // 3. 泊松分佈計算勝平負概率
         let homeWin = 0, draw = 0, awayWin = 0;
         const maxGoals = 6;
         const poisson = (k, lambda) => (Math.pow(Math.E, -lambda) * Math.pow(lambda, k)) / factorial(k);
