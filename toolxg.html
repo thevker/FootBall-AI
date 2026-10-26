@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 全方位預測分析器 (測試分防守加倍版)</title>
+    <title>xG 全方位預測分析器 (防守 0-1 映射版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -131,7 +131,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 測試分防守加倍版</p>
+    <p class="subtitle">深色模式 | 防守 0.0-1.0 映射版</p>
     
     <div class="input-group">
         <div class="input-box">
@@ -223,7 +223,7 @@
 
         <!-- 球隊攻守評級與總實力 -->
         <div class="section-box">
-            <div class="section-title">📊 球隊實力評級 (未套用測試分加倍)</div>
+            <div class="section-title">📊 球隊實力評級</div>
             
             <!-- 主隊評級 -->
             <div class="team-rating-block">
@@ -282,7 +282,8 @@
             </div>
 
             <div style="font-size: 11px; color: #777; margin-top: 15px; text-align: right;">
-                *橫條長度：1.0 (最左) 至 2.0 (最右)
+                *進攻橫條：1.0 (最左) 至 2.0 (最右) <br>
+                *防守橫條：0.0 (最左) 至 1.0 (最右)
             </div>
         </div>
 
@@ -338,15 +339,6 @@
         document.getElementById('result').style.display = 'none';
     }
 
-    // 🔥 專屬防守放大函數 (完全符合你提供的 4 個例子)
-    function buffDefense(d) {
-        if (d >= 1) {
-            return d + (d - 1); // 1.20 -> 1.40, 1.55 -> 2.10
-        } else {
-            return d + (1 - d) / 2; // 0.86 -> 0.93, 0.60 -> 0.80
-        }
-    }
-
     function getRatingData(value) {
         let grade = ''; let color = '';
         if (value < 1.0) { grade = 'E'; color = '#c0c0c0'; }
@@ -367,6 +359,7 @@
     }
 
     function updateRatingBars(prefix, attValue, defValue) {
+        // 1. 處理進攻 (1.0 - 2.0 映射)
         const attData = getRatingData(attValue);
         let attPct = ((attValue - 1.0) / 1.0) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100); 
@@ -376,8 +369,9 @@
         document.getElementById(prefix + 'AttGrade').style.color = attData.color;
         document.getElementById(prefix + 'AttVal').innerText = attData.value;
 
+        // 2. 處理防守 (0.0 - 1.0 映射)
         const defData = getRatingData(defValue);
-        let defPct = ((defValue - 1.0) / 1.0) * 100;
+        let defPct = (defValue / 1.0) * 100; 
         defPct = Math.min(Math.max(defPct, 0), 100);
         if (defPct < 5) defPct = 5;
         document.getElementById(prefix + 'DefBar').style.width = defPct + '%';
@@ -385,12 +379,14 @@
         document.getElementById(prefix + 'DefGrade').style.color = defData.color;
         document.getElementById(prefix + 'DefVal').innerText = defData.value;
 
+        // 3. 計算總實力
         const overallValue = (attValue + defValue) / 2;
         const overallData = getRatingData(overallValue);
         const overallEl = document.getElementById(prefix + 'Overall');
         overallEl.innerText = `${overallData.grade} (${overallData.value})`;
         overallEl.style.color = overallData.color;
 
+        // 4. 判斷球隊風格
         const styleEl = document.getElementById(prefix + 'Style');
         const styleText = getTeamStyle(attValue, defValue);
         styleEl.innerText = styleText;
@@ -421,30 +417,26 @@
         const multiplierAtt = 1 + weight;
         const multiplierDef = 1 - weight;
 
-        // 1. 取得基礎防守力 (3.0 - xGA)
-        let baseHDef = Math.max(0, 3.0 - hXga);
-        let baseADef = Math.max(0, 3.0 - aXga);
+        // 1. 取得基礎防守力 (2.0 - xGA，不會低於 0)
+        let baseHDef = Math.max(0, 2.0 - hXga);
+        let baseADef = Math.max(0, 2.0 - aXga);
 
-        // 2. 套用主場優勢與權重 (用於顯示和預期進球計算的常規數值)
+        // 2. 套用主場優勢與權重
         let hAtt = hXg * homeAdvMultiplier * multiplierAtt;
         let hDef = baseHDef * homeAdvMultiplier * multiplierDef;
         let aAtt = aXg * multiplierAtt;
         let aDef = baseADef * multiplierDef;
 
-        // 🔥 3. 計算「測試分專用」的防守數值 (套用放大機制)
-        const hDefForTest = buffDefense(hDef);
-        const aDefForTest = buffDefense(aDef);
+        // 3. 轉換回等效 xGA (用於計算預期進球)
+        const hXgaAdj = Math.max(0, 2.0 - hDef);
+        const aXgaAdj = Math.max(0, 2.0 - aDef);
 
-        // 4. 轉換回等效 xGA (用常規防守數值)
-        const hXgaAdj = Math.max(0, 3.0 - hDef);
-        const aXgaAdj = Math.max(0, 3.0 - aDef);
-
-        // 5. 計算交叉預期進球 (用常規數值)
+        // 4. 計算交叉預期進球
         const expHome = (hAtt + aXgaAdj) / 2;
         const expAway = (aAtt + hXgaAdj) / 2;
 
-        // 6. 主客強弱測試分 (🔥 使用放大後的防守數值)
-        const haTestScore = (hAtt - aDefForTest) + (hDefForTest - aAtt);
+        // 5. 主客強弱測試分
+        const haTestScore = (hAtt - aDef) + (hDef - aAtt);
         const haTestEl = document.getElementById('haTestScoreValue');
         const haTestDescEl = document.getElementById('haTestScoreDesc');
         
@@ -461,7 +453,7 @@
             haTestDescEl.innerText = "雙方實力非常接近，建議和局";
         }
 
-        // 7. 更新公式文字
+        // 6. 更新公式文字
         const advPercent = (homeAdv * 100).toFixed(0);
         const weightPercent = (weight * 100).toFixed(0);
         let settingText = [];
@@ -473,9 +465,9 @@
         document.getElementById('fAway').innerText = `${expAway.toFixed(2)}`;
         document.getElementById('fHa').innerText = (haTestScore > 0 ? '+' : '') + haTestScore.toFixed(2);
 
-        // 8. 入球傾向測試分 (🔥 使用放大後的防守數值)
-        const homeAttackAdvantage = Math.max(0, hAtt - aDefForTest); 
-        const awayAttackAdvantage = Math.max(0, aAtt - hDefForTest); 
+        // 7. 入球傾向測試分
+        const homeAttackAdvantage = Math.max(0, hAtt - aDef); 
+        const awayAttackAdvantage = Math.max(0, aAtt - hDef); 
         const goalsTestScore = homeAttackAdvantage + awayAttackAdvantage;
 
         const goalsTestEl = document.getElementById('goalsTestScoreValue');
@@ -493,11 +485,11 @@
             goalsTestDescEl.innerText = "雙方防守完全壓制進攻，極大機會是入球極少的悶局";
         }
 
-        // 9. 更新球隊評級 (顯示常規數值，不套用放大)
+        // 8. 更新球隊評級
         updateRatingBars('h', hAtt, hDef);
         updateRatingBars('a', aAtt, aDef);
 
-        // 10. 泊松分佈計算勝平負概率 (用常規數值)
+        // 9. 泊松分佈計算勝平負概率
         let homeWin = 0, draw = 0, awayWin = 0;
         const maxGoals = 6;
         const poisson = (k, lambda) => (Math.pow(Math.E, -lambda) * Math.pow(lambda, k)) / factorial(k);
