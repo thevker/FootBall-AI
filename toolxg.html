@@ -328,7 +328,7 @@
 
     // 更新單一球隊的 UI
     function updateTeamUI(prefix, att, def, status, oddsPct, isHome) {
-        // 1. 計算各項目的百分比 (0-100)
+        // 1. 計算各項目的真實百分比 (0-100)
         let attPct = ((att - 1.0) / 1.0) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100);
 
@@ -338,13 +338,19 @@
         let statPct = (status / 3.0) * 100;
         statPct = Math.min(Math.max(statPct, 0), 100);
 
-        // 2. 更新橫條寬度 (賠率已由外部計算好傳入)
-        document.getElementById(prefix + 'AttBar').style.width = attPct + '%';
-        document.getElementById(prefix + 'DefBar').style.width = defPct + '%';
-        document.getElementById(prefix + 'StatBar').style.width = statPct + '%';
-        document.getElementById(prefix + 'OddsBar').style.width = oddsPct + '%';
+        // 2. 計算視覺寬度 (至少保留 1% 寬度)
+        const visualAttPct = Math.max(attPct, 1);
+        const visualDefPct = Math.max(defPct, 1);
+        const visualStatPct = Math.max(statPct, 1);
+        const visualOddsPct = Math.max(oddsPct, 1);
 
-        // 3. 取得各項評級並更新文字顯示
+        // 更新橫條寬度 (使用保底 1% 的視覺寬度)
+        document.getElementById(prefix + 'AttBar').style.width = visualAttPct + '%';
+        document.getElementById(prefix + 'DefBar').style.width = visualDefPct + '%';
+        document.getElementById(prefix + 'StatBar').style.width = visualStatPct + '%';
+        document.getElementById(prefix + 'OddsBar').style.width = visualOddsPct + '%';
+
+        // 3. 取得各項評級並更新文字顯示 (文字依然顯示真實的 0.0)
         const attData = getGradeByPercent(attPct);
         const defData = getGradeByPercent(defPct);
         const statData = getGradeByPercent(statPct);
@@ -362,7 +368,7 @@
         document.getElementById(prefix + 'OddsDisplay').innerText = `${oddsData.grade} (${oddsPct.toFixed(1)})`;
         document.getElementById(prefix + 'OddsDisplay').style.color = oddsData.color;
 
-        // 4. 計算綜合總實力
+        // 4. 計算綜合總實力 (用真實百分比相加)
         const overallPct = (attPct + defPct + statPct + oddsPct) / 4;
         const overallData = getGradeByPercent(overallPct);
         const overallEl = document.getElementById(prefix + 'Overall');
@@ -401,7 +407,7 @@
             statusBadge.style.backgroundColor = "#1c3b24";
         }
 
-        // 7. 盤口標籤 (改為基於賠率佔比分數，>50% 為上盤)
+        // 7. 盤口標籤
         const oddsBadge = document.getElementById(prefix + 'OddsBadge');
         if (oddsPct > 50) {
             oddsBadge.style.display = "inline-block";
@@ -454,7 +460,7 @@
         const hDef = Math.max(0, 3.0 - hXga);
         const aDef = Math.max(0, 3.0 - aXga);
 
-        // 2. 計算賠率佔比 (例如主 2.00 客 3.00 -> 主 60% 客 40%)
+        // 2. 計算賠率佔比
         const totalOdds = hOdds + aOdds;
         const hOddsPct = totalOdds > 0 ? (aOdds / totalOdds) * 100 : 50;
         const aOddsPct = totalOdds > 0 ? (hOdds / totalOdds) * 100 : 50;
