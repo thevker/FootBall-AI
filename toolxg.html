@@ -55,6 +55,14 @@
         }
         .formula-title { font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #ffd700; }
 
+        /* 測試分區塊 */
+        .test-score-box {
+            background: #1c263b; border: 1px solid #2a4066; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center;
+        }
+        .test-score-title { font-size: 14px; font-weight: bold; color: #8cb8ff; margin-bottom: 5px; }
+        .test-score-value { font-size: 28px; font-weight: bold; margin: 5px 0; }
+        .test-score-desc { font-size: 13px; color: #a0a0a0; }
+
         /* 預測淨勝球區塊 */
         .margin-box { 
             background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center; border-left: 5px solid #6c757d; 
@@ -121,22 +129,22 @@
     <div class="input-group">
         <div class="input-box">
             <label>主隊 xG (預期進球)</label>
-            <input type="number" id="homeXg" step="0.01" placeholder="例：1.41">
+            <input type="text" id="homeXg" maxlength="3" placeholder="例：1.41" onblur="formatInput(this)">
         </div>
         <div class="input-box">
             <label>主隊 xGA (預期失球)</label>
-            <input type="number" id="homeXga" step="0.01" placeholder="例：1.29">
+            <input type="text" id="homeXga" maxlength="3" placeholder="例：1.29" onblur="formatInput(this)">
         </div>
     </div>
 
     <div class="input-group">
         <div class="input-box">
             <label>客隊 xG (預期進球)</label>
-            <input type="number" id="awayXg" step="0.01" placeholder="例：1.26">
+            <input type="text" id="awayXg" maxlength="3" placeholder="例：1.26" onblur="formatInput(this)">
         </div>
         <div class="input-box">
             <label>客隊 xGA (預期失球)</label>
-            <input type="number" id="awayXga" step="0.01" placeholder="例：1.67">
+            <input type="text" id="awayXga" maxlength="3" placeholder="例：1.67" onblur="formatInput(this)">
         </div>
     </div>
 
@@ -151,6 +159,13 @@
             主預期進球 = (主 xG + 客 xGA) ÷ 2 = <span id="fHome"></span><br>
             客預期進球 = (客 xG + 主 xGA) ÷ 2 = <span id="fAway"></span><br>
             <strong>預測淨勝球 = <span id="fMargin" style="color:#ff6b6b;"></span></strong>
+        </div>
+
+        <!-- 新增：測試分區塊 -->
+        <div class="test-score-box">
+            <div class="test-score-title">🧪 攻防測試分</div>
+            <div class="test-score-value" id="testScoreValue">0.00</div>
+            <div class="test-score-desc" id="testScoreDesc">計算中...</div>
         </div>
 
         <!-- 預測淨勝球 -->
@@ -247,6 +262,45 @@
 </div>
 
 <script>
+    // 輸入框自動格式化
+    function formatInput(input) {
+        let val = input.value;
+        if (!val) return;
+        
+        // 移除非數字和非小數點的字符
+        val = val.replace(/[^0-9.]/g, '');
+        
+        if (val.includes('.')) {
+            // 如果已有小數點，確保小數點後兩位
+            let parts = val.split('.');
+            let integerPart = parts[0] || '0';
+            let decimalPart = parts[1] || '00';
+            decimalPart = decimalPart.padEnd(2, '0').substring(0, 2);
+            val = integerPart + '.' + decimalPart;
+        } else {
+            // 沒有小數點的自動補全邏輯
+            if (val.length === 3) {
+                // 125 -> 1.25
+                val = val.substring(0, 1) + '.' + val.substring(1);
+            } else if (val.length === 2) {
+                // 12 -> 1.20, 85 -> 0.85
+                let num = parseInt(val);
+                if (num > 30) {
+                    val = '0.' + val;
+                } else {
+                    val = val.substring(0, 1) + '.' + val.substring(1) + '0';
+                }
+            } else if (val.length === 1) {
+                // 2 -> 2.00
+                val = val + '.00';
+            }
+        }
+        
+        let num = parseFloat(val);
+        if (isNaN(num)) num = 0;
+        input.value = num.toFixed(2);
+    }
+
     // 清除數據
     function clearData() {
         document.getElementById('homeXg').value = '';
@@ -272,7 +326,7 @@
         return { grade, color, value: value.toFixed(2) };
     }
 
-    // 🔥 修正：判斷球隊風格 (基於長條百分比長度)
+    // 判斷球隊風格 (基於長條百分比長度)
     function getTeamStyle(attPct, defPct) {
         if (attPct >= defPct * 2) return "進攻型";
         if (defPct >= attPct * 2) return "防守型";
@@ -283,10 +337,9 @@
     function updateRatingBars(prefix, attValue, defValue) {
         // 1. 處理進攻 (xG)
         const attData = getRatingData(attValue);
-        // 計算長條百分比：1.0 為 0%，2.0 為 100%，限制在 0-100
         let attPct = ((attValue - 1.0) / 1.0) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100); 
-        if (attPct < 5) attPct = 5; // 1.0以下給個最小5%讓視覺可見
+        if (attPct < 5) attPct = 5;
 
         document.getElementById(prefix + 'AttBar').style.width = attPct + '%';
         document.getElementById(prefix + 'AttGrade').innerText = attData.grade;
@@ -295,7 +348,6 @@
 
         // 2. 處理防守 (3.0 - xGA)
         const defData = getRatingData(defValue);
-        // 計算長條百分比
         let defPct = ((defValue - 1.0) / 1.0) * 100;
         defPct = Math.min(Math.max(defPct, 0), 100);
         if (defPct < 5) defPct = 5;
@@ -312,7 +364,7 @@
         overallEl.innerText = `${overallData.grade} (${overallData.value})`;
         overallEl.style.color = overallData.color;
 
-        // 4. 更新球隊風格標籤 (傳入長條百分比進行比較)
+        // 4. 更新球隊風格標籤
         const styleEl = document.getElementById(prefix + 'Style');
         const styleText = getTeamStyle(attPct, defPct);
         styleEl.innerText = styleText;
@@ -335,6 +387,10 @@
         const aXg = parseFloat(document.getElementById('awayXg').value) || 0;
         const aXga = parseFloat(document.getElementById('awayXga').value) || 0;
 
+        // 防守力得分 (3.0 - xGA)
+        const hDef = Math.max(0, 3.0 - hXga);
+        const aDef = Math.max(0, 3.0 - aXga);
+
         // 1. 計算交叉預期進球與淨勝球
         const expHome = (hXg + aXga) / 2;
         const expAway = (aXg + hXga) / 2;
@@ -343,6 +399,23 @@
         document.getElementById('fHome').innerText = `(${hXg} + ${aXga}) ÷ 2 = ${expHome.toFixed(2)}`;
         document.getElementById('fAway').innerText = `(${aXg} + ${hXga}) ÷ 2 = ${expAway.toFixed(2)}`;
         document.getElementById('fMargin').innerText = `${expHome.toFixed(2)} - ${expAway.toFixed(2)} = ${predMargin > 0 ? '+' : ''}${predMargin.toFixed(2)}`;
+
+        // 2. 計算測試分 (主攻 - 客防) + (客攻 - 主防)
+        const testScore = (hXg - aDef) + (aXg - hDef);
+        const testEl = document.getElementById('testScoreValue');
+        const testDescEl = document.getElementById('testScoreDesc');
+        
+        testEl.innerText = (testScore > 0 ? '+' : '') + testScore.toFixed(2);
+        if (testScore > 0.5) {
+            testEl.style.color = "#4ade80"; // 綠色
+            testDescEl.innerText = "雙方進攻火力大於防守，入球數偏多";
+        } else if (testScore < -0.5) {
+            testEl.style.color = "#f87171"; // 紅色
+            testDescEl.innerText = "雙方防守較穩，或進攻便秘，入球數偏少";
+        } else {
+            testEl.style.color = "#8cb8ff"; // 藍色
+            testDescEl.innerText = "攻防相對平衡，勝負取決於臨場發揮";
+        }
 
         // 更新淨勝球區塊
         const marginEl = document.getElementById('marginValue');
@@ -361,16 +434,11 @@
             marginDescEl.innerText = `預計雙方平手`;
         }
 
-        // 2. 更新球隊評級
-        const hAttack = hXg;
-        const hDefense = Math.max(0, 3.0 - hXga); 
-        const aAttack = aXg;
-        const aDefense = Math.max(0, 3.0 - aXga); 
-        
-        updateRatingBars('h', hAttack, hDefense);
-        updateRatingBars('a', aAttack, aDefense);
+        // 3. 更新球隊評級
+        updateRatingBars('h', hXg, hDef);
+        updateRatingBars('a', aXg, aDef);
 
-        // 3. 泊松分佈計算勝平負概率
+        // 4. 泊松分佈計算勝平負概率
         let homeWin = 0, draw = 0, awayWin = 0;
         const maxGoals = 6;
         const poisson = (k, lambda) => (Math.pow(Math.E, -lambda) * Math.pow(lambda, k)) / factorial(k);
