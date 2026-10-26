@@ -3,92 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 全方位預測分析器</title>
+    <title>xG 全方位預測分析器 (Dark Mode)</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f9; color: #333; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 650px; }
-        h2 { text-align: center; color: #1a1a1a; margin-top: 0; }
+        /* 全局深色模式設定 */
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #121212; 
+            color: #e0e0e0; 
+            margin: 0; 
+            padding: 15px; 
+            display: flex; 
+            justify-content: center; 
+            min-height: 100vh;
+        }
+        .container { 
+            background: #1e1e1e; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+            width: 100%; 
+            max-width: 600px; 
+        }
+        h2 { text-align: center; color: #ffffff; margin-top: 0; font-size: 22px; }
+        p.subtitle { font-size: 13px; color: #aaaaaa; text-align: center; margin-bottom: 20px; }
+        
+        /* 輸入區 */
         .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
-        .input-box { flex: 1; display: flex; flex-direction: column; }
-        label { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #555; }
-        input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; outline: none; transition: border 0.2s; }
-        input:focus { border-color: #007bff; }
-        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
-        button:hover { background: #0056b3; }
+        .input-box { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        label { font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #bbbbbb; }
+        input { 
+            width: 100%;
+            padding: 10px; 
+            background-color: #2d2d2d; 
+            border: 1px solid #444; 
+            color: #ffffff; 
+            border-radius: 6px; 
+            font-size: 16px; 
+            outline: none; 
+            transition: border 0.2s; 
+        }
+        input:focus { border-color: #4da6ff; }
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background: #3a7bd5; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 10px; 
+            transition: background 0.2s; 
+        }
+        button:hover { background: #2a5fa5; }
         
-        #result { margin-top: 25px; display: none; padding-top: 20px; border-top: 1px solid #eee; }
+        /* 結果區 */
+        #result { margin-top: 25px; display: none; padding-top: 20px; border-top: 1px solid #333; }
         
-        /* 公式展示區 */
-        .formula-box { background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #856404; line-height: 1.6; }
-        .formula-title { font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        /* 公式展示區 (修復出界問題) */
+        .formula-box { 
+            background: #332d1a; 
+            border: 1px solid #665c33; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 15px; 
+            font-size: 13px; 
+            color: #e5c07b; 
+            line-height: 1.8; 
+            word-wrap: break-word; 
+            overflow-wrap: break-word;
+        }
+        .formula-title { font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #ffd700; }
+
+        /* 預測淨勝球區塊 */
+        .margin-box { 
+            background: #2a2a2a; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 15px; 
+            text-align: center; 
+            border-left: 5px solid #6c757d; 
+        }
+        .margin-title { font-size: 14px; font-weight: bold; color: #aaaaaa; }
+        .margin-value { font-size: 28px; font-weight: bold; margin: 5px 0; }
+        .margin-desc { font-size: 13px; color: #888; }
 
         /* 勝平負機率 */
-        .probs { display: flex; justify-content: space-between; text-align: center; margin-bottom: 20px; }
-        .prob-box { flex: 1; padding: 10px; border-radius: 8px; margin: 0 5px; color: white; }
-        .home { background: #28a745; }
-        .draw { background: #ffc107; color: #333; }
-        .away { background: #dc3545; }
-        .prob-title { font-size: 14px; font-weight: bold; }
-        .prob-value { font-size: 24px; font-weight: bold; margin-top: 5px; }
-        
-        /* 淨勝球區塊 */
-        .margin-box { background: #e2e3e5; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center; border-left: 5px solid #6c757d; }
-        .margin-title { font-size: 14px; font-weight: bold; color: #495057; }
-        .margin-value { font-size: 28px; font-weight: bold; margin: 5px 0; color: #343a40; }
-        .margin-desc { font-size: 12px; color: #6c757d; }
+        .probs { display: flex; justify-content: space-between; text-align: center; margin-bottom: 20px; gap: 8px; }
+        .prob-box { flex: 1; padding: 12px 5px; border-radius: 8px; color: white; }
+        .home { background: #218838; }
+        .draw { background: #d39e00; color: #222; }
+        .away { background: #c82333; }
+        .prob-title { font-size: 13px; font-weight: bold; }
+        .prob-value { font-size: 22px; font-weight: bold; margin-top: 5px; }
 
         /* 共用區塊樣式 */
-        .section-box { background: #f8f9fa; border: 1px solid #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .section-title { font-size: 15px; font-weight: bold; margin-bottom: 10px; color: #495057; border-left: 4px solid #007bff; padding-left: 8px; }
+        .section-box { background: #252525; border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .section-title { font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #dddddd; border-left: 4px solid #4da6ff; padding-left: 8px; }
         
         /* 數據對比網格 */
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; }
-        .stat-item { background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #dee2e6; text-align: center; }
-        .stat-label { font-weight: bold; color: #6c757d; margin-bottom: 5px; }
-        .stat-val { font-size: 16px; font-weight: bold; color: #007bff; }
-        .stat-sub { font-size: 11px; color: #888; margin-top: 3px; }
+        .stat-item { background: #1e1e1e; padding: 10px; border-radius: 6px; border: 1px solid #333; text-align: center; }
+        .stat-label { font-weight: bold; color: #999; margin-bottom: 5px; font-size: 12px; }
+        .stat-val { font-size: 18px; font-weight: bold; }
+        .stat-sub { font-size: 12px; color: #777; margin-top: 5px; }
 
         /* 波膽表格 */
         .score-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .score-table th, .score-table td { padding: 8px; text-align: center; border-bottom: 1px solid #dee2e6; }
-        .score-table th { background: #e9ecef; color: #495057; font-weight: bold; }
+        .score-table th, .score-table td { padding: 8px; text-align: center; border-bottom: 1px solid #333; }
+        .score-table th { background: #1e1e1e; color: #999; font-weight: bold; }
         .score-table tr:last-child td { border-bottom: none; }
+        .score-val { font-weight: bold; font-size: 16px; color: #fff; }
+        .score-pct { color: #ff6b6b; font-weight: bold; }
         
         /* 入球數進度條 */
-        .goals-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 14px; }
-        .goals-label { width: 80px; font-weight: bold; color: #555; }
-        .goals-bar-bg { flex: 1; background: #e9ecef; height: 16px; border-radius: 8px; overflow: hidden; margin: 0 10px; }
-        .goals-bar-fill { height: 100%; background: #17a2b8; border-radius: 8px; }
+        .goals-row { display: flex; align-items: center; margin-bottom: 10px; font-size: 13px; }
+        .goals-label { width: 70px; font-weight: bold; color: #aaa; }
+        .goals-bar-bg { flex: 1; background: #333; height: 14px; border-radius: 7px; overflow: hidden; margin: 0 10px; }
+        .goals-bar-fill { height: 100%; background: #17a2b8; border-radius: 7px; transition: width 0.5s ease; }
         .goals-value { width: 50px; text-align: right; font-weight: bold; color: #17a2b8; }
 
-        .conclusion { font-size: 16px; font-weight: bold; text-align: center; color: #007bff; padding: 12px; background: #e6f2ff; border-radius: 8px; margin-top: 15px; border: 1px dashed #007bff; }
+        .conclusion { font-size: 16px; font-weight: bold; text-align: center; color: #4da6ff; padding: 15px; background: #1a2633; border-radius: 8px; margin-top: 15px; border: 1px dashed #4da6ff; word-wrap: break-word; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>📊 xG 全方位預測分析器</h2>
-    <p style="font-size: 13px; color: #666; text-align: center;">輸入數據，自動推算淨勝球、波膽、入球數及雙方進球概率。</p>
+    <p class="subtitle">深色模式 | 自動推算淨勝球、波膽及入球數概率</p>
     
     <div class="input-group">
         <div class="input-box">
             <label>主隊 xG (預期進球)</label>
-            <input type="number" id="homeXg" step="0.01" placeholder="例：1.95">
+            <input type="number" id="homeXg" step="0.01" placeholder="例：1.41">
         </div>
         <div class="input-box">
             <label>主隊 xGA (預期失球)</label>
-            <input type="number" id="homeXga" step="0.01" placeholder="例：1.28">
+            <input type="number" id="homeXga" step="0.01" placeholder="例：1.29">
         </div>
     </div>
 
     <div class="input-group">
         <div class="input-box">
             <label>客隊 xG (預期進球)</label>
-            <input type="number" id="awayXg" step="0.01" placeholder="例：1.50">
+            <input type="number" id="awayXg" step="0.01" placeholder="例：1.26">
         </div>
         <div class="input-box">
             <label>客隊 xGA (預期失球)</label>
-            <input type="number" id="awayXga" step="0.01" placeholder="例：1.80">
+            <input type="number" id="awayXga" step="0.01" placeholder="例：1.67">
         </div>
     </div>
 
@@ -96,15 +160,15 @@
 
     <div id="result">
         
-        <!-- 公式展示區 (新增) -->
+        <!-- 公式展示區 -->
         <div class="formula-box">
             <div class="formula-title">💡 計算公式揭秘：</div>
             主預期進球 = (主 xG + 客 xGA) ÷ 2 = <span id="fHome"></span><br>
             客預期進球 = (客 xG + 主 xGA) ÷ 2 = <span id="fAway"></span><br>
-            <strong>預測淨勝球 = 主預期進球 - 客預期進球 = <span id="fMargin" style="color:#d9534f;"></span></strong>
+            <strong>預測淨勝球 = 主預期進球 - 客預期進球 = <span id="fMargin" style="color:#ff6b6b;"></span></strong>
         </div>
 
-        <!-- 預測淨勝球 (新增) -->
+        <!-- 預測淨勝球 -->
         <div class="margin-box">
             <div class="margin-title">⚔️ 預測全場淨勝球</div>
             <div class="margin-value" id="marginValue">+0.00</div>
@@ -127,28 +191,21 @@
             </div>
         </div>
 
-        <!-- 球隊風格與 xGD 對比 (新增) -->
+        <!-- 球隊風格與 xGD 對比 -->
         <div class="section-box">
             <div class="section-title">🛡️ 球隊風格與整體實力 (基於自身 xG-xGA)</div>
             <div class="stat-grid">
                 <div class="stat-item">
-                    <div class="stat-label">主隊自身 xGD (xG-xGA)</div>
+                    <div class="stat-label">主隊自身 xGD</div>
                     <div class="stat-val" id="homeXgdVal">0.00</div>
                     <div class="stat-sub" id="homeStyle">加載中...</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-label">客隊自身 xGD (xG-xGA)</div>
+                    <div class="stat-label">客隊自身 xGD</div>
                     <div class="stat-val" id="awayXgdVal">0.00</div>
                     <div class="stat-sub" id="awayStyle">加載中...</div>
                 </div>
             </div>
-        </div>
-
-        <!-- BTTS 雙方進球概率 (新增) -->
-        <div class="section-box" style="text-align: center;">
-            <div class="section-title" style="text-align: left;">🎯 雙方都進球 (BTTS) 概率</div>
-            <div style="font-size: 24px; font-weight: bold; color: #e83e8c;" id="bttsProb">0%</div>
-            <div style="font-size: 12px; color: #666; margin-top: 5px;">主隊進球且客隊進球的概率</div>
         </div>
 
         <!-- 波膽預測 -->
@@ -186,6 +243,7 @@
         return (Math.pow(Math.E, -lambda) * Math.pow(lambda, k)) / factorial(k);
     }
 
+    // 判斷球隊風格
     function getStyleText(xg, xga) {
         const xgd = xg - xga;
         if (xg > 1.6 && xga < 1.0) return "頂級強隊 (攻守兼備)";
@@ -217,15 +275,15 @@
         const marginDescEl = document.getElementById('marginDesc');
         if (predMargin > 0) {
             marginEl.innerText = `+${predMargin.toFixed(2)}`;
-            marginEl.style.color = "#28a745";
+            marginEl.style.color = "#4ade80"; // 亮綠色
             marginDescEl.innerText = `預計主隊淨勝 ${predMargin.toFixed(2)} 球`;
         } else if (predMargin < 0) {
             marginEl.innerText = `${predMargin.toFixed(2)}`;
-            marginEl.style.color = "#dc3545";
+            marginEl.style.color = "#f87171"; // 亮紅色
             marginDescEl.innerText = `預計客隊淨勝 ${Math.abs(predMargin).toFixed(2)} 球`;
         } else {
             marginEl.innerText = `0.00`;
-            marginEl.style.color = "#6c757d";
+            marginEl.style.color = "#aaaaaa";
             marginDescEl.innerText = `預計雙方平手`;
         }
 
@@ -233,15 +291,15 @@
         const hXgd = hXg - hXga;
         const aXgd = aXg - aXga;
         document.getElementById('homeXgdVal').innerText = (hXgd > 0 ? '+' : '') + hXgd.toFixed(2);
-        document.getElementById('homeXgdVal').style.color = hXgd >= 0 ? '#28a745' : '#dc3545';
+        document.getElementById('homeXgdVal').style.color = hXgd >= 0 ? '#4ade80' : '#f87171';
         document.getElementById('homeStyle').innerText = getStyleText(hXg, hXga);
 
         document.getElementById('awayXgdVal').innerText = (aXgd > 0 ? '+' : '') + aXgd.toFixed(2);
-        document.getElementById('awayXgdVal').style.color = aXgd >= 0 ? '#28a745' : '#dc3545';
+        document.getElementById('awayXgdVal').style.color = aXgd >= 0 ? '#4ade80' : '#f87171';
         document.getElementById('awayStyle').innerText = getStyleText(aXg, aXga);
 
         // 3. 泊松分佈計算比分
-        let homeWin = 0, draw = 0, awayWin = 0, btts = 0;
+        let homeWin = 0, draw = 0, awayWin = 0;
         let scores = [];
         let totalGoalsProbs = { '0-1': 0, '2-3': 0, '4+': 0 };
         const maxGoals = 6;
@@ -256,8 +314,6 @@
                 else if (i === j) draw += prob;
                 else awayWin += prob;
 
-                if (i > 0 && j > 0) btts += prob; // BTTS 概率
-
                 const totalG = i + j;
                 if (totalG <= 1) totalGoalsProbs['0-1'] += prob;
                 else if (totalG <= 3) totalGoalsProbs['2-3'] += prob;
@@ -267,11 +323,10 @@
             }
         }
 
-        // 更新勝平負與 BTTS
+        // 更新勝平負
         document.getElementById('homeProb').innerText = (homeWin * 100).toFixed(1) + '%';
         document.getElementById('drawProb').innerText = (draw * 100).toFixed(1) + '%';
         document.getElementById('awayProb').innerText = (awayWin * 100).toFixed(1) + '%';
-        document.getElementById('bttsProb').innerText = (btts * 100).toFixed(1) + '%';
 
         // 波膽 Top 5
         scores.sort((a, b) => b.prob - a.prob);
@@ -279,14 +334,14 @@
         scoreTbody.innerHTML = '';
         scores.slice(0, 5).forEach((item, index) => {
             let tr = document.createElement('tr');
-            tr.innerHTML = `<td>${index + 1}</td><td style="font-weight:bold; font-size:16px;">${item.score}</td><td style="color:#dc3545; font-weight:bold;">${(item.prob * 100).toFixed(1)}%</td>`;
+            tr.innerHTML = `<td>${index + 1}</td><td class="score-val">${item.score}</td><td class="score-pct">${(item.prob * 100).toFixed(1)}%</td>`;
             scoreTbody.appendChild(tr);
         });
 
         // 入球數進度條
         const goalsContainer = document.getElementById('goalsContainer');
         goalsContainer.innerHTML = '';
-        const goalsLabels = { '0-1': '0 - 1 球', '2-3': '2 - 3 球', '4+': '4 球或以上' };
+        const goalsLabels = { '0-1': '0 - 1 球', '2-3': '2 - 3 球', '4+': '4 球以上' };
         for (let key in totalGoalsProbs) {
             const probPct = totalGoalsProbs[key] * 100;
             const row = document.createElement('div');
