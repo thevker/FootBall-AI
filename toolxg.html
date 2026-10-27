@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 賽事分析器 (五維實力版)</title>
+    <title>xG 賽事分析器 (五維實力與排名標籤版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -87,6 +87,12 @@
         /* 通用標籤樣式 */
         .badge { 
             font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; 
+        }
+
+        /* 排名專屬白色標籤 */
+        .badge-rank {
+            background-color: #ffffff;
+            color: #121212;
         }
 
         /* 橫條行 */
@@ -207,6 +213,7 @@
                     <span class="badge" id="hStyle">-</span>
                     <span class="badge" id="hStatusBadge">-</span>
                     <span class="badge" id="hOddsBadge" style="display:none;">-</span>
+                    <span class="badge badge-rank" id="hRankBadge" style="display:none;">-</span>
                 </div>
                 <div class="rating-row">
                     <div class="rating-label">進攻</div>
@@ -246,6 +253,7 @@
                     <span class="badge" id="aStyle">-</span>
                     <span class="badge" id="aStatusBadge">-</span>
                     <span class="badge" id="aOddsBadge" style="display:none;">-</span>
+                    <span class="badge badge-rank" id="aRankBadge" style="display:none;">-</span>
                 </div>
                 <div class="rating-row">
                     <div class="rating-label">進攻</div>
@@ -360,7 +368,7 @@
     }
 
     // 更新單一球隊的 UI
-    function updateTeamUI(prefix, att, def, status, oddsPct, rankPct) {
+    function updateTeamUI(prefix, att, def, status, oddsPct, rankPct, rankValue) {
         // 1. 計算各項目的真實百分比 (0-100)
         let attPct = ((att - 1.0) / 1.0) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100);
@@ -461,6 +469,15 @@
         } else {
             oddsBadge.style.display = "none";
         }
+
+        // 8. 排名標籤 (白色)
+        const rankBadge = document.getElementById(prefix + 'RankBadge');
+        if (rankValue > 0 && rankPct > 0) {
+            rankBadge.style.display = "inline-block";
+            rankBadge.innerText = `第${Math.round(rankValue)}名`;
+        } else {
+            rankBadge.style.display = "none";
+        }
     }
 
     function calculate() {
@@ -514,8 +531,8 @@
         const aRankPct = totalRank > 0 ? (hRank / totalRank) * 100 : 50;
 
         // 更新 UI
-        updateTeamUI('h', hXg, hDef, hStatus, hOddsPct, hRankPct);
-        updateTeamUI('a', aXg, aDef, aStatus, aOddsPct, aRankPct);
+        updateTeamUI('h', hXg, hDef, hStatus, hOddsPct, hRankPct, hRank);
+        updateTeamUI('a', aXg, aDef, aStatus, aOddsPct, aRankPct, aRank);
 
         // --- 預測賽果邏輯 ---
         const hAdvantage = Math.max(0, hXg - aDef);
