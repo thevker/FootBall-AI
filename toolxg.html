@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 賽事分析器</title>
+    <title>xG 賽事分析器 (防矛盾與大球收緊版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -195,7 +195,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 五維雷達與實力兜底 (30%)</p>
+    <p class="subtitle">深色模式 | 防矛盾與大球收緊版</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -374,7 +374,7 @@
             <div style="font-size: 11px; color: #777; margin-top: 15px; text-align: right;">
                 *排名得分 = 對手排名 / (主排名 + 客排名) * 100% <br>
                 *綜合總實力 = (五條橫條長度 % 總和) / 5 <br>
-                <span style="color:#d48cf0;">*若 xG 判定為和局，但綜合實力差距 >= 30%，則強制判定為優勢方勝。</span>
+                <span style="color:#d48cf0;">*若預測勝負與綜合總實力相悖，則判定為「不建議出手」。<br>*大球門檻為傾向分 > 0.7。</span>
             </div>
         </div>
 
@@ -463,7 +463,7 @@
         return "bal";
     }
 
-    // 繪製雷達圖 (放大版，完美防出界)
+    // 繪製雷達圖
     function drawRadar(svgId, data, color, fillColor) {
         const svg = document.getElementById(svgId);
         svg.innerHTML = ''; 
@@ -760,6 +760,15 @@
             }
         }
 
+        // 🔥 第三層：防矛盾機制 (勝負必須與綜合總實力相符)
+        if (finalResult === "home" && hOverallPct <= aOverallPct) {
+            finalResult = "avoid";
+            diffDisplay += ` (實力不符)`;
+        } else if (finalResult === "away" && aOverallPct <= hOverallPct) {
+            finalResult = "avoid";
+            diffDisplay += ` (實力不符)`;
+        }
+
         resultDiff.innerText = `差距值：${diffDisplay}`;
 
         if (finalResult === "home") {
@@ -772,14 +781,19 @@
             resultValue.style.color = "#f87171";
             resultBox.style.borderColor = "#f87171";
             resultBox.style.backgroundColor = "#331a1a";
-        } else {
+        } else if (finalResult === "draw") {
             resultValue.innerText = "和局";
             resultValue.style.color = "#ffd700";
             resultBox.style.borderColor = "#ffd700";
             resultBox.style.backgroundColor = "#332d1a";
+        } else {
+            resultValue.innerText = "不建議出手";
+            resultValue.style.color = "#aaa";
+            resultBox.style.borderColor = "#555";
+            resultBox.style.backgroundColor = "#2a2a2a";
         }
 
-        // --- 預測大小邏輯 (改為 <= 0.1 推薦細球) ---
+        // --- 預測大小邏輯 (改為 > 0.7 推薦大球) ---
         const totalGoalsIndicator = hAdvantage + aAdvantage; 
         
         const goalsResultBox = document.getElementById('goalsResultBox');
@@ -793,7 +807,7 @@
             goalsResultValue.style.color = "#8cb8ff"; 
             goalsResultBox.style.borderColor = "#8cb8ff";
             goalsResultBox.style.backgroundColor = "#1a2633";
-        } else if (totalGoalsIndicator > 0.5) {
+        } else if (totalGoalsIndicator > 0.7) {
             goalsResultValue.innerText = "建議 2.5 入球大";
             goalsResultValue.style.color = "#f87171"; 
             goalsResultBox.style.borderColor = "#f87171";
