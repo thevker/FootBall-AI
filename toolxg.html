@@ -80,10 +80,11 @@
         /* 雷達圖容器 */
         .radar-container {
             display: flex;
-            justify-content: space-around;
+            justify-content: center;
             align-items: center;
+            gap: 20px;
             margin-bottom: 20px;
-            padding: 10px;
+            padding: 10px 0;
             background: #1a1a1a;
             border-radius: 8px;
             border: 1px solid #333;
@@ -97,13 +98,12 @@
             font-size: 14px;
             font-weight: bold;
             margin-bottom: 5px;
-            margin-top: 5px;
         }
         .radar-title.home { color: #ff6b6b; }
         .radar-title.away { color: #6b9fff; }
         
-        /* 放大 SVG 畫布 */
-        svg { width: 180px; height: 180px; }
+        /* 縮小 SVG 畫布以完美貼合 */
+        svg { width: 150px; height: 150px; }
 
         .team-rating-block { margin-bottom: 20px; }
         .team-rating-block:last-child { margin-bottom: 0; }
@@ -119,10 +119,9 @@
             font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; 
         }
 
-        /* 排名專屬白色標籤 */
+        /* 排名專屬標籤 (顏色由 JS 動態決定) */
         .badge-rank {
-            background-color: #ffffff;
-            color: #121212;
+            color: #ffffff; /* 統一白字 */
         }
 
         /* 橫條行 */
@@ -420,15 +419,14 @@
         return "bal";
     }
 
-    // 繪製放大版 SVG 雷達圖 (無圓點、有英文簡稱)
+    // 繪製雷達圖 (縮小字體與半徑防止出界)
     function drawRadar(svgId, data, color, fillColor) {
         const svg = document.getElementById(svgId);
         svg.innerHTML = ''; 
         
-        // 尺寸放大
         const cx = 100; 
         const cy = 100; 
-        const maxR = 65; 
+        const maxR = 60; 
         const numAxes = 5;
         const angleStep = (Math.PI * 2) / numAxes;
         const startAngle = -Math.PI / 2; 
@@ -469,15 +467,15 @@
             line.setAttribute('stroke-width', '1');
             svg.appendChild(line);
 
-            // 英文簡稱文字
-            const labelR = maxR + 18;
+            // 英文簡稱文字 (縮小字體，拉近距離)
+            const labelR = maxR + 15;
             const tx = cx + labelR * Math.cos(angle);
             const ty = cy + labelR * Math.sin(angle);
             const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             text.setAttribute('x', tx);
             text.setAttribute('y', ty);
-            text.setAttribute('fill', '#bbb');
-            text.setAttribute('font-size', '11');
+            text.setAttribute('fill', '#aaa');
+            text.setAttribute('font-size', '9'); // 字體改為 9
             text.setAttribute('font-weight', 'bold');
             text.setAttribute('text-anchor', 'middle');
             text.setAttribute('dominant-baseline', 'middle');
@@ -608,10 +606,22 @@
             oddsBadge.style.display = "none";
         }
 
+        // 排名標籤 (金、銀、銅、深灰) - 統一白字
         const rankBadge = document.getElementById(prefix + 'RankBadge');
         if (rankValue > 0 && rankPct > 0) {
             rankBadge.style.display = "inline-block";
             rankBadge.innerText = `第${Math.round(rankValue)}名`;
+            rankBadge.style.color = "#FFFFFF"; // 強制白字
+            
+            if (rankValue === 1) {
+                rankBadge.style.backgroundColor = "#FFD700"; // 金色
+            } else if (rankValue === 2) {
+                rankBadge.style.backgroundColor = "#A9A9A9"; // 深銀色
+            } else if (rankValue === 3) {
+                rankBadge.style.backgroundColor = "#8B4513"; // 深銅色
+            } else {
+                rankBadge.style.backgroundColor = "#555555"; // 深灰色取代白色
+            }
         } else {
             rankBadge.style.display = "none";
         }
