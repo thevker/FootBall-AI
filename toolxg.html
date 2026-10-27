@@ -82,7 +82,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 5px; /* 縮小間距，靠中間 */
+            gap: 5px;
             margin-bottom: 20px;
             padding: 10px 0;
             background: #1a1a1a;
@@ -102,7 +102,7 @@
         .radar-title.home { color: #ff6b6b; }
         .radar-title.away { color: #6b9fff; }
         
-        /* 放大 SVG 畫布 */
+        /* SVG 畫布 */
         svg { width: 170px; height: 170px; }
 
         .team-rating-block { margin-bottom: 20px; }
@@ -119,7 +119,7 @@
             font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; 
         }
 
-        /* 排名專屬標籤 (基礎設定) */
+        /* 排名專屬標籤 */
         .badge-rank {
             color: #ffffff;
             transition: box-shadow 0.3s ease;
@@ -149,12 +149,12 @@
 
         .rank-gold {
             background-color: #FFD700;
-            color: #FFFFFF !important; /* 金底白字 */
+            color: #FFFFFF !important; 
             animation: glow-gold 1.5s infinite alternate;
         }
         .rank-silver {
             background-color: #C0C0C0;
-            color: #FFFFFF !important; /* 銀底白字 */
+            color: #FFFFFF !important; 
             animation: glow-silver 1.5s infinite alternate;
         }
         .rank-bronze {
@@ -177,11 +177,11 @@
         .rating-bar-fill { height: 100%; border-radius: 8px; transition: width 0.5s ease; }
         
         /* 橫條顏色定義 */
-        .bar-attack { background: linear-gradient(90deg, #ff8c8c 0%, #ff6b6b 100%); } /* 進攻紅 */
-        .bar-defense { background: linear-gradient(90deg, #8cb8ff 0%, #6b9fff 100%); } /* 防守藍 */
-        .bar-status { background: linear-gradient(90deg, #ffeb3b 0%, #fbc02d 100%); }  /* 狀態黃 */
-        .bar-odds { background: linear-gradient(90deg, #81c784 0%, #4caf50 100%); }    /* 賠率綠 */
-        .bar-rank { background: linear-gradient(90deg, #e0e0e0 0%, #9e9e9e 100%); }    /* 排名銀 */
+        .bar-attack { background: linear-gradient(90deg, #ff8c8c 0%, #ff6b6b 100%); }
+        .bar-defense { background: linear-gradient(90deg, #8cb8ff 0%, #6b9fff 100%); }
+        .bar-status { background: linear-gradient(90deg, #ffeb3b 0%, #fbc02d 100%); }
+        .bar-odds { background: linear-gradient(90deg, #81c784 0%, #4caf50 100%); }
+        .bar-rank { background: linear-gradient(90deg, #e0e0e0 0%, #9e9e9e 100%); }
         
         /* 評級顯示 */
         .rating-display { width: 85px; text-align: right; font-weight: bold; font-size: 13px; display: flex; justify-content: flex-end; align-items: center; }
@@ -195,7 +195,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 五維雷達與實力兜底 (15%)</p>
+    <p class="subtitle">深色模式 | 五維雷達與實力兜底 (30%)</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -374,7 +374,7 @@
             <div style="font-size: 11px; color: #777; margin-top: 15px; text-align: right;">
                 *排名得分 = 對手排名 / (主排名 + 客排名) * 100% <br>
                 *綜合總實力 = (五條橫條長度 % 總和) / 5 <br>
-                <span style="color:#d48cf0;">*若 xG 判定為和局，但綜合實力差距 >= 15%，則強制判定為優勢方勝。</span>
+                <span style="color:#d48cf0;">*若 xG 判定為和局，但綜合實力差距 >= 30%，則強制判定為優勢方勝。</span>
             </div>
         </div>
 
@@ -746,12 +746,12 @@
             finalResult = "away";
             diffDisplay = `${diff.toFixed(2)}`;
         } else {
-            // --- 第二層：綜合實力兜底判定 (門檻 15%) ---
+            // --- 第二層：綜合實力兜底判定 (門檻 30%) ---
             const overallGap = hOverallPct - aOverallPct;
-            if (overallGap >= 15) {
+            if (overallGap >= 30) {
                 finalResult = "home";
                 diffDisplay = `+0.00 (實力碾壓)`;
-            } else if (overallGap <= -15) {
+            } else if (overallGap <= -30) {
                 finalResult = "away";
                 diffDisplay = `0.00 (實力碾壓)`;
             } else {
@@ -779,7 +779,7 @@
             resultBox.style.backgroundColor = "#332d1a";
         }
 
-        // --- 預測大小邏輯 ---
+        // --- 預測大小邏輯 (改為 <= 0.1 推薦細球) ---
         const totalGoalsIndicator = hAdvantage + aAdvantage; 
         
         const goalsResultBox = document.getElementById('goalsResultBox');
@@ -788,7 +788,7 @@
 
         goalsResultDiff.innerText = `傾向分：+${totalGoalsIndicator.toFixed(2)}`;
 
-        if (totalGoalsIndicator === 0) {
+        if (totalGoalsIndicator <= 0.1) {
             goalsResultValue.innerText = "建議 2.5 入球細";
             goalsResultValue.style.color = "#8cb8ff"; 
             goalsResultBox.style.borderColor = "#8cb8ff";
