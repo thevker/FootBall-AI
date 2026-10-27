@@ -82,7 +82,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 20px;
+            gap: 5px; /* 縮小間距，靠中間 */
             margin-bottom: 20px;
             padding: 10px 0;
             background: #1a1a1a;
@@ -125,7 +125,7 @@
             transition: box-shadow 0.3s ease;
         }
 
-        /* 🔥 前三名動態特效 */
+        /* 🔥 特效區：金、銀、銅、狀態良好 */
         @keyframes glow-gold {
             0% { box-shadow: 0 0 2px #FFD700, 0 0 5px #FFD700; }
             50% { box-shadow: 0 0 8px #FFD700, 0 0 15px #FFD700; }
@@ -141,21 +141,31 @@
             50% { box-shadow: 0 0 8px #CD7F32, 0 0 15px #CD7F32; }
             100% { box-shadow: 0 0 2px #CD7F32, 0 0 5px #CD7F32; }
         }
+        @keyframes glow-green {
+            0% { box-shadow: 0 0 2px #4ade80, 0 0 5px #4ade80; }
+            50% { box-shadow: 0 0 8px #4ade80, 0 0 15px #4ade80; }
+            100% { box-shadow: 0 0 2px #4ade80, 0 0 5px #4ade80; }
+        }
 
         .rank-gold {
             background-color: #FFD700;
-            color: #121212 !important; /* 金底配黑字比較清楚 */
+            color: #FFFFFF !important; /* 金底白字 */
             animation: glow-gold 1.5s infinite alternate;
         }
         .rank-silver {
             background-color: #C0C0C0;
-            color: #121212 !important; /* 銀底配黑字 */
+            color: #FFFFFF !important; /* 銀底白字 */
             animation: glow-silver 1.5s infinite alternate;
         }
         .rank-bronze {
             background-color: #CD7F32;
-            color: #ffffff !important;
+            color: #FFFFFF !important;
             animation: glow-bronze 1.5s infinite alternate;
+        }
+        
+        /* 狀態良好綠色呼吸燈 */
+        .status-glow-green {
+            animation: glow-green 1.5s infinite alternate;
         }
 
         /* 橫條行 */
@@ -460,7 +470,7 @@
         
         const cx = 100; 
         const cy = 100; 
-        const maxR = 70; // 半徑放大
+        const maxR = 70; 
         const numAxes = 5;
         const angleStep = (Math.PI * 2) / numAxes;
         const startAngle = -Math.PI / 2; 
@@ -501,7 +511,7 @@
             line.setAttribute('stroke-width', '1');
             svg.appendChild(line);
 
-            // 英文簡稱文字 (確保在 viewBox 200 內不出界)
+            // 英文簡稱文字
             const labelR = maxR + 15;
             const tx = cx + labelR * Math.cos(angle);
             const ty = cy + labelR * Math.sin(angle);
@@ -610,7 +620,10 @@
             styleEl.style.backgroundColor = "#333";
         }
 
+        // 狀態標籤 (含良好綠光特效)
         const statusBadge = document.getElementById(prefix + 'StatusBadge');
+        statusBadge.className = 'badge'; // reset class
+        
         if (status < 1.0) {
             statusBadge.innerText = "狀態欠佳";
             statusBadge.style.color = "#ff4d4d";
@@ -623,6 +636,7 @@
             statusBadge.innerText = "狀態良好";
             statusBadge.style.color = "#4ade80";
             statusBadge.style.backgroundColor = "#1c3b24";
+            statusBadge.classList.add('status-glow-green'); // 加入綠光特效
         }
 
         const oddsBadge = document.getElementById(prefix + 'OddsBadge');
@@ -640,9 +654,9 @@
             oddsBadge.style.display = "none";
         }
 
-        // 排名標籤 (套用動態特效 Class)
+        // 排名標籤 (金、銀、銅、深灰)
         const rankBadge = document.getElementById(prefix + 'RankBadge');
-        rankBadge.className = 'badge badge-rank'; // 重置 Class
+        rankBadge.className = 'badge badge-rank'; // reset class
         
         if (rankValue > 0 && rankPct > 0) {
             rankBadge.style.display = "inline-block";
