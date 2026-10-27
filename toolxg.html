@@ -219,6 +219,7 @@
         .bar-status { background: linear-gradient(90deg, #ffeb3b 0%, #fbc02d 100%); }
         .bar-odds { background: linear-gradient(90deg, #81c784 0%, #4caf50 100%); }
         .bar-rank { background: linear-gradient(90deg, #e0e0e0 0%, #9e9e9e 100%); }
+        .bar-winrate { background: linear-gradient(90deg, #e9d5ff 0%, #c084fc 100%); } /* 淺紫色 */
         
         /* 評級顯示 */
         .rating-display { width: 75px; text-align: right; font-weight: bold; font-size: 13px; display: flex; justify-content: flex-end; align-items: center; }
@@ -232,7 +233,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | ±10% 防矛盾與直式輸入</p>
+    <p class="subtitle">深色模式 | 六維雷達與 ±10% 防矛盾</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -260,6 +261,10 @@
             <label>主隊賠率 (1-6)</label>
             <input type="text" inputmode="decimal" id="homeOdds" placeholder="例：1.80" oninput="limitInput(this)" onblur="formatInput(this)">
         </div>
+        <div class="input-box">
+            <label>主隊勝率 (0-100%)</label>
+            <input type="text" inputmode="decimal" id="homeWinrate" placeholder="例：50" oninput="limitInput(this)" onblur="formatInput(this)">
+        </div>
     </div>
 
     <!-- ✈️ 客隊數據 -->
@@ -285,6 +290,10 @@
             <label>客隊賠率 (1-6)</label>
             <input type="text" inputmode="decimal" id="awayOdds" placeholder="例：3.50" oninput="limitInput(this)" onblur="formatInput(this)">
         </div>
+        <div class="input-box">
+            <label>客隊勝率 (0-100%)</label>
+            <input type="text" inputmode="decimal" id="awayWinrate" placeholder="例：30" oninput="limitInput(this)" onblur="formatInput(this)">
+        </div>
     </div>
 
     <button class="btn-calculate" onclick="calculate()">開始分析</button>
@@ -306,9 +315,9 @@
             <div class="result-diff" id="goalsResultDiff">傾向分：-</div>
         </div>
 
-        <!-- 球隊五維評級 -->
+        <!-- 球隊六維評級 -->
         <div class="section-box">
-            <div class="section-title">📊 球隊五維實力評級</div>
+            <div class="section-title">📊 球隊六維實力評級</div>
             
             <!-- 雷達圖區塊 -->
             <div class="radar-container">
@@ -356,8 +365,13 @@
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="hRankBar"></div></div>
                     <div class="rating-display" id="hRankDisplay">-</div>
                 </div>
+                <div class="rating-row">
+                    <div class="rating-label">勝率</div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-winrate" id="hWinrateBar"></div></div>
+                    <div class="rating-display" id="hWinrateDisplay">-</div>
+                </div>
                 <div class="overall-row">
-                    <span class="overall-label">綜合總實力 (五項平均百分比)</span>
+                    <span class="overall-label">綜合總實力 (六項平均百分比)</span>
                     <span class="overall-value" id="hOverall">E (0.0)</span>
                 </div>
             </div>
@@ -396,16 +410,21 @@
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="aRankBar"></div></div>
                     <div class="rating-display" id="aRankDisplay">-</div>
                 </div>
+                <div class="rating-row">
+                    <div class="rating-label">勝率</div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-winrate" id="aWinrateBar"></div></div>
+                    <div class="rating-display" id="aWinrateDisplay">-</div>
+                </div>
                 <div class="overall-row">
-                    <span class="overall-label">綜合總實力 (五項平均百分比)</span>
+                    <span class="overall-label">綜合總實力 (六項平均百分比)</span>
                     <span class="overall-value" id="aOverall">E (0.0)</span>
                 </div>
             </div>
 
             <div style="font-size: 11px; color: #777; margin-top: 15px; text-align: right;">
                 *排名得分 = 對手排名 / (主排名 + 客排名) * 100% <br>
-                *綜合總實力 = (五條橫條長度 % 總和) / 5 <br>
-                <span style="color:#d48cf0;">*若預測勝負方與對手的綜合總實力差距在 -10% ~ +10% 內，強制改判「和局」。<br>*若差距超過 ±10% 且方向相反，則判定為「不建議出手」。<br>*大球門檻為傾向分 > 0.7。</span>
+                *綜合總實力 = (六條橫條長度 % 總和) / 6 <br>
+                <span style="color:#d48cf0;">*若預測勝負方與對手的綜合總實力差距在 -10% ~ +10% 內，強制改判「和局」。<br>*若差距超過 ±10% 且方向相反，則判定為「不建議出手」。<br>*大球門檻為傾向分 >= 1.00，細球為 = 0.00。</span>
             </div>
         </div>
 
@@ -462,8 +481,8 @@
 
     function clearData() {
         const ids = [
-            'homeRank', 'homeStatus', 'homeXg', 'homeXga', 'homeOdds',
-            'awayRank', 'awayStatus', 'awayXg', 'awayXga', 'awayOdds'
+            'homeRank', 'homeStatus', 'homeXg', 'homeXga', 'homeOdds', 'homeWinrate',
+            'awayRank', 'awayStatus', 'awayXg', 'awayXga', 'awayOdds', 'awayWinrate'
         ];
         ids.forEach(id => document.getElementById(id).value = '');
         document.getElementById('result').style.display = 'none';
@@ -494,7 +513,7 @@
         return "bal";
     }
 
-    // 繪製雷達圖
+    // 繪製雷達圖 (改為六邊形)
     function drawRadar(svgId, data, color, fillColor) {
         const svg = document.getElementById(svgId);
         svg.innerHTML = ''; 
@@ -502,10 +521,10 @@
         const cx = 100; 
         const cy = 100; 
         const maxR = 65; 
-        const numAxes = 5;
+        const numAxes = 6; // 🔥 改為 6 邊
         const angleStep = (Math.PI * 2) / numAxes;
         const startAngle = -Math.PI / 2; 
-        const labels = ['ATK', 'DEF', 'STA', 'ODD', 'RNK'];
+        const labels = ['ATK', 'DEF', 'STA', 'ODD', 'RNK', 'WIN'];
 
         // 1. 畫背景網格
         const levels = 4;
@@ -577,7 +596,7 @@
         svg.appendChild(dataPolygon);
     }
 
-    function updateTeamUI(prefix, att, def, status, oddsPct, rankPct, rankValue) {
+    function updateTeamUI(prefix, att, def, status, oddsPct, rankPct, winratePct, rankValue) {
         let attPct = ((att - 1.0) / 1.0) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100);
 
@@ -592,18 +611,21 @@
         const visualStatPct = Math.max(statPct, 1);
         const visualOddsPct = Math.max(oddsPct, 1);
         const visualRankPct = Math.max(rankPct, 1);
+        const visualWinratePct = Math.max(winratePct, 1);
 
         document.getElementById(prefix + 'AttBar').style.width = visualAttPct + '%';
         document.getElementById(prefix + 'DefBar').style.width = visualDefPct + '%';
         document.getElementById(prefix + 'StatBar').style.width = visualStatPct + '%';
         document.getElementById(prefix + 'OddsBar').style.width = visualOddsPct + '%';
         document.getElementById(prefix + 'RankBar').style.width = visualRankPct + '%';
+        document.getElementById(prefix + 'WinrateBar').style.width = visualWinratePct + '%';
 
         const attData = getGradeByPercent(attPct);
         const defData = getGradeByPercent(defPct);
         const statData = getGradeByPercent(statPct);
         const oddsData = getGradeByPercent(oddsPct);
         const rankData = getGradeByPercent(rankPct);
+        const winrateData = getGradeByPercent(winratePct);
 
         document.getElementById(prefix + 'AttDisplay').innerText = `${attData.grade} (${attPct.toFixed(1)})`;
         document.getElementById(prefix + 'AttDisplay').style.color = attData.color;
@@ -620,14 +642,18 @@
         document.getElementById(prefix + 'RankDisplay').innerText = `${rankData.grade} (${rankPct.toFixed(1)})`;
         document.getElementById(prefix + 'RankDisplay').style.color = rankData.color;
 
-        const overallPct = (attPct + defPct + statPct + oddsPct + rankPct) / 5;
+        document.getElementById(prefix + 'WinrateDisplay').innerText = `${winrateData.grade} (${winratePct.toFixed(1)})`;
+        document.getElementById(prefix + 'WinrateDisplay').style.color = winrateData.color;
+
+        // 計算綜合總實力 (六項平均)
+        const overallPct = (attPct + defPct + statPct + oddsPct + rankPct + winratePct) / 6;
         const overallData = getGradeByPercent(overallPct);
         const overallEl = document.getElementById(prefix + 'Overall');
         overallEl.innerText = `${overallData.grade} (${overallPct.toFixed(1)})`;
         overallEl.style.color = overallData.color;
 
         // 繪製雷達圖
-        const radarData = [attPct, defPct, statPct, oddsPct, rankPct];
+        const radarData = [attPct, defPct, statPct, oddsPct, rankPct, winratePct];
         if (prefix === 'h') {
             drawRadar('radar-home', radarData, '#ff6b6b', 'rgba(255, 107, 107, 0.3)');
         } else {
@@ -651,18 +677,18 @@
             styleEl.style.backgroundColor = "#333";
         }
 
-        // 狀態標籤 (加入極佳/良好特效)
+        // 狀態標籤
         const statusBadge = document.getElementById(prefix + 'StatusBadge');
-        statusBadge.className = 'badge'; // 重置 Class
-        statusBadge.style.color = ''; // 清除殘留的內聯顏色
-        statusBadge.style.backgroundColor = ''; // 清除殘留的內聯背景
+        statusBadge.className = 'badge';
+        statusBadge.style.color = ''; 
+        statusBadge.style.backgroundColor = ''; 
         
         if (status >= 3.0) {
             statusBadge.innerText = "狀態極佳";
-            statusBadge.classList.add('status-glow-cyan'); // 加入青藍呼吸燈
+            statusBadge.classList.add('status-glow-cyan');
         } else if (status >= 2.0) {
             statusBadge.innerText = "狀態良好";
-            statusBadge.classList.add('status-glow-green'); // 加入綠光特效
+            statusBadge.classList.add('status-glow-green');
         } else if (status >= 1.0) {
             statusBadge.innerText = "狀態一般";
             statusBadge.style.color = "#ffd700";
@@ -688,11 +714,11 @@
             oddsBadge.style.display = "none";
         }
 
-        // 排名標籤 (深色底、發光字、光暈)
+        // 排名標籤
         const rankBadge = document.getElementById(prefix + 'RankBadge');
-        rankBadge.className = 'badge badge-rank'; // 重置 Class
-        rankBadge.style.color = ''; // 清除殘留顏色
-        rankBadge.style.backgroundColor = ''; // 清除殘留背景
+        rankBadge.className = 'badge badge-rank';
+        rankBadge.style.color = ''; 
+        rankBadge.style.backgroundColor = ''; 
         
         if (rankValue > 0 && rankPct > 0) {
             rankBadge.style.display = "inline-block";
@@ -705,7 +731,7 @@
             } else if (rankValue === 3) {
                 rankBadge.classList.add('rank-bronze');
             } else {
-                rankBadge.style.backgroundColor = "#2B2B2B"; // 深灰黑
+                rankBadge.style.backgroundColor = "#2B2B2B"; 
                 rankBadge.style.color = "#FFFFFF";
             }
         } else {
@@ -721,15 +747,17 @@
         const hStatusStr = document.getElementById('homeStatus').value;
         const hOddsStr = document.getElementById('homeOdds').value;
         const hRankStr = document.getElementById('homeRank').value;
+        const hWinrateStr = document.getElementById('homeWinrate').value;
 
         const aXgStr = document.getElementById('awayXg').value;
         const aXgaStr = document.getElementById('awayXga').value;
         const aStatusStr = document.getElementById('awayStatus').value;
         const aOddsStr = document.getElementById('awayOdds').value;
         const aRankStr = document.getElementById('awayRank').value;
+        const aWinrateStr = document.getElementById('awayWinrate').value;
 
-        if (!hXgStr || !hXgaStr || !hStatusStr || !hOddsStr || !hRankStr ||
-            !aXgStr || !aXgaStr || !aStatusStr || !aOddsStr || !aRankStr) {
+        if (!hXgStr || !hXgaStr || !hStatusStr || !hOddsStr || !hRankStr || !hWinrateStr ||
+            !aXgStr || !aXgaStr || !aStatusStr || !aOddsStr || !aRankStr || !aWinrateStr) {
             document.getElementById('errorMessage').style.display = 'block';
             document.getElementById('result').style.display = 'none';
             return;
@@ -742,12 +770,14 @@
         const hStatus = parseFloat(hStatusStr) || 0;
         const hOdds = parseFloat(hOddsStr) || 0;
         const hRank = parseInt(hRankStr) || 0;
+        const hWinrate = Math.min(Math.max(parseFloat(hWinrateStr) || 0, 0), 100); // 確保 0-100
 
         const aXg = parseFloat(aXgStr) || 0;
         const aXga = parseFloat(aXgaStr) || 0;
         const aStatus = parseFloat(aStatusStr) || 0;
         const aOdds = parseFloat(aOddsStr) || 0;
         const aRank = parseInt(aRankStr) || 0;
+        const aWinrate = Math.min(Math.max(parseFloat(aWinrateStr) || 0, 0), 100);
 
         const hDef = Math.max(0, 3.0 - hXga);
         const aDef = Math.max(0, 3.0 - aXga);
@@ -760,8 +790,8 @@
         const hRankPct = totalRank > 0 ? (aRank / totalRank) * 100 : 50;
         const aRankPct = totalRank > 0 ? (hRank / totalRank) * 100 : 50;
 
-        const hOverallPct = updateTeamUI('h', hXg, hDef, hStatus, hOddsPct, hRankPct, hRank);
-        const aOverallPct = updateTeamUI('a', aXg, aDef, aStatus, aOddsPct, aRankPct, aRank);
+        const hOverallPct = updateTeamUI('h', hXg, hDef, hStatus, hOddsPct, hRankPct, hWinrate, hRank);
+        const aOverallPct = updateTeamUI('a', aXg, aDef, aStatus, aOddsPct, aRankPct, aWinrate, aRank);
 
         // --- 第一層：xG 攻防判定 ---
         const hAdvantage = Math.max(0, hXg - aDef);
@@ -801,18 +831,18 @@
         
         if (finalResult === "home") {
             if (gap < -10) {
-                finalResult = "avoid"; // 客隊實力強太多，主勝矛盾
+                finalResult = "avoid"; 
                 diffDisplay += ` (實力不符)`;
             } else if (gap <= 10) {
-                finalResult = "draw"; // 差距在 -10 到 10 之間，改判和局
+                finalResult = "draw"; 
                 diffDisplay += ` (差距不足)`;
             }
         } else if (finalResult === "away") {
             if (gap > 10) {
-                finalResult = "avoid"; // 主隊實力強太多，客勝矛盾
+                finalResult = "avoid"; 
                 diffDisplay += ` (實力不符)`;
             } else if (gap >= -10) {
-                finalResult = "draw"; // 差距在 -10 到 10 之間，改判和局
+                finalResult = "draw"; 
                 diffDisplay += ` (差距不足)`;
             }
         }
@@ -841,7 +871,7 @@
             resultBox.style.backgroundColor = "#2a2a2a";
         }
 
-        // --- 預測大小邏輯 (改為 > 0.7 推薦大球) ---
+        // --- 預測大小邏輯 (嚴格門檻) ---
         const totalGoalsIndicator = hAdvantage + aAdvantage; 
         
         const goalsResultBox = document.getElementById('goalsResultBox');
@@ -850,12 +880,13 @@
 
         goalsResultDiff.innerText = `傾向分：+${totalGoalsIndicator.toFixed(2)}`;
 
-        if (totalGoalsIndicator <= 0.1) {
+        // 🔥 修改：0 為細球，>= 1.0 為大球
+        if (totalGoalsIndicator === 0) {
             goalsResultValue.innerText = "建議 2.5 入球細";
             goalsResultValue.style.color = "#8cb8ff"; 
             goalsResultBox.style.borderColor = "#8cb8ff";
             goalsResultBox.style.backgroundColor = "#1a2633";
-        } else if (totalGoalsIndicator > 0.7) {
+        } else if (totalGoalsIndicator >= 1.0) {
             goalsResultValue.innerText = "建議 2.5 入球大";
             goalsResultValue.style.color = "#f87171"; 
             goalsResultBox.style.borderColor = "#f87171";
