@@ -102,8 +102,8 @@
         .radar-title.home { color: #ff6b6b; }
         .radar-title.away { color: #6b9fff; }
         
-        /* 縮小 SVG 畫布以完美貼合 */
-        svg { width: 150px; height: 150px; }
+        /* 放大 SVG 畫布 */
+        svg { width: 170px; height: 170px; }
 
         .team-rating-block { margin-bottom: 20px; }
         .team-rating-block:last-child { margin-bottom: 0; }
@@ -119,9 +119,43 @@
             font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; 
         }
 
-        /* 排名專屬標籤 (顏色由 JS 動態決定) */
+        /* 排名專屬標籤 (基礎設定) */
         .badge-rank {
-            color: #ffffff; /* 統一白字 */
+            color: #ffffff;
+            transition: box-shadow 0.3s ease;
+        }
+
+        /* 🔥 前三名動態特效 */
+        @keyframes glow-gold {
+            0% { box-shadow: 0 0 2px #FFD700, 0 0 5px #FFD700; }
+            50% { box-shadow: 0 0 8px #FFD700, 0 0 15px #FFD700; }
+            100% { box-shadow: 0 0 2px #FFD700, 0 0 5px #FFD700; }
+        }
+        @keyframes glow-silver {
+            0% { box-shadow: 0 0 2px #C0C0C0, 0 0 5px #C0C0C0; }
+            50% { box-shadow: 0 0 8px #C0C0C0, 0 0 15px #C0C0C0; }
+            100% { box-shadow: 0 0 2px #C0C0C0, 0 0 5px #C0C0C0; }
+        }
+        @keyframes glow-bronze {
+            0% { box-shadow: 0 0 2px #CD7F32, 0 0 5px #CD7F32; }
+            50% { box-shadow: 0 0 8px #CD7F32, 0 0 15px #CD7F32; }
+            100% { box-shadow: 0 0 2px #CD7F32, 0 0 5px #CD7F32; }
+        }
+
+        .rank-gold {
+            background-color: #FFD700;
+            color: #121212 !important; /* 金底配黑字比較清楚 */
+            animation: glow-gold 1.5s infinite alternate;
+        }
+        .rank-silver {
+            background-color: #C0C0C0;
+            color: #121212 !important; /* 銀底配黑字 */
+            animation: glow-silver 1.5s infinite alternate;
+        }
+        .rank-bronze {
+            background-color: #CD7F32;
+            color: #ffffff !important;
+            animation: glow-bronze 1.5s infinite alternate;
         }
 
         /* 橫條行 */
@@ -133,11 +167,11 @@
         .rating-bar-fill { height: 100%; border-radius: 8px; transition: width 0.5s ease; }
         
         /* 橫條顏色定義 */
-        .bar-attack { background: linear-gradient(90deg, #ff8c8c 0%, #ff6b6b 100%); }
-        .bar-defense { background: linear-gradient(90deg, #8cb8ff 0%, #6b9fff 100%); }
-        .bar-status { background: linear-gradient(90deg, #ffeb3b 0%, #fbc02d 100%); }
-        .bar-odds { background: linear-gradient(90deg, #ce93d8 0%, #9c27b0 100%); }
-        .bar-rank { background: #ffffff; }
+        .bar-attack { background: linear-gradient(90deg, #ff8c8c 0%, #ff6b6b 100%); } /* 進攻紅 */
+        .bar-defense { background: linear-gradient(90deg, #8cb8ff 0%, #6b9fff 100%); } /* 防守藍 */
+        .bar-status { background: linear-gradient(90deg, #ffeb3b 0%, #fbc02d 100%); }  /* 狀態黃 */
+        .bar-odds { background: linear-gradient(90deg, #81c784 0%, #4caf50 100%); }    /* 賠率綠 */
+        .bar-rank { background: linear-gradient(90deg, #e0e0e0 0%, #9e9e9e 100%); }    /* 排名銀 */
         
         /* 評級顯示 */
         .rating-display { width: 85px; text-align: right; font-weight: bold; font-size: 13px; display: flex; justify-content: flex-end; align-items: center; }
@@ -151,7 +185,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 五維雷達與實力兜底</p>
+    <p class="subtitle">深色模式 | 五維雷達與實力兜底 (15%)</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -330,7 +364,7 @@
             <div style="font-size: 11px; color: #777; margin-top: 15px; text-align: right;">
                 *排名得分 = 對手排名 / (主排名 + 客排名) * 100% <br>
                 *綜合總實力 = (五條橫條長度 % 總和) / 5 <br>
-                <span style="color:#d48cf0;">*若 xG 判定為和局，但綜合實力差距 >= 12.5%，則強制判定為優勢方勝。</span>
+                <span style="color:#d48cf0;">*若 xG 判定為和局，但綜合實力差距 >= 15%，則強制判定為優勢方勝。</span>
             </div>
         </div>
 
@@ -419,14 +453,14 @@
         return "bal";
     }
 
-    // 繪製雷達圖 (縮小字體與半徑防止出界)
+    // 繪製雷達圖 (放大版，完美防出界)
     function drawRadar(svgId, data, color, fillColor) {
         const svg = document.getElementById(svgId);
         svg.innerHTML = ''; 
         
         const cx = 100; 
         const cy = 100; 
-        const maxR = 60; 
+        const maxR = 70; // 半徑放大
         const numAxes = 5;
         const angleStep = (Math.PI * 2) / numAxes;
         const startAngle = -Math.PI / 2; 
@@ -467,7 +501,7 @@
             line.setAttribute('stroke-width', '1');
             svg.appendChild(line);
 
-            // 英文簡稱文字 (縮小字體，拉近距離)
+            // 英文簡稱文字 (確保在 viewBox 200 內不出界)
             const labelR = maxR + 15;
             const tx = cx + labelR * Math.cos(angle);
             const ty = cy + labelR * Math.sin(angle);
@@ -475,7 +509,7 @@
             text.setAttribute('x', tx);
             text.setAttribute('y', ty);
             text.setAttribute('fill', '#aaa');
-            text.setAttribute('font-size', '9'); // 字體改為 9
+            text.setAttribute('font-size', '10'); 
             text.setAttribute('font-weight', 'bold');
             text.setAttribute('text-anchor', 'middle');
             text.setAttribute('dominant-baseline', 'middle');
@@ -606,21 +640,23 @@
             oddsBadge.style.display = "none";
         }
 
-        // 排名標籤 (橙、銀、銅、深灰黑) - 統一白字
+        // 排名標籤 (套用動態特效 Class)
         const rankBadge = document.getElementById(prefix + 'RankBadge');
+        rankBadge.className = 'badge badge-rank'; // 重置 Class
+        
         if (rankValue > 0 && rankPct > 0) {
             rankBadge.style.display = "inline-block";
             rankBadge.innerText = `第${Math.round(rankValue)}名`;
-            rankBadge.style.color = "#FFFFFF"; // 強制白字
             
             if (rankValue === 1) {
-                rankBadge.style.backgroundColor = "#FF8C00"; // 橙色
+                rankBadge.classList.add('rank-gold');
             } else if (rankValue === 2) {
-                rankBadge.style.backgroundColor = "#A9A9A9"; // 銀色
+                rankBadge.classList.add('rank-silver');
             } else if (rankValue === 3) {
-                rankBadge.style.backgroundColor = "#8B4513"; // 深銅色
+                rankBadge.classList.add('rank-bronze');
             } else {
-                rankBadge.style.backgroundColor = "#2B2B2B"; // 更深的灰黑色
+                rankBadge.style.backgroundColor = "#2B2B2B"; // 深灰黑
+                rankBadge.style.color = "#FFFFFF";
             }
         } else {
             rankBadge.style.display = "none";
@@ -696,12 +732,12 @@
             finalResult = "away";
             diffDisplay = `${diff.toFixed(2)}`;
         } else {
-            // --- 第二層：綜合實力兜底判定 (門檻 12.5%) ---
+            // --- 第二層：綜合實力兜底判定 (門檻 15%) ---
             const overallGap = hOverallPct - aOverallPct;
-            if (overallGap >= 12.5) {
+            if (overallGap >= 15) {
                 finalResult = "home";
                 diffDisplay = `+0.00 (實力碾壓)`;
-            } else if (overallGap <= -12.5) {
+            } else if (overallGap <= -15) {
                 finalResult = "away";
                 diffDisplay = `0.00 (實力碾壓)`;
             } else {
