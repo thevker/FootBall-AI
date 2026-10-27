@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 賽事分析器 (防矛盾與大球收緊版)</title>
+    <title>xG 賽事分析器 (5% 防矛盾版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -195,7 +195,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 防矛盾與大球收緊版</p>
+    <p class="subtitle">深色模式 | 5% 防矛盾版</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -374,7 +374,7 @@
             <div style="font-size: 11px; color: #777; margin-top: 15px; text-align: right;">
                 *排名得分 = 對手排名 / (主排名 + 客排名) * 100% <br>
                 *綜合總實力 = (五條橫條長度 % 總和) / 5 <br>
-                <span style="color:#d48cf0;">*若預測勝負與綜合總實力相悖，則判定為「不建議出手」。<br>*大球門檻為傾向分 > 0.7。</span>
+                <span style="color:#d48cf0;">*若預測勝負方的綜合總實力未高出對手 5% 以上，則判定為「不建議出手」。<br>*大球門檻為傾向分 > 0.7。</span>
             </div>
         </div>
 
@@ -463,7 +463,7 @@
         return "bal";
     }
 
-    // 繪製雷達圖
+    // 繪製雷達圖 (放大版，完美防出界)
     function drawRadar(svgId, data, color, fillColor) {
         const svg = document.getElementById(svgId);
         svg.innerHTML = ''; 
@@ -760,13 +760,13 @@
             }
         }
 
-        // 🔥 第三層：防矛盾機制 (勝負必須與綜合總實力相符)
-        if (finalResult === "home" && hOverallPct <= aOverallPct) {
+        // 🔥 第三層：防矛盾機制 (勝負方綜合實力必須高出 5% 以上)
+        if (finalResult === "home" && (hOverallPct - aOverallPct) < 5) {
             finalResult = "avoid";
-            diffDisplay += ` (實力不符)`;
-        } else if (finalResult === "away" && aOverallPct <= hOverallPct) {
+            diffDisplay += ` (實力差距不足)`;
+        } else if (finalResult === "away" && (aOverallPct - hOverallPct) < 5) {
             finalResult = "avoid";
-            diffDisplay += ` (實力不符)`;
+            diffDisplay += ` (實力差距不足)`;
         }
 
         resultDiff.innerText = `差距值：${diffDisplay}`;
