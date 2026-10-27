@@ -405,7 +405,7 @@
             <div style="font-size: 11px; color: #777; margin-top: 15px; text-align: right;">
                 *排名得分 = 對手排名 / (主排名 + 客排名) * 100% <br>
                 *綜合總實力 = (五條橫條長度 % 總和) / 5 <br>
-                <span style="color:#d48cf0;">*若預測勝負方的綜合總實力未高出對手 10% 以上，則判定為「不建議出手」。<br>*大球門檻為傾向分 > 0.7。</span>
+                <span style="color:#d48cf0;">*若預測勝負方的綜合總實力未高出對手 10% 以上，則強制判定為「和局」。<br>*大球門檻為傾向分 > 0.7。</span>
             </div>
         </div>
 
@@ -796,13 +796,13 @@
             }
         }
 
-        // 🔥 第三層：防矛盾機制 (勝負方綜合實力必須高出 10% 以上)
+        // 🔥 第三層：防矛盾機制 (勝負方綜合實力必須高出 10% 以上，否則改判和局)
         if (finalResult === "home" && (hOverallPct - aOverallPct) < 10) {
-            finalResult = "avoid";
-            diffDisplay += ` (實力差距不足)`;
+            finalResult = "draw";
+            diffDisplay = `0.00 (防冷修正)`;
         } else if (finalResult === "away" && (aOverallPct - hOverallPct) < 10) {
-            finalResult = "avoid";
-            diffDisplay += ` (實力差距不足)`;
+            finalResult = "draw";
+            diffDisplay = `0.00 (防冷修正)`;
         }
 
         resultDiff.innerText = `差距值：${diffDisplay}`;
@@ -817,16 +817,11 @@
             resultValue.style.color = "#f87171";
             resultBox.style.borderColor = "#f87171";
             resultBox.style.backgroundColor = "#331a1a";
-        } else if (finalResult === "draw") {
+        } else {
             resultValue.innerText = "和局";
             resultValue.style.color = "#ffd700";
             resultBox.style.borderColor = "#ffd700";
             resultBox.style.backgroundColor = "#332d1a";
-        } else {
-            resultValue.innerText = "不建議出手";
-            resultValue.style.color = "#aaa";
-            resultBox.style.borderColor = "#555";
-            resultBox.style.backgroundColor = "#2a2a2a";
         }
 
         // --- 預測大小邏輯 (改為 > 0.7 推薦大球) ---
