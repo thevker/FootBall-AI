@@ -232,7 +232,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 10% 防矛盾與直式輸入</p>
+    <p class="subtitle">深色模式 | ±10% 防矛盾與直式輸入</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -405,7 +405,7 @@
             <div style="font-size: 11px; color: #777; margin-top: 15px; text-align: right;">
                 *排名得分 = 對手排名 / (主排名 + 客排名) * 100% <br>
                 *綜合總實力 = (五條橫條長度 % 總和) / 5 <br>
-                <span style="color:#d48cf0;">*若預測勝負方的綜合總實力未高出對手 10% 以上，則強制判定為「和局」。<br>*大球門檻為傾向分 > 0.7。</span>
+                <span style="color:#d48cf0;">*若預測勝負方與對手的綜合總實力差距在 -10% ~ +10% 內，強制改判「和局」。<br>*若差距超過 ±10% 且方向相反，則判定為「不建議出手」。<br>*大球門檻為傾向分 > 0.7。</span>
             </div>
         </div>
 
@@ -782,7 +782,7 @@
             finalResult = "away";
             diffDisplay = `${diff.toFixed(2)}`;
         } else {
-            // --- 第二層：綜合實力兜底判定 (門檻 30%) ---
+            // --- 第二層：xG 平局時的綜合實力兜底 (門檻 30%) ---
             const overallGap = hOverallPct - aOverallPct;
             if (overallGap >= 30) {
                 finalResult = "home";
@@ -796,13 +796,25 @@
             }
         }
 
-        // 🔥 第三層：防矛盾機制 (勝負方綜合實力必須高出 10% 以上，否則改判和局)
-        if (finalResult === "home" && (hOverallPct - aOverallPct) < 10) {
-            finalResult = "draw";
-            diffDisplay = `0.00 (防冷修正)`;
-        } else if (finalResult === "away" && (aOverallPct - hOverallPct) < 10) {
-            finalResult = "draw";
-            diffDisplay = `0.00 (防冷修正)`;
+        // --- 第三層：±10% 防矛盾與修正機制 ---
+        const gap = hOverallPct - aOverallPct; 
+        
+        if (finalResult === "home") {
+            if (gap < -10) {
+                finalResult = "avoid"; // 客隊實力強太多，主勝矛盾
+                diffDisplay += ` (實力不符)`;
+            } else if (gap <= 10) {
+                finalResult = "draw"; // 差距在 -10 到 10 之間，改判和局
+                diffDisplay += ` (差距不足)`;
+            }
+        } else if (finalResult === "away") {
+            if (gap > 10) {
+                finalResult = "avoid"; // 主隊實力強太多，客勝矛盾
+                diffDisplay += ` (實力不符)`;
+            } else if (gap >= -10) {
+                finalResult = "draw"; // 差距在 -10 到 10 之間，改判和局
+                diffDisplay += ` (差距不足)`;
+            }
         }
 
         resultDiff.innerText = `差距值：${diffDisplay}`;
@@ -817,11 +829,16 @@
             resultValue.style.color = "#f87171";
             resultBox.style.borderColor = "#f87171";
             resultBox.style.backgroundColor = "#331a1a";
-        } else {
+        } else if (finalResult === "draw") {
             resultValue.innerText = "和局";
             resultValue.style.color = "#ffd700";
             resultBox.style.borderColor = "#ffd700";
             resultBox.style.backgroundColor = "#332d1a";
+        } else {
+            resultValue.innerText = "不建議出手";
+            resultValue.style.color = "#aaa";
+            resultBox.style.borderColor = "#555";
+            resultBox.style.backgroundColor = "#2a2a2a";
         }
 
         // --- 預測大小邏輯 (改為 > 0.7 推薦大球) ---
