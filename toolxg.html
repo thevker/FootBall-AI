@@ -94,20 +94,23 @@
             align-items: center;
         }
         .radar-title {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: bold;
             margin-bottom: 5px;
+            margin-top: 5px;
         }
-        .radar-title.home { color: #ff8c8c; }
-        .radar-title.away { color: #8cb8ff; }
-        svg { width: 140px; height: 140px; }
+        .radar-title.home { color: #ff6b6b; }
+        .radar-title.away { color: #6b9fff; }
+        
+        /* 放大 SVG 畫布 */
+        svg { width: 180px; height: 180px; }
 
         .team-rating-block { margin-bottom: 20px; }
         .team-rating-block:last-child { margin-bottom: 0; }
         
         /* 球隊名稱與標籤群組 */
         .team-name { 
-            font-size: 15px; font-weight: bold; color: #4da6ff; margin-bottom: 10px; 
+            font-size: 15px; font-weight: bold; margin-bottom: 10px; 
             display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap;
         }
         
@@ -237,18 +240,18 @@
             <div class="radar-container">
                 <div class="radar-box">
                     <div class="radar-title home">主隊</div>
-                    <svg id="radar-home" viewBox="0 0 120 120"></svg>
+                    <svg id="radar-home" viewBox="0 0 200 200"></svg>
                 </div>
                 <div class="radar-box">
                     <div class="radar-title away">客隊</div>
-                    <svg id="radar-away" viewBox="0 0 120 120"></svg>
+                    <svg id="radar-away" viewBox="0 0 200 200"></svg>
                 </div>
             </div>
 
             <!-- 主隊 -->
             <div class="team-rating-block">
                 <div class="team-name">
-                    <span>🏠 主隊</span>
+                    <span style="color: #ff6b6b;">🏠 主隊</span>
                     <span class="badge" id="hStyle">-</span>
                     <span class="badge" id="hStatusBadge">-</span>
                     <span class="badge" id="hOddsBadge" style="display:none;">-</span>
@@ -288,7 +291,7 @@
             <!-- 客隊 -->
             <div class="team-rating-block">
                 <div class="team-name">
-                    <span>✈️ 客隊</span>
+                    <span style="color: #6b9fff;">✈️ 客隊</span>
                     <span class="badge" id="aStyle">-</span>
                     <span class="badge" id="aStatusBadge">-</span>
                     <span class="badge" id="aOddsBadge" style="display:none;">-</span>
@@ -417,17 +420,19 @@
         return "bal";
     }
 
-    // 繪製 SVG 雷達圖
+    // 繪製放大版 SVG 雷達圖 (無圓點、有英文簡稱)
     function drawRadar(svgId, data, color, fillColor) {
         const svg = document.getElementById(svgId);
         svg.innerHTML = ''; 
         
-        const cx = 60; 
-        const cy = 60; 
-        const maxR = 45; 
+        // 尺寸放大
+        const cx = 100; 
+        const cy = 100; 
+        const maxR = 65; 
         const numAxes = 5;
         const angleStep = (Math.PI * 2) / numAxes;
         const startAngle = -Math.PI / 2; 
+        const labels = ['ATK', 'DEF', 'STA', 'ODD', 'RNK'];
 
         // 1. 畫背景網格
         const levels = 4;
@@ -448,11 +453,13 @@
             svg.appendChild(polygon);
         }
 
-        // 2. 畫軸線
+        // 2. 畫軸線與文字標籤
         for (let i = 0; i < numAxes; i++) {
             const angle = startAngle + i * angleStep;
             const x = cx + maxR * Math.cos(angle);
             const y = cy + maxR * Math.sin(angle);
+            
+            // 軸線
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line.setAttribute('x1', cx);
             line.setAttribute('y1', cy);
@@ -461,6 +468,21 @@
             line.setAttribute('stroke', '#444');
             line.setAttribute('stroke-width', '1');
             svg.appendChild(line);
+
+            // 英文簡稱文字
+            const labelR = maxR + 18;
+            const tx = cx + labelR * Math.cos(angle);
+            const ty = cy + labelR * Math.sin(angle);
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', tx);
+            text.setAttribute('y', ty);
+            text.setAttribute('fill', '#bbb');
+            text.setAttribute('font-size', '11');
+            text.setAttribute('font-weight', 'bold');
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('dominant-baseline', 'middle');
+            text.textContent = labels[i];
+            svg.appendChild(text);
         }
 
         // 3. 畫數據多邊形
@@ -480,17 +502,6 @@
         dataPolygon.setAttribute('stroke', color);
         dataPolygon.setAttribute('stroke-width', '2');
         svg.appendChild(dataPolygon);
-
-        // 4. 畫數據點
-        dataPoints.forEach(pt => {
-            const [x, y] = pt.split(',');
-            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('cx', x);
-            circle.setAttribute('cy', y);
-            circle.setAttribute('r', '3');
-            circle.setAttribute('fill', color);
-            svg.appendChild(circle);
-        });
     }
 
     function updateTeamUI(prefix, att, def, status, oddsPct, rankPct, rankValue) {
