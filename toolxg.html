@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 賽事分析器 (五維實力與排名標籤版)</title>
+    <title>xG 賽事分析器 / xG Match Analyzer</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -24,8 +24,29 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
             width: 100%; 
             max-width: 600px; 
+            position: relative; /* 為語言按鈕定位 */
         }
-        h2 { text-align: center; color: #ffffff; margin-top: 0; font-size: 22px; }
+
+        /* 語言切換按鈕 */
+        .lang-switch {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #3a7bd5;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: background 0.2s;
+            z-index: 10;
+        }
+        .lang-switch:hover { background-color: #2a5fa5; }
+
+        h2 { text-align: center; color: #ffffff; margin-top: 0; font-size: 22px; padding-right: 40px; }
         p.subtitle { font-size: 13px; color: #aaaaaa; text-align: center; margin-bottom: 20px; }
         
         /* 錯誤提示 */
@@ -104,11 +125,11 @@
         .rating-bar-fill { height: 100%; border-radius: 8px; transition: width 0.5s ease; }
         
         /* 橫條顏色定義 */
-        .bar-attack { background: linear-gradient(90deg, #ff8c8c 0%, #ff6b6b 100%); } /* 進攻紅 */
-        .bar-defense { background: linear-gradient(90deg, #8cb8ff 0%, #6b9fff 100%); } /* 防守藍 */
-        .bar-status { background: linear-gradient(90deg, #ffeb3b 0%, #fbc02d 100%); }  /* 狀態黃 */
-        .bar-odds { background: linear-gradient(90deg, #ce93d8 0%, #9c27b0 100%); }    /* 賠率紫 */
-        .bar-rank { background: #ffffff; }                                            /* 排名白 */
+        .bar-attack { background: linear-gradient(90deg, #ff8c8c 0%, #ff6b6b 100%); }
+        .bar-defense { background: linear-gradient(90deg, #8cb8ff 0%, #6b9fff 100%); }
+        .bar-status { background: linear-gradient(90deg, #ffeb3b 0%, #fbc02d 100%); }
+        .bar-odds { background: linear-gradient(90deg, #ce93d8 0%, #9c27b0 100%); }
+        .bar-rank { background: #ffffff; }
         
         /* 評級顯示 */
         .rating-display { width: 85px; text-align: right; font-weight: bold; font-size: 13px; display: flex; justify-content: flex-end; align-items: center; }
@@ -121,122 +142,125 @@
 <body>
 
 <div class="container">
-    <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 五維實力與入球預測</p>
+    <!-- 語言切換按鈕 -->
+    <div class="lang-switch" id="langSwitch" onclick="toggleLanguage()">EN</div>
+
+    <h2 id="ui-title">📊 xG 賽事分析器</h2>
+    <p class="subtitle" id="ui-subtitle">深色模式 | 五維實力與入球預測</p>
     
     <!-- 錯誤提示區塊 -->
-    <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
+    <div id="errorMessage" class="error-msg">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
     <!-- 主隊數據 -->
     <div class="input-group">
         <div class="input-box">
-            <label>主隊 xG (預期進球)</label>
+            <label id="ui-homeXg">主隊 xG (預期進球)</label>
             <input type="text" inputmode="decimal" id="homeXg" placeholder="例：1.41" oninput="limitInput(this)" onblur="formatInput(this)">
         </div>
         <div class="input-box">
-            <label>主隊 xGA (預期失球)</label>
+            <label id="ui-homeXga">主隊 xGA (預期失球)</label>
             <input type="text" inputmode="decimal" id="homeXga" placeholder="例：1.29" oninput="limitInput(this)" onblur="formatInput(this)">
         </div>
     </div>
     <div class="input-group">
         <div class="input-box">
-            <label>主隊狀態 (0-3)</label>
+            <label id="ui-homeStatus">主隊狀態 (0-3)</label>
             <input type="text" inputmode="decimal" id="homeStatus" placeholder="例：2.0" oninput="limitInput(this)" onblur="formatInput(this)">
         </div>
         <div class="input-box">
-            <label>主隊賠率 (1-6)</label>
+            <label id="ui-homeOdds">主隊賠率 (1-6)</label>
             <input type="text" inputmode="decimal" id="homeOdds" placeholder="例：1.80" oninput="limitInput(this)" onblur="formatInput(this)">
         </div>
     </div>
     <div class="input-group">
         <div class="input-box">
-            <label>主隊排名</label>
-            <input type="text" inputmode="decimal" id="homeRank" placeholder="例：3" oninput="limitInput(this)" onblur="formatInput(this)">
+            <label id="ui-homeRank">主隊排名</label>
+            <input type="text" inputmode="numeric" id="homeRank" placeholder="例：3" oninput="limitRankInput(this)">
         </div>
     </div>
 
     <!-- 客隊數據 -->
     <div class="input-group" style="margin-top: 25px;">
         <div class="input-box">
-            <label>客隊 xG (預期進球)</label>
+            <label id="ui-awayXg">客隊 xG (預期進球)</label>
             <input type="text" inputmode="decimal" id="awayXg" placeholder="例：1.26" oninput="limitInput(this)" onblur="formatInput(this)">
         </div>
         <div class="input-box">
-            <label>客隊 xGA (預期失球)</label>
+            <label id="ui-awayXga">客隊 xGA (預期失球)</label>
             <input type="text" inputmode="decimal" id="awayXga" placeholder="例：1.67" oninput="limitInput(this)" onblur="formatInput(this)">
         </div>
     </div>
     <div class="input-group">
         <div class="input-box">
-            <label>客隊狀態 (0-3)</label>
+            <label id="ui-awayStatus">客隊狀態 (0-3)</label>
             <input type="text" inputmode="decimal" id="awayStatus" placeholder="例：1.5" oninput="limitInput(this)" onblur="formatInput(this)">
         </div>
         <div class="input-box">
-            <label>客隊賠率 (1-6)</label>
+            <label id="ui-awayOdds">客隊賠率 (1-6)</label>
             <input type="text" inputmode="decimal" id="awayOdds" placeholder="例：3.50" oninput="limitInput(this)" onblur="formatInput(this)">
         </div>
     </div>
     <div class="input-group">
         <div class="input-box">
-            <label>客隊排名</label>
-            <input type="text" inputmode="decimal" id="awayRank" placeholder="例：9" oninput="limitInput(this)" onblur="formatInput(this)">
+            <label id="ui-awayRank">客隊排名</label>
+            <input type="text" inputmode="numeric" id="awayRank" placeholder="例：9" oninput="limitRankInput(this)">
         </div>
     </div>
 
-    <button class="btn-calculate" onclick="calculate()">開始分析</button>
-    <button class="btn-clear" onclick="clearData()">清除數據</button>
+    <button class="btn-calculate" onclick="calculate()" id="ui-btnCalc">開始分析</button>
+    <button class="btn-clear" onclick="clearData()" id="ui-btnClear">清除數據</button>
 
     <div id="result">
         
         <!-- 判定結果區 (勝負) -->
         <div class="result-box" id="matchResultBox">
-            <div class="result-title">預測賽果</div>
+            <div class="result-title" id="ui-matchResult">預測賽果</div>
             <div class="result-value" id="matchResultValue">-</div>
             <div class="result-diff" id="matchResultDiff">差距值：-</div>
         </div>
 
         <!-- 判定結果區 (大小) -->
         <div class="result-box" id="goalsResultBox" style="margin-bottom: 20px;">
-            <div class="result-title">預測大小 (2.5球)</div>
+            <div class="result-title" id="ui-goalsResult">預測大小 (2.5球)</div>
             <div class="result-value" id="goalsResultValue">-</div>
             <div class="result-diff" id="goalsResultDiff">傾向分：-</div>
         </div>
 
         <!-- 球隊五維評級 -->
         <div class="section-box">
-            <div class="section-title">📊 球隊五維實力評級</div>
+            <div class="section-title" id="ui-ratingTitle">📊 球隊五維實力評級</div>
             
             <!-- 主隊 -->
             <div class="team-rating-block">
                 <div class="team-name">
-                    <span>🏠 主隊</span>
+                    <span id="ui-teamHome">🏠 主隊</span>
                     <span class="badge" id="hStyle">-</span>
                     <span class="badge" id="hStatusBadge">-</span>
                     <span class="badge" id="hOddsBadge" style="display:none;">-</span>
                     <span class="badge badge-rank" id="hRankBadge" style="display:none;">-</span>
                 </div>
                 <div class="rating-row">
-                    <div class="rating-label">進攻</div>
+                    <div class="rating-label" id="ui-h-rowAtt">進攻</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="hAttBar"></div></div>
                     <div class="rating-display" id="hAttDisplay">-</div>
                 </div>
                 <div class="rating-row">
-                    <div class="rating-label">防守</div>
+                    <div class="rating-label" id="ui-h-rowDef">防守</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="hDefBar"></div></div>
                     <div class="rating-display" id="hDefDisplay">-</div>
                 </div>
                 <div class="rating-row">
-                    <div class="rating-label">狀態</div>
+                    <div class="rating-label" id="ui-h-rowStat">狀態</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="hStatBar"></div></div>
                     <div class="rating-display" id="hStatDisplay">-</div>
                 </div>
                 <div class="rating-row">
-                    <div class="rating-label">賠率</div>
+                    <div class="rating-label" id="ui-h-rowOdds">賠率</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="hOddsBar"></div></div>
                     <div class="rating-display" id="hOddsDisplay">-</div>
                 </div>
                 <div class="rating-row">
-                    <div class="rating-label">排名</div>
+                    <div class="rating-label" id="ui-h-rowRank">排名</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="hRankBar"></div></div>
                     <div class="rating-display" id="hRankDisplay">-</div>
                 </div>
@@ -249,34 +273,34 @@
             <!-- 客隊 -->
             <div class="team-rating-block">
                 <div class="team-name">
-                    <span>✈️ 客隊</span>
+                    <span id="ui-teamAway">✈️ 客隊</span>
                     <span class="badge" id="aStyle">-</span>
                     <span class="badge" id="aStatusBadge">-</span>
                     <span class="badge" id="aOddsBadge" style="display:none;">-</span>
                     <span class="badge badge-rank" id="aRankBadge" style="display:none;">-</span>
                 </div>
                 <div class="rating-row">
-                    <div class="rating-label">進攻</div>
+                    <div class="rating-label" id="ui-a-rowAtt">進攻</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="aAttBar"></div></div>
                     <div class="rating-display" id="aAttDisplay">-</div>
                 </div>
                 <div class="rating-row">
-                    <div class="rating-label">防守</div>
+                    <div class="rating-label" id="ui-a-rowDef">防守</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="aDefBar"></div></div>
                     <div class="rating-display" id="aDefDisplay">-</div>
                 </div>
                 <div class="rating-row">
-                    <div class="rating-label">狀態</div>
+                    <div class="rating-label" id="ui-a-rowStat">狀態</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="aStatBar"></div></div>
                     <div class="rating-display" id="aStatDisplay">-</div>
                 </div>
                 <div class="rating-row">
-                    <div class="rating-label">賠率</div>
+                    <div class="rating-label" id="ui-a-rowOdds">賠率</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="aOddsBar"></div></div>
                     <div class="rating-display" id="aOddsDisplay">-</div>
                 </div>
                 <div class="rating-row">
-                    <div class="rating-label">排名</div>
+                    <div class="rating-label" id="ui-a-rowRank">排名</div>
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="aRankBar"></div></div>
                     <div class="rating-display" id="aRankDisplay">-</div>
                 </div>
@@ -287,8 +311,8 @@
             </div>
 
             <div style="font-size: 11px; color: #777; margin-top: 15px; text-align: right;">
-                *排名得分 = 對手排名 / (主排名 + 客排名) * 100% <br>
-                *綜合總實力 = (五條橫條長度 % 總和) / 5
+                <span id="ui-noteRank">*排名得分 = 對手排名 / (主排名 + 客排名) * 100%</span> <br>
+                <span id="ui-noteOverall">*綜合總實力 = (五條橫條長度 % 總和) / 5</span>
             </div>
         </div>
 
@@ -296,7 +320,193 @@
 </div>
 
 <script>
-    // 輸入限制與格式化
+    // 語言字典
+    const translations = {
+        zh: {
+            title: "📊 xG 賽事分析器",
+            subtitle: "深色模式 | 五維實力與入球預測",
+            homeXg: "主隊 xG (預期進球)",
+            homeXga: "主隊 xGA (預期失球)",
+            homeStatus: "主隊狀態 (0-3)",
+            homeOdds: "主隊賠率 (1-6)",
+            homeRank: "主隊排名",
+            awayXg: "客隊 xG (預期進球)",
+            awayXga: "客隊 xGA (預期失球)",
+            awayStatus: "客隊狀態 (0-3)",
+            awayOdds: "客隊賠率 (1-6)",
+            awayRank: "客隊排名",
+            btnCalc: "開始分析",
+            btnClear: "清除數據",
+            errMsg: "⚠️ 數據不完整，請填寫所有輸入欄位！",
+            matchResult: "預測賽果",
+            goalsResult: "預測大小 (2.5球)",
+            diffLabel: "差距值：",
+            tendencyLabel: "傾向分：",
+            homeWin: "主勝",
+            draw: "和局",
+            awayWin: "客勝",
+            under25: "建議 2.5 入球細",
+            over25: "建議 2.5 入球大",
+            unclear: "方向模糊",
+            ratingTitle: "📊 球隊五維實力評級",
+            teamHome: "🏠 主隊",
+            teamAway: "✈️ 客隊",
+            rowAtt: "進攻",
+            rowDef: "防守",
+            rowStat: "狀態",
+            rowOdds: "賠率",
+            rowRank: "排名",
+            overallLabel: "綜合總實力 (五項平均百分比)",
+            styleAtt: "進攻型",
+            styleDef: "防守型",
+            styleBal: "平衡型",
+            statPoor: "狀態欠佳",
+            statAvg: "狀態一般",
+            statGood: "狀態良好",
+            oddsFav: "上盤",
+            oddsUnd: "下盤",
+            rankBadge: "第",
+            rankBadgeSuffix: "名",
+            noteRank: "*排名得分 = 對手排名 / (主排名 + 客排名) * 100%",
+            noteOverall: "*綜合總實力 = (五條橫條長度 % 總和) / 5",
+            phXg: "例：1.41", phXga: "例：1.29", phStatus: "例：2.0", phOdds: "例：1.80", phRank: "例：3",
+            phAXg: "例：1.26", phAXga: "例：1.67", phAStatus: "例：1.5", phAOdds: "例：3.50", phARank: "例：9"
+        },
+        en: {
+            title: "📊 xG Match Analyzer",
+            subtitle: "Dark Mode | 5D Power & Goals Prediction",
+            homeXg: "Home xG (Expected Goals)",
+            homeXga: "Home xGA (Expected Conceded)",
+            homeStatus: "Home Status (0-3)",
+            homeOdds: "Home Odds (1-6)",
+            homeRank: "Home Rank",
+            awayXg: "Away xG (Expected Goals)",
+            awayXga: "Away xGA (Expected Conceded)",
+            awayStatus: "Away Status (0-3)",
+            awayOdds: "Away Odds (1-6)",
+            awayRank: "Away Rank",
+            btnCalc: "Analyze",
+            btnClear: "Clear Data",
+            errMsg: "⚠️ Incomplete data, please fill all fields!",
+            matchResult: "Match Result",
+            goalsResult: "Over/Under (2.5)",
+            diffLabel: "Diff: ",
+            tendencyLabel: "Tendency: ",
+            homeWin: "Home Win",
+            draw: "Draw",
+            awayWin: "Away Win",
+            under25: "Suggest Under 2.5",
+            over25: "Suggest Over 2.5",
+            unclear: "Unclear",
+            ratingTitle: "📊 5D Power Rating",
+            teamHome: "🏠 Home",
+            teamAway: "✈️ Away",
+            rowAtt: "Attack",
+            rowDef: "Defense",
+            rowStat: "Status",
+            rowOdds: "Odds",
+            rowRank: "Rank",
+            overallLabel: "Overall Power (Avg %)",
+            styleAtt: "Attacking",
+            styleDef: "Defensive",
+            styleBal: "Balanced",
+            statPoor: "Poor",
+            statAvg: "Average",
+            statGood: "Good",
+            oddsFav: "Fav",
+            oddsUnd: "Underdog",
+            rankBadge: "Rank ",
+            rankBadgeSuffix: "",
+            noteRank: "*Rank Score = Opp Rank / (Home Rank + Away Rank) * 100%",
+            noteOverall: "*Overall = (Sum of 5 bars %) / 5",
+            phXg: "e.g. 1.41", phXga: "e.g. 1.29", phStatus: "e.g. 2.0", phOdds: "e.g. 1.80", phRank: "e.g. 3",
+            phAXg: "e.g. 1.26", phAXga: "e.g. 1.67", phAStatus: "e.g. 1.5", phAOdds: "e.g. 3.50", phARank: "e.g. 9"
+        }
+    };
+
+    let currentLang = 'zh'; // 預設語言
+
+    // 切換語言
+    function toggleLanguage() {
+        currentLang = currentLang === 'zh' ? 'en' : 'zh';
+        document.getElementById('langSwitch').innerText = currentLang === 'zh' ? 'EN' : '中文';
+        updateUIText();
+        
+        // 如果已經有結果，重新計算以更新結果區的語言
+        if (document.getElementById('result').style.display === 'block') {
+            calculate();
+        }
+    }
+
+    // 更新介面文字
+    function updateUIText() {
+        const t = translations[currentLang];
+        document.getElementById('ui-title').innerText = t.title;
+        document.getElementById('ui-subtitle').innerText = t.subtitle;
+        
+        // Labels
+        document.getElementById('ui-homeXg').innerText = t.homeXg;
+        document.getElementById('ui-homeXga').innerText = t.homeXga;
+        document.getElementById('ui-homeStatus').innerText = t.homeStatus;
+        document.getElementById('ui-homeOdds').innerText = t.homeOdds;
+        document.getElementById('ui-homeRank').innerText = t.homeRank;
+        
+        document.getElementById('ui-awayXg').innerText = t.awayXg;
+        document.getElementById('ui-awayXga').innerText = t.awayXga;
+        document.getElementById('ui-awayStatus').innerText = t.awayStatus;
+        document.getElementById('ui-awayOdds').innerText = t.awayOdds;
+        document.getElementById('ui-awayRank').innerText = t.awayRank;
+
+        // Buttons & Errors
+        document.getElementById('ui-btnCalc').innerText = t.btnCalc;
+        document.getElementById('ui-btnClear').innerText = t.btnClear;
+        document.getElementById('errorMessage').innerText = t.errMsg;
+
+        // Result titles
+        document.getElementById('ui-matchResult').innerText = t.matchResult;
+        document.getElementById('ui-goalsResult').innerText = t.goalsResult;
+
+        // Section titles & team names
+        document.getElementById('ui-ratingTitle').innerText = t.ratingTitle;
+        document.getElementById('ui-teamHome').innerText = t.teamHome;
+        document.getElementById('ui-teamAway').innerText = t.teamAway;
+
+        // Row Labels
+        const rowKeys = ['Att', 'Def', 'Stat', 'Odds', 'Rank'];
+        ['h', 'a'].forEach(prefix => {
+            rowKeys.forEach(key => {
+                const el = document.getElementById(`ui-${prefix}-row${key}`);
+                if (el) el.innerText = t[`row${key}`];
+            });
+        });
+
+        // Overall Labels
+        document.querySelectorAll('.overall-label').forEach(el => {
+            el.innerText = t.overallLabel;
+        });
+
+        // Placeholders
+        document.getElementById('homeXg').placeholder = t.phXg;
+        document.getElementById('homeXga').placeholder = t.phXga;
+        document.getElementById('homeStatus').placeholder = t.phStatus;
+        document.getElementById('homeOdds').placeholder = t.phOdds;
+        document.getElementById('homeRank').placeholder = t.phRank;
+
+        document.getElementById('awayXg').placeholder = t.phAXg;
+        document.getElementById('awayXga').placeholder = t.phAXga;
+        document.getElementById('awayStatus').placeholder = t.phAStatus;
+        document.getElementById('awayOdds').placeholder = t.phAOdds;
+        document.getElementById('awayRank').placeholder = t.phARank;
+
+        // Bottom notes
+        document.getElementById('ui-noteRank').innerText = t.noteRank;
+        document.getElementById('ui-noteOverall').innerText = t.noteOverall;
+    }
+
+    // 初始化語言
+    updateUIText();
+
+    // 輸入限制與格式化 (處理有小數點的欄位)
     function limitInput(input) {
         let val = input.value;
         val = val.replace(/[^0-9.]/g, '');
@@ -336,6 +546,14 @@
         input.value = num.toFixed(2);
     }
 
+    // 排名專用限制 (只能整數，最多兩位)
+    function limitRankInput(input) {
+        let val = input.value;
+        val = val.replace(/[^0-9]/g, '');
+        if (val.length > 2) val = val.substring(0, 2);
+        input.value = val;
+    }
+
     function clearData() {
         const ids = [
             'homeXg', 'homeXga', 'homeStatus', 'homeOdds', 'homeRank',
@@ -346,7 +564,6 @@
         document.getElementById('errorMessage').style.display = 'none';
     }
 
-    // 根據百分比取得評級與顏色 (12.5% 間隔)
     function getGradeByPercent(pct) {
         let grade = ''; let color = '';
         if (pct < 12.5) { grade = 'F'; color = '#9e9e9e'; }
@@ -360,16 +577,16 @@
         return { grade, color };
     }
 
-    function getTeamStyle(attValue, defValue) {
+    function getTeamStyleKey(attValue, defValue) {
         const diff = attValue - defValue;
-        if (diff >= 0.5) return "進攻型";
-        if (diff <= -0.5) return "防守型";
-        return "平衡型";
+        if (diff >= 0.5) return "att";
+        if (diff <= -0.5) return "def";
+        return "bal";
     }
 
-    // 更新單一球隊的 UI
     function updateTeamUI(prefix, att, def, status, oddsPct, rankPct, rankValue) {
-        // 1. 計算各項目的真實百分比 (0-100)
+        const t = translations[currentLang];
+
         let attPct = ((att - 1.0) / 1.0) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100);
 
@@ -379,21 +596,18 @@
         let statPct = (status / 3.0) * 100;
         statPct = Math.min(Math.max(statPct, 0), 100);
 
-        // 2. 計算視覺寬度 (至少保留 1% 寬度)
         const visualAttPct = Math.max(attPct, 1);
         const visualDefPct = Math.max(defPct, 1);
         const visualStatPct = Math.max(statPct, 1);
         const visualOddsPct = Math.max(oddsPct, 1);
         const visualRankPct = Math.max(rankPct, 1);
 
-        // 更新橫條寬度
         document.getElementById(prefix + 'AttBar').style.width = visualAttPct + '%';
         document.getElementById(prefix + 'DefBar').style.width = visualDefPct + '%';
         document.getElementById(prefix + 'StatBar').style.width = visualStatPct + '%';
         document.getElementById(prefix + 'OddsBar').style.width = visualOddsPct + '%';
         document.getElementById(prefix + 'RankBar').style.width = visualRankPct + '%';
 
-        // 3. 取得各項評級並更新文字顯示
         const attData = getGradeByPercent(attPct);
         const defData = getGradeByPercent(defPct);
         const statData = getGradeByPercent(statPct);
@@ -415,73 +629,75 @@
         document.getElementById(prefix + 'RankDisplay').innerText = `${rankData.grade} (${rankPct.toFixed(1)})`;
         document.getElementById(prefix + 'RankDisplay').style.color = rankData.color;
 
-        // 4. 計算綜合總實力 (五項平均)
         const overallPct = (attPct + defPct + statPct + oddsPct + rankPct) / 5;
         const overallData = getGradeByPercent(overallPct);
         const overallEl = document.getElementById(prefix + 'Overall');
         overallEl.innerText = `${overallData.grade} (${overallPct.toFixed(1)})`;
         overallEl.style.color = overallData.color;
 
-        // 5. 風格標籤
+        // 風格標籤
         const styleEl = document.getElementById(prefix + 'Style');
-        const styleText = getTeamStyle(att, def);
-        styleEl.innerText = styleText;
+        const styleKey = getTeamStyleKey(att, def);
         
-        if (styleText === "進攻型") {
+        if (styleKey === "att") {
+            styleEl.innerText = t.styleAtt;
             styleEl.style.color = "#ff8c8c";      
             styleEl.style.backgroundColor = "#3b1c1c"; 
-        } else if (styleText === "防守型") {
+        } else if (styleKey === "def") {
+            styleEl.innerText = t.styleDef;
             styleEl.style.color = "#8cb8ff";      
             styleEl.style.backgroundColor = "#1a2633"; 
         } else {
+            styleEl.innerText = t.styleBal;
             styleEl.style.color = "#ccc";
             styleEl.style.backgroundColor = "#333";
         }
 
-        // 6. 狀態標籤
+        // 狀態標籤
         const statusBadge = document.getElementById(prefix + 'StatusBadge');
         if (status < 1.0) {
-            statusBadge.innerText = "狀態欠佳";
+            statusBadge.innerText = t.statPoor;
             statusBadge.style.color = "#ff4d4d";
             statusBadge.style.backgroundColor = "#3b1c1c";
         } else if (status < 2.0) {
-            statusBadge.innerText = "狀態一般";
+            statusBadge.innerText = t.statAvg;
             statusBadge.style.color = "#ffd700";
             statusBadge.style.backgroundColor = "#3b331c";
         } else {
-            statusBadge.innerText = "狀態良好";
+            statusBadge.innerText = t.statGood;
             statusBadge.style.color = "#4ade80";
             statusBadge.style.backgroundColor = "#1c3b24";
         }
 
-        // 7. 盤口標籤
+        // 盤口標籤
         const oddsBadge = document.getElementById(prefix + 'OddsBadge');
         if (oddsPct > 50) {
             oddsBadge.style.display = "inline-block";
-            oddsBadge.innerText = "上盤";
+            oddsBadge.innerText = t.oddsFav;
             oddsBadge.style.color = "#f39c12"; 
             oddsBadge.style.backgroundColor = "#3b2b1c"; 
         } else if (oddsPct < 50) {
             oddsBadge.style.display = "inline-block";
-            oddsBadge.innerText = "下盤";
+            oddsBadge.innerText = t.oddsUnd;
             oddsBadge.style.color = "#cd7f32"; 
             oddsBadge.style.backgroundColor = "#2b1d15"; 
         } else {
             oddsBadge.style.display = "none";
         }
 
-        // 8. 排名標籤 (白色)
+        // 排名標籤
         const rankBadge = document.getElementById(prefix + 'RankBadge');
         if (rankValue > 0 && rankPct > 0) {
             rankBadge.style.display = "inline-block";
-            rankBadge.innerText = `第${Math.round(rankValue)}名`;
+            rankBadge.innerText = `${t.rankBadge}${Math.round(rankValue)}${t.rankBadgeSuffix}`;
         } else {
             rankBadge.style.display = "none";
         }
     }
 
     function calculate() {
-        // 獲取輸入值
+        const t = translations[currentLang];
+
         const hXgStr = document.getElementById('homeXg').value;
         const hXgaStr = document.getElementById('homeXga').value;
         const hStatusStr = document.getElementById('homeStatus').value;
@@ -494,7 +710,6 @@
         const aOddsStr = document.getElementById('awayOdds').value;
         const aRankStr = document.getElementById('awayRank').value;
 
-        // 驗證輸入是否完整
         if (!hXgStr || !hXgaStr || !hStatusStr || !hOddsStr || !hRankStr ||
             !aXgStr || !aXgaStr || !aStatusStr || !aOddsStr || !aRankStr) {
             document.getElementById('errorMessage').style.display = 'block';
@@ -508,36 +723,31 @@
         const hXga = parseFloat(hXgaStr) || 0;
         const hStatus = parseFloat(hStatusStr) || 0;
         const hOdds = parseFloat(hOddsStr) || 0;
-        const hRank = parseFloat(hRankStr) || 0;
+        const hRank = parseInt(hRankStr) || 0;
 
         const aXg = parseFloat(aXgStr) || 0;
         const aXga = parseFloat(aXgaStr) || 0;
         const aStatus = parseFloat(aStatusStr) || 0;
         const aOdds = parseFloat(aOddsStr) || 0;
-        const aRank = parseFloat(aRankStr) || 0;
+        const aRank = parseInt(aRankStr) || 0;
 
-        // 1. 計算攻防基礎分 (防守力 3.0 - xGA)
         const hDef = Math.max(0, 3.0 - hXga);
         const aDef = Math.max(0, 3.0 - aXga);
 
-        // 2. 計算賠率佔比
         const totalOdds = hOdds + aOdds;
         const hOddsPct = totalOdds > 0 ? (aOdds / totalOdds) * 100 : 50;
         const aOddsPct = totalOdds > 0 ? (hOdds / totalOdds) * 100 : 50;
 
-        // 3. 計算排名佔比
         const totalRank = hRank + aRank;
         const hRankPct = totalRank > 0 ? (aRank / totalRank) * 100 : 50;
         const aRankPct = totalRank > 0 ? (hRank / totalRank) * 100 : 50;
 
-        // 更新 UI
         updateTeamUI('h', hXg, hDef, hStatus, hOddsPct, hRankPct, hRank);
         updateTeamUI('a', aXg, aDef, aStatus, aOddsPct, aRankPct, aRank);
 
-        // --- 預測賽果邏輯 ---
+        // 預測賽果
         const hAdvantage = Math.max(0, hXg - aDef);
         const aAdvantage = Math.max(0, aXg - hDef);
-
         const diff = hAdvantage - aAdvantage;
 
         const resultBox = document.getElementById('matchResultBox');
@@ -545,46 +755,46 @@
         const resultDiff = document.getElementById('matchResultDiff');
 
         const diffStr = (diff > 0 ? '+' : '') + diff.toFixed(2);
-        resultDiff.innerText = `差距值：${diffStr}`;
+        resultDiff.innerText = `${t.diffLabel}${diffStr}`;
 
         if (diff >= 0.1) {
-            resultValue.innerText = "主勝";
+            resultValue.innerText = t.homeWin;
             resultValue.style.color = "#4ade80";
             resultBox.style.borderColor = "#4ade80";
             resultBox.style.backgroundColor = "#1a3324";
         } else if (diff <= -0.1) {
-            resultValue.innerText = "客勝";
+            resultValue.innerText = t.awayWin;
             resultValue.style.color = "#f87171";
             resultBox.style.borderColor = "#f87171";
             resultBox.style.backgroundColor = "#331a1a";
         } else {
-            resultValue.innerText = "和局";
+            resultValue.innerText = t.draw;
             resultValue.style.color = "#ffd700";
             resultBox.style.borderColor = "#ffd700";
             resultBox.style.backgroundColor = "#332d1a";
         }
 
-        // --- 預測大小邏輯 ---
+        // 預測大小
         const totalGoalsIndicator = hAdvantage + aAdvantage; 
         
         const goalsResultBox = document.getElementById('goalsResultBox');
         const goalsResultValue = document.getElementById('goalsResultValue');
         const goalsResultDiff = document.getElementById('goalsResultDiff');
 
-        goalsResultDiff.innerText = `傾向分：+${totalGoalsIndicator.toFixed(2)}`;
+        goalsResultDiff.innerText = `${t.tendencyLabel}+${totalGoalsIndicator.toFixed(2)}`;
 
         if (totalGoalsIndicator === 0) {
-            goalsResultValue.innerText = "建議 2.5 入球細";
+            goalsResultValue.innerText = t.under25;
             goalsResultValue.style.color = "#8cb8ff"; 
             goalsResultBox.style.borderColor = "#8cb8ff";
             goalsResultBox.style.backgroundColor = "#1a2633";
         } else if (totalGoalsIndicator > 0.5) {
-            goalsResultValue.innerText = "建議 2.5 入球大";
+            goalsResultValue.innerText = t.over25;
             goalsResultValue.style.color = "#f87171"; 
             goalsResultBox.style.borderColor = "#f87171";
             goalsResultBox.style.backgroundColor = "#331a1a";
         } else {
-            goalsResultValue.innerText = "方向模糊";
+            goalsResultValue.innerText = t.unclear;
             goalsResultValue.style.color = "#aaa"; 
             goalsResultBox.style.borderColor = "#555";
             goalsResultBox.style.backgroundColor = "#2a2a2a";
