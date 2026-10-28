@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (狀態加乘版)</title>
+    <title>xG 賽事分析器 (主場優勢加成版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -73,10 +73,18 @@
             min-width: 0;
         }
         label { font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #bbbbbb; }
-        input[type="text"] { 
+        input[type="text"], select { 
             width: 100%; padding: 8px; background-color: #2d2d2d; border: 1px solid #444; color: #ffffff; border-radius: 6px; font-size: 16px; outline: none; transition: border 0.2s; 
         }
-        input[type="text"]:focus { border-color: #4da6ff; }
+        input[type="text"]:focus, select:focus { border-color: #4da6ff; }
+
+        /* 設定選擇區 */
+        .settings-group {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #252525; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 15px;
+        }
+        .setting-label { font-size: 14px; font-weight: bold; color: #ddd; }
+        .settings-group select { width: 140px; padding: 8px; font-size: 14px; cursor: pointer; }
 
         /* 按鈕區 */
         button { 
@@ -209,7 +217,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 狀態加乘攻防機制</p>
+    <p class="subtitle">深色模式 | 主場優勢加成</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -220,7 +228,7 @@
         <div class="input-row">
             <div class="input-box">
                 <label>狀態 (0-3)</label>
-                <input type="text" inputmode="decimal" id="homeStatus" placeholder="例：1.5" oninput="limitInput(this)" onblur="formatInput(this)">
+                <input type="text" inputmode="decimal" id="homeStatus" placeholder="例：2.0" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
             <div class="input-box">
                 <label>主隊 xG (預期進球)</label>
@@ -262,6 +270,17 @@
                 <input type="text" inputmode="decimal" id="awayOdds" placeholder="例：1.91" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
         </div>
+    </div>
+
+    <!-- 主場優勢選擇 -->
+    <div class="settings-group">
+        <span class="setting-label">🏟️ 主場優勢 (加成主隊攻防)</span>
+        <select id="homeAdvantage">
+            <option value="0">0% (預設關閉)</option>
+            <option value="0.10">10%</option>
+            <option value="0.20">20%</option>
+            <option value="0.30">30%</option>
+        </select>
     </div>
 
     <button class="btn-calculate" onclick="calculate()">開始分析</button>
@@ -427,6 +446,7 @@
             'awayStatus', 'awayXg', 'awayXga', 'awayOdds'
         ];
         ids.forEach(id => document.getElementById(id).value = '');
+        document.getElementById('homeAdvantage').value = '0'; // 重置下拉選單
         document.getElementById('result').style.display = 'none';
         document.getElementById('errorMessage').style.display = 'none';
         
@@ -627,31 +647,31 @@
         const aXga = parseFloat(aXgaStr) || 0;
         const aStatus = parseFloat(aStatusStr) || 0;
         const aOdds = parseFloat(aOddsStr) || 0;
+        
+        // 取得主場優勢加成係數
+        const homeAdv = parseFloat(document.getElementById('homeAdvantage').value) || 0;
+        const homeMultiplier = 1 + homeAdv;
 
-        // 🔥 狀態乘數 (0.0 ~ 1.0)
-        const hMult = Math.min(Math.max(hStatus / 3.0, 0), 1);
-        const aMult = Math.min(Math.max(aStatus / 3.0, 0), 1);
+        // 基礎攻防
+        let hAttBase = hXg;
+        let hDefBase = Math.max(0, 3.0 - hXga);
+        let aAtt = aXg;
+        let aDef = Math.max(0, 3.0 - aXga);
 
-        // 原始攻防
-        const hDefBase = Math.max(0, 3.0 - hXga);
-        const aDefBase = Math.max(0, 3.0 - aXga);
-
-        // 調整後攻防 (應用狀態乘數)
-        const hAttAdj = hXg * hMult;
-        const hDefAdj = hDefBase * hMult;
-        const aAttAdj = aXg * aMult;
-        const aDefAdj = aDefBase * aMult;
+        // 套用主場優勢
+        let hAtt = hAttBase * homeMultiplier;
+        let hDef = hDefBase * homeMultiplier;
 
         const totalOdds = hOdds + aOdds;
         const hOddsPct = totalOdds > 0 ? (aOdds / totalOdds) * 100 : 50;
         const aOddsPct = totalOdds > 0 ? (hOdds / totalOdds) * 100 : 50;
 
-        const hOverallPct = updateTeamUI('h', hAttAdj, hDefAdj, hStatus, hOddsPct);
-        const aOverallPct = updateTeamUI('a', aAttAdj, aDefAdj, aStatus, aOddsPct);
+        const hOverallPct = updateTeamUI('h', hAtt, hDef, hStatus, hOddsPct);
+        const aOverallPct = updateTeamUI('a', aAtt, aDef, aStatus, aOddsPct);
 
-        // --- 第一層：攻防判定 (使用調整後的數值) ---
-        const hAdvantage = Math.max(0, hAttAdj - aDefAdj);
-        const aAdvantage = Math.max(0, aAttAdj - hDefAdj);
+        // --- 第一層：攻防判定 ---
+        const hAdvantage = Math.max(0, hAtt - aDef);
+        const aAdvantage = Math.max(0, aAtt - hDef);
         const diff = hAdvantage - aAdvantage;
 
         const resultBox = document.getElementById('matchResultBox');
@@ -662,6 +682,7 @@
         let diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2);
         const gap = hOverallPct - aOverallPct;
 
+        // 🔥 絕對碾壓優先判定
         if (gap >= 30) {
             finalResult = "home";
             diffDisplay = `+${diff.toFixed(2)} (實力碾壓)`;
@@ -669,6 +690,7 @@
             finalResult = "away";
             diffDisplay = `${diff.toFixed(2)} (實力碾壓)`;
         } else {
+            // 基礎 xG 判定
             if (diff >= 0.1) {
                 finalResult = "home"; 
             } else if (diff <= -0.1) {
@@ -678,6 +700,7 @@
                 diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2) + ` (膠著)`;
             }
 
+            // 防矛盾機制
             if (finalResult === "home") {
                 if (gap < -10) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
                 else if (gap <= 10) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
@@ -689,9 +712,9 @@
 
         resultDiff.innerText = `差距值：${diffDisplay}`;
 
-        // 淨勝球 (使用調整後的預期進球概念)
-        const expHome = (hAttAdj + (3.0 - aDefAdj)) / 2;
-        const expAway = (aAttAdj + (3.0 - hDefAdj)) / 2;
+        // 淨勝球
+        const expHome = (hAtt + aXga) / 2;
+        const expAway = (aAtt + hXga) / 2;
         const predictedMargin = expHome - expAway;
 
         const marginEl = document.getElementById('matchMarginValue');
@@ -706,7 +729,7 @@
             marginEl.style.color = '#aaa';
         }
 
-        // --- 大小球邏輯 (使用調整後的攻防傾向分) ---
+        // --- 大小球邏輯 ---
         const goalsIndicator = hAdvantage + aAdvantage;
         
         const goalsResultBox = document.getElementById('goalsResultBox');
