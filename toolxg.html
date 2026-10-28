@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xG 賽事分析器 (和局強化版)</title>
+    <title>xG 賽事分析器 (直觀大小球版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -234,7 +234,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 結合實際進失球與 ±0.3 和局門檻</p>
+    <p class="subtitle">深色模式 | 直觀總入球預測</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -249,7 +249,7 @@
             </div>
             <div class="input-box">
                 <label>狀態 (0-3)</label>
-                <input type="text" inputmode="decimal" id="homeStatus" placeholder="例：2.0" oninput="limitInput(this)" onblur="formatInput(this)">
+                <input type="text" inputmode="decimal" id="homeStatus" placeholder="例：1.15" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
         </div>
         <div class="input-row">
@@ -275,7 +275,7 @@
         <div class="input-row">
             <div class="input-box">
                 <label>賠率 (1-6)</label>
-                <input type="text" inputmode="decimal" id="homeOdds" placeholder="例：1.80" oninput="limitInput(this)" onblur="formatInput(this)">
+                <input type="text" inputmode="decimal" id="homeOdds" placeholder="例：3.40" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
         </div>
     </div>
@@ -290,33 +290,33 @@
             </div>
             <div class="input-box">
                 <label>狀態 (0-3)</label>
-                <input type="text" inputmode="decimal" id="awayStatus" placeholder="例：1.5" oninput="limitInput(this)" onblur="formatInput(this)">
+                <input type="text" inputmode="decimal" id="awayStatus" placeholder="例：1.38" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
         </div>
         <div class="input-row">
             <div class="input-box">
                 <label>客隊 xG (預期進球)</label>
-                <input type="text" inputmode="decimal" id="awayXg" placeholder="例：1.26" oninput="limitInput(this)" onblur="formatInput(this)">
+                <input type="text" inputmode="decimal" id="awayXg" placeholder="例：1.40" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
             <div class="input-box">
                 <label>客隊 xGA (預期失球)</label>
-                <input type="text" inputmode="decimal" id="awayXga" placeholder="例：1.67" oninput="limitInput(this)" onblur="formatInput(this)">
+                <input type="text" inputmode="decimal" id="awayXga" placeholder="例：1.38" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
         </div>
         <div class="input-row">
             <div class="input-box">
                 <label>實際場均得分</label>
-                <input type="text" inputmode="decimal" id="awayGoal" placeholder="例：1.20" oninput="limitInput(this)" onblur="formatInput(this)">
+                <input type="text" inputmode="decimal" id="awayGoal" placeholder="例：1.38" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
             <div class="input-box">
                 <label>實際場均失球</label>
-                <input type="text" inputmode="decimal" id="awayConceded" placeholder="例：1.50" oninput="limitInput(this)" onblur="formatInput(this)">
+                <input type="text" inputmode="decimal" id="awayConceded" placeholder="例：1.31" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
         </div>
         <div class="input-row">
             <div class="input-box">
                 <label>賠率 (1-6)</label>
-                <input type="text" inputmode="decimal" id="awayOdds" placeholder="例：3.50" oninput="limitInput(this)" onblur="formatInput(this)">
+                <input type="text" inputmode="decimal" id="awayOdds" placeholder="例：1.91" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
         </div>
     </div>
@@ -337,7 +337,7 @@
         <div class="result-box" id="goalsResultBox" style="margin-bottom: 20px; display: none;">
             <div class="result-title">預測大小 (2.5球)</div>
             <div class="result-value" id="goalsResultValue">-</div>
-            <div class="result-diff" id="goalsResultDiff">傾向分：-</div>
+            <div class="result-diff" id="goalsResultDiff">預期總入球：-</div>
         </div>
 
         <!-- 球隊五維評級 -->
@@ -523,7 +523,7 @@
         return "bal";
     }
 
-    // 繪製雷達圖 (五邊形)
+    // 繪製雷達圖
     function drawRadar(svgId, data, color, fillColor) {
         const svg = document.getElementById(svgId);
         svg.innerHTML = ''; 
@@ -726,13 +726,12 @@
         const aOdds = parseFloat(aOddsStr) || 0;
         const aRank = parseInt(aRankStr) || 0;
 
-        // 混合「xG/xGA」與「實際得分/失球」
+        // 混合 xG/xGA 與 實際得分/失球
         const hXgMix = (hXg + hGoal) / 2;
         const hXgaMix = (hXga + hConc) / 2;
         const aXgMix = (aXg + aGoal) / 2;
         const aXgaMix = (aXga + aConc) / 2;
 
-        // 防守力 = 3.0 - 混合後的失球期望值
         const hDef = Math.max(0, 3.0 - hXgaMix);
         const aDef = Math.max(0, 3.0 - aXgaMix);
 
@@ -747,7 +746,7 @@
         const hOverallPct = updateTeamUI('h', hXgMix, hDef, hStatus, hOddsPct, hRankPct, hRank);
         const aOverallPct = updateTeamUI('a', aXgMix, aDef, aStatus, aOddsPct, aRankPct, aRank);
 
-        // --- 第一層：攻防判定 (使用混合後的數值) ---
+        // --- 第一層：攻防判定 ---
         const hAdvantage = Math.max(0, hXgMix - aDef);
         const aAdvantage = Math.max(0, aXgMix - hDef);
         const diff = hAdvantage - aAdvantage;
@@ -759,15 +758,11 @@
         let finalResult = ""; 
         let diffDisplay = "";
 
-        // 🔥 核心改動：門檻從 0.1 放寬到 0.3
         if (diff >= 0.3) {
-            finalResult = "home";
-            diffDisplay = `+${diff.toFixed(2)}`;
+            finalResult = "home"; diffDisplay = `+${diff.toFixed(2)}`;
         } else if (diff <= -0.3) {
-            finalResult = "away";
-            diffDisplay = `${diff.toFixed(2)}`;
+            finalResult = "away"; diffDisplay = `${diff.toFixed(2)}`;
         } else {
-            // 差距在 -0.3 ~ 0.3 之間，進入第二層兜底
             const overallGap = hOverallPct - aOverallPct;
             if (overallGap >= 30) {
                 finalResult = "home"; diffDisplay = `+0.00 (實力碾壓)`;
@@ -778,7 +773,7 @@
             }
         }
 
-        // --- 第三層：±10% 防矛盾與修正機制 ---
+        // 防矛盾機制
         const gap = hOverallPct - aOverallPct; 
         if (finalResult === "home") {
             if (gap < -10) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
@@ -800,20 +795,21 @@
             resultValue.innerText = "不建議出手"; resultValue.style.color = "#aaa"; resultBox.style.borderColor = "#555"; resultBox.style.backgroundColor = "#2a2a2a";
         }
 
-        // 大小球邏輯 (使用混合後的數值)
-        const totalGoalsIndicator = hAdvantage + aAdvantage; 
+        // --- 🔥 全新入球大細邏輯：直接計算預期總入球 ---
+        const totalGoalsExpected = hXgMix + aXgMix; 
+        
         const goalsResultBox = document.getElementById('goalsResultBox');
         const goalsResultValue = document.getElementById('goalsResultValue');
         const goalsResultDiff = document.getElementById('goalsResultDiff');
 
-        goalsResultDiff.innerText = `傾向分：+${totalGoalsIndicator.toFixed(2)}`;
+        goalsResultDiff.innerText = `預期總入球：${totalGoalsExpected.toFixed(2)}`;
 
-        if (totalGoalsIndicator === 0) {
-            goalsResultValue.innerText = "建議 2.5 入球細"; goalsResultValue.style.color = "#8cb8ff"; goalsResultBox.style.borderColor = "#8cb8ff"; goalsResultBox.style.backgroundColor = "#1a2633"; goalsResultBox.style.display = 'block';
-        } else if (totalGoalsIndicator >= 1.0) {
+        if (totalGoalsExpected >= 2.75) {
             goalsResultValue.innerText = "建議 2.5 入球大"; goalsResultValue.style.color = "#f87171"; goalsResultBox.style.borderColor = "#f87171"; goalsResultBox.style.backgroundColor = "#331a1a"; goalsResultBox.style.display = 'block';
+        } else if (totalGoalsExpected <= 2.25) {
+            goalsResultValue.innerText = "建議 2.5 入球細"; goalsResultValue.style.color = "#8cb8ff"; goalsResultBox.style.borderColor = "#8cb8ff"; goalsResultBox.style.backgroundColor = "#1a2633"; goalsResultBox.style.display = 'block';
         } else {
-            goalsResultBox.style.display = 'none';
+            goalsResultBox.style.display = 'none'; // 隱藏模糊結果
         }
 
         document.getElementById('result').style.display = 'block';
