@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>xG 賽事分析器 (全新預期進球對碰版)</title>
+    <style>
+        /* 全局深色模式設定 */
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #121212; 
+            color: #e0e0e0; 
+            margin: 0; 
+            padding: 15px; 
+            display: flex; 
+            justify-content: center; 
+            min-height: 100vh;
+            -webkit-overflow-scrolling: touch;
+        }
+        .container { 
+            background: #1e1e1e; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+            width: 100%; 
+            max-width: 500px; 
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        h2 { text-align: center; color: #ffffff; margin-top: 0; font-size: 22px; }
+        p.subtitle { font-size: 13px; color: #aaaaaa; text-align: center; margin-bottom: 20px; }
+        
+        /* 錯誤提示 */
+        #errorMessage {
+            display: none; background-color: #331a1a; color: #ff4d4d; padding: 12px; 
+            border-radius: 6px; text-align: center; font-weight: bold; margin-bottom: 15px;
+            border: 1px solid #7a3a3a; animation: shake 0.4s;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+
+        /* 設定選擇區 (主場優勢) */
+        .settings-group {
+            display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;
+        }
+        .setting-row {
+            display: flex; align-items: center; justify-content: space-between; 
+            background: #252525; padding: 12px 15px; border-radius: 8px; border: 1px solid #333;
+        }
+        .setting-label { font-size: 14px; font-weight: bold; color: #ddd; }
+        .setting-row select { width: 160px; padding: 8px; font-size: 14px; cursor: pointer; background-color: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 6px; outline: none; }
+        .setting-row select:focus { border-color: #4da6ff; }
+
+        /* 直式輸入區塊 */
+        .input-section {
+            margin-bottom: 20px;
+        }
+        .section-header {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333;
+        }
+        .section-header.home { color: #ff6b6b; }
+        .section-header.away { color: #6b9fff; }
+
+        /* 雙欄位輸入排版 */
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .input-box { 
+            display: flex; 
+            flex-direction: column; 
+            flex: 1;
+            min-width: 0;
+        }
+        label { font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #bbbbbb; }
+        input[type="text"] { 
+            width: 100%; padding: 8px; background-color: #2d2d2d; border: 1px solid #444; color: #ffffff; border-radius: 6px; font-size: 16px; outline: none; transition: border 0.2s; 
+        }
+        input[type="text"]:focus { border-color: #4da6ff; }
+
+        /* 按鈕區 */
+        button { 
+            width: 100%; padding: 14px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; 
+        }
+        .btn-calculate { background: #3a7bd5; color: white; }
+        .btn-calculate:hover { background: #2a5fa5; }
+        .btn-clear { background: #5a2a2a; color: #ff9999; margin-top: 10px; border: 1px solid #7a3a3a; }
+        .btn-clear:hover { background: #7a3a3a; color: white; }
+        
+        /* 結果區 */
+        #result { margin-top: 25px; display: none; padding-top: 20px; border-top: 1px solid #333; }
+        
+        /* 預測結果共用樣式 */
+        .result-box {
+            text-align: center; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 2px dashed;
+        }
+        .result-title { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #aaa; }
+        .result-value { font-size: 28px; font-weight: bold; margin-bottom: 5px; }
+        .result-diff { font-size: 13px; color: #aaa; margin-bottom: 5px; }
+        .result-margin { font-size: 14px; font-weight: bold; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
+        
+        /* 指標顯示 */
+        .dual-indicator {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 12px;
+            color: #ccc;
+        }
+        .dual-item { text-align: center; }
+        .dual-val { font-weight: bold; font-size: 14px; color: #fff; margin-top: 2px; }
+
+        /* 球隊評級區塊 */
+        .section-box { background: #252525; border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .section-title { font-size: 14px; font-weight: bold; margin-bottom: 15px; color: #dddddd; border-left: 4px solid #4da6ff; padding-left: 8px; }
+
+        /* 雷達圖容器 */
+        .radar-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 20px;
+            padding: 10px 0;
+            background: #1a1a1a;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        .radar-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .radar-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .radar-title.home { color: #ff6b6b; }
+        .radar-title.away { color: #6b9fff; }
+        
+        /* SVG 畫布 */
+        svg { width: 150px; height: 150px; }
+
+        .team-rating-block { margin-bottom: 20px; }
+        .team-rating-block:last-child { margin-bottom: 0; }
+        
+        /* 球隊名稱與標籤群組 */
+        .team-name { 
+            font-size: 15px; font-weight: bold; margin-bottom: 10px; 
+            display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap;
+        }
+        
+        /* 通用標籤樣式 */
+        .badge { 
+            font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; 
+        }
+
+        /* 🔥 特效區 */
+        @keyframes glow-green {
+            0% { box-shadow: 0 0 2px #4ade80, 0 0 5px #4ade80; }
+            50% { box-shadow: 0 0 8px #4ade80, 0 0 15px #4ade80; }
+            100% { box-shadow: 0 0 2px #4ade80, 0 0 5px #4ade80; }
+        }
+        @keyframes glow-cyan {
+            0% { box-shadow: 0 0 2px #0adeff, 0 0 5px #0adeff; }
+            50% { box-shadow: 0 0 8px #0adeff, 0 0 15px #0adeff; }
+            100% { box-shadow: 0 0 2px #0adeff, 0 0 5px #0adeff; }
+        }
+
+        .status-glow-green {
+            color: #4ade80 !important;
+            background-color: #1c3b24 !important;
+            animation: glow-green 1.5s infinite alternate;
+        }
+
+        .status-glow-cyan {
+            color: #0adeff !important;
+            background-color: #0e2e36 !important;
+            animation: glow-cyan 1.5s infinite alternate;
+            text-shadow: 0 0 5px rgba(10, 222, 255, 0.5);
+        }
+
+        /* 橫條行 */
+        .rating-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 12px; }
+        .rating-label { width: 50px; font-weight: bold; color: #aaa; }
+        
+        /* 橫條背景 */
+        .rating-bar-bg { flex: 1; background: #1a1a1a; height: 16px; border-radius: 8px; overflow: hidden; margin: 0 10px; position: relative; border: 1px solid #333; }
+        .rating-bar-fill { height: 100%; border-radius: 8px; transition: width 0.5s ease; }
+        
+        /* 橫條顏色定義 (固定純色) */
+        .bar-attack { background: #ff6b6b; }
+        .bar-defense { background: #6b9fff; }
+        .bar-status { background: #fbc02d; }
+        .bar-odds { background: #4caf50; }
+        
+        /* 評級顯示 */
+        .rating-display { width: 75px; text-align: right; font-weight: bold; font-size: 13px; display: flex; justify-content: flex-end; align-items: center; }
+        
+        .overall-row { display: flex; justify-content: space-between; background: #1e1e1e; padding: 10px; border-radius: 6px; margin-top: 15px; border: 1px solid #444; align-items: center; }
+        .overall-label { font-weight: bold; color: #ccc; font-size: 13px; }
+        .overall-value { font-weight: bold; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📊 xG 賽事分析器</h2>
+    <p class="subtitle">全新預期進球對碰版 | 防矛盾機制</p>
+    
+    <!-- 錯誤提示區塊 -->
+    <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
+
+    <!-- 設定選擇區 -->
+    <div class="settings-group">
+        <div class="setting-row">
+            <span class="setting-label">🏟️ 主場優勢 (加成主隊攻防)</span>
+            <select id="homeAdvantage">
+                <option value="0">0% (預設關閉)</option>
+                <option value="0.10">10%</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 🏠 主隊數據 -->
+    <div class="input-section">
+        <div class="section-header home">🏠 主隊數據</div>
+        <div class="input-row">
+            <div class="input-box">
+                <label>狀態 (0-3)</label>
+                <input type="text" inputmode="decimal" id="homeStatus" placeholder="例：2.0" oninput="limitInput(this)" onblur="formatInput(this)">
+            </div>
+            <div class="input-box">
+                <label>賠率 (1-6)</label>
+                <input type="text" inputmode="decimal" id="homeOdds" placeholder="例：3.40" oninput="limitInput(this)" onblur="formatInput(this)">
+            </div>
+        </div>
+        <div class="input-row">
+            <div class="input-box">
+                <label>主隊 xG (預期進球)</label>
+                <input type="text" inputmode="decimal" id="homeXg" placeholder="例：1.40" oninput="limitInput(this)" onblur="formatInput(this)">
+            </div>
+            <div class="input-box">
+                <label>主隊 xGA (預期失球)</label>
+                <input type="text" inputmode="decimal" id="homeXga" placeholder="例：1.80" oninput="limitInput(this)" onblur="formatInput(this)">
+            </div>
+        </div>
+    </div>
+
+    <!-- ✈️ 客隊數據 -->
+    <div class="input-section">
+        <div class="section-header away">✈️ 客隊數據</div>
+        <div class="input-row">
+            <div class="input-box">
+                <label>狀態 (0-3)</label>
+                <input type="text" inputmode="decimal" id="awayStatus" placeholder="例：1.5" oninput="limitInput(this)" onblur="formatInput(this)">
+            </div>
+            <div class="input-box">
+                <label>賠率 (1-6)</label>
+                <input type="text" inputmode="decimal" id="awayOdds" placeholder="例：1.91" oninput="limitInput(this)" onblur="formatInput(this)">
+            </div>
+        </div>
+        <div class="input-row">
+            <div class="input-box">
+                <label>客隊 xG (預期進球)</label>
+                <input type="text" inputmode="decimal" id="awayXg" placeholder="例：1.20" oninput="limitInput(this)" onblur="formatInput(this)">
+            </div>
+            <div class="input-box">
+                <label>客隊 xGA (預期失球)</label>
+                <input type="text" inputmode="decimal" id="awayXga" placeholder="例：1.70" oninput="limitInput(this)" onblur="formatInput(this)">
+            </div>
+        </div>
+    </div>
+
+    <button class="btn-calculate" onclick="calculate()">開始分析</button>
+    <button class="btn-clear" onclick="clearData()">清除數據</button>
+
+    <div id="result">
+        
+        <!-- 判定結果區 (勝負) -->
+        <div class="result-box" id="matchResultBox">
+            <div class="result-title">預測賽果</div>
+            <div class="result-value" id="matchResultValue">-</div>
+            <div class="result-diff" id="matchResultDiff">差距值：-</div>
+            <div class="result-margin" id="matchMarginValue">預計淨勝：-</div>
+        </div>
+
+        <!-- 判定結果區 (大小) -->
+        <div class="result-box" id="goalsResultBox" style="margin-bottom: 20px;">
+            <div class="result-title">預測大小 (2.5球)</div>
+            <div class="result-value" id="goalsResultValue">-</div>
+            
+            <!-- 指標顯示 -->
+            <div class="dual-indicator">
+                <div class="dual-item">
+                    <div>預期總進球期望值</div>
+                    <div class="dual-val" id="goalsIndicatorValue">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 球隊四維評級 -->
+        <div class="section-box">
+            <div class="section-title">📊 球隊四維實力評級</div>
+            
+            <!-- 雷達圖區塊 -->
+            <div class="radar-container">
+                <div class="radar-box">
+                    <div class="radar-title home">主隊</div>
+                    <svg id="radar-home" viewBox="0 0 200 200"></svg>
+                </div>
+                <div class="radar-box">
+                    <div class="radar-title away">客隊</div>
+                    <svg id="radar-away" viewBox="0 0 200 200"></svg>
+                </div>
+            </div>
+
+            <!-- 主隊 -->
+            <div class="team-rating-block">
+                <div class="team-name">
+                    <span style="color: #ff6b6b;">🏠 主隊</span>
+                    <span class="badge" id="hStyle">-</span>
+                    <span class="badge" id="hStatusBadge">-</span>
+                    <span class="badge" id="hOddsBadge" style="display:none;">-</span>
+                </div>
+                <div class="rating-row">
+                    <div class="rating-label">進攻</div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="hAttBar"></div></div>
+                    <div class="rating-display" id="hAttDisplay">-</div>
+                </div>
+                <div class="rating-row">
+                    <div class="rating-label">防守</div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="hDefBar"></div></div>
+                    <div class="rating-display" id="hDefDisplay">-</div>
+                </div>
+                <div class="rating-row">
+                    <div class="rating-label">狀態</div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="hStatBar"></div></div>
+                    <div class="rating-display" id="hStatDisplay">-</div>
+                </div>
+                <div class="rating-row">
+                    <div class="rating-label">賠率</div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="hOddsBar"></div></div>
+                    <div class="rating-display" id="hOddsDisplay">-</div>
+                </div>
+                <div class="overall-row">
+                    <span class="overall-label">綜合總實力 (四項平均)</span>
+                    <span class="overall-value" id="hOverall">E (0.0)</span>
+                </div>
+            </div>
+
+            <!-- 客隊 -->
+            <div class="team-rating-block">
+                <div class="team-name">
+                    <span style="color: #6b9fff;">✈️ 客隊</span>
+                    <span class="badge" id="aStyle">-</span>
+                    <span class="badge" id="aStatusBadge">-</span>
+                    <span class="badge" id="aOddsBadge" style="display:none;">-</span>
+                </div>
+                <div class="rating-row">
+                    <div class="rating-label">進攻</div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="aAttBar"></div></div>
+                    <div class="rating-display" id="aAttDisplay">-</div>
+                </div>
+                <div class="rating-row">
+                    <div class="rating-label">防守</div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="aDefBar"></div></div>
+                    <div class="rating-display" id="aDefDisplay">-</div>
+                </div>
+                <div class="rating-row">
+                    <div class="rating-label">狀態</div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="aStatBar"></div></div>
+                    <div class="rating-display" id="aStatDisplay">-</div>
+                </div>
+                <div class="rating-row">
+                    <div class="rating-label">賠率</div>
+                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="aOddsBar"></div></div>
+                    <div class="rating-display" id="aOddsDisplay">-</div>
+                </div>
+                <div class="overall-row">
+                    <span class="overall-label">綜合總實力 (四項平均)</span>
+                    <span class="overall-value" id="aOverall">E (0.0)</span>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // 輸入限制與格式化
+    function limitInput(input) {
+        let val = input.value;
+        val = val.replace(/[^0-9.]/g, '');
+        let parts = val.split('.');
+        if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+        let digitCount = val.replace(/\./g, '').length;
+        if (digitCount > 3) {
+            let newVal = ''; let count = 0;
+            for (let char of val) {
+                if (char !== '.') { if (count >= 3) break; count++; }
+                newVal += char;
+            }
+            val = newVal;
+        }
+        input.value = val;
+    }
+
+    function formatInput(input) {
+        let val = input.value;
+        if (!val || val === '.') { input.value = ''; return; }
+        if (!val.includes('.')) {
+            if (val.length === 3) val = val.substring(0, 1) + '.' + val.substring(1);
+            else if (val.length === 2) {
+                let num = parseInt(val);
+                if (num > 30) val = '0.' + val;
+                else val = val.substring(0, 1) + '.' + val.substring(1) + '0';
+            } else if (val.length === 1) val = val + '.00';
+        } else {
+            let parts = val.split('.');
+            let integerPart = parts[0] || '0';
+            let decimalPart = parts[1] || '';
+            decimalPart = decimalPart.padEnd(2, '0').substring(0, 2);
+            val = integerPart + '.' + decimalPart;
+        }
+        let num = parseFloat(val);
+        if (isNaN(num)) num = 0;
+        input.value = num.toFixed(2);
+    }
+
+    function clearData() {
+        const ids = [
+            'homeStatus', 'homeXg', 'homeXga', 'homeOdds',
+            'awayStatus', 'awayXg', 'awayXga', 'awayOdds'
+        ];
+        ids.forEach(id => document.getElementById(id).value = '');
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('errorMessage').style.display = 'none';
+        
+        document.getElementById('radar-home').innerHTML = '';
+        document.getElementById('radar-away').innerHTML = '';
+    }
+
+    // 評級區間
+    function getGradeByPercent(pct) {
+        let grade = ''; let color = '';
+        if (pct < 20) { grade = 'E'; color = '#c0c0c0'; }
+        else if (pct < 40) { grade = 'D'; color = '#cd7f32'; }
+        else if (pct < 60) { grade = 'C'; color = '#ff4d4d'; }
+        else if (pct < 75) { grade = 'B'; color = '#4ade80'; }
+        else if (pct < 85) { grade = 'A'; color = '#4da6ff'; }
+        else if (pct < 95) { grade = 'S'; color = '#FFD700'; }
+        else { grade = 'EX'; color = '#9b59b6'; }
+        return { grade, color };
+    }
+
+    function getTeamStyleKey(attValue, defValue) {
+        const diff = attValue - defValue;
+        if (diff >= 0.5) return "att";
+        if (diff <= -0.5) return "def";
+        return "bal";
+    }
+
+    // 繪製雷達圖 (四邊形)
+    function drawRadar(svgId, data, color, fillColor) {
+        const svg = document.getElementById(svgId);
+        svg.innerHTML = ''; 
+        
+        const cx = 100; const cy = 100; const maxR = 65; 
+        const numAxes = 4;
+        const angleStep = (Math.PI * 2) / numAxes;
+        const startAngle = -Math.PI / 2; 
+        const labels = ['ATK', 'DEF', 'STA', 'ODD'];
+
+        const levels = 4;
+        for (let l = 1; l <= levels; l++) {
+            const r = (maxR / levels) * l;
+            let points = [];
+            for (let i = 0; i < numAxes; i++) {
+                const angle = startAngle + i * angleStep;
+                points.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
+            }
+            const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            polygon.setAttribute('points', points.join(' '));
+            polygon.setAttribute('fill', 'none'); polygon.setAttribute('stroke', '#444'); polygon.setAttribute('stroke-width', '1');
+            svg.appendChild(polygon);
+        }
+
+        for (let i = 0; i < numAxes; i++) {
+            const angle = startAngle + i * angleStep;
+            const x = cx + maxR * Math.cos(angle);
+            const y = cy + maxR * Math.sin(angle);
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', cx); line.setAttribute('y1', cy); line.setAttribute('x2', x); line.setAttribute('y2', y); line.setAttribute('stroke', '#444'); line.setAttribute('stroke-width', '1');
+            svg.appendChild(line);
+
+            const labelR = maxR + 15;
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', cx + labelR * Math.cos(angle));
+            text.setAttribute('y', cy + labelR * Math.sin(angle));
+            text.setAttribute('fill', '#aaa'); text.setAttribute('font-size', '10'); text.setAttribute('font-weight', 'bold'); text.setAttribute('text-anchor', 'middle'); text.setAttribute('dominant-baseline', 'middle');
+            text.textContent = labels[i];
+            svg.appendChild(text);
+        }
+
+        let dataPoints = [];
+        for (let i = 0; i < numAxes; i++) {
+            let pct = Math.max(data[i], 5) / 100; 
+            const r = maxR * pct;
+            const angle = startAngle + i * angleStep;
+            dataPoints.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
+        }
+
+        const dataPolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        dataPolygon.setAttribute('points', dataPoints.join(' '));
+        dataPolygon.setAttribute('fill', fillColor); dataPolygon.setAttribute('stroke', color); dataPolygon.setAttribute('stroke-width', '2');
+        svg.appendChild(dataPolygon);
+    }
+
+    function updateTeamUI(prefix, att, def, status, oddsPct) {
+        // 🔥 進攻橫條：50-250 量程 (0.5 - 2.5)
+        let attPct = ((att - 0.5) / 2.0) * 100;
+        
+        // 🔥 防守橫條：0-200 量程 (0 - 2.0)
+        let defPct = (def / 2.0) * 100;
+
+        attPct = Math.min(Math.max(attPct, 0), 100);
+        defPct = Math.min(Math.max(defPct, 0), 100);
+
+        let statPct = (status / 3.0) * 100;
+        statPct = Math.min(Math.max(statPct, 0), 100);
+
+        const visualAttPct = Math.max(attPct, 1);
+        const visualDefPct = Math.max(defPct, 1);
+        const visualStatPct = Math.max(statPct, 1);
+        const visualOddsPct = Math.max(oddsPct, 1);
+
+        document.getElementById(prefix + 'AttBar').style.width = visualAttPct + '%';
+        document.getElementById(prefix + 'DefBar').style.width = visualDefPct + '%';
+        document.getElementById(prefix + 'StatBar').style.width = visualStatPct + '%';
+        document.getElementById(prefix + 'OddsBar').style.width = visualOddsPct + '%';
+
+        const attData = getGradeByPercent(attPct);
+        const defData = getGradeByPercent(defPct);
+        const statData = getGradeByPercent(statPct);
+        const oddsData = getGradeByPercent(oddsPct);
+
+        document.getElementById(prefix + 'AttDisplay').innerText = `${attData.grade} (${attPct.toFixed(1)})`;
+        document.getElementById(prefix + 'AttDisplay').style.color = attData.color;
+
+        document.getElementById(prefix + 'DefDisplay').innerText = `${defData.grade} (${defPct.toFixed(1)})`;
+        document.getElementById(prefix + 'DefDisplay').style.color = defData.color;
+
+        document.getElementById(prefix + 'StatDisplay').innerText = `${statData.grade} (${statPct.toFixed(1)})`;
+        document.getElementById(prefix + 'StatDisplay').style.color = statData.color;
+
+        document.getElementById(prefix + 'OddsDisplay').innerText = `${oddsData.grade} (${oddsPct.toFixed(1)})`;
+        document.getElementById(prefix + 'OddsDisplay').style.color = oddsData.color;
+
+        // 綜合總實力 = 四項各佔 25%
+        const overallPct = (attPct * 0.25) + (defPct * 0.25) + (statPct * 0.25) + (oddsPct * 0.25);
+        
+        const overallData = getGradeByPercent(overallPct);
+        const overallEl = document.getElementById(prefix + 'Overall');
+        overallEl.innerText = `${overallData.grade} (${overallPct.toFixed(1)})`;
+        overallEl.style.color = overallData.color;
+
+        const radarData = [attPct, defPct, statPct, oddsPct];
+        if (prefix === 'h') {
+            drawRadar('radar-home', radarData, '#ff6b6b', 'rgba(255, 107, 107, 0.3)');
+        } else {
+            drawRadar('radar-away', radarData, '#6b9fff', 'rgba(107, 159, 255, 0.3)');
+        }
+
+        const styleEl = document.getElementById(prefix + 'Style');
+        const styleKey = getTeamStyleKey(att, def);
+        
+        if (styleKey === "att") {
+            styleEl.innerText = "進攻型"; styleEl.style.color = "#ff8c8c"; styleEl.style.backgroundColor = "#3b1c1c"; 
+        } else if (styleKey === "def") {
+            styleEl.innerText = "防守型"; styleEl.style.color = "#8cb8ff"; styleEl.style.backgroundColor = "#1a2633"; 
+        } else {
+            styleEl.innerText = "平衡型"; styleEl.style.color = "#ccc"; styleEl.style.backgroundColor = "#333";
+        }
+
+        const statusBadge = document.getElementById(prefix + 'StatusBadge');
+        statusBadge.className = 'badge'; statusBadge.style.color = ''; statusBadge.style.backgroundColor = ''; 
+        
+        if (status >= 3.0) {
+            statusBadge.innerText = "狀態極佳"; statusBadge.classList.add('status-glow-cyan');
+        } else if (status >= 2.0) {
+            statusBadge.innerText = "狀態良好"; statusBadge.classList.add('status-glow-green');
+        } else if (status >= 1.0) {
+            statusBadge.innerText = "狀態一般"; statusBadge.style.color = "#ffd700"; statusBadge.style.backgroundColor = "#3b331c";
+        } else {
+            statusBadge.innerText = "狀態欠佳"; statusBadge.style.color = "#ff4d4d"; statusBadge.style.backgroundColor = "#3b1c1c";
+        }
+
+        const oddsBadge = document.getElementById(prefix + 'OddsBadge');
+        if (oddsPct > 50) {
+            oddsBadge.style.display = "inline-block"; oddsBadge.innerText = "上盤"; oddsBadge.style.color = "#f39c12"; oddsBadge.style.backgroundColor = "#3b2b1c"; 
+        } else if (oddsPct < 50) {
+            oddsBadge.style.display = "inline-block"; oddsBadge.innerText = "下盤"; oddsBadge.style.color = "#cd7f32"; oddsBadge.style.backgroundColor = "#2b1d15"; 
+        } else {
+            oddsBadge.style.display = "none";
+        }
+
+        return overallPct;
+    }
+
+    function calculate() {
+        const hXgStr = document.getElementById('homeXg').value;
+        const hXgaStr = document.getElementById('homeXga').value;
+        const hStatusStr = document.getElementById('homeStatus').value;
+        const hOddsStr = document.getElementById('homeOdds').value;
+
+        const aXgStr = document.getElementById('awayXg').value;
+        const aXgaStr = document.getElementById('awayXga').value;
+        const aStatusStr = document.getElementById('awayStatus').value;
+        const aOddsStr = document.getElementById('awayOdds').value;
+
+        if (!hXgStr || !hXgaStr || !hStatusStr || !hOddsStr ||
+            !aXgStr || !aXgaStr || !aStatusStr || !aOddsStr) {
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            return;
+        }
+
+        document.getElementById('errorMessage').style.display = 'none';
+
+        const hXg = parseFloat(hXgStr) || 0;
+        const hXga = parseFloat(hXgaStr) || 0;
+        const hStatus = parseFloat(hStatusStr) || 0;
+        const hOdds = parseFloat(hOddsStr) || 0;
+
+        const aXg = parseFloat(aXgStr) || 0;
+        const aXga = parseFloat(aXgaStr) || 0;
+        const aStatus = parseFloat(aStatusStr) || 0;
+        const aOdds = parseFloat(aOddsStr) || 0;
+        
+        // 取得主場優勢加成係數
+        const homeAdv = parseFloat(document.getElementById('homeAdvantage').value) || 0;
+        const homeMultiplier = 1 + homeAdv;
+
+        // 基礎攻防（防守力公式為 250 - xGA，供 UI 評分用）
+        let hAtt = hXg * homeMultiplier;
+        let hDef = Math.max(0, 2.5 - hXga) * homeMultiplier;
+        let aAtt = aXg;
+        let aDef = Math.max(0, 2.5 - aXga);
+
+        const totalOdds = hOdds + aOdds;
+        const hOddsPct = totalOdds > 0 ? (aOdds / totalOdds) * 100 : 50;
+        const aOddsPct = totalOdds > 0 ? (hOdds / totalOdds) * 100 : 50;
+
+        const hOverallPct = updateTeamUI('h', hAtt, hDef, hStatus, hOddsPct);
+        const aOverallPct = updateTeamUI('a', aAtt, aDef, aStatus, aOddsPct);
+
+        // ==========================================
+        // 🔥 核心邏輯：預期進球對碰 (預測賽果與大小)
+        // ==========================================
+        
+        // 主隊預期進球 = (主隊 xG + 客隊 xGA) / 2
+        // 客隊預期進球 = (客隊 xG + 主隊 xGA) / 2
+        const expHomeGoals = ((hXg * homeMultiplier) + aXga) / 2;
+        const expAwayGoals = (aXg + (hXga / homeMultiplier)) / 2;
+
+        // 賽果差距值 (淨勝球期望)
+        const predictedMargin = expHomeGoals - expAwayGoals;
+        const diff = predictedMargin;
+
+        const resultBox = document.getElementById('matchResultBox');
+        const resultValue = document.getElementById('matchResultValue');
+        const resultDiff = document.getElementById('matchResultDiff');
+
+        let finalResult = ""; 
+        let diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2);
+        const gap = hOverallPct - aOverallPct;
+
+        // 絕對碾壓優先判定 (30%)
+        if (gap >= 30) {
+            finalResult = "home";
+            diffDisplay = `+${diff.toFixed(2)} (實力碾壓)`;
+        } else if (gap <= -30) {
+            finalResult = "away";
+            diffDisplay = `${diff.toFixed(2)} (實力碾壓)`;
+        } else {
+            // 預期進球判定 (門檻 0.15)
+            if (diff >= 0.15) {
+                finalResult = "home"; 
+            } else if (diff <= -0.15) {
+                finalResult = "away"; 
+            } else {
+                finalResult = "draw"; 
+                diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2) + ` (膠著)`;
+            }
+
+            // 防矛盾機制 (15% 門檻)
+            if (finalResult === "home") {
+                if (gap < -15) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
+                else if (gap <= 15) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
+            } else if (finalResult === "away") {
+                if (gap > 15) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
+                else if (gap >= -15) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
+            }
+        }
+
+        resultDiff.innerText = `差距值：${diffDisplay}`;
+
+        // 淨勝球 UI
+        const marginEl = document.getElementById('matchMarginValue');
+        if (predictedMargin > 0.05) {
+            marginEl.innerText = `預計淨勝：主隊 ${predictedMargin.toFixed(2)} 球`;
+            marginEl.style.color = '#4ade80';
+        } else if (predictedMargin < -0.05) {
+            marginEl.innerText = `預計淨勝：客隊 ${Math.abs(predictedMargin).toFixed(2)} 球`;
+            marginEl.style.color = '#f87171';
+        } else {
+            marginEl.innerText = `預計淨勝：0.00 球 (平手)`;
+            marginEl.style.color = '#aaa';
+        }
+
+        // ==========================================
+        // 大小球邏輯：改用「預期總進球數」
+        // ==========================================
+        const totalExpectedGoals = expHomeGoals + expAwayGoals;
+        
+        const goalsResultBox = document.getElementById('goalsResultBox');
+        const goalsResultValue = document.getElementById('goalsResultValue');
+        const goalsIndicatorValue = document.getElementById('goalsIndicatorValue');
+
+        goalsIndicatorValue.innerText = totalExpectedGoals.toFixed(2);
+
+        let recommendation = "";
+        let boxColor = "";
+        let bgColor = "";
+        let textColor = "";
+
+        // 大於 2.6 看大，小於 2.4 看小
+        if (totalExpectedGoals >= 2.6) {
+            recommendation = "建議 2.5 入球大";
+            textColor = "#f87171"; boxColor = "#f87171"; bgColor = "#331a1a";
+        } else if (totalExpectedGoals <= 2.4) {
+            recommendation = "建議 2.5 入球細";
+            textColor = "#8cb8ff"; boxColor = "#8cb8ff"; bgColor = "#1a2633";
+        } else {
+            recommendation = "方向模糊";
+            textColor = "#aaa"; boxColor = "#555"; bgColor = "#2a2a2a";
+        }
+
+        goalsResultValue.innerText = recommendation;
+        goalsResultValue.style.color = textColor;
+        goalsResultBox.style.borderColor = boxColor;
+        goalsResultBox.style.backgroundColor = bgColor;
+        goalsResultBox.style.display = 'block';
+
+        // 更新勝負結果 UI
+        if (finalResult === "home") {
+            resultValue.innerText = "主勝"; resultValue.style.color = "#4ade80"; resultBox.style.borderColor = "#4ade80"; resultBox.style.backgroundColor = "#1a3324";
+        } else if (finalResult === "away") {
+            resultValue.innerText = "客勝"; resultValue.style.color = "#f87171"; resultBox.style.borderColor = "#f87171"; resultBox.style.backgroundColor = "#331a1a";
+        } else if (finalResult === "draw") {
+            resultValue.innerText = "和局"; resultValue.style.color = "#ffd700"; resultBox.style.borderColor = "#ffd700"; resultBox.style.backgroundColor = "#332d1a";
+        } else {
+            resultValue.innerText = "不建議出手"; resultValue.style.color = "#aaa"; resultBox.style.borderColor = "#555"; resultBox.style.backgroundColor = "#2a2a2a";
+        }
+
+        document.getElementById('result').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
