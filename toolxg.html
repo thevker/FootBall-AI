@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (雙模式切換版)</title>
+    <title>xG 賽事分析器 (xG 專屬版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -46,7 +46,7 @@
             100% { transform: translateX(0); }
         }
 
-        /* 設定選擇區 (模式 & 主場優勢) */
+        /* 設定選擇區 (主場優勢) */
         .settings-group {
             display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;
         }
@@ -221,7 +221,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 雙模式切換與 15% 主場優勢</p>
+    <p class="subtitle">深色模式 | xG / xGA 專屬</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -229,17 +229,10 @@
     <!-- 設定選擇區 -->
     <div class="settings-group">
         <div class="setting-row">
-            <span class="setting-label">📊 數據模式</span>
-            <select id="dataMode" onchange="changeMode()">
-                <option value="xg">xG / xGA (預期數據)</option>
-                <option value="goals">場均得分 / 失球 (實際數據)</option>
-            </select>
-        </div>
-        <div class="setting-row">
             <span class="setting-label">🏟️ 主場優勢 (加成主隊攻防)</span>
             <select id="homeAdvantage">
                 <option value="0">0% (預設關閉)</option>
-                <option value="0.15">15%</option>
+                <option value="0.10">10%</option>
             </select>
         </div>
     </div>
@@ -253,13 +246,13 @@
                 <input type="text" inputmode="decimal" id="homeStatus" placeholder="例：2.0" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
             <div class="input-box">
-                <label id="label-h-att">主隊 xG (預期進球)</label>
+                <label>主隊 xG (預期進球)</label>
                 <input type="text" inputmode="decimal" id="homeXg" placeholder="例：1.40" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
         </div>
         <div class="input-row">
             <div class="input-box">
-                <label id="label-h-def">主隊 xGA (預期失球)</label>
+                <label>主隊 xGA (預期失球)</label>
                 <input type="text" inputmode="decimal" id="homeXga" placeholder="例：1.80" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
             <div class="input-box">
@@ -278,13 +271,13 @@
                 <input type="text" inputmode="decimal" id="awayStatus" placeholder="例：1.5" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
             <div class="input-box">
-                <label id="label-a-att">客隊 xG (預期進球)</label>
+                <label>客隊 xG (預期進球)</label>
                 <input type="text" inputmode="decimal" id="awayXg" placeholder="例：1.20" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
         </div>
         <div class="input-row">
             <div class="input-box">
-                <label id="label-a-def">客隊 xGA (預期失球)</label>
+                <label>客隊 xGA (預期失球)</label>
                 <input type="text" inputmode="decimal" id="awayXga" placeholder="例：1.70" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
             <div class="input-box">
@@ -411,40 +404,6 @@
 </div>
 
 <script>
-    // 切換模式
-    function changeMode() {
-        const mode = document.getElementById('dataMode').value;
-        const hAttLabel = document.getElementById('label-h-att');
-        const hDefLabel = document.getElementById('label-h-def');
-        const aAttLabel = document.getElementById('label-a-att');
-        const aDefLabel = document.getElementById('label-a-def');
-        const hXgInput = document.getElementById('homeXg');
-        const hXgaInput = document.getElementById('homeXga');
-        const aXgInput = document.getElementById('awayXg');
-        const aXgaInput = document.getElementById('awayXga');
-
-        if (mode === 'xg') {
-            hAttLabel.innerText = '主隊 xG (預期進球)';
-            hDefLabel.innerText = '主隊 xGA (預期失球)';
-            aAttLabel.innerText = '客隊 xG (預期進球)';
-            aDefLabel.innerText = '客隊 xGA (預期失球)';
-            hXgInput.placeholder = '例：1.40';
-            hXgaInput.placeholder = '例：1.80';
-            aXgInput.placeholder = '例：1.20';
-            aXgaInput.placeholder = '例：1.70';
-        } else {
-            hAttLabel.innerText = '主隊場均得分';
-            hDefLabel.innerText = '主隊場均失球';
-            aAttLabel.innerText = '客隊場均得分';
-            aDefLabel.innerText = '客隊場均失球';
-            hXgInput.placeholder = '例：1.50';
-            hXgaInput.placeholder = '例：1.10';
-            aXgInput.placeholder = '例：1.30';
-            aXgaInput.placeholder = '例：1.40';
-        }
-        clearInputs();
-    }
-
     // 輸入限制與格式化
     function limitInput(input) {
         let val = input.value;
@@ -485,16 +444,13 @@
         input.value = num.toFixed(2);
     }
 
-    function clearInputs() {
+    function clearData() {
         const ids = [
             'homeStatus', 'homeXg', 'homeXga', 'homeOdds',
             'awayStatus', 'awayXg', 'awayXga', 'awayOdds'
         ];
         ids.forEach(id => document.getElementById(id).value = '');
-    }
-
-    function clearData() {
-        clearInputs();
+        // 這裡不重置主場優勢
         document.getElementById('result').style.display = 'none';
         document.getElementById('errorMessage').style.display = 'none';
         
@@ -615,6 +571,7 @@
         document.getElementById(prefix + 'OddsDisplay').innerText = `${oddsData.grade} (${oddsPct.toFixed(1)})`;
         document.getElementById(prefix + 'OddsDisplay').style.color = oddsData.color;
 
+        // 綜合總實力 = 四項各佔 25%
         const overallPct = (attPct * 0.25) + (defPct * 0.25) + (statPct * 0.25) + (oddsPct * 0.25);
         
         const overallData = getGradeByPercent(overallPct);
@@ -699,7 +656,7 @@
         const homeAdv = parseFloat(document.getElementById('homeAdvantage').value) || 0;
         const homeMultiplier = 1 + homeAdv;
 
-        // 基礎攻防 (這裡不分模式，一律套用原本的公式)
+        // 基礎攻防
         let hAttBase = hXg;
         let hDefBase = Math.max(0, 3.0 - hXga);
         let aAtt = aXg;
@@ -737,7 +694,7 @@
             finalResult = "away";
             diffDisplay = `${diff.toFixed(2)} (實力碾壓)`;
         } else {
-            // 基礎 攻防 判定
+            // 基礎 xG 判定
             if (diff >= 0.1) {
                 finalResult = "home"; 
             } else if (diff <= -0.1) {
