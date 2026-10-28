@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (完整差距顯示版)</title>
+    <title>xG 賽事分析器 (絕對碾壓優先版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -209,7 +209,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 完整差距顯示版</p>
+    <p class="subtitle">深色模式 | 絕對碾壓優先判定</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -638,7 +638,7 @@
         const hOverallPct = updateTeamUI('h', hXg, hDef, hStatus, hOddsPct);
         const aOverallPct = updateTeamUI('a', aXg, aDef, aStatus, aOddsPct);
 
-        // --- 第一層：攻防判定 (恢復 0.1 門檻) ---
+        // --- 攻防判定基礎數據 ---
         const hAdvantage = Math.max(0, hXg - aDef);
         const aAdvantage = Math.max(0, aXg - hDef);
         const diff = hAdvantage - aAdvantage;
@@ -648,35 +648,40 @@
         const resultDiff = document.getElementById('matchResultDiff');
 
         let finalResult = ""; 
-        let diffDisplay = "";
+        let diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2);
+        const gap = hOverallPct - aOverallPct;
 
-        // 🔥 先將真實差距值顯示出來
-        let diffDisplayBase = (diff > 0 ? '+' : '') + diff.toFixed(2);
-
-        if (diff >= 0.1) {
-            finalResult = "home"; 
-            diffDisplay = diffDisplayBase;
-        } else if (diff <= -0.1) {
-            finalResult = "away"; 
-            diffDisplay = diffDisplayBase;
+        // 🔥 第一優先級：綜合實力差距 >= 30% 直接判定
+        if (gap >= 30) {
+            finalResult = "home";
+            diffDisplay = `+${diff.toFixed(2)} (實力碾壓)`;
+        } else if (gap <= -30) {
+            finalResult = "away";
+            diffDisplay = `${diff.toFixed(2)} (實力碾壓)`;
         } else {
-            finalResult = "draw"; 
-            diffDisplay = diffDisplayBase + ` (膠著)`;
-        }
-
-        // --- 第二層：±10% 防矛盾與修正機制 ---
-        const gap = hOverallPct - aOverallPct; 
-        if (finalResult === "home") {
-            if (gap < -10) { 
-                finalResult = "avoid"; diffDisplay = diffDisplayBase + ` (實力不符)`; 
-            } else if (gap <= 10) { 
-                finalResult = "draw"; diffDisplay = diffDisplayBase + ` (差距不足)`; 
+            // 第二優先級：xG 攻防判定
+            if (diff >= 0.1) {
+                finalResult = "home"; 
+            } else if (diff <= -0.1) {
+                finalResult = "away"; 
+            } else {
+                finalResult = "draw"; 
+                diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2) + ` (膠著)`;
             }
-        } else if (finalResult === "away") {
-            if (gap > 10) { 
-                finalResult = "avoid"; diffDisplay = diffDisplayBase + ` (實力不符)`; 
-            } else if (gap >= -10) { 
-                finalResult = "draw"; diffDisplay = diffDisplayBase + ` (差距不足)`; 
+
+            // 第三優先級：±10% 防矛盾與修正機制
+            if (finalResult === "home") {
+                if (gap < -10) { 
+                    finalResult = "avoid"; diffDisplay += ` (實力不符)`; 
+                } else if (gap <= 10) { 
+                    finalResult = "draw"; diffDisplay += ` (差距不足)`; 
+                }
+            } else if (finalResult === "away") {
+                if (gap > 10) { 
+                    finalResult = "avoid"; diffDisplay += ` (實力不符)`; 
+                } else if (gap >= -10) { 
+                    finalResult = "draw"; diffDisplay += ` (差距不足)`; 
+                }
             }
         }
 
