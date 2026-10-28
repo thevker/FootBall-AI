@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (xG 專屬版)</title>
+    <title>xG 賽事分析器 (15% 嚴格防矛盾版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -221,7 +221,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | xG / xGA 專屬</p>
+    <p class="subtitle">深色模式 | 15% 嚴格防矛盾</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -686,7 +686,7 @@
         let diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2);
         const gap = hOverallPct - aOverallPct;
 
-        // 🔥 絕對碾壓優先判定
+        // 🔥 絕對碾壓優先判定 (30%)
         if (gap >= 30) {
             finalResult = "home";
             diffDisplay = `+${diff.toFixed(2)} (實力碾壓)`;
@@ -704,13 +704,13 @@
                 diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2) + ` (膠著)`;
             }
 
-            // 防矛盾機制
+            // 🔥 防矛盾機制 (改為 15% 門檻)
             if (finalResult === "home") {
-                if (gap < -10) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
-                else if (gap <= 10) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
+                if (gap < -15) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
+                else if (gap <= 15) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
             } else if (finalResult === "away") {
-                if (gap > 10) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
-                else if (gap >= -10) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
+                if (gap > 15) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
+                else if (gap >= -15) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
             }
         }
 
