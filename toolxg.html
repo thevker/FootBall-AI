@@ -121,7 +121,7 @@
             font-size: 12px;
             color: #ccc;
         }
-        .dual-item { text-align: center; }
+        .dual-item { text-align: center; margin: 0 10px; }
         .dual-val { font-weight: bold; font-size: 14px; color: #fff; margin-top: 2px; }
 
         /* 球隊評級區塊 */
@@ -320,8 +320,8 @@
             <div class="result-margin" id="matchMarginValue">預計淨勝：-</div>
         </div>
 
-        <!-- 判定結果區 (大小) -->
-        <div class="result-box" id="goalsResultBox" style="margin-bottom: 20px;">
+        <!-- 判定結果區 (大小) - 永遠顯示 -->
+        <div class="result-box" id="goalsResultBox" style="margin-bottom: 20px; display: block;">
             <div class="result-title">預測大小 (2.5球)</div>
             <div class="result-value" id="goalsResultValue">-</div>
             
@@ -660,6 +660,7 @@
         const aGoalStr = document.getElementById('awayGoal').value;
         const aConcStr = document.getElementById('awayConceded').value;
 
+        // 必須輸入所有數據
         if (!hXgStr || !hXgaStr || !hStatusStr || !hOddsStr || !hGoalStr || !hConcStr ||
             !aXgStr || !aXgaStr || !aStatusStr || !aOddsStr || !aGoalStr || !aConcStr) {
             document.getElementById('errorMessage').style.display = 'block';
@@ -745,23 +746,26 @@
             }
         }
 
-        // --- 第二層：實際得失球終極校驗 ---
+        // --- 第二層：實際得失球終極校驗 (依您的新規則) ---
         const hGoalRating = hGoal + aConc;
         const aGoalRating = aGoal + hConc;
         const ratingDiff = hGoalRating - aGoalRating;
 
         if (finalResult === "home") {
+            // 主勝：主得分+客失球 須大於 客得分+主失球 並大於1.00
             if (!(hGoalRating > aGoalRating && hGoalRating > 1.00)) {
                 finalResult = "avoid";
                 diffDisplay += ` (得失球不支持)`;
             }
         } else if (finalResult === "away") {
+            // 客勝：客得分+主失球 須大於 主得分+客失球 並大於1.00
             if (!(aGoalRating > hGoalRating && aGoalRating > 1.00)) {
                 finalResult = "avoid";
                 diffDisplay += ` (得失球不支持)`;
             }
         } else if (finalResult === "draw") {
-            if (Math.abs(ratingDiff) > 1.00) {
+            // 和局：兩者差距需小於1.00範圍內
+            if (Math.abs(ratingDiff) >= 1.00) {
                 finalResult = "avoid";
                 diffDisplay += ` (得失球不支持)`;
             }
@@ -786,7 +790,7 @@
             marginEl.style.color = '#aaa';
         }
 
-        // --- 大小球邏輯 ---
+        // --- 大小球邏輯 (更新門檻) ---
         const goalsIndicator = hAdvantage + aAdvantage;
         const totalGoalsData = hGoal + hConc + aGoal + aConc;
         
@@ -805,6 +809,7 @@
 
         // 入球大：傾向分 >= 0.7 且 總和 > 5.00
         // 入球細：傾向分 <= 0.1 且 總和 < 5.00
+        // 其他一律方向模糊
         if (goalsIndicator >= 0.7 && totalGoalsData > 5.00) {
             recommendation = "建議 2.5 入球大";
             textColor = "#f87171"; boxColor = "#f87171"; bgColor = "#331a1a";
@@ -820,7 +825,9 @@
         goalsResultValue.style.color = textColor;
         goalsResultBox.style.borderColor = boxColor;
         goalsResultBox.style.backgroundColor = bgColor;
-        goalsResultBox.style.display = 'block';
+        
+        // 確保大小結果永遠顯示
+        goalsResultBox.style.display = 'block'; 
 
         // 更新勝負結果 UI
         if (finalResult === "home") {
