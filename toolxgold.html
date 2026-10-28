@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (15% 嚴格防矛盾版)</title>
+    <title>xG 賽事分析器 (7:3 混合優化版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -221,7 +221,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 15% 嚴格防矛盾</p>
+    <p class="subtitle">7:3 混合優化版 | 防矛盾機制</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -237,7 +237,7 @@
         </div>
     </div>
 
-    <!-- 🏠 主隊數據 (順序：狀態 → 賠率 → xG → xGA) -->
+    <!-- 🏠 主隊數據 -->
     <div class="input-section">
         <div class="section-header home">🏠 主隊數據</div>
         <div class="input-row">
@@ -260,9 +260,19 @@
                 <input type="text" inputmode="decimal" id="homeXga" placeholder="例：1.80" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
         </div>
+        <div class="input-row">
+            <div class="input-box">
+                <label>場均得分</label>
+                <input type="text" inputmode="decimal" id="homeGoals" placeholder="例：2.33" oninput="limitInput(this)" onblur="formatInput(this)">
+            </div>
+            <div class="input-box">
+                <label>場均失球</label>
+                <input type="text" inputmode="decimal" id="homeConceded" placeholder="例：1.17" oninput="limitInput(this)" onblur="formatInput(this)">
+            </div>
+        </div>
     </div>
 
-    <!-- ✈️ 客隊數據 (順序：狀態 → 賠率 → xG → xGA) -->
+    <!-- ✈️ 客隊數據 -->
     <div class="input-section">
         <div class="section-header away">✈️ 客隊數據</div>
         <div class="input-row">
@@ -283,6 +293,16 @@
             <div class="input-box">
                 <label>客隊 xGA (預期失球)</label>
                 <input type="text" inputmode="decimal" id="awayXga" placeholder="例：1.70" oninput="limitInput(this)" onblur="formatInput(this)">
+            </div>
+        </div>
+        <div class="input-row">
+            <div class="input-box">
+                <label>場均得分</label>
+                <input type="text" inputmode="decimal" id="awayGoals" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)">
+            </div>
+            <div class="input-box">
+                <label>場均失球</label>
+                <input type="text" inputmode="decimal" id="awayConceded" placeholder="例：0.50" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
         </div>
     </div>
@@ -337,6 +357,8 @@
                     <span class="badge" id="hStyle">-</span>
                     <span class="badge" id="hStatusBadge">-</span>
                     <span class="badge" id="hOddsBadge" style="display:none;">-</span>
+                    <span class="badge" id="hAttEff" style="display:none;">-</span>
+                    <span class="badge" id="hDefEff" style="display:none;">-</span>
                 </div>
                 <div class="rating-row">
                     <div class="rating-label">進攻</div>
@@ -371,6 +393,8 @@
                     <span class="badge" id="aStyle">-</span>
                     <span class="badge" id="aStatusBadge">-</span>
                     <span class="badge" id="aOddsBadge" style="display:none;">-</span>
+                    <span class="badge" id="aAttEff" style="display:none;">-</span>
+                    <span class="badge" id="aDefEff" style="display:none;">-</span>
                 </div>
                 <div class="rating-row">
                     <div class="rating-label">進攻</div>
@@ -446,16 +470,20 @@
 
     function clearData() {
         const ids = [
-            'homeStatus', 'homeXg', 'homeXga', 'homeOdds',
-            'awayStatus', 'awayXg', 'awayXga', 'awayOdds'
+            'homeStatus', 'homeXg', 'homeXga', 'homeOdds', 'homeGoals', 'homeConceded',
+            'awayStatus', 'awayXg', 'awayXga', 'awayOdds', 'awayGoals', 'awayConceded'
         ];
         ids.forEach(id => document.getElementById(id).value = '');
-        // 這裡不重置主場優勢
         document.getElementById('result').style.display = 'none';
         document.getElementById('errorMessage').style.display = 'none';
         
         document.getElementById('radar-home').innerHTML = '';
         document.getElementById('radar-away').innerHTML = '';
+        
+        // 隱藏所有特效徽章
+        ['hAttEff', 'hDefEff', 'aAttEff', 'aDefEff', 'hOddsBadge', 'aOddsBadge'].forEach(id => {
+            document.getElementById(id).style.display = 'none';
+        });
     }
 
     // 評級區間
@@ -535,7 +563,7 @@
     }
 
     function updateTeamUI(prefix, att, def, status, oddsPct) {
-        // 🔥 進攻/防守橫條比例 0-250
+        // 進攻/防守橫條比例 0-250
         let attPct = (att / 2.5) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100);
 
@@ -624,18 +652,23 @@
     }
 
     function calculate() {
-        const hXgStr = document.getElementById('homeXg').value;
-        const hXgaStr = document.getElementById('homeXga').value;
+        // 取得所有輸入值
         const hStatusStr = document.getElementById('homeStatus').value;
         const hOddsStr = document.getElementById('homeOdds').value;
+        const hXgStr = document.getElementById('homeXg').value;
+        const hXgaStr = document.getElementById('homeXga').value;
+        const hGoalsStr = document.getElementById('homeGoals').value;
+        const hConcededStr = document.getElementById('homeConceded').value;
 
-        const aXgStr = document.getElementById('awayXg').value;
-        const aXgaStr = document.getElementById('awayXga').value;
         const aStatusStr = document.getElementById('awayStatus').value;
         const aOddsStr = document.getElementById('awayOdds').value;
+        const aXgStr = document.getElementById('awayXg').value;
+        const aXgaStr = document.getElementById('awayXga').value;
+        const aGoalsStr = document.getElementById('awayGoals').value;
+        const aConcededStr = document.getElementById('awayConceded').value;
 
-        if (!hXgStr || !hXgaStr || !hStatusStr || !hOddsStr ||
-            !aXgStr || !aXgaStr || !aStatusStr || !aOddsStr) {
+        if (!hXgStr || !hXgaStr || !hStatusStr || !hOddsStr || !hGoalsStr || !hConcededStr ||
+            !aXgStr || !aXgaStr || !aStatusStr || !aOddsStr || !aGoalsStr || !aConcededStr) {
             document.getElementById('errorMessage').style.display = 'block';
             document.getElementById('result').style.display = 'none';
             return;
@@ -647,32 +680,67 @@
         const hXga = parseFloat(hXgaStr) || 0;
         const hStatus = parseFloat(hStatusStr) || 0;
         const hOdds = parseFloat(hOddsStr) || 0;
+        const hGoals = parseFloat(hGoalsStr) || 0;
+        const hConceded = parseFloat(hConcededStr) || 0;
 
         const aXg = parseFloat(aXgStr) || 0;
         const aXga = parseFloat(aXgaStr) || 0;
         const aStatus = parseFloat(aStatusStr) || 0;
         const aOdds = parseFloat(aOddsStr) || 0;
+        const aGoals = parseFloat(aGoalsStr) || 0;
+        const aConceded = parseFloat(aConcededStr) || 0;
         
         // 取得主場優勢加成係數
         const homeAdv = parseFloat(document.getElementById('homeAdvantage').value) || 0;
         const homeMultiplier = 1 + homeAdv;
 
-        // 基礎攻防（防守力 = 250 - xGA，與 0-250 橫條基準一致）
-        let hAttBase = hXg;
-        let hDefBase = Math.max(0, 2.5 - hXga);
-        let aAtt = aXg;
-        let aDef = Math.max(0, 2.5 - aXga);
+        // 🔥 7:3 混合算法 (70% xG + 30% 實際)
+        // 主隊
+        let hAttBase = (hXg * 0.7) + (hGoals * 0.3);
+        let hDefBase = Math.max(0, 2.5 - ((hXga * 0.7) + (hConceded * 0.3)));
+        // 客隊
+        let aAttBase = (aXg * 0.7) + (aGoals * 0.3);
+        let aDefBase = Math.max(0, 2.5 - ((aXga * 0.7) + (aConceded * 0.3)));
 
-        // 套用主場優勢
+        // 套用主場優勢 (僅對主隊)
         let hAtt = hAttBase * homeMultiplier;
         let hDef = hDefBase * homeMultiplier;
+        let aAtt = aAttBase;
+        let aDef = aDefBase;
 
+        // 賠率百分比
         const totalOdds = hOdds + aOdds;
         const hOddsPct = totalOdds > 0 ? (aOdds / totalOdds) * 100 : 50;
         const aOddsPct = totalOdds > 0 ? (hOdds / totalOdds) * 100 : 50;
 
         const hOverallPct = updateTeamUI('h', hAtt, hDef, hStatus, hOddsPct);
         const aOverallPct = updateTeamUI('a', aAtt, aDef, aStatus, aOddsPct);
+
+        // --- 效率徽章判斷 ---
+        const hAttDiff = hGoals - hXg;
+        const hDefDiff = hConceded - hXga;
+        const aAttDiff = aGoals - aXg;
+        const aDefDiff = aConceded - aXga;
+
+        const hAttEff = document.getElementById('hAttEff');
+        if (hAttDiff > 0.3) { hAttEff.innerText = "高效終結"; hAttEff.style.color = "#4ade80"; hAttEff.style.backgroundColor = "#1c3b24"; hAttEff.style.display = "inline-block"; }
+        else if (hAttDiff < -0.3) { hAttEff.innerText = "浪費機會"; hAttEff.style.color = "#f87171"; hAttEff.style.backgroundColor = "#3b1c1c"; hAttEff.style.display = "inline-block"; }
+        else { hAttEff.style.display = "none"; }
+
+        const hDefEff = document.getElementById('hDefEff');
+        if (hDefDiff < -0.3) { hDefEff.innerText = "神勇防線"; hDefEff.style.color = "#0adeff"; hDefEff.style.backgroundColor = "#0e2e36"; hDefEff.style.display = "inline-block"; }
+        else if (hDefDiff > 0.3) { hDefEff.innerText = "防線漏勺"; hDefEff.style.color = "#f87171"; hDefEff.style.backgroundColor = "#3b1c1c"; hDefEff.style.display = "inline-block"; }
+        else { hDefEff.style.display = "none"; }
+
+        const aAttEff = document.getElementById('aAttEff');
+        if (aAttDiff > 0.3) { aAttEff.innerText = "高效終結"; aAttEff.style.color = "#4ade80"; aAttEff.style.backgroundColor = "#1c3b24"; aAttEff.style.display = "inline-block"; }
+        else if (aAttDiff < -0.3) { aAttEff.innerText = "浪費機會"; aAttEff.style.color = "#f87171"; aAttEff.style.backgroundColor = "#3b1c1c"; aAttEff.style.display = "inline-block"; }
+        else { aAttEff.style.display = "none"; }
+
+        const aDefEff = document.getElementById('aDefEff');
+        if (aDefDiff < -0.3) { aDefEff.innerText = "神勇防線"; aDefEff.style.color = "#0adeff"; aDefEff.style.backgroundColor = "#0e2e36"; aDefEff.style.display = "inline-block"; }
+        else if (aDefDiff > 0.3) { aDefEff.innerText = "防線漏勺"; aDefEff.style.color = "#f87171"; aDefEff.style.backgroundColor = "#3b1c1c"; aDefEff.style.display = "inline-block"; }
+        else { aDefEff.style.display = "none"; }
 
         // --- 第一層：攻防判定 ---
         const hAdvantage = Math.max(0, hAtt - aDef);
@@ -687,7 +755,7 @@
         let diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2);
         const gap = hOverallPct - aOverallPct;
 
-        // 🔥 絕對碾壓優先判定 (30%)
+        // 絕對碾壓優先判定 (30%)
         if (gap >= 30) {
             finalResult = "home";
             diffDisplay = `+${diff.toFixed(2)} (實力碾壓)`;
@@ -705,7 +773,7 @@
                 diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2) + ` (膠著)`;
             }
 
-            // 🔥 防矛盾機制 (15% 門檻)
+            // 防矛盾機制 (15% 門檻)
             if (finalResult === "home") {
                 if (gap < -15) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
                 else if (gap <= 15) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
@@ -717,9 +785,9 @@
 
         resultDiff.innerText = `差距值：${diffDisplay}`;
 
-        // 淨勝球
-        const expHome = (hAtt + aXga) / 2;
-        const expAway = (aAtt + hXga) / 2;
+        // 淨勝球 (使用混合後的攻防數值進行預測，更貼近真實)
+        const expHome = (hAtt + aDef) / 2;
+        const expAway = (aAtt + hDef) / 2;
         const predictedMargin = expHome - expAway;
 
         const marginEl = document.getElementById('matchMarginValue');
@@ -734,8 +802,9 @@
             marginEl.style.color = '#aaa';
         }
 
-        // --- 大小球邏輯 ---
+        // --- 大小球邏輯 (加入實際進球期望值修正) ---
         const goalsIndicator = hAdvantage + aAdvantage;
+        const actualExpectedGoals = hGoals + aGoals; // 兩隊實際進球能力總和
         
         const goalsResultBox = document.getElementById('goalsResultBox');
         const goalsResultValue = document.getElementById('goalsResultValue');
@@ -748,10 +817,11 @@
         let bgColor = "";
         let textColor = "";
 
-        if (goalsIndicator >= 1.0) {
+        // 修正後邏輯：結合傾向分與實際進球期望值
+        if (goalsIndicator >= 1.0 || (goalsIndicator > 0.5 && actualExpectedGoals >= 2.8)) {
             recommendation = "建議 2.5 入球大";
             textColor = "#f87171"; boxColor = "#f87171"; bgColor = "#331a1a";
-        } else if (goalsIndicator <= 0) {
+        } else if (goalsIndicator <= 0 || (goalsIndicator < 0.5 && actualExpectedGoals <= 2.0)) {
             recommendation = "建議 2.5 入球細";
             textColor = "#8cb8ff"; boxColor = "#8cb8ff"; bgColor = "#1a2633";
         } else {
