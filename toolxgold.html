@@ -535,7 +535,7 @@
     }
 
     function updateTeamUI(prefix, att, def, status, oddsPct) {
-        // 🔥 進攻/防守橫條比例改為 0-250
+        // 🔥 進攻/防守橫條比例 0-250
         let attPct = (att / 2.5) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100);
 
@@ -657,11 +657,11 @@
         const homeAdv = parseFloat(document.getElementById('homeAdvantage').value) || 0;
         const homeMultiplier = 1 + homeAdv;
 
-        // 基礎攻防
+        // 基礎攻防（防守力 = 250 - xGA，與 0-250 橫條基準一致）
         let hAttBase = hXg;
-        let hDefBase = Math.max(0, 3.0 - hXga);
+        let hDefBase = Math.max(0, 2.5 - hXga);
         let aAtt = aXg;
-        let aDef = Math.max(0, 3.0 - aXga);
+        let aDef = Math.max(0, 2.5 - aXga);
 
         // 套用主場優勢
         let hAtt = hAttBase * homeMultiplier;
@@ -705,7 +705,7 @@
                 diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2) + ` (膠著)`;
             }
 
-            // 🔥 防矛盾機制 (改為 15% 門檻)
+            // 🔥 防矛盾機制 (15% 門檻)
             if (finalResult === "home") {
                 if (gap < -15) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
                 else if (gap <= 15) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
