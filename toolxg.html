@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (全25%平均版)</title>
+    <title>xG 賽事分析器 (完整差距顯示版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -209,7 +209,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 四項各佔 25% 平均</p>
+    <p class="subtitle">深色模式 | 完整差距顯示版</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -547,7 +547,7 @@
         document.getElementById(prefix + 'OddsDisplay').innerText = `${oddsData.grade} (${oddsPct.toFixed(1)})`;
         document.getElementById(prefix + 'OddsDisplay').style.color = oddsData.color;
 
-        // 🔥 綜合總實力 = 四項各佔 25% (即直接除以 4)
+        // 綜合總實力 = 四項各佔 25%
         const overallPct = (attPct * 0.25) + (defPct * 0.25) + (statPct * 0.25) + (oddsPct * 0.25);
         
         const overallData = getGradeByPercent(overallPct);
@@ -638,7 +638,7 @@
         const hOverallPct = updateTeamUI('h', hXg, hDef, hStatus, hOddsPct);
         const aOverallPct = updateTeamUI('a', aXg, aDef, aStatus, aOddsPct);
 
-        // --- 第一層：攻防判定 ---
+        // --- 第一層：攻防判定 (恢復 0.1 門檻) ---
         const hAdvantage = Math.max(0, hXg - aDef);
         const aAdvantage = Math.max(0, aXg - hDef);
         const diff = hAdvantage - aAdvantage;
@@ -650,29 +650,34 @@
         let finalResult = ""; 
         let diffDisplay = "";
 
-        if (diff >= 0.3) {
-            finalResult = "home"; diffDisplay = `+${diff.toFixed(2)}`;
-        } else if (diff <= -0.3) {
-            finalResult = "away"; diffDisplay = `${diff.toFixed(2)}`;
+        // 🔥 先將真實差距值顯示出來
+        let diffDisplayBase = (diff > 0 ? '+' : '') + diff.toFixed(2);
+
+        if (diff >= 0.1) {
+            finalResult = "home"; 
+            diffDisplay = diffDisplayBase;
+        } else if (diff <= -0.1) {
+            finalResult = "away"; 
+            diffDisplay = diffDisplayBase;
         } else {
-            const overallGap = hOverallPct - aOverallPct;
-            if (overallGap >= 30) {
-                finalResult = "home"; diffDisplay = `+0.00 (實力碾壓)`;
-            } else if (overallGap <= -30) {
-                finalResult = "away"; diffDisplay = `0.00 (實力碾壓)`;
-            } else {
-                finalResult = "draw"; diffDisplay = `0.00 (膠著)`;
-            }
+            finalResult = "draw"; 
+            diffDisplay = diffDisplayBase + ` (膠著)`;
         }
 
-        // 防矛盾機制
+        // --- 第二層：±10% 防矛盾與修正機制 ---
         const gap = hOverallPct - aOverallPct; 
         if (finalResult === "home") {
-            if (gap < -10) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
-            else if (gap <= 10) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
+            if (gap < -10) { 
+                finalResult = "avoid"; diffDisplay = diffDisplayBase + ` (實力不符)`; 
+            } else if (gap <= 10) { 
+                finalResult = "draw"; diffDisplay = diffDisplayBase + ` (差距不足)`; 
+            }
         } else if (finalResult === "away") {
-            if (gap > 10) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
-            else if (gap >= -10) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
+            if (gap > 10) { 
+                finalResult = "avoid"; diffDisplay = diffDisplayBase + ` (實力不符)`; 
+            } else if (gap >= -10) { 
+                finalResult = "draw"; diffDisplay = diffDisplayBase + ` (差距不足)`; 
+            }
         }
 
         resultDiff.innerText = `差距值：${diffDisplay}`;
