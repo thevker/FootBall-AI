@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (專屬公式版)</title>
+    <title>xG 賽事分析器 (專屬公式-防負數版)</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -112,7 +112,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">專屬公式大小球版</p>
+    <p class="subtitle">專屬公式大小球版 (防負數)</p>
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
@@ -166,7 +166,7 @@
             <div class="result-value" id="goalsResultValue">-</div>
             <div class="dual-indicator">
                 <div class="dual-item">
-                    <div>計算差距值</div>
+                    <div>計算差距值 (最低為0)</div>
                     <div class="dual-val" id="goalsIndicatorValue">-</div>
                 </div>
             </div>
@@ -440,19 +440,22 @@
         else { marginEl.innerText = `預計淨勝：0.00 球 (平手)`; marginEl.style.color = '#aaa'; }
 
         // ==========================================
-        // 🔥 專屬大小球公式：((主xg-(2.50-客xga))+(客xg-(2.50-主xga)))
+        // 🔥 專屬大小球公式 (加入防負數機制)
         // ==========================================
-        
         const homeDefense = 2.50 - aXga; // 客隊防守力
         const awayDefense = 2.50 - hXga; // 主隊防守力
         
-        const goalsDiff = (hXg - homeDefense) + (aXg - awayDefense);
+        // 確保相減後不會低於 0
+        const hAdv = Math.max(0, hXg - homeDefense);
+        const aAdv = Math.max(0, aXg - awayDefense);
+        
+        const goalsDiff = hAdv + aAdv;
 
         const goalsResultBox = document.getElementById('goalsResultBox');
         const goalsResultValue = document.getElementById('goalsResultValue');
         const goalsIndicatorValue = document.getElementById('goalsIndicatorValue');
 
-        // 顯示公式算出來的差距值
+        // 顯示算出來的差距值
         goalsIndicatorValue.innerText = goalsDiff.toFixed(2);
 
         let recommendation = "", boxColor = "", bgColor = "", textColor = "";
