@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (專屬公式-防負數版)</title>
+    <title>xG 賽事分析器 (長度差25%判定版)</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -112,7 +112,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">專屬公式大小球版 (0.5細 / 1.5大)</p>
+    <p class="subtitle">專屬公式 | 橫條差 25% 風格判定</p>
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
@@ -259,13 +259,6 @@
         return { grade: 'EX', color: '#9b59b6' };
     }
 
-    function getTeamStyleKey(attValue, defValue) {
-        const diff = attValue - defValue;
-        if (diff >= 0.5) return "att";
-        if (diff <= -0.5) return "def";
-        return "bal";
-    }
-
     function drawRadar(svgId, data, color, fillColor) {
         const svg = document.getElementById(svgId);
         svg.innerHTML = ''; 
@@ -346,11 +339,17 @@
         drawRadar(prefix === 'h' ? 'radar-home' : 'radar-away', [attPct, defPct, statPct, oddsPct], 
             prefix === 'h' ? '#ff6b6b' : '#6b9fff', prefix === 'h' ? 'rgba(255, 107, 107, 0.3)' : 'rgba(107, 159, 255, 0.3)');
 
+        // 🔥 全新風格判定：基於橫條百分比差距 (25.0%)
         const styleEl = document.getElementById(prefix + 'Style');
-        const styleKey = getTeamStyleKey(att, def);
-        if (styleKey === "att") { styleEl.innerText = "進攻型"; styleEl.style.color = "#ff8c8c"; styleEl.style.backgroundColor = "#3b1c1c"; }
-        else if (styleKey === "def") { styleEl.innerText = "防守型"; styleEl.style.color = "#8cb8ff"; styleEl.style.backgroundColor = "#1a2633"; }
-        else { styleEl.innerText = "平衡型"; styleEl.style.color = "#ccc"; styleEl.style.backgroundColor = "#333"; }
+        const pctDiff = attPct - defPct;
+
+        if (pctDiff >= 25.0) {
+            styleEl.innerText = "進攻型"; styleEl.style.color = "#ff8c8c"; styleEl.style.backgroundColor = "#3b1c1c"; 
+        } else if (pctDiff <= -25.0) {
+            styleEl.innerText = "防守型"; styleEl.style.color = "#8cb8ff"; styleEl.style.backgroundColor = "#1a2633"; 
+        } else {
+            styleEl.innerText = "平衡型"; styleEl.style.color = "#ccc"; styleEl.style.backgroundColor = "#333";
+        }
 
         const statusBadge = document.getElementById(prefix + 'StatusBadge');
         statusBadge.className = 'badge'; statusBadge.style.color = ''; statusBadge.style.backgroundColor = ''; 
@@ -439,13 +438,10 @@
         else if (predictedMargin < -0.05) { marginEl.innerText = `預計淨勝：客隊 ${Math.abs(predictedMargin).toFixed(2)} 球`; marginEl.style.color = '#f87171'; }
         else { marginEl.innerText = `預計淨勝：0.00 球 (平手)`; marginEl.style.color = '#aaa'; }
 
-        // ==========================================
-        // 🔥 專屬大小球公式 (加入防負數機制)
-        // ==========================================
-        const homeDefense = 2.50 - aXga; // 客隊防守力
-        const awayDefense = 2.50 - hXga; // 主隊防守力
+        // 🔥 專屬大小球公式 (防負數)
+        const homeDefense = 2.50 - aXga;
+        const awayDefense = 2.50 - hXga;
         
-        // 確保相減後不會低於 0
         const hAdv = Math.max(0, hXg - homeDefense);
         const aAdv = Math.max(0, aXg - awayDefense);
         
@@ -455,21 +451,16 @@
         const goalsResultValue = document.getElementById('goalsResultValue');
         const goalsIndicatorValue = document.getElementById('goalsIndicatorValue');
 
-        // 顯示算出來的差距值
         goalsIndicatorValue.innerText = goalsDiff.toFixed(2);
 
         let recommendation = "", boxColor = "", bgColor = "", textColor = "";
 
-        // 🔥 判定門檻：0.5以下細，1.5以上大
         if (goalsDiff <= 0.5) {
-            recommendation = "建議 2.5 入球細";
-            textColor = "#8cb8ff"; boxColor = "#8cb8ff"; bgColor = "#1a2633";
+            recommendation = "建議 2.5 入球細"; textColor = "#8cb8ff"; boxColor = "#8cb8ff"; bgColor = "#1a2633";
         } else if (goalsDiff >= 1.5) {
-            recommendation = "建議 2.5 入球大";
-            textColor = "#f87171"; boxColor = "#f87171"; bgColor = "#331a1a";
+            recommendation = "建議 2.5 入球大"; textColor = "#f87171"; boxColor = "#f87171"; bgColor = "#331a1a";
         } else {
-            recommendation = "方向模糊 (不建議)";
-            textColor = "#aaa"; boxColor = "#555"; bgColor = "#2a2a2a";
+            recommendation = "方向模糊 (不建議)"; textColor = "#aaa"; boxColor = "#555"; bgColor = "#2a2a2a";
         }
 
         goalsResultValue.innerText = recommendation;
