@@ -746,28 +746,28 @@
             }
         }
 
-        // --- 第二層：實際得失球終極校驗 (依您的新規則) ---
-        const hGoalRating = hGoal + aConc;
-        const aGoalRating = aGoal + hConc;
-        const ratingDiff = hGoalRating - aGoalRating;
+        // --- 第二層：實際得失球終極校驗 (差值版) ---
+        const hGoalRating = hGoal + aConc; // 主預期進球
+        const aGoalRating = aGoal + hConc; // 客預期進球
+        const ratingDiff = hGoalRating - aGoalRating; // 主客預期進球差
 
         if (finalResult === "home") {
-            // 主勝：主得分+客失球 須大於 客得分+主失球 並大於1.00
-            if (!(hGoalRating > aGoalRating && hGoalRating > 1.00)) {
+            // 主勝：主隊預期進球必須大於客隊，且雙方差值必須 >= 1.00
+            if (ratingDiff < 1.00) {
                 finalResult = "avoid";
-                diffDisplay += ` (得失球不支持)`;
+                diffDisplay += ` (進球差未達1.00)`;
             }
         } else if (finalResult === "away") {
-            // 客勝：客得分+主失球 須大於 主得分+客失球 並大於1.00
-            if (!(aGoalRating > hGoalRating && aGoalRating > 1.00)) {
+            // 客勝：客隊預期進球必須大於主隊，且雙方差值必須 >= 1.00
+            if (ratingDiff > -1.00) {
                 finalResult = "avoid";
-                diffDisplay += ` (得失球不支持)`;
+                diffDisplay += ` (進球差未達1.00)`;
             }
         } else if (finalResult === "draw") {
-            // 和局：兩者差距需小於1.00範圍內
+            // 和局：雙方差值必須小於 1.00
             if (Math.abs(ratingDiff) >= 1.00) {
                 finalResult = "avoid";
-                diffDisplay += ` (得失球不支持)`;
+                diffDisplay += ` (進球差超過1.00，不支持和局)`;
             }
         }
 
@@ -809,7 +809,6 @@
 
         // 入球大：傾向分 >= 0.7 且 總和 > 5.00
         // 入球細：傾向分 <= 0.1 且 總和 < 5.00
-        // 其他一律方向模糊
         if (goalsIndicator >= 0.7 && totalGoalsData > 5.00) {
             recommendation = "建議 2.5 入球大";
             textColor = "#f87171"; boxColor = "#f87171"; bgColor = "#331a1a";
@@ -825,9 +824,7 @@
         goalsResultValue.style.color = textColor;
         goalsResultBox.style.borderColor = boxColor;
         goalsResultBox.style.backgroundColor = bgColor;
-        
-        // 確保大小結果永遠顯示
-        goalsResultBox.style.display = 'block'; 
+        goalsResultBox.style.display = 'block'; // 確保永遠顯示
 
         // 更新勝負結果 UI
         if (finalResult === "home") {
