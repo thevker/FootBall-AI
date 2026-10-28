@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (純 xG 0-250版)</title>
+    <title>xG 賽事分析器 (純 xG 50-250版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -221,7 +221,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">純 xG 基準 | 0-250 橫條</p>
+    <p class="subtitle">純 xG 基準 | 攻防量程 50-250</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -237,7 +237,7 @@
         </div>
     </div>
 
-    <!-- 🏠 主隊數據 (狀態 → 賠率 → xG → xGA) -->
+    <!-- 🏠 主隊數據 -->
     <div class="input-section">
         <div class="section-header home">🏠 主隊數據</div>
         <div class="input-row">
@@ -262,7 +262,7 @@
         </div>
     </div>
 
-    <!-- ✈️ 客隊數據 (狀態 → 賠率 → xG → xGA) -->
+    <!-- ✈️ 客隊數據 -->
     <div class="input-section">
         <div class="section-header away">✈️ 客隊數據</div>
         <div class="input-row">
@@ -534,11 +534,11 @@
     }
 
     function updateTeamUI(prefix, att, def, status, oddsPct) {
-        // 進攻/防守橫條比例 0-250
-        let attPct = (att / 2.5) * 100;
-        attPct = Math.min(Math.max(attPct, 0), 100);
+        // 🔥 攻防橫條量程改為 50-250 (即數值 0.5 到 2.5)
+        let attPct = ((att - 0.5) / 2.0) * 100;
+        let defPct = ((def - 0.5) / 2.0) * 100;
 
-        let defPct = (def / 2.5) * 100;
+        attPct = Math.min(Math.max(attPct, 0), 100);
         defPct = Math.min(Math.max(defPct, 0), 100);
 
         let statPct = (status / 3.0) * 100;
@@ -656,11 +656,11 @@
         const homeAdv = parseFloat(document.getElementById('homeAdvantage').value) || 0;
         const homeMultiplier = 1 + homeAdv;
 
-        // 基礎攻防（防守力 = 250 - xGA）
+        // 🔥 基礎攻防（防守力改回 300 - xGA）
         let hAttBase = hXg;
-        let hDefBase = Math.max(0, 2.5 - hXga);
+        let hDefBase = Math.max(0, 3.0 - hXga);
         let aAtt = aXg;
-        let aDef = Math.max(0, 2.5 - aXga);
+        let aDef = Math.max(0, 3.0 - aXga);
 
         // 套用主場優勢
         let hAtt = hAttBase * homeMultiplier;
@@ -686,7 +686,7 @@
         let diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2);
         const gap = hOverallPct - aOverallPct;
 
-        // 🔥 絕對碾壓優先判定 (30%)
+        // 絕對碾壓優先判定 (30%)
         if (gap >= 30) {
             finalResult = "home";
             diffDisplay = `+${diff.toFixed(2)} (實力碾壓)`;
