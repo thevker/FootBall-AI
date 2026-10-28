@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (雙大小球指標版)</title>
+    <title>xG 賽事分析器 (四維純數據版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -102,7 +102,7 @@
         /* 新增：雙大小球指標樣式 */
         .dual-indicator {
             display: flex;
-            justify-content: space-around;
+            justify-content: center;
             margin-top: 10px;
             padding-top: 10px;
             border-top: 1px solid rgba(255,255,255,0.1);
@@ -158,28 +158,7 @@
             font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; 
         }
 
-        /* 排名專屬標籤 */
-        .badge-rank {
-            color: #ffffff;
-            transition: box-shadow 0.3s ease;
-        }
-
         /* 🔥 特效區 */
-        @keyframes glow-gold {
-            0% { box-shadow: 0 0 2px #FFD700, 0 0 5px #FFD700; }
-            50% { box-shadow: 0 0 8px #FFD700, 0 0 15px #FFD700; }
-            100% { box-shadow: 0 0 2px #FFD700, 0 0 5px #FFD700; }
-        }
-        @keyframes glow-silver {
-            0% { box-shadow: 0 0 2px #C0C0C0, 0 0 5px #C0C0C0; }
-            50% { box-shadow: 0 0 8px #C0C0C0, 0 0 15px #C0C0C0; }
-            100% { box-shadow: 0 0 2px #C0C0C0, 0 0 5px #C0C0C0; }
-        }
-        @keyframes glow-bronze {
-            0% { box-shadow: 0 0 2px #CD7F32, 0 0 5px #CD7F32; }
-            50% { box-shadow: 0 0 8px #CD7F32, 0 0 15px #CD7F32; }
-            100% { box-shadow: 0 0 2px #CD7F32, 0 0 5px #CD7F32; }
-        }
         @keyframes glow-green {
             0% { box-shadow: 0 0 2px #4ade80, 0 0 5px #4ade80; }
             50% { box-shadow: 0 0 8px #4ade80, 0 0 15px #4ade80; }
@@ -191,25 +170,6 @@
             100% { box-shadow: 0 0 2px #0adeff, 0 0 5px #0adeff; }
         }
 
-        .rank-gold {
-            background-color: #2e250f !important;
-            color: #FFD700 !important;
-            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
-            animation: glow-gold 1.5s infinite alternate;
-        }
-        .rank-silver {
-            background-color: #2b2b2b !important;
-            color: #e0e0e0 !important;
-            text-shadow: 0 0 5px rgba(192, 192, 192, 0.5);
-            animation: glow-silver 1.5s infinite alternate;
-        }
-        .rank-bronze {
-            background-color: #2b1a10 !important;
-            color: #CD7F32 !important;
-            text-shadow: 0 0 5px rgba(205, 127, 50, 0.5);
-            animation: glow-bronze 1.5s infinite alternate;
-        }
-        
         .status-glow-green {
             color: #4ade80 !important;
             background-color: #1c3b24 !important;
@@ -236,7 +196,6 @@
         .bar-defense { background: #6b9fff; }
         .bar-status { background: #fbc02d; }
         .bar-odds { background: #4caf50; }
-        .bar-rank { background: #9e9e9e; }
         
         /* 評級顯示 */
         .rating-display { width: 75px; text-align: right; font-weight: bold; font-size: 13px; display: flex; justify-content: flex-end; align-items: center; }
@@ -250,7 +209,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 雙大小球指標與淨勝球</p>
+    <p class="subtitle">深色模式 | 四維純數據計算</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -260,35 +219,19 @@
         <div class="section-header home">🏠 主隊數據</div>
         <div class="input-row">
             <div class="input-box">
-                <label>排名</label>
-                <input type="text" inputmode="numeric" id="homeRank" placeholder="例：7" oninput="limitRankInput(this)">
-            </div>
-            <div class="input-box">
                 <label>狀態 (0-3)</label>
-                <input type="text" inputmode="decimal" id="homeStatus" placeholder="例：1.15" oninput="limitInput(this)" onblur="formatInput(this)">
+                <input type="text" inputmode="decimal" id="homeStatus" placeholder="例：2.0" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
-        </div>
-        <div class="input-row">
             <div class="input-box">
                 <label>主隊 xG (預期進球)</label>
                 <input type="text" inputmode="decimal" id="homeXg" placeholder="例：1.77" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
+        </div>
+        <div class="input-row">
             <div class="input-box">
                 <label>主隊 xGA (預期失球)</label>
                 <input type="text" inputmode="decimal" id="homeXga" placeholder="例：1.73" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
-        </div>
-        <div class="input-row">
-            <div class="input-box">
-                <label>實際場均得分</label>
-                <input type="text" inputmode="decimal" id="homeGoal" placeholder="例：1.62" oninput="limitInput(this)" onblur="formatInput(this)">
-            </div>
-            <div class="input-box">
-                <label>實際場均失球</label>
-                <input type="text" inputmode="decimal" id="homeConceded" placeholder="例：2.23" oninput="limitInput(this)" onblur="formatInput(this)">
-            </div>
-        </div>
-        <div class="input-row">
             <div class="input-box">
                 <label>賠率 (1-6)</label>
                 <input type="text" inputmode="decimal" id="homeOdds" placeholder="例：3.40" oninput="limitInput(this)" onblur="formatInput(this)">
@@ -301,35 +244,19 @@
         <div class="section-header away">✈️ 客隊數據</div>
         <div class="input-row">
             <div class="input-box">
-                <label>排名</label>
-                <input type="text" inputmode="numeric" id="awayRank" placeholder="例：5" oninput="limitRankInput(this)">
-            </div>
-            <div class="input-box">
                 <label>狀態 (0-3)</label>
-                <input type="text" inputmode="decimal" id="awayStatus" placeholder="例：1.38" oninput="limitInput(this)" onblur="formatInput(this)">
+                <input type="text" inputmode="decimal" id="awayStatus" placeholder="例：1.5" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
-        </div>
-        <div class="input-row">
             <div class="input-box">
                 <label>客隊 xG (預期進球)</label>
                 <input type="text" inputmode="decimal" id="awayXg" placeholder="例：1.40" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
+        </div>
+        <div class="input-row">
             <div class="input-box">
                 <label>客隊 xGA (預期失球)</label>
                 <input type="text" inputmode="decimal" id="awayXga" placeholder="例：1.38" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
-        </div>
-        <div class="input-row">
-            <div class="input-box">
-                <label>實際場均得分</label>
-                <input type="text" inputmode="decimal" id="awayGoal" placeholder="例：1.38" oninput="limitInput(this)" onblur="formatInput(this)">
-            </div>
-            <div class="input-box">
-                <label>實際場均失球</label>
-                <input type="text" inputmode="decimal" id="awayConceded" placeholder="例：1.31" oninput="limitInput(this)" onblur="formatInput(this)">
-            </div>
-        </div>
-        <div class="input-row">
             <div class="input-box">
                 <label>賠率 (1-6)</label>
                 <input type="text" inputmode="decimal" id="awayOdds" placeholder="例：1.91" oninput="limitInput(this)" onblur="formatInput(this)">
@@ -355,12 +282,8 @@
             <div class="result-title">預測大小 (2.5球)</div>
             <div class="result-value" id="goalsResultValue">-</div>
             
-            <!-- 雙指標顯示 -->
+            <!-- 指標顯示 -->
             <div class="dual-indicator">
-                <div class="dual-item">
-                    <div>交叉預期總入球</div>
-                    <div class="dual-val" id="goalsResultDiff">-</div>
-                </div>
                 <div class="dual-item">
                     <div>攻防傾向分</div>
                     <div class="dual-val" id="goalsIndicatorValue">-</div>
@@ -368,9 +291,9 @@
             </div>
         </div>
 
-        <!-- 球隊五維評級 -->
+        <!-- 球隊四維評級 -->
         <div class="section-box">
-            <div class="section-title">📊 球隊五維實力評級</div>
+            <div class="section-title">📊 球隊四維實力評級</div>
             
             <!-- 雷達圖區塊 -->
             <div class="radar-container">
@@ -391,7 +314,6 @@
                     <span class="badge" id="hStyle">-</span>
                     <span class="badge" id="hStatusBadge">-</span>
                     <span class="badge" id="hOddsBadge" style="display:none;">-</span>
-                    <span class="badge badge-rank" id="hRankBadge" style="display:none;">-</span>
                 </div>
                 <div class="rating-row">
                     <div class="rating-label">進攻</div>
@@ -413,13 +335,8 @@
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="hOddsBar"></div></div>
                     <div class="rating-display" id="hOddsDisplay">-</div>
                 </div>
-                <div class="rating-row">
-                    <div class="rating-label">排名</div>
-                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="hRankBar"></div></div>
-                    <div class="rating-display" id="hRankDisplay">-</div>
-                </div>
                 <div class="overall-row">
-                    <span class="overall-label">綜合總實力 (五項平均百分比)</span>
+                    <span class="overall-label">綜合總實力 (自訂權重)</span>
                     <span class="overall-value" id="hOverall">E (0.0)</span>
                 </div>
             </div>
@@ -431,7 +348,6 @@
                     <span class="badge" id="aStyle">-</span>
                     <span class="badge" id="aStatusBadge">-</span>
                     <span class="badge" id="aOddsBadge" style="display:none;">-</span>
-                    <span class="badge badge-rank" id="aRankBadge" style="display:none;">-</span>
                 </div>
                 <div class="rating-row">
                     <div class="rating-label">進攻</div>
@@ -453,13 +369,8 @@
                     <div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="aOddsBar"></div></div>
                     <div class="rating-display" id="aOddsDisplay">-</div>
                 </div>
-                <div class="rating-row">
-                    <div class="rating-label">排名</div>
-                    <div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="aRankBar"></div></div>
-                    <div class="rating-display" id="aRankDisplay">-</div>
-                </div>
                 <div class="overall-row">
-                    <span class="overall-label">綜合總實力 (五項平均百分比)</span>
+                    <span class="overall-label">綜合總實力 (自訂權重)</span>
                     <span class="overall-value" id="aOverall">E (0.0)</span>
                 </div>
             </div>
@@ -510,17 +421,10 @@
         input.value = num.toFixed(2);
     }
 
-    function limitRankInput(input) {
-        let val = input.value;
-        val = val.replace(/[^0-9]/g, '');
-        if (val.length > 2) val = val.substring(0, 2);
-        input.value = val;
-    }
-
     function clearData() {
         const ids = [
-            'homeRank', 'homeStatus', 'homeXg', 'homeXga', 'homeGoal', 'homeConceded', 'homeOdds',
-            'awayRank', 'awayStatus', 'awayXg', 'awayXga', 'awayGoal', 'awayConceded', 'awayOdds'
+            'homeStatus', 'homeXg', 'homeXga', 'homeOdds',
+            'awayStatus', 'awayXg', 'awayXga', 'awayOdds'
         ];
         ids.forEach(id => document.getElementById(id).value = '');
         document.getElementById('result').style.display = 'none';
@@ -550,16 +454,16 @@
         return "bal";
     }
 
-    // 繪製雷達圖
+    // 繪製雷達圖 (四邊形)
     function drawRadar(svgId, data, color, fillColor) {
         const svg = document.getElementById(svgId);
         svg.innerHTML = ''; 
         
         const cx = 100; const cy = 100; const maxR = 65; 
-        const numAxes = 5;
+        const numAxes = 4; // 改為 4
         const angleStep = (Math.PI * 2) / numAxes;
         const startAngle = -Math.PI / 2; 
-        const labels = ['ATK', 'DEF', 'STA', 'ODD', 'RNK'];
+        const labels = ['ATK', 'DEF', 'STA', 'ODD']; // 移除 RNK
 
         const levels = 4;
         for (let l = 1; l <= levels; l++) {
@@ -606,7 +510,7 @@
         svg.appendChild(dataPolygon);
     }
 
-    function updateTeamUI(prefix, att, def, status, oddsPct, rankPct, rankValue) {
+    function updateTeamUI(prefix, att, def, status, oddsPct) {
         let attPct = (att / 2.0) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100);
 
@@ -620,19 +524,16 @@
         const visualDefPct = Math.max(defPct, 1);
         const visualStatPct = Math.max(statPct, 1);
         const visualOddsPct = Math.max(oddsPct, 1);
-        const visualRankPct = Math.max(rankPct, 1);
 
         document.getElementById(prefix + 'AttBar').style.width = visualAttPct + '%';
         document.getElementById(prefix + 'DefBar').style.width = visualDefPct + '%';
         document.getElementById(prefix + 'StatBar').style.width = visualStatPct + '%';
         document.getElementById(prefix + 'OddsBar').style.width = visualOddsPct + '%';
-        document.getElementById(prefix + 'RankBar').style.width = visualRankPct + '%';
 
         const attData = getGradeByPercent(attPct);
         const defData = getGradeByPercent(defPct);
         const statData = getGradeByPercent(statPct);
         const oddsData = getGradeByPercent(oddsPct);
-        const rankData = getGradeByPercent(rankPct);
 
         document.getElementById(prefix + 'AttDisplay').innerText = `${attData.grade} (${attPct.toFixed(1)})`;
         document.getElementById(prefix + 'AttDisplay').style.color = attData.color;
@@ -646,16 +547,15 @@
         document.getElementById(prefix + 'OddsDisplay').innerText = `${oddsData.grade} (${oddsPct.toFixed(1)})`;
         document.getElementById(prefix + 'OddsDisplay').style.color = oddsData.color;
 
-        document.getElementById(prefix + 'RankDisplay').innerText = `${rankData.grade} (${rankPct.toFixed(1)})`;
-        document.getElementById(prefix + 'RankDisplay').style.color = rankData.color;
-
-        const overallPct = (attPct + defPct + statPct + oddsPct + rankPct) / 5;
+        // 🔥 綜合總實力 = 進攻(20%) + 防守(20%) + 狀態(20%) + 賠率(40%)
+        const overallPct = (attPct * 0.2) + (defPct * 0.2) + (statPct * 0.2) + (oddsPct * 0.4);
+        
         const overallData = getGradeByPercent(overallPct);
         const overallEl = document.getElementById(prefix + 'Overall');
         overallEl.innerText = `${overallData.grade} (${overallPct.toFixed(1)})`;
         overallEl.style.color = overallData.color;
 
-        const radarData = [attPct, defPct, statPct, oddsPct, rankPct];
+        const radarData = [attPct, defPct, statPct, oddsPct];
         if (prefix === 'h') {
             drawRadar('radar-home', radarData, '#ff6b6b', 'rgba(255, 107, 107, 0.3)');
         } else {
@@ -695,41 +595,22 @@
             oddsBadge.style.display = "none";
         }
 
-        const rankBadge = document.getElementById(prefix + 'RankBadge');
-        rankBadge.className = 'badge badge-rank'; rankBadge.style.color = ''; rankBadge.style.backgroundColor = ''; 
-        
-        if (rankValue > 0 && rankPct > 0) {
-            rankBadge.style.display = "inline-block"; rankBadge.innerText = `第${Math.round(rankValue)}名`;
-            if (rankValue === 1) rankBadge.classList.add('rank-gold');
-            else if (rankValue === 2) rankBadge.classList.add('rank-silver');
-            else if (rankValue === 3) rankBadge.classList.add('rank-bronze');
-            else { rankBadge.style.backgroundColor = "#2B2B2B"; rankBadge.style.color = "#FFFFFF"; }
-        } else {
-            rankBadge.style.display = "none";
-        }
-
         return overallPct;
     }
 
     function calculate() {
         const hXgStr = document.getElementById('homeXg').value;
         const hXgaStr = document.getElementById('homeXga').value;
-        const hGoalStr = document.getElementById('homeGoal').value;
-        const hConcStr = document.getElementById('homeConceded').value;
         const hStatusStr = document.getElementById('homeStatus').value;
         const hOddsStr = document.getElementById('homeOdds').value;
-        const hRankStr = document.getElementById('homeRank').value;
 
         const aXgStr = document.getElementById('awayXg').value;
         const aXgaStr = document.getElementById('awayXga').value;
-        const aGoalStr = document.getElementById('awayGoal').value;
-        const aConcStr = document.getElementById('awayConceded').value;
         const aStatusStr = document.getElementById('awayStatus').value;
         const aOddsStr = document.getElementById('awayOdds').value;
-        const aRankStr = document.getElementById('awayRank').value;
 
-        if (!hXgStr || !hXgaStr || !hGoalStr || !hConcStr || !hStatusStr || !hOddsStr || !hRankStr ||
-            !aXgStr || !aXgaStr || !aGoalStr || !aConcStr || !aStatusStr || !aOddsStr || !aRankStr) {
+        if (!hXgStr || !hXgaStr || !hStatusStr || !hOddsStr ||
+            !aXgStr || !aXgaStr || !aStatusStr || !aOddsStr) {
             document.getElementById('errorMessage').style.display = 'block';
             document.getElementById('result').style.display = 'none';
             return;
@@ -739,43 +620,27 @@
 
         const hXg = parseFloat(hXgStr) || 0;
         const hXga = parseFloat(hXgaStr) || 0;
-        const hGoal = parseFloat(hGoalStr) || 0;
-        const hConc = parseFloat(hConcStr) || 0;
         const hStatus = parseFloat(hStatusStr) || 0;
         const hOdds = parseFloat(hOddsStr) || 0;
-        const hRank = parseInt(hRankStr) || 0;
 
         const aXg = parseFloat(aXgStr) || 0;
         const aXga = parseFloat(aXgaStr) || 0;
-        const aGoal = parseFloat(aGoalStr) || 0;
-        const aConc = parseFloat(aConcStr) || 0;
         const aStatus = parseFloat(aStatusStr) || 0;
         const aOdds = parseFloat(aOddsStr) || 0;
-        const aRank = parseInt(aRankStr) || 0;
 
-        // 混合 xG/xGA 與 實際得分/失球
-        const hXgMix = (hXg + hGoal) / 2;
-        const hXgaMix = (hXga + hConc) / 2;
-        const aXgMix = (aXg + aGoal) / 2;
-        const aXgaMix = (aXga + aConc) / 2;
-
-        const hDef = Math.max(0, 3.0 - hXgaMix);
-        const aDef = Math.max(0, 3.0 - aXgaMix);
+        const hDef = Math.max(0, 3.0 - hXga);
+        const aDef = Math.max(0, 3.0 - aXga);
 
         const totalOdds = hOdds + aOdds;
         const hOddsPct = totalOdds > 0 ? (aOdds / totalOdds) * 100 : 50;
         const aOddsPct = totalOdds > 0 ? (hOdds / totalOdds) * 100 : 50;
 
-        const totalRank = hRank + aRank;
-        const hRankPct = totalRank > 0 ? (aRank / totalRank) * 100 : 50;
-        const aRankPct = totalRank > 0 ? (hRank / totalRank) * 100 : 50;
-
-        const hOverallPct = updateTeamUI('h', hXgMix, hDef, hStatus, hOddsPct, hRankPct, hRank);
-        const aOverallPct = updateTeamUI('a', aXgMix, aDef, aStatus, aOddsPct, aRankPct, aRank);
+        const hOverallPct = updateTeamUI('h', hXg, hDef, hStatus, hOddsPct);
+        const aOverallPct = updateTeamUI('a', aXg, aDef, aStatus, aOddsPct);
 
         // --- 第一層：攻防判定 ---
-        const hAdvantage = Math.max(0, hXgMix - aDef);
-        const aAdvantage = Math.max(0, aXgMix - hDef);
+        const hAdvantage = Math.max(0, hXg - aDef);
+        const aAdvantage = Math.max(0, aXg - hDef);
         const diff = hAdvantage - aAdvantage;
 
         const resultBox = document.getElementById('matchResultBox');
@@ -812,17 +677,11 @@
 
         resultDiff.innerText = `差距值：${diffDisplay}`;
 
-        // --- 交叉攻防的大小球與淨勝球計算 ---
-        const expHomeGoals = (hXgMix + aXgaMix) / 2;
-        const expAwayGoals = (aXgMix + hXgaMix) / 2;
-        
-        // 1. 全場預期總入球 (新交叉公式)
-        const totalGoalsExpected = expHomeGoals + expAwayGoals; 
-        
-        // 2. 預測淨勝球
-        const predictedMargin = expHomeGoals - expAwayGoals;
+        // 淨勝球
+        const expHome = (hXg + aXga) / 2;
+        const expAway = (aXg + hXga) / 2;
+        const predictedMargin = expHome - expAway;
 
-        // 更新淨勝球 UI
         const marginEl = document.getElementById('matchMarginValue');
         if (predictedMargin > 0.05) {
             marginEl.innerText = `預計淨勝：主隊 ${predictedMargin.toFixed(2)} 球`;
@@ -835,31 +694,24 @@
             marginEl.style.color = '#aaa';
         }
 
-        // 更新大小球 UI (雙指標)
+        // --- 大小球邏輯 (只用攻防傾向分) ---
+        const goalsIndicator = hAdvantage + aAdvantage;
+        
         const goalsResultBox = document.getElementById('goalsResultBox');
         const goalsResultValue = document.getElementById('goalsResultValue');
-        const goalsResultDiff = document.getElementById('goalsResultDiff'); // 新交叉預期
-        const goalsIndicatorValue = document.getElementById('goalsIndicatorValue'); // 舊攻防傾向
+        const goalsIndicatorValue = document.getElementById('goalsIndicatorValue');
 
-        // 計算舊的攻防傾向分
-        const goalsIndicator = hAdvantage + aAdvantage;
-
-        goalsResultDiff.innerText = totalGoalsExpected.toFixed(2);
         goalsIndicatorValue.innerText = goalsIndicator.toFixed(2);
 
-        // 綜合判定邏輯：只要其中一個指標強烈達標，就給出建議
         let recommendation = "";
         let boxColor = "";
         let bgColor = "";
         let textColor = "";
 
-        const isOver = (totalGoalsExpected >= 2.75) || (goalsIndicator >= 1.0);
-        const isUnder = (totalGoalsExpected <= 2.25) && (goalsIndicator === 0);
-
-        if (isOver && !isUnder) {
+        if (goalsIndicator >= 1.0) {
             recommendation = "建議 2.5 入球大";
             textColor = "#f87171"; boxColor = "#f87171"; bgColor = "#331a1a";
-        } else if (isUnder && !isOver) {
+        } else if (goalsIndicator <= 0) {
             recommendation = "建議 2.5 入球細";
             textColor = "#8cb8ff"; boxColor = "#8cb8ff"; bgColor = "#1a2633";
         } else {
