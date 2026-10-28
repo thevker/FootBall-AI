@@ -2,9 +2,9 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <!-- 🔥 修復畫面跳動：鎖定縮放比例 -->
+    <!-- 鎖定縮放比例防止畫面跳動 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (直觀大小球版)</title>
+    <title>xG 賽事分析器 (0-2.0 映射版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -17,7 +17,7 @@
             display: flex; 
             justify-content: center; 
             min-height: 100vh;
-            -webkit-overflow-scrolling: touch; /* 保持滑動流暢 */
+            -webkit-overflow-scrolling: touch;
         }
         .container { 
             background: #1e1e1e; 
@@ -74,7 +74,6 @@
             min-width: 0;
         }
         label { font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #bbbbbb; }
-        /* 🔥 修復畫面跳動：字體必須 >= 16px */
         input[type="text"] { 
             width: 100%; padding: 8px; background-color: #2d2d2d; border: 1px solid #444; color: #ffffff; border-radius: 6px; font-size: 16px; outline: none; transition: border 0.2s; 
         }
@@ -238,7 +237,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 直觀總入球預測</p>
+    <p class="subtitle">深色模式 | 攻防 0.0 - 2.0 映射</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -502,12 +501,11 @@
         document.getElementById('result').style.display = 'none';
         document.getElementById('errorMessage').style.display = 'none';
         
-        // 清空雷達圖
         document.getElementById('radar-home').innerHTML = '';
         document.getElementById('radar-away').innerHTML = '';
     }
 
-    // 全新評級區間
+    // 評級區間
     function getGradeByPercent(pct) {
         let grade = ''; let color = '';
         if (pct < 20) { grade = 'E'; color = '#c0c0c0'; }
@@ -527,7 +525,7 @@
         return "bal";
     }
 
-    // 繪製雷達圖
+    // 繪製雷達圖 (五邊形)
     function drawRadar(svgId, data, color, fillColor) {
         const svg = document.getElementById(svgId);
         svg.innerHTML = ''; 
@@ -584,10 +582,11 @@
     }
 
     function updateTeamUI(prefix, att, def, status, oddsPct, rankPct, rankValue) {
-        let attPct = ((att - 1.0) / 1.0) * 100;
+        // 🔥 核心改動：將攻防映射改為 0.0 - 2.0
+        let attPct = (att / 2.0) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100);
 
-        let defPct = ((def - 1.0) / 1.0) * 100;
+        let defPct = (def / 2.0) * 100;
         defPct = Math.min(Math.max(defPct, 0), 100);
 
         let statPct = (status / 3.0) * 100;
@@ -605,6 +604,7 @@
         document.getElementById(prefix + 'OddsBar').style.width = visualOddsPct + '%';
         document.getElementById(prefix + 'RankBar').style.width = visualRankPct + '%';
 
+        // 這裡依然用原本的百分比來評級，但因為映射變了，1.0 現在是 50%
         const attData = getGradeByPercent(attPct);
         const defData = getGradeByPercent(defPct);
         const statData = getGradeByPercent(statPct);
@@ -799,7 +799,7 @@
             resultValue.innerText = "不建議出手"; resultValue.style.color = "#aaa"; resultBox.style.borderColor = "#555"; resultBox.style.backgroundColor = "#2a2a2a";
         }
 
-        // --- 🔥 全新入球大細邏輯：直接計算預期總入球 ---
+        // --- 入球大細邏輯 ---
         const totalGoalsExpected = hXgMix + aXgMix; 
         
         const goalsResultBox = document.getElementById('goalsResultBox');
@@ -813,7 +813,7 @@
         } else if (totalGoalsExpected <= 2.25) {
             goalsResultValue.innerText = "建議 2.5 入球細"; goalsResultValue.style.color = "#8cb8ff"; goalsResultBox.style.borderColor = "#8cb8ff"; goalsResultBox.style.backgroundColor = "#1a2633"; goalsResultBox.style.display = 'block';
         } else {
-            goalsResultBox.style.display = 'none'; // 隱藏模糊結果
+            goalsResultBox.style.display = 'none';
         }
 
         document.getElementById('result').style.display = 'block';
