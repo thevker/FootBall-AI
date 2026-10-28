@@ -237,7 +237,7 @@
         </div>
     </div>
 
-    <!-- 🏠 主隊數據 -->
+    <!-- 🏠 主隊數據 (順序：狀態 → 賠率 → xG → xGA) -->
     <div class="input-section">
         <div class="section-header home">🏠 主隊數據</div>
         <div class="input-row">
@@ -246,23 +246,23 @@
                 <input type="text" inputmode="decimal" id="homeStatus" placeholder="例：2.0" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
             <div class="input-box">
-                <label>主隊 xG (預期進球)</label>
-                <input type="text" inputmode="decimal" id="homeXg" placeholder="例：1.40" oninput="limitInput(this)" onblur="formatInput(this)">
-            </div>
-        </div>
-        <div class="input-row">
-            <div class="input-box">
-                <label>主隊 xGA (預期失球)</label>
-                <input type="text" inputmode="decimal" id="homeXga" placeholder="例：1.80" oninput="limitInput(this)" onblur="formatInput(this)">
-            </div>
-            <div class="input-box">
                 <label>賠率 (1-6)</label>
                 <input type="text" inputmode="decimal" id="homeOdds" placeholder="例：3.40" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
         </div>
+        <div class="input-row">
+            <div class="input-box">
+                <label>主隊 xG (預期進球)</label>
+                <input type="text" inputmode="decimal" id="homeXg" placeholder="例：1.40" oninput="limitInput(this)" onblur="formatInput(this)">
+            </div>
+            <div class="input-box">
+                <label>主隊 xGA (預期失球)</label>
+                <input type="text" inputmode="decimal" id="homeXga" placeholder="例：1.80" oninput="limitInput(this)" onblur="formatInput(this)">
+            </div>
+        </div>
     </div>
 
-    <!-- ✈️ 客隊數據 -->
+    <!-- ✈️ 客隊數據 (順序：狀態 → 賠率 → xG → xGA) -->
     <div class="input-section">
         <div class="section-header away">✈️ 客隊數據</div>
         <div class="input-row">
@@ -271,18 +271,18 @@
                 <input type="text" inputmode="decimal" id="awayStatus" placeholder="例：1.5" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
             <div class="input-box">
-                <label>客隊 xG (預期進球)</label>
-                <input type="text" inputmode="decimal" id="awayXg" placeholder="例：1.20" oninput="limitInput(this)" onblur="formatInput(this)">
+                <label>賠率 (1-6)</label>
+                <input type="text" inputmode="decimal" id="awayOdds" placeholder="例：1.91" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
         </div>
         <div class="input-row">
             <div class="input-box">
-                <label>客隊 xGA (預期失球)</label>
-                <input type="text" inputmode="decimal" id="awayXga" placeholder="例：1.70" oninput="limitInput(this)" onblur="formatInput(this)">
+                <label>客隊 xG (預期進球)</label>
+                <input type="text" inputmode="decimal" id="awayXg" placeholder="例：1.20" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
             <div class="input-box">
-                <label>賠率 (1-6)</label>
-                <input type="text" inputmode="decimal" id="awayOdds" placeholder="例：1.91" oninput="limitInput(this)" onblur="formatInput(this)">
+                <label>客隊 xGA (預期失球)</label>
+                <input type="text" inputmode="decimal" id="awayXga" placeholder="例：1.70" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
         </div>
     </div>
@@ -535,10 +535,11 @@
     }
 
     function updateTeamUI(prefix, att, def, status, oddsPct) {
-        let attPct = (att / 2.0) * 100;
+        // 🔥 進攻/防守橫條比例改為 0-250
+        let attPct = (att / 2.5) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100);
 
-        let defPct = (def / 2.0) * 100;
+        let defPct = (def / 2.5) * 100;
         defPct = Math.min(Math.max(defPct, 0), 100);
 
         let statPct = (status / 3.0) * 100;
