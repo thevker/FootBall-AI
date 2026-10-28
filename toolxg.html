@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (四維純數據版)</title>
+    <title>xG 賽事分析器 (全25%平均版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -99,7 +99,7 @@
         .result-diff { font-size: 13px; color: #aaa; margin-bottom: 5px; }
         .result-margin { font-size: 14px; font-weight: bold; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
         
-        /* 新增：雙大小球指標樣式 */
+        /* 指標顯示 */
         .dual-indicator {
             display: flex;
             justify-content: center;
@@ -209,7 +209,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 四維純數據計算</p>
+    <p class="subtitle">深色模式 | 四項各佔 25% 平均</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -336,7 +336,7 @@
                     <div class="rating-display" id="hOddsDisplay">-</div>
                 </div>
                 <div class="overall-row">
-                    <span class="overall-label">綜合總實力 (自訂權重)</span>
+                    <span class="overall-label">綜合總實力 (四項平均)</span>
                     <span class="overall-value" id="hOverall">E (0.0)</span>
                 </div>
             </div>
@@ -370,7 +370,7 @@
                     <div class="rating-display" id="aOddsDisplay">-</div>
                 </div>
                 <div class="overall-row">
-                    <span class="overall-label">綜合總實力 (自訂權重)</span>
+                    <span class="overall-label">綜合總實力 (四項平均)</span>
                     <span class="overall-value" id="aOverall">E (0.0)</span>
                 </div>
             </div>
@@ -460,10 +460,10 @@
         svg.innerHTML = ''; 
         
         const cx = 100; const cy = 100; const maxR = 65; 
-        const numAxes = 4; // 改為 4
+        const numAxes = 4;
         const angleStep = (Math.PI * 2) / numAxes;
         const startAngle = -Math.PI / 2; 
-        const labels = ['ATK', 'DEF', 'STA', 'ODD']; // 移除 RNK
+        const labels = ['ATK', 'DEF', 'STA', 'ODD'];
 
         const levels = 4;
         for (let l = 1; l <= levels; l++) {
@@ -547,8 +547,8 @@
         document.getElementById(prefix + 'OddsDisplay').innerText = `${oddsData.grade} (${oddsPct.toFixed(1)})`;
         document.getElementById(prefix + 'OddsDisplay').style.color = oddsData.color;
 
-        // 🔥 綜合總實力 = 進攻(20%) + 防守(20%) + 狀態(20%) + 賠率(40%)
-        const overallPct = (attPct * 0.2) + (defPct * 0.2) + (statPct * 0.2) + (oddsPct * 0.4);
+        // 🔥 綜合總實力 = 四項各佔 25% (即直接除以 4)
+        const overallPct = (attPct * 0.25) + (defPct * 0.25) + (statPct * 0.25) + (oddsPct * 0.25);
         
         const overallData = getGradeByPercent(overallPct);
         const overallEl = document.getElementById(prefix + 'Overall');
@@ -723,7 +723,7 @@
         goalsResultValue.style.color = textColor;
         goalsResultBox.style.borderColor = boxColor;
         goalsResultBox.style.backgroundColor = bgColor;
-        goalsResultBox.style.display = 'block'; // 強制顯示
+        goalsResultBox.style.display = 'block';
 
         // 更新勝負結果 UI
         if (finalResult === "home") {
