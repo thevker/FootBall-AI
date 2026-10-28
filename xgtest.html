@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (Dixon-Coles 修正版)</title>
+    <title>xG 賽事分析器 (專屬公式版)</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -112,7 +112,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">Dixon-Coles 職業修正版</p>
+    <p class="subtitle">專屬公式大小球版</p>
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
@@ -166,12 +166,8 @@
             <div class="result-value" id="goalsResultValue">-</div>
             <div class="dual-indicator">
                 <div class="dual-item">
-                    <div>預期總進球</div>
+                    <div>計算差距值</div>
                     <div class="dual-val" id="goalsIndicatorValue">-</div>
-                </div>
-                <div class="dual-item">
-                    <div>大球機率 (>2.5)</div>
-                    <div class="dual-val" id="overProbValue">-</div>
                 </div>
             </div>
         </div>
@@ -371,13 +367,6 @@
         return overallPct;
     }
 
-    // 基本泊松概率分佈
-    function poissonPmf(k, lambda) {
-        let factorial = 1;
-        for (let i = 1; i <= k; i++) factorial *= i;
-        return Math.exp(-lambda) * Math.pow(lambda, k) / factorial;
-    }
-
     function calculate() {
         const hXgStr = document.getElementById('homeXg').value;
         const hXgaStr = document.getElementById('homeXga').value;
@@ -413,7 +402,7 @@
         const hOverallPct = updateTeamUI('h', hAttUI, hDefUI, hStatus, hOddsPct);
         const aOverallPct = updateTeamUI('a', aAttUI, aDefUI, aStatus, aOddsPct);
 
-        // 預期進球期望值
+        // 預期進球期望值 (用於判定勝負)
         const expHomeGoals = ((hXg * homeMultiplier) + aXga) / 2;
         const expAwayGoals = (aXg + (hXga / homeMultiplier)) / 2;
         const predictedMargin = expHomeGoals - expAwayGoals;
@@ -451,63 +440,33 @@
         else { marginEl.innerText = `預計淨勝：0.00 球 (平手)`; marginEl.style.color = '#aaa'; }
 
         // ==========================================
-        // 🔥 Dixon-Coles 修正模型核心計算
+        // 🔥 專屬大小球公式：((主xg-(2.50-客xga))+(客xg-(2.50-主xga)))
         // ==========================================
-        // 設定 rho 參數 (通常設為 -0.05 到 -0.1 之間，用來調高低比分概率)
-        const rho = -0.08;
-
-        // 計算特定比分 (主隊進 x 球，客隊進 y 球) 的修正概率
-        function getDixonColesProb(x, y) {
-            let p = poissonPmf(x, expHomeGoals) * poissonPmf(y, expAwayGoals);
-            
-            // 針對 0-0, 1-0, 0-1, 1-1 進行低比分修正
-            if (x === 0 && y === 0) {
-                p *= (1 - expHomeGoals * expAwayGoals * rho);
-            } else if (x === 0 && y === 1) {
-                p *= (1 + expHomeGoals * rho);
-            } else if (x === 1 && y === 0) {
-                p *= (1 + expAwayGoals * rho);
-            } else if (x === 1 && y === 1) {
-                p *= (1 - rho);
-            }
-            return p;
-        }
-
-        // 模擬比分矩陣，計算真實的進球機率 (最多算到 8 球就夠了，機率趨近於 0)
-        let probUnder = 0; // 小於 2.5 球 (總進球 0, 1, 2) 的機率
-        let probOver = 0;  // 大於 2.5 球 (總進球 3+) 的機率
-
-        for (let h = 0; h <= 8; h++) {
-            for (let a = 0; a <= 8; a++) {
-                let p = getDixonColesProb(h, a);
-                if (h + a <= 2) {
-                    probUnder += p;
-                } else {
-                    probOver += p;
-                }
-            }
-        }
-
-        const totalExpectedGoals = expHomeGoals + expAwayGoals;
         
+        const homeDefense = 2.50 - aXga; // 客隊防守力
+        const awayDefense = 2.50 - hXga; // 主隊防守力
+        
+        const goalsDiff = (hXg - homeDefense) + (aXg - awayDefense);
+
         const goalsResultBox = document.getElementById('goalsResultBox');
         const goalsResultValue = document.getElementById('goalsResultValue');
         const goalsIndicatorValue = document.getElementById('goalsIndicatorValue');
-        const overProbValue = document.getElementById('overProbValue');
 
-        goalsIndicatorValue.innerText = totalExpectedGoals.toFixed(2);
-        overProbValue.innerText = `${(probOver * 100).toFixed(1)}%`;
+        // 顯示公式算出來的差距值
+        goalsIndicatorValue.innerText = goalsDiff.toFixed(2);
 
         let recommendation = "", boxColor = "", bgColor = "", textColor = "";
 
-        // 因為 Dixon-Coles 修正了機率，門檻可以稍微調低一點 (52% / 48%)，或者維持 55%/45%
-        const overPct = probOver * 100;
-        if (overPct >= 53) {
-            recommendation = "建議 2.5 入球大"; textColor = "#f87171"; boxColor = "#f87171"; bgColor = "#331a1a";
-        } else if (overPct <= 47) {
-            recommendation = "建議 2.5 入球細"; textColor = "#8cb8ff"; boxColor = "#8cb8ff"; bgColor = "#1a2633";
+        // 判定門檻
+        if (goalsDiff <= 0.5) {
+            recommendation = "建議 2.5 入球細";
+            textColor = "#8cb8ff"; boxColor = "#8cb8ff"; bgColor = "#1a2633";
+        } else if (goalsDiff >= 1.0) {
+            recommendation = "建議 2.5 入球大";
+            textColor = "#f87171"; boxColor = "#f87171"; bgColor = "#331a1a";
         } else {
-            recommendation = "五五波 (不建議)"; textColor = "#aaa"; boxColor = "#555"; bgColor = "#2a2a2a";
+            recommendation = "方向模糊 (不建議)";
+            textColor = "#aaa"; boxColor = "#555"; bgColor = "#2a2a2a";
         }
 
         goalsResultValue.innerText = recommendation;
