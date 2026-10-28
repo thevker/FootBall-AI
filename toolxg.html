@@ -2,9 +2,8 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <!-- 鎖定縮放比例防止畫面跳動 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (0-2.0 映射版)</title>
+    <title>xG 賽事分析器 (雙大小球指標版)</title>
     <style>
         /* 全局深色模式設定 */
         * { box-sizing: border-box; }
@@ -97,7 +96,21 @@
         }
         .result-title { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #aaa; }
         .result-value { font-size: 28px; font-weight: bold; margin-bottom: 5px; }
-        .result-diff { font-size: 13px; color: #aaa; }
+        .result-diff { font-size: 13px; color: #aaa; margin-bottom: 5px; }
+        .result-margin { font-size: 14px; font-weight: bold; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
+        
+        /* 新增：雙大小球指標樣式 */
+        .dual-indicator {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 12px;
+            color: #ccc;
+        }
+        .dual-item { text-align: center; }
+        .dual-val { font-weight: bold; font-size: 14px; color: #fff; margin-top: 2px; }
 
         /* 球隊評級區塊 */
         .section-box { background: #252525; border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
@@ -237,7 +250,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">深色模式 | 攻防 0.0 - 2.0 映射</p>
+    <p class="subtitle">深色模式 | 雙大小球指標與淨勝球</p>
     
     <!-- 錯誤提示區塊 -->
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -334,13 +347,25 @@
             <div class="result-title">預測賽果</div>
             <div class="result-value" id="matchResultValue">-</div>
             <div class="result-diff" id="matchResultDiff">差距值：-</div>
+            <div class="result-margin" id="matchMarginValue">預計淨勝：-</div>
         </div>
 
         <!-- 判定結果區 (大小) -->
-        <div class="result-box" id="goalsResultBox" style="margin-bottom: 20px; display: none;">
+        <div class="result-box" id="goalsResultBox" style="margin-bottom: 20px;">
             <div class="result-title">預測大小 (2.5球)</div>
             <div class="result-value" id="goalsResultValue">-</div>
-            <div class="result-diff" id="goalsResultDiff">預期總入球：-</div>
+            
+            <!-- 雙指標顯示 -->
+            <div class="dual-indicator">
+                <div class="dual-item">
+                    <div>交叉預期總入球</div>
+                    <div class="dual-val" id="goalsResultDiff">-</div>
+                </div>
+                <div class="dual-item">
+                    <div>攻防傾向分</div>
+                    <div class="dual-val" id="goalsIndicatorValue">-</div>
+                </div>
+            </div>
         </div>
 
         <!-- 球隊五維評級 -->
@@ -525,7 +550,7 @@
         return "bal";
     }
 
-    // 繪製雷達圖 (五邊形)
+    // 繪製雷達圖
     function drawRadar(svgId, data, color, fillColor) {
         const svg = document.getElementById(svgId);
         svg.innerHTML = ''; 
@@ -582,7 +607,6 @@
     }
 
     function updateTeamUI(prefix, att, def, status, oddsPct, rankPct, rankValue) {
-        // 🔥 核心改動：將攻防映射改為 0.0 - 2.0
         let attPct = (att / 2.0) * 100;
         attPct = Math.min(Math.max(attPct, 0), 100);
 
@@ -604,7 +628,6 @@
         document.getElementById(prefix + 'OddsBar').style.width = visualOddsPct + '%';
         document.getElementById(prefix + 'RankBar').style.width = visualRankPct + '%';
 
-        // 這裡依然用原本的百分比來評級，但因為映射變了，1.0 現在是 50%
         const attData = getGradeByPercent(attPct);
         const defData = getGradeByPercent(defPct);
         const statData = getGradeByPercent(statPct);
@@ -789,6 +812,68 @@
 
         resultDiff.innerText = `差距值：${diffDisplay}`;
 
+        // --- 交叉攻防的大小球與淨勝球計算 ---
+        const expHomeGoals = (hXgMix + aXgaMix) / 2;
+        const expAwayGoals = (aXgMix + hXgaMix) / 2;
+        
+        // 1. 全場預期總入球 (新交叉公式)
+        const totalGoalsExpected = expHomeGoals + expAwayGoals; 
+        
+        // 2. 預測淨勝球
+        const predictedMargin = expHomeGoals - expAwayGoals;
+
+        // 更新淨勝球 UI
+        const marginEl = document.getElementById('matchMarginValue');
+        if (predictedMargin > 0.05) {
+            marginEl.innerText = `預計淨勝：主隊 ${predictedMargin.toFixed(2)} 球`;
+            marginEl.style.color = '#4ade80';
+        } else if (predictedMargin < -0.05) {
+            marginEl.innerText = `預計淨勝：客隊 ${Math.abs(predictedMargin).toFixed(2)} 球`;
+            marginEl.style.color = '#f87171';
+        } else {
+            marginEl.innerText = `預計淨勝：0.00 球 (平手)`;
+            marginEl.style.color = '#aaa';
+        }
+
+        // 更新大小球 UI (雙指標)
+        const goalsResultBox = document.getElementById('goalsResultBox');
+        const goalsResultValue = document.getElementById('goalsResultValue');
+        const goalsResultDiff = document.getElementById('goalsResultDiff'); // 新交叉預期
+        const goalsIndicatorValue = document.getElementById('goalsIndicatorValue'); // 舊攻防傾向
+
+        // 計算舊的攻防傾向分
+        const goalsIndicator = hAdvantage + aAdvantage;
+
+        goalsResultDiff.innerText = totalGoalsExpected.toFixed(2);
+        goalsIndicatorValue.innerText = goalsIndicator.toFixed(2);
+
+        // 綜合判定邏輯：只要其中一個指標強烈達標，就給出建議
+        let recommendation = "";
+        let boxColor = "";
+        let bgColor = "";
+        let textColor = "";
+
+        const isOver = (totalGoalsExpected >= 2.75) || (goalsIndicator >= 1.0);
+        const isUnder = (totalGoalsExpected <= 2.25) && (goalsIndicator === 0);
+
+        if (isOver && !isUnder) {
+            recommendation = "建議 2.5 入球大";
+            textColor = "#f87171"; boxColor = "#f87171"; bgColor = "#331a1a";
+        } else if (isUnder && !isOver) {
+            recommendation = "建議 2.5 入球細";
+            textColor = "#8cb8ff"; boxColor = "#8cb8ff"; bgColor = "#1a2633";
+        } else {
+            recommendation = "方向模糊";
+            textColor = "#aaa"; boxColor = "#555"; bgColor = "#2a2a2a";
+        }
+
+        goalsResultValue.innerText = recommendation;
+        goalsResultValue.style.color = textColor;
+        goalsResultBox.style.borderColor = boxColor;
+        goalsResultBox.style.backgroundColor = bgColor;
+        goalsResultBox.style.display = 'block'; // 強制顯示
+
+        // 更新勝負結果 UI
         if (finalResult === "home") {
             resultValue.innerText = "主勝"; resultValue.style.color = "#4ade80"; resultBox.style.borderColor = "#4ade80"; resultBox.style.backgroundColor = "#1a3324";
         } else if (finalResult === "away") {
@@ -797,23 +882,6 @@
             resultValue.innerText = "和局"; resultValue.style.color = "#ffd700"; resultBox.style.borderColor = "#ffd700"; resultBox.style.backgroundColor = "#332d1a";
         } else {
             resultValue.innerText = "不建議出手"; resultValue.style.color = "#aaa"; resultBox.style.borderColor = "#555"; resultBox.style.backgroundColor = "#2a2a2a";
-        }
-
-        // --- 入球大細邏輯 ---
-        const totalGoalsExpected = hXgMix + aXgMix; 
-        
-        const goalsResultBox = document.getElementById('goalsResultBox');
-        const goalsResultValue = document.getElementById('goalsResultValue');
-        const goalsResultDiff = document.getElementById('goalsResultDiff');
-
-        goalsResultDiff.innerText = `預期總入球：${totalGoalsExpected.toFixed(2)}`;
-
-        if (totalGoalsExpected >= 2.75) {
-            goalsResultValue.innerText = "建議 2.5 入球大"; goalsResultValue.style.color = "#f87171"; goalsResultBox.style.borderColor = "#f87171"; goalsResultBox.style.backgroundColor = "#331a1a"; goalsResultBox.style.display = 'block';
-        } else if (totalGoalsExpected <= 2.25) {
-            goalsResultValue.innerText = "建議 2.5 入球細"; goalsResultValue.style.color = "#8cb8ff"; goalsResultBox.style.borderColor = "#8cb8ff"; goalsResultBox.style.backgroundColor = "#1a2633"; goalsResultBox.style.display = 'block';
-        } else {
-            goalsResultBox.style.display = 'none';
         }
 
         document.getElementById('result').style.display = 'block';
