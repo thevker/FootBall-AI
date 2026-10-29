@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>xG 賽事分析器 (完美截圖版)</title>
-    <!-- 引入 html2canvas 庫用於截圖 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * { box-sizing: border-box; }
@@ -76,6 +75,7 @@
         .btn-return { background:#444; }
         .btn-return:hover { background:#555; }
 
+        /* 預測結果 */
         .dual-result-container { display: flex; gap: 8px; margin-bottom: 8px; }
         .result-box { 
             flex: 1; text-align: center; padding: 6px 5px; border-radius: 12px; border: 2px dashed;
@@ -92,6 +92,7 @@
         .result-box.full-width .result-title { font-size: 13px; }
         .result-box.full-width .result-value { font-size: 22px; }
         
+        /* 波膽推薦 */
         #betScoreBox {
             display: none; text-align: center; padding: 8px; border-radius: 12px; 
             margin-bottom: 0; border: 2px solid #555; background-color: #222;
@@ -103,14 +104,16 @@
 
         .section-title { font-size: 14px; font-weight: bold; margin-bottom: 15px; color: #dddddd; text-align: center; }
 
-        /* 雷達圖容器 - 配合截圖，修復垂直文字 */
+        /* 雷達圖容器 */
         .radar-container {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 15px; padding: 10px 15px; background: #181818; border-radius: 16px; border: 1px solid #333;
             position: relative;
         }
         
+        /* 🔥 雷達圖文字強制固定寬度，保證對稱 */
         .vertical-text { 
+            width: 30px;
             font-size: 14px; font-weight: bold; text-align: center;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             line-height: 1.2;
@@ -124,12 +127,13 @@
         .team-rating-block { margin-bottom: 15px; position: relative; }
         .team-rating-block:last-child { margin-bottom: 0; }
 
+        /* 🔥 標題列嚴格左右對稱 */
         .team-header {
             display: flex; justify-content: space-between; align-items: center; 
             margin-bottom: 8px; min-height: 24px; white-space: nowrap;
         }
-        .left-area { display: flex; align-items: center; gap: 6px; }
-        .right-area { display: flex; justify-content: flex-end; align-items: center; gap: 4px; }
+        .left-area { flex: 1; display: flex; justify-content: flex-start; align-items: center; gap: 6px; }
+        .right-area { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 4px; }
 
         .team-title { font-size: 14px; font-weight: bold; }
         .badge { font-size: 10px; padding: 3px 6px; border-radius: 10px; font-weight: bold; white-space: nowrap; }
@@ -152,9 +156,11 @@
         .rank-glow-silver { color: #f4f4f4 !important; background-color: #666 !important; animation: glow-silver 1.5s infinite alternate; }
         .rank-glow-bronze { color: #cd7f32 !important; background-color: #3b1c1c !important; animation: glow-bronze 1.5s infinite alternate; }
 
+        /* 🔥 橫條行嚴格置中：左邊文字與右邊分數固定為 55px */
         .rating-row { display: flex; align-items: center; margin-bottom: 6px; font-size: 11px; }
-        .rating-label { width: 40px; font-weight: bold; color: #aaa; text-align: right; padding-right: 4px; } 
-        .rating-bar-bg { flex: 1; background: #181818; height: 18px; border-radius: 6px; overflow: hidden; margin: 0 6px; position: relative; border: 1px solid #333; }
+        .rating-label { width: 55px; font-weight: bold; color: #aaa; text-align: right; padding-right: 6px; } 
+        .rating-display { width: 55px; text-align: left; font-weight: bold; font-size: 11px; padding-left: 6px; }
+        .rating-bar-bg { flex: 1; background: #181818; height: 18px; border-radius: 6px; overflow: hidden; position: relative; border: 1px solid #333; }
         .rating-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
         
         .bar-attack { background: #ff6b6b; }
@@ -162,8 +168,6 @@
         .bar-status { background: #fbc02d; }
         .bar-odds { background: #4caf50; }
         .bar-rank { background: #87ceeb; }
-        
-        .rating-display { width: 65px; text-align: left; font-weight: bold; font-size: 11px; display: flex; justify-content: flex-start; align-items: center; padding-left: 4px; }
 
         /* ================= 圖片預覽彈窗 ================= */
         #imageModal {
@@ -185,7 +189,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">完美截圖版</p>
+    <p class="subtitle">完美對稱截圖版</p>
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
@@ -318,7 +322,6 @@
     </div>
 </div>
 
-<!-- 圖片預覽彈窗 (解決 iPhone 保存問題) -->
 <div id="imageModal">
     <img id="previewImg" src="" alt="分析結果">
     <div class="modal-hint">👇 請「長按」上方圖片，選擇「儲存到相片」</div>
@@ -337,14 +340,12 @@
         btn.innerHTML = '⏳ 生成中...';
         btn.disabled = true;
 
-        // 延遲 100ms 確保畫面渲染完成
         setTimeout(() => {
             html2canvas(target, {
                 backgroundColor: '#222222', 
                 scale: 2, 
                 useCORS: true
             }).then(canvas => {
-                // 將生成的圖片放入彈窗中
                 const imgData = canvas.toDataURL('image/png');
                 document.getElementById('previewImg').src = imgData;
                 document.getElementById('imageModal').style.display = 'flex';
