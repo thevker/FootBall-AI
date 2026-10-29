@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (賠率加成版)</title>
+    <title>xG 賽事分析器 (四重驗證終極版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * { box-sizing: border-box; }
@@ -25,16 +25,6 @@
             border: 1px solid #7a3a3a; animation: shake 0.4s;
         }
         @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
-
-        /* 設定區 */
-        .settings-group { margin-bottom: 15px; }
-        .setting-row {
-            display: flex; align-items: center; justify-content: space-between; 
-            background: #252525; padding: 10px 15px; border-radius: 8px; border: 1px solid #333;
-        }
-        .setting-label { font-size: 13px; font-weight: bold; color: #ddd; }
-        .setting-row select { width: 160px; padding: 6px; font-size: 13px; cursor: pointer; background-color: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 6px; outline: none; }
-        .setting-row select:focus { border-color: #4da6ff; }
 
         #inputSection { transition: opacity 0.3s; }
         .input-section { margin-bottom: 15px; }
@@ -83,33 +73,52 @@
         .btn-return { background:#444; }
         .btn-return:hover { background:#555; }
 
-        .dual-result-container { display: flex; gap: 8px; margin-bottom: 8px; }
+        /* 四重預測排版 (2x2 網格) */
+        .quad-result-container { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 8px; 
+            margin-bottom: 12px; 
+        }
         .result-box { 
-            flex: 1; text-align: center; padding: 6px 5px; border-radius: 12px; border: 2px dashed;
+            text-align: center; padding: 8px 4px; border-radius: 12px; border: 2px dashed;
             display: flex; flex-direction: column; justify-content: center;
         }
         .result-title { 
-            font-size: 12px; font-weight: bold; margin-bottom: 2px; color: #aaa; 
-            display: flex; justify-content: center; align-items: center; gap: 5px;
+            font-size: 11px; font-weight: bold; margin-bottom: 2px; color: #aaa; 
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
         }
-        .result-title span { font-size: 11px; color: #fff; }
-        .result-value { font-size: 20px; font-weight: bold; margin-bottom: 0; }
-        
-        .result-box.full-width { flex: none; width: 100%; padding: 8px; margin-bottom: 4px; border-radius: 12px; }
-        .result-box.full-width .result-title { font-size: 13px; }
-        .result-box.full-width .result-value { font-size: 22px; }
-        
-        #betScoreBox {
-            display: none; text-align: center; padding: 8px; border-radius: 12px; 
-            margin-bottom: 0; border: 2px solid #555; background-color: #222;
+        .result-title span { font-size: 10px; color: #fff; }
+        .result-value { font-size: 16px; font-weight: bold; margin-bottom: 0; }
+
+        /* 終極預測與大小球 */
+        .ultimate-box {
+            text-align: center; padding: 12px; border-radius: 12px; border: 2px solid #ffd700; 
+            background-color: #2a2a1a; margin-bottom: 12px;
         }
-        #betScoreTitle { font-size: 11px; color: #aaa; font-weight: bold; margin-bottom: 2px; }
-        #betScoreValue { font-size: 18px; font-weight: bold; color: #888; }
+        .ultimate-title { font-size: 13px; font-weight: bold; color: #ffd700; margin-bottom: 4px; }
+        .ultimate-value { font-size: 24px; font-weight: bold; color: #fff; }
+
+        .goals-box {
+            text-align: center; padding: 10px; border-radius: 12px; border: 2px solid #555; 
+            background-color: #222; margin-bottom: 12px;
+        }
+        .goals-title { font-size: 13px; font-weight: bold; color: #aaa; margin-bottom: 6px; }
+        .goals-value { font-size: 20px; font-weight: bold; color: #fff; margin-bottom: 6px; }
+        .goals-sub { font-size: 12px; color: #ccc; display: flex; justify-content: center; gap: 15px; }
+
+        .bet-box {
+            text-align: center; padding: 10px; border-radius: 12px; 
+            border: 2px solid #555; background-color: #222;
+        }
+        .bet-title { font-size: 12px; color: #aaa; font-weight: bold; margin-bottom: 4px; }
+        .bet-value { font-size: 20px; font-weight: bold; color: #888; }
 
         .divider { height: 1px; background: #333; margin: 15px 0; }
 
         .section-title { font-size: 14px; font-weight: bold; margin-bottom: 15px; color: #dddddd; text-align: center; }
 
+        /* 評級區塊 */
         .radar-container {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 15px; padding: 10px 15px; background: #181818; border-radius: 16px; border: 1px solid #333;
@@ -189,22 +198,11 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">完美對稱截圖版</p>
+    <p class="subtitle">四重驗證終極版</p>
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
     <div id="inputSection">
-        <!-- 賠率加成設定 -->
-        <div class="settings-group">
-            <div class="setting-row">
-                <span class="setting-label">📈 賠率加成 (影響攻防)</span>
-                <select id="oddsBonus">
-                    <option value="off">關閉 (預設)</option>
-                    <option value="on">開啟</option>
-                </select>
-            </div>
-        </div>
-
         <div class="input-section">
             <div class="section-header home">🏠 主隊數據</div>
             <div class="input-row">
@@ -256,35 +254,51 @@
         </div>
 
         <div class="result-card" id="resultCard">
-            <div class="dual-result-container">
-                <div class="result-box" id="newBox">
-                    <div class="result-title">新版 <span id="newDiffInline"></span></div>
-                    <div class="result-value" id="newValue">-</div>
+            <!-- 四重預測 -->
+            <div class="quad-result-container">
+                <div class="result-box" id="box_new_no">
+                    <div class="result-title">新版 (無賠) <span id="diff_new_no"></span></div>
+                    <div class="result-value" id="val_new_no">-</div>
                 </div>
-                <div class="result-box" id="oldBox">
-                    <div class="result-title">舊版 <span id="oldDiffInline"></span></div>
-                    <div class="result-value" id="oldValue">-</div>
+                <div class="result-box" id="box_new_with">
+                    <div class="result-title">新版 (有賠) <span id="diff_new_with"></span></div>
+                    <div class="result-value" id="val_new_with">-</div>
+                </div>
+                <div class="result-box" id="box_old_no">
+                    <div class="result-title">舊版 (無賠) <span id="diff_old_no"></span></div>
+                    <div class="result-value" id="val_old_no">-</div>
+                </div>
+                <div class="result-box" id="box_old_with">
+                    <div class="result-title">舊版 (有賠) <span id="diff_old_with"></span></div>
+                    <div class="result-value" id="val_old_with">-</div>
                 </div>
             </div>
 
-            <!-- 預測大小 -->
-            <div class="result-box full-width" id="goalsResultBox" style="margin-bottom: 4px;">
-                <div class="result-title">預測大小 (2.5球)</div>
-                <div class="result-value" id="goalsResultValue">-</div>
-            </div>
-            
-            <!-- 額外顯示：預期總進球數 -->
-            <div style="text-align: center; font-size: 12px; color: #aaa; margin-bottom: 8px;">
-                預期總進球數：<span id="totalExpGoals" style="color: #fff; font-weight: bold; font-size: 14px;">-</span>
+            <!-- 終極賽果預測 -->
+            <div class="ultimate-box" id="ultimateMatchBox">
+                <div class="ultimate-title">🏆 終極賽果預測</div>
+                <div class="ultimate-value" id="ultimateMatchValue">-</div>
             </div>
 
-            <div id="betScoreBox">
-                <div id="betScoreTitle">🎯 波膽推薦</div>
-                <div id="betScoreValue">-</div>
+            <!-- 大小球預測 -->
+            <div class="goals-box" id="goalsBox">
+                <div class="goals-title">預測大小 (2.5球)</div>
+                <div class="goals-value" id="goalsValue">-</div>
+                <div class="goals-sub">
+                    <span>無賠預期: <b id="expGoals_no">-</b></span>
+                    <span>有賠預期: <b id="expGoals_with">-</b></span>
+                </div>
+            </div>
+
+            <!-- 波膽推薦 -->
+            <div class="bet-box" id="betBox">
+                <div class="bet-title">🎯 波膽推薦</div>
+                <div class="bet-value" id="betValue">-</div>
             </div>
 
             <div class="divider"></div>
 
+            <!-- 實力評級 (以有賠率加成的數值為主) -->
             <div class="section-title">📊 球隊實力評級</div>
             
             <div class="radar-container">
@@ -426,7 +440,6 @@
         document.getElementById('errorMessage').style.display = 'none';
         document.getElementById('radar-home').innerHTML = '';
         document.getElementById('radar-away').innerHTML = '';
-        // 不重置賠率加成設定
         showInput();
     }
 
@@ -568,17 +581,31 @@
         return overallPct;
     }
 
-    function applyResultUI(prefix, finalResult, diffDisplay) {
-        const box = document.getElementById(prefix + 'Box');
-        const valueEl = document.getElementById(prefix + 'Value');
-        const diffInlineEl = document.getElementById(prefix + 'DiffInline');
+    function applyMiniUI(id, finalResult, diffDisplay) {
+        const box = document.getElementById('box_' + id);
+        const val = document.getElementById('val_' + id);
+        const diff = document.getElementById('diff_' + id);
 
-        diffInlineEl.innerText = `(${diffDisplay})`;
+        diff.innerText = `(${diffDisplay})`;
+        if (finalResult === "home") { val.innerText = "主勝"; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; diff.style.color = "#4ade80"; }
+        else if (finalResult === "away") { val.innerText = "客勝"; val.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; diff.style.color = "#f87171"; }
+        else if (finalResult === "draw") { val.innerText = "和局"; val.style.color = "#ffd700"; box.style.borderColor = "#ffd700"; box.style.backgroundColor = "#332d1a"; diff.style.color = "#ffd700"; }
+        else { val.innerText = "不建議"; val.style.color = "#aaa"; box.style.borderColor = "#555"; box.style.backgroundColor = "#2a2a2a"; diff.style.color = "#aaa"; }
+    }
 
-        if (finalResult === "home") { valueEl.innerText = "主勝"; valueEl.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; diffInlineEl.style.color = "#4ade80"; }
-        else if (finalResult === "away") { valueEl.innerText = "客勝"; valueEl.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; diffInlineEl.style.color = "#f87171"; }
-        else if (finalResult === "draw") { valueEl.innerText = "和局"; valueEl.style.color = "#ffd700"; box.style.borderColor = "#ffd700"; box.style.backgroundColor = "#332d1a"; diffInlineEl.style.color = "#ffd700"; }
-        else { valueEl.innerText = "不建議"; valueEl.style.color = "#aaa"; box.style.borderColor = "#555"; box.style.backgroundColor = "#2a2a2a"; diffInlineEl.style.color = "#aaa"; }
+    function getMatchResult(margin, gap) {
+        let res = "draw";
+        if (margin >= 0.5) res = "home";
+        else if (margin <= -0.5) res = "away";
+
+        if (res === "home") {
+            if (gap < -15) res = "avoid";
+            else if (gap <= 15) res = "draw";
+        } else if (res === "away") {
+            if (gap > 15) res = "avoid";
+            else if (gap >= -15) res = "draw";
+        }
+        return res;
     }
 
     function calculate() {
@@ -682,132 +709,143 @@
             aConcAdj = (aConceded / totalConceded) - 0.5;
         }
 
-        // 3. 計算原始調整值
-        let hXgAdjVal = hXg * (1 + hGoalAdj);
-        let aXgAdjVal = aXg * (1 + aGoalAdj);
-        let hXgaAdjVal = hXga * (1 + hConcAdj);
-        let aXgaAdjVal = aXga * (1 + aConcAdj);
+        // 基礎調整值 (無賠率加成)
+        const hXgAdjVal = hXg * (1 + hGoalAdj);
+        const aXgAdjVal = aXg * (1 + aGoalAdj);
+        const hXgaAdjVal = hXga * (1 + hConcAdj);
+        const aXgaAdjVal = aXga * (1 + aConcAdj);
 
-        // 4. 賠率加成 (若開啟)
-        const isOddsBonusOn = document.getElementById('oddsBonus').value === 'on';
-        if (isOddsBonusOn) {
-            // 賠率百分比 - 50% 就是加成幅度
-            let hOddsAdj = (hOddsPct / 100) - 0.5;
-            let aOddsAdj = (aOddsPct / 100) - 0.5;
-            
-            // 進攻乘以 (1 + 加成)，防守 xGA 乘以 (1 - 加成)
-            hXgAdjVal = hXgAdjVal * (1 + hOddsAdj);
-            hXgaAdjVal = hXgaAdjVal * (1 - hOddsAdj);
-            aXgAdjVal = aXgAdjVal * (1 + aOddsAdj);
-            aXgaAdjVal = aXgaAdjVal * (1 - aOddsAdj);
-        }
+        // 賠率加成的調整值
+        let hOddsAdj = (hOddsPct / 100) - 0.5;
+        let aOddsAdj = (aOddsPct / 100) - 0.5;
+        
+        const hXgAdj_with = hXgAdjVal * (1 + hOddsAdj);
+        const hXgaAdj_with = hXgaAdjVal * (1 - hOddsAdj);
+        const aXgAdj_with = aXgAdjVal * (1 + aOddsAdj);
+        const aXgaAdj_with = aXgaAdjVal * (1 - aOddsAdj);
 
-        let hAttUI = hXgAdjVal;
-        let hDefUI = Math.max(0, 3.0 - hXgaAdjVal);
-        let aAttUI = aXgAdjVal;
-        let aDefUI = Math.max(0, 3.0 - aXgaAdjVal);
+        // UI 繪圖用有賠率的版本
+        let hAttUI = hXgAdj_with;
+        let hDefUI = Math.max(0, 3.0 - hXgaAdj_with);
+        let aAttUI = aXgAdj_with;
+        let aDefUI = Math.max(0, 3.0 - aXgaAdj_with);
 
         const hOverallPct = updateTeamUI('h', hAttUI, hDefUI, hStatus, hRankPct, hOddsPct, hasRank);
         const aOverallPct = updateTeamUI('a', aAttUI, aDefUI, aStatus, aRankPct, aOddsPct, hasRank);
 
         const gap = hOverallPct - aOverallPct;
 
-        // --- 賽果預測 ---
-        const expHomeGoals = (hXgAdjVal + aXgaAdjVal) / 2;
-        const expAwayGoals = (aXgAdjVal + hXgaAdjVal) / 2;
-        const marginNew = expHomeGoals - expAwayGoals;
-        let finalResultNew = "";
-        let diffDisplayNew = (marginNew > 0 ? '+' : '') + marginNew.toFixed(2);
+        // ===== 計算四種賽果 =====
+        // 1. 新版無賠
+        const expHome_no = (hXgAdjVal + aXgaAdjVal) / 2;
+        const expAway_no = (aXgAdjVal + hXgaAdjVal) / 2;
+        const marginNew_no = expHome_no - expAway_no;
+        const resNew_no = getMatchResult(marginNew_no, gap);
+        applyMiniUI('new_no', resNew_no, marginNew_no.toFixed(2));
 
-        if (marginNew >= 0.5) finalResultNew = "home"; 
-        else if (marginNew <= -0.5) finalResultNew = "away"; 
-        else { finalResultNew = "draw"; diffDisplayNew = (marginNew > 0 ? '+' : '') + marginNew.toFixed(2) + ` 膠著`; }
+        // 2. 新版有賠
+        const expHome_with = (hXgAdj_with + aXgaAdj_with) / 2;
+        const expAway_with = (aXgAdj_with + hXgaAdj_with) / 2;
+        const marginNew_with = expHome_with - expAway_with;
+        const resNew_with = getMatchResult(marginNew_with, gap);
+        applyMiniUI('new_with', resNew_with, marginNew_with.toFixed(2));
 
-        if (finalResultNew === "home") {
-            if (gap < -15) { finalResultNew = "avoid"; diffDisplayNew += ` 不符`; }
-            else if (gap <= 15) { finalResultNew = "draw"; diffDisplayNew += ` 不足`; }
-        } else if (finalResultNew === "away") {
-            if (gap > 15) { finalResultNew = "avoid"; diffDisplayNew += ` 不符`; }
-            else if (gap >= -15) { finalResultNew = "draw"; diffDisplayNew += ` 不足`; }
-        }
-        applyResultUI('new', finalResultNew, diffDisplayNew);
+        // 3. 舊版無賠
+        const hAdv_no = Math.max(0, hXgAdjVal - (3.0 - aXgaAdjVal));
+        const aAdv_no = Math.max(0, aXgAdjVal - (3.0 - hXgaAdjVal));
+        const marginOld_no = hAdv_no - aAdv_no;
+        let resOld_no = "draw";
+        if (marginOld_no >= 0.5) resOld_no = "home";
+        else if (marginOld_no <= -0.5) resOld_no = "away";
+        applyMiniUI('old_no', resOld_no, marginOld_no.toFixed(2));
 
-        const hAdvantage = Math.max(0, hAttUI - aDefUI);
-        const aAdvantage = Math.max(0, aAttUI - hDefUI);
-        const marginOld = hAdvantage - aAdvantage;
-        let finalResultOld = "";
-        let diffDisplayOld = (marginOld > 0 ? '+' : '') + marginOld.toFixed(2);
+        // 4. 舊版有賠
+        const hAdv_with = Math.max(0, hXgAdj_with - (3.0 - aXgaAdj_with));
+        const aAdv_with = Math.max(0, aXgAdj_with - (3.0 - hXgaAdj_with));
+        const marginOld_with = hAdv_with - aAdv_with;
+        let resOld_with = "draw";
+        if (marginOld_with >= 0.5) resOld_with = "home";
+        else if (marginOld_with <= -0.5) resOld_with = "away";
+        applyMiniUI('old_with', resOld_with, marginOld_with.toFixed(2));
 
-        if (marginOld >= 0.5) {
-            finalResultOld = "home";
-        } else if (marginOld <= -0.5) {
-            finalResultOld = "away";
-        } else {
-            finalResultOld = "draw";
-            diffDisplayOld = (marginOld > 0 ? '+' : '') + marginOld.toFixed(2) + ` 膠著`;
-        }
-        applyResultUI('old', finalResultOld, diffDisplayOld);
-
-        // --- 大小球預測 ---
-        const totalExpectedGoals = expHomeGoals + expAwayGoals;
-        document.getElementById('totalExpGoals').innerText = totalExpectedGoals.toFixed(2);
-
-        const goalsResultBox = document.getElementById('goalsResultBox');
-        const goalsResultValue = document.getElementById('goalsResultValue');
+        // ===== 終極賽果判定 =====
+        const ultimateMatchBox = document.getElementById('ultimateMatchBox');
+        const ultimateMatchValue = document.getElementById('ultimateMatchValue');
         
-        let recommendation = "", boxColor = "", bgColor = "", textColor = "";
-        let isOver = false, isUnder = false;
-
-        // 門檻改為：高於 3.0 大，低於 2.0 小
-        if (totalExpectedGoals >= 3.0) {
-            recommendation = "建議 2.5 入球大"; textColor = "#f87171"; boxColor = "#f87171"; bgColor = "#331a1a";
-            isOver = true;
-        } else if (totalExpectedGoals <= 2.0) {
-            recommendation = "建議 2.5 入球細"; textColor = "#8cb8ff"; boxColor = "#8cb8ff"; bgColor = "#1a2633";
-            isUnder = true;
+        let isMatchConsistent = (resNew_no === resNew_with && resNew_no === resOld_no && resNew_no === resOld_with && resNew_no !== 'avoid');
+        
+        if (isMatchConsistent) {
+            ultimateMatchBox.style.borderColor = '#ffd700';
+            ultimateMatchBox.style.backgroundColor = '#2a2a1a';
+            ultimateMatchValue.style.color = '#fff';
+            if (resNew_no === 'home') { ultimateMatchValue.innerText = '主勝'; ultimateMatchValue.style.color = '#4ade80'; }
+            else if (resNew_no === 'away') { ultimateMatchValue.innerText = '客勝'; ultimateMatchValue.style.color = '#f87171'; }
+            else if (resNew_no === 'draw') { ultimateMatchValue.innerText = '和局'; ultimateMatchValue.style.color = '#ffd700'; }
         } else {
-            recommendation = "方向模糊 (不建議)"; textColor = "#aaa"; boxColor = "#555"; bgColor = "#2a2a2a";
+            ultimateMatchBox.style.borderColor = '#555';
+            ultimateMatchBox.style.backgroundColor = '#222';
+            ultimateMatchValue.innerText = '不建議出手';
+            ultimateMatchValue.style.color = '#aaa';
         }
 
-        goalsResultValue.innerText = recommendation;
-        goalsResultValue.style.color = textColor;
-        goalsResultBox.style.borderColor = boxColor;
-        goalsResultBox.style.backgroundColor = bgColor;
-
-        // --- 波膽推薦 ---
-        const betScoreBox = document.getElementById('betScoreBox');
-        const betScoreValue = document.getElementById('betScoreValue');
-        const betScoreTitle = document.getElementById('betScoreTitle');
+        // ===== 大小球判定 =====
+        const totalExp_no = expHome_no + expAway_no;
+        const totalExp_with = expHome_with + expAway_with;
         
-        betScoreBox.style.display = 'block';
-        let scores = [];
-        let isValid = (finalResultNew === finalResultOld && (finalResultNew === 'home' || finalResultNew === 'away' || finalResultNew === 'draw') && (isOver || isUnder));
+        document.getElementById('expGoals_no').innerText = totalExp_no.toFixed(2);
+        document.getElementById('expGoals_with').innerText = totalExp_with.toFixed(2);
 
-        if (isValid) {
-            betScoreTitle.innerText = "🎯 波膽推薦";
-            betScoreTitle.style.color = '#ffd700';
-            betScoreValue.style.color = '#ffffff';
-            betScoreBox.style.borderColor = '#ffd700';
-            betScoreBox.style.backgroundColor = '#2a2a1a';
+        let size_no = "模糊";
+        if (totalExp_no >= 3.0) size_no = "大";
+        else if (totalExp_no <= 2.0) size_no = "小";
 
-            if (finalResultNew === 'home') {
-                if (isUnder) scores = ['1:0', '2:0'];
-                else if (isOver) scores = ['2:1', '3:0'];
-            } else if (finalResultNew === 'away') {
-                if (isUnder) scores = ['0:1', '0:2'];
-                else if (isOver) scores = ['1:2', '0:3'];
-            } else if (finalResultNew === 'draw') {
-                if (isUnder) scores = ['0:0', '1:1'];
-                else if (isOver) scores = ['2:2', '3:3'];
+        let size_with = "模糊";
+        if (totalExp_with >= 3.0) size_with = "大";
+        else if (totalExp_with <= 2.0) size_with = "小";
+
+        const goalsBox = document.getElementById('goalsBox');
+        const goalsValue = document.getElementById('goalsValue');
+
+        let finalSize = "模糊";
+        if (size_no === size_with && size_no !== "模糊") {
+            finalSize = size_no;
+            goalsBox.style.borderColor = (finalSize === '大') ? '#f87171' : '#8cb8ff';
+            goalsBox.style.backgroundColor = (finalSize === '大') ? '#331a1a' : '#1a2633';
+            goalsValue.innerText = `建議 2.5 入球${finalSize}`;
+            goalsValue.style.color = (finalSize === '大') ? '#f87171' : '#8cb8ff';
+        } else {
+            goalsBox.style.borderColor = '#555';
+            goalsBox.style.backgroundColor = '#222';
+            goalsValue.innerText = '方向模糊 (不建議)';
+            goalsValue.style.color = '#aaa';
+        }
+
+        // ===== 波膽推薦 =====
+        const betBox = document.getElementById('betBox');
+        const betValue = document.getElementById('betValue');
+
+        if (isMatchConsistent && finalSize !== "模糊") {
+            betBox.style.borderColor = '#ffd700';
+            betBox.style.backgroundColor = '#2a2a1a';
+            betValue.style.color = '#fff';
+            
+            let scores = [];
+            if (resNew_no === 'home') {
+                if (finalSize === '小') scores = ['1:0', '2:0'];
+                else scores = ['2:1', '3:0'];
+            } else if (resNew_no === 'away') {
+                if (finalSize === '小') scores = ['0:1', '0:2'];
+                else scores = ['1:2', '0:3'];
+            } else if (resNew_no === 'draw') {
+                if (finalSize === '小') scores = ['0:0', '1:1'];
+                else scores = ['2:2', '3:3'];
             }
-            betScoreValue.innerText = scores.join(' / ');
+            betValue.innerText = scores.join(' / ');
         } else {
-            betScoreTitle.innerText = "🎯 波膽推薦";
-            betScoreTitle.style.color = '#888';
-            betScoreValue.style.color = '#888';
-            betScoreBox.style.borderColor = '#444';
-            betScoreBox.style.backgroundColor = '#222';
-            betScoreValue.innerText = '方向模糊';
+            betBox.style.borderColor = '#444';
+            betBox.style.backgroundColor = '#222';
+            betValue.innerText = '方向模糊';
+            betValue.style.color = '#888';
         }
 
         document.getElementById('inputSection').style.display = 'none';
