@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (狀態邏輯修正版)</title>
+    <title>xG 賽事分析器 (雙公式切換版)</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -111,11 +111,18 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">三維精簡版 | 邏輯修正</p>
+    <p class="subtitle">雙公式切換版 | 狀態/得分/失球 加權</p>
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
     <div class="settings-group">
+        <div class="setting-row">
+            <span class="setting-label">⚔️ 賽果計算模式</span>
+            <select id="matchLogic">
+                <option value="new">新版 (預期進球對碰)</option>
+                <option value="old">舊版 (攻防相減)</option>
+            </select>
+        </div>
         <div class="setting-row">
             <span class="setting-label">🏟️ 主場優勢 (加成主隊攻防)</span>
             <select id="homeAdvantage">
@@ -384,11 +391,7 @@
         const homeAdv = parseFloat(document.getElementById('homeAdvantage').value) || 0;
         const homeMultiplier = 1 + homeAdv;
 
-        // ==========================================
-        // 三維加權調整 (狀態 / 得分 / 失球)
-        // ==========================================
-        
-        // 1. 狀態加權
+        // 三維加權調整
         let totalStatus = hStatus + aStatus;
         let hStatusAdj = 0, aStatusAdj = 0;
         if (totalStatus > 0) {
@@ -396,7 +399,6 @@
             aStatusAdj = (aStatus / totalStatus) - 0.5;
         }
 
-        // 2. 得分加權 (影響 xG)
         let totalGoals = hGoals + aGoals;
         let hGoalAdj = 0, aGoalAdj = 0;
         if (totalGoals > 0) {
@@ -404,7 +406,6 @@
             aGoalAdj = (aGoals / totalGoals) - 0.5;
         }
 
-        // 3. 失球加權 (影響 xGA)
         let totalConceded = hConceded + aConceded;
         let hConcAdj = 0, aConcAdj = 0;
         if (totalConceded > 0) {
@@ -412,11 +413,8 @@
             aConcAdj = (aConceded / totalConceded) - 0.5;
         }
 
-        // 🔥 核心修正：狀態好，進攻 xG 乘 (1+Adj)，防守 xGA 乘 (1-Adj)
         const hXgAdjVal = hXg * (1 + hGoalAdj) * (1 + hStatusAdj);
         const aXgAdjVal = aXg * (1 + aGoalAdj) * (1 + aStatusAdj);
-        
-        // 狀態好 (Adj > 0)，xGA 應下降 (1 - Adj < 1)，防守變強
         const hXgaAdjVal = hXga * (1 + hConcAdj) * (1 - hStatusAdj);
         const aXgaAdjVal = aXga * (1 + aConcAdj) * (1 - aStatusAdj);
 
@@ -429,37 +427,58 @@
         const hOverallPct = updateTeamUI('h', hAttUI, hDefUI, hStatus);
         const aOverallPct = updateTeamUI('a', aAttUI, aDefUI, aStatus);
 
-        // ==========================================
-        // 預期進球期望值
-        // ==========================================
-        const expHomeGoals = ((hXgAdjVal * homeMultiplier) + aXgaAdjVal) / 2;
-        const expAwayGoals = (aXgAdjVal + (hXgaAdjVal / homeMultiplier)) / 2;
-        const predictedMargin = expHomeGoals - expAwayGoals;
-        const diff = predictedMargin;
+        // 賽果計算邏輯切換
+        const matchLogic = document.getElementById('matchLogic').value;
+        let finalResult = ""; 
+        let predictedMargin = 0;
+        let diff = 0;
+        let diffDisplay = "";
+        const gap = hOverallPct - aOverallPct;
+
+        if (matchLogic === 'new') {
+            // 🔥 新版：預期進球對碰
+            const expHomeGoals = ((hXgAdjVal * homeMultiplier) + aXgaAdjVal) / 2;
+            const expAwayGoals = (aXgAdjVal + (hXgaAdjVal / homeMultiplier)) / 2;
+            predictedMargin = expHomeGoals - expAwayGoals;
+            diff = predictedMargin;
+            diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2);
+
+            if (gap >= 30) { finalResult = "home"; diffDisplay = `+${diff.toFixed(2)} (實力碾壓)`; }
+            else if (gap <= -30) { finalResult = "away"; diffDisplay = `${diff.toFixed(2)} (實力碾壓)`; }
+            else {
+                if (diff >= 0.15) finalResult = "home"; 
+                else if (diff <= -0.15) finalResult = "away"; 
+                else { finalResult = "draw"; diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2) + ` (膠著)`; }
+
+                if (finalResult === "home") {
+                    if (gap < -15) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
+                    else if (gap <= 15) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
+                } else if (finalResult === "away") {
+                    if (gap > 15) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
+                    else if (gap >= -15) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
+                }
+            }
+        } else {
+            // 🛡️ 舊版：攻防相減 (純粹看優勢差距)
+            const hAdvantage = Math.max(0, hAttUI - aDefUI);
+            const aAdvantage = Math.max(0, aAttUI - hDefUI);
+            predictedMargin = hAdvantage - aAdvantage;
+            diff = predictedMargin;
+            diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2);
+
+            if (diff >= 0.1) {
+                finalResult = "home";
+            } else if (diff <= -0.1) {
+                finalResult = "away";
+            } else {
+                finalResult = "draw";
+                diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2) + ` (膠著)`;
+            }
+        }
 
         const resultBox = document.getElementById('matchResultBox');
         const resultValue = document.getElementById('matchResultValue');
         const resultDiff = document.getElementById('matchResultDiff');
-
-        let finalResult = ""; 
-        let diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2);
-        const gap = hOverallPct - aOverallPct;
-
-        if (gap >= 30) { finalResult = "home"; diffDisplay = `+${diff.toFixed(2)} (實力碾壓)`; }
-        else if (gap <= -30) { finalResult = "away"; diffDisplay = `${diff.toFixed(2)} (實力碾壓)`; }
-        else {
-            if (diff >= 0.15) finalResult = "home"; 
-            else if (diff <= -0.15) finalResult = "away"; 
-            else { finalResult = "draw"; diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2) + ` (膠著)`; }
-
-            if (finalResult === "home") {
-                if (gap < -15) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
-                else if (gap <= 15) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
-            } else if (finalResult === "away") {
-                if (gap > 15) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
-                else if (gap >= -15) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
-            }
-        }
 
         resultDiff.innerText = `差距值：${diffDisplay}`;
 
@@ -468,9 +487,7 @@
         else if (predictedMargin < -0.05) { marginEl.innerText = `預計淨勝：客隊 ${Math.abs(predictedMargin).toFixed(2)} 球`; marginEl.style.color = '#f87171'; }
         else { marginEl.innerText = `預計淨勝：0.00 球 (平手)`; marginEl.style.color = '#aaa'; }
 
-        // ==========================================
-        // 專屬大小球公式
-        // ==========================================
+        // 大小球公式 (維持不變，使用攻防相減)
         const homeDefense = 2.50 - aXgaAdjVal;
         const awayDefense = 2.50 - hXgaAdjVal;
         
