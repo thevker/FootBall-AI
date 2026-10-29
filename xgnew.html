@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (支援保存圖片版)</title>
+    <title>xG 賽事分析器 (完美截圖版)</title>
     <!-- 引入 html2canvas 庫用於截圖 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -17,7 +17,6 @@
             background: #1a1a1a; padding: 15px; border-radius: 12px; 
             width: 100%; max-width: 500px; position: relative; margin-bottom: 20px;
         }
-        /* 標題在最上方 */
         h2 { text-align: center; color: #ffffff; margin-top: 0; font-size: 20px; margin-bottom: 5px; }
         p.subtitle { font-size: 12px; color: #aaaaaa; text-align: center; margin-bottom: 15px; }
         
@@ -54,7 +53,6 @@
         /* ================= 結果區塊 ================= */
         #result { display: none; }
         
-        /* 橢圓形卡片共用樣式 */
         .result-card {
             background: #222222;
             border: 1px solid #3a3a3a;
@@ -64,7 +62,6 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        /* 按鈕專用卡片 */
         .btn-card {
             padding: 10px;
             margin-bottom: 15px;
@@ -79,7 +76,6 @@
         .btn-return { background:#444; }
         .btn-return:hover { background:#555; }
 
-        /* 預測結果 */
         .dual-result-container { display: flex; gap: 8px; margin-bottom: 8px; }
         .result-box { 
             flex: 1; text-align: center; padding: 6px 5px; border-radius: 12px; border: 2px dashed;
@@ -96,7 +92,6 @@
         .result-box.full-width .result-title { font-size: 13px; }
         .result-box.full-width .result-value { font-size: 22px; }
         
-        /* 波膽推薦 */
         #betScoreBox {
             display: none; text-align: center; padding: 8px; border-radius: 12px; 
             margin-bottom: 0; border: 2px solid #555; background-color: #222;
@@ -104,33 +99,31 @@
         #betScoreTitle { font-size: 11px; color: #aaa; font-weight: bold; margin-bottom: 2px; }
         #betScoreValue { font-size: 18px; font-weight: bold; color: #888; }
 
-        /* 分隔線 */
         .divider { height: 1px; background: #333; margin: 15px 0; }
 
-        /* ================= 評級區塊 ================= */
         .section-title { font-size: 14px; font-weight: bold; margin-bottom: 15px; color: #dddddd; text-align: center; }
 
-        /* 雷達圖容器 */
+        /* 雷達圖容器 - 配合截圖，修復垂直文字 */
         .radar-container {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 15px; padding: 10px; background: #181818; border-radius: 16px; border: 1px solid #333;
+            margin-bottom: 15px; padding: 10px 15px; background: #181818; border-radius: 16px; border: 1px solid #333;
+            position: relative;
         }
         
-        /* 垂直文字 */
         .vertical-text { 
-            writing-mode: vertical-rl; text-orientation: upright; 
-            font-size: 14px; font-weight: bold; letter-spacing: 2px;
+            font-size: 14px; font-weight: bold; text-align: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            line-height: 1.2;
         }
         .vertical-text.home { color: #ff6b6b; }
         .vertical-text.away { color: #6b9fff; }
 
         .radar-svg-box { flex: 1; display: flex; justify-content: space-around; align-items: center; }
-        svg { width: 145px; height: 145px; }
+        svg { width: 135px; height: 135px; }
 
         .team-rating-block { margin-bottom: 15px; position: relative; }
         .team-rating-block:last-child { margin-bottom: 0; }
 
-        /* 左右對稱佈局，強制不換行 */
         .team-header {
             display: flex; justify-content: space-between; align-items: center; 
             margin-bottom: 8px; min-height: 24px; white-space: nowrap;
@@ -159,7 +152,6 @@
         .rank-glow-silver { color: #f4f4f4 !important; background-color: #666 !important; animation: glow-silver 1.5s infinite alternate; }
         .rank-glow-bronze { color: #cd7f32 !important; background-color: #3b1c1c !important; animation: glow-bronze 1.5s infinite alternate; }
 
-        /* 橫條行 */
         .rating-row { display: flex; align-items: center; margin-bottom: 6px; font-size: 11px; }
         .rating-label { width: 40px; font-weight: bold; color: #aaa; text-align: right; padding-right: 4px; } 
         .rating-bar-bg { flex: 1; background: #181818; height: 18px; border-radius: 6px; overflow: hidden; margin: 0 6px; position: relative; border: 1px solid #333; }
@@ -171,19 +163,32 @@
         .bar-odds { background: #4caf50; }
         .bar-rank { background: #87ceeb; }
         
-        .rating-display { width: 65px; text-align: left; font-weight: bold; font-size: 11px; display: flex; justify-content: flex-start; align-items: center; padding-left: 4px; } 
+        .rating-display { width: 65px; text-align: left; font-weight: bold; font-size: 11px; display: flex; justify-content: flex-start; align-items: center; padding-left: 4px; }
+
+        /* ================= 圖片預覽彈窗 ================= */
+        #imageModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.9); z-index: 9999;
+            justify-content: center; align-items: center; flex-direction: column; padding: 20px;
+        }
+        #imageModal img {
+            max-width: 100%; max-height: 80vh; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+        }
+        .modal-hint { color: #fff; font-size: 14px; font-weight: bold; margin-top: 15px; text-align: center; }
+        .modal-close {
+            margin-top: 15px; padding: 10px 20px; background: #3a7bd5; color: white; 
+            border: none; border-radius: 6px; font-weight: bold; cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- 標題在最上方 -->
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">雙卡片分離顯示版</p>
+    <p class="subtitle">完美截圖版</p>
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
-    <!-- 輸入區塊 -->
     <div id="inputSection">
         <div class="input-section">
             <div class="section-header home">🏠 主隊數據</div>
@@ -229,17 +234,13 @@
         <button class="btn-clear" onclick="clearData()">清除數據</button>
     </div>
 
-    <!-- 結果區塊 -->
     <div id="result">
-        <!-- 第一張卡片：按鈕區 -->
         <div class="result-card btn-card">
             <button class="btn-action btn-return" onclick="showInput()">⬅️ 重新輸入</button>
             <button class="btn-action btn-save" id="btnSave" onclick="saveAsImage()">📸 保存分析</button>
         </div>
 
-        <!-- 第二張卡片：全部數據與預測 (截圖目標) -->
         <div class="result-card" id="resultCard">
-            <!-- 預測結論 -->
             <div class="dual-result-container">
                 <div class="result-box" id="newBox">
                     <div class="result-title">新版 <span id="newDiffInline"></span></div>
@@ -263,20 +264,17 @@
 
             <div class="divider"></div>
 
-            <!-- 實力評級 -->
             <div class="section-title">📊 球隊實力評級</div>
             
-            <!-- 雷達圖與垂直文字 -->
             <div class="radar-container">
-                <div class="vertical-text home">主隊</div>
+                <div class="vertical-text home">主<br>隊</div>
                 <div class="radar-svg-box">
                     <svg id="radar-home" viewBox="0 0 200 200"></svg>
                     <svg id="radar-away" viewBox="0 0 200 200"></svg>
                 </div>
-                <div class="vertical-text away">客隊</div>
+                <div class="vertical-text away">客<br>隊</div>
             </div>
 
-            <!-- 主隊橫條 -->
             <div class="team-rating-block">
                 <div class="team-header">
                     <div class="left-area">
@@ -297,7 +295,6 @@
                 <div class="rating-row" id="hRankRow" style="display:none;"><div class="rating-label">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="hRankBar"></div></div><div class="rating-display" id="hRankDisplay">-</div></div>
             </div>
 
-            <!-- 客隊橫條 -->
             <div class="team-rating-block">
                 <div class="team-header">
                     <div class="left-area">
@@ -321,41 +318,51 @@
     </div>
 </div>
 
+<!-- 圖片預覽彈窗 (解決 iPhone 保存問題) -->
+<div id="imageModal">
+    <img id="previewImg" src="" alt="分析結果">
+    <div class="modal-hint">👇 請「長按」上方圖片，選擇「儲存到相片」</div>
+    <button class="modal-close" onclick="closeModal()">關閉</button>
+</div>
+
 <script>
-    function showInput() {
-        document.getElementById('inputSection').style.display = 'block';
-        document.getElementById('result').style.display = 'none';
+    function closeModal() {
+        document.getElementById('imageModal').style.display = 'none';
     }
 
-    // 保存圖片功能
     function saveAsImage() {
         const target = document.getElementById('resultCard');
         const btn = document.getElementById('btnSave');
-        const originalText = btn.innerHTML;
         
-        btn.innerHTML = '⏳ 保存中...';
+        btn.innerHTML = '⏳ 生成中...';
         btn.disabled = true;
 
-        // 使用 html2canvas 截圖
-        html2canvas(target, {
-            backgroundColor: '#222222', // 確保背景色正確
-            scale: 2, // 提高解析度
-            useCORS: true
-        }).then(canvas => {
-            // 創建下載連結
-            const link = document.createElement('a');
-            link.download = `xG_Analysis_${new Date().getTime()}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
+        // 延遲 100ms 確保畫面渲染完成
+        setTimeout(() => {
+            html2canvas(target, {
+                backgroundColor: '#222222', 
+                scale: 2, 
+                useCORS: true
+            }).then(canvas => {
+                // 將生成的圖片放入彈窗中
+                const imgData = canvas.toDataURL('image/png');
+                document.getElementById('previewImg').src = imgData;
+                document.getElementById('imageModal').style.display = 'flex';
+                
+                btn.innerHTML = '📸 保存分析';
+                btn.disabled = false;
+            }).catch(err => {
+                console.error("截圖失敗:", err);
+                alert("生成圖片失敗，請重試。");
+                btn.innerHTML = '📸 保存分析';
+                btn.disabled = false;
+            });
+        }, 100);
+    }
 
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }).catch(err => {
-            console.error("截圖失敗:", err);
-            alert("保存圖片失敗，請重試。");
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        });
+    function showInput() {
+        document.getElementById('inputSection').style.display = 'block';
+        document.getElementById('result').style.display = 'none';
     }
 
     function limitInput(input) {
