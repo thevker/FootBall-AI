@@ -158,7 +158,8 @@
         .bar-defense { background: #6b9fff; }
         .bar-status { background: #fbc02d; }
         .bar-odds { background: #4caf50; }
-        .bar-rank { background: #87ceeb; }
+        /* 🔥 排名改為螢光藍並加上發光效果 */
+        .bar-rank { background: #00e5ff; box-shadow: 0 0 8px #00e5ff; }
 
         #imageModal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -672,21 +673,16 @@
         let finalResultNew = "";
         let diffDisplayNew = (marginNew > 0 ? '+' : '') + marginNew.toFixed(2);
 
-        if (gap >= 30) { finalResultNew = "home"; diffDisplayNew = `+${marginNew.toFixed(2)} 碾壓`; }
-        else if (gap <= -30) { finalResultNew = "away"; diffDisplayNew = `${marginNew.toFixed(2)} 碾壓`; }
-        else {
-            // 🔥 門檻改為 0.5
-            if (marginNew >= 0.5) finalResultNew = "home"; 
-            else if (marginNew <= -0.5) finalResultNew = "away"; 
-            else { finalResultNew = "draw"; diffDisplayNew = (marginNew > 0 ? '+' : '') + marginNew.toFixed(2) + ` 膠著`; }
+        if (marginNew >= 0.5) finalResultNew = "home"; 
+        else if (marginNew <= -0.5) finalResultNew = "away"; 
+        else { finalResultNew = "draw"; diffDisplayNew = (marginNew > 0 ? '+' : '') + marginNew.toFixed(2) + ` 膠著`; }
 
-            if (finalResultNew === "home") {
-                if (gap < -15) { finalResultNew = "avoid"; diffDisplayNew += ` 不符`; }
-                else if (gap <= 15) { finalResultNew = "draw"; diffDisplayNew += ` 不足`; }
-            } else if (finalResultNew === "away") {
-                if (gap > 15) { finalResultNew = "avoid"; diffDisplayNew += ` 不符`; }
-                else if (gap >= -15) { finalResultNew = "draw"; diffDisplayNew += ` 不足`; }
-            }
+        if (finalResultNew === "home") {
+            if (gap < -15) { finalResultNew = "avoid"; diffDisplayNew += ` 不符`; }
+            else if (gap <= 15) { finalResultNew = "draw"; diffDisplayNew += ` 不足`; }
+        } else if (finalResultNew === "away") {
+            if (gap > 15) { finalResultNew = "avoid"; diffDisplayNew += ` 不符`; }
+            else if (gap >= -15) { finalResultNew = "draw"; diffDisplayNew += ` 不足`; }
         }
         applyResultUI('new', finalResultNew, diffDisplayNew);
 
@@ -696,7 +692,6 @@
         let finalResultOld = "";
         let diffDisplayOld = (marginOld > 0 ? '+' : '') + marginOld.toFixed(2);
 
-        // 🔥 門檻改為 0.5
         if (marginOld >= 0.5) {
             finalResultOld = "home";
         } else if (marginOld <= -0.5) {
