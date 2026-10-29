@@ -25,15 +25,6 @@
         }
         @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
 
-        .settings-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
-        .setting-row {
-            display: flex; align-items: center; justify-content: space-between; 
-            background: #252525; padding: 12px 15px; border-radius: 8px; border: 1px solid #333;
-        }
-        .setting-label { font-size: 14px; font-weight: bold; color: #ddd; }
-        .setting-row select { width: 160px; padding: 8px; font-size: 14px; cursor: pointer; background-color: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 6px; outline: none; }
-        .setting-row select:focus { border-color: #4da6ff; }
-
         .input-section { margin-bottom: 20px; }
         .section-header { font-size: 15px; font-weight: bold; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #333; }
         .section-header.home { color: #ff6b6b; }
@@ -128,16 +119,6 @@
     <p class="subtitle">雙結果同步顯示版 | 防守 300-xGA</p>
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
-
-    <div class="settings-group">
-        <div class="setting-row">
-            <span class="setting-label">🏟️ 主場優勢 (加成主隊攻防)</span>
-            <select id="homeAdvantage">
-                <option value="0">0% (預設關閉)</option>
-                <option value="0.10">10%</option>
-            </select>
-        </div>
-    </div>
 
     <div class="input-section">
         <div class="section-header home">🏠 主隊數據</div>
@@ -382,7 +363,6 @@
         return overallPct;
     }
 
-    // 輔助函數：套用賽果 UI
     function applyResultUI(prefix, finalResult, diffDisplay, predictedMargin) {
         const box = document.getElementById(prefix + 'Box');
         const valueEl = document.getElementById(prefix + 'Value');
@@ -426,18 +406,8 @@
         const aXg = parseFloat(aXgStr) || 0, aXga = parseFloat(aXgaStr) || 0, aStatus = parseFloat(aStatusStr) || 0;
         const hGoals = parseFloat(hGoalsStr) || 0, hConceded = parseFloat(hConcededStr) || 0;
         const aGoals = parseFloat(aGoalsStr) || 0, aConceded = parseFloat(aConcededStr) || 0;
-        
-        const homeAdv = parseFloat(document.getElementById('homeAdvantage').value) || 0;
-        const homeMultiplier = 1 + homeAdv;
 
-        // 三維加權調整
-        let totalStatus = hStatus + aStatus;
-        let hStatusAdj = 0, aStatusAdj = 0;
-        if (totalStatus > 0) {
-            hStatusAdj = (hStatus / totalStatus) - 0.5;
-            aStatusAdj = (aStatus / totalStatus) - 0.5;
-        }
-
+        // 得分加權 (影響 xG)
         let totalGoals = hGoals + aGoals;
         let hGoalAdj = 0, aGoalAdj = 0;
         if (totalGoals > 0) {
@@ -445,6 +415,7 @@
             aGoalAdj = (aGoals / totalGoals) - 0.5;
         }
 
+        // 失球加權 (影響 xGA)
         let totalConceded = hConceded + aConceded;
         let hConcAdj = 0, aConcAdj = 0;
         if (totalConceded > 0) {
@@ -452,14 +423,15 @@
             aConcAdj = (aConceded / totalConceded) - 0.5;
         }
 
-        const hXgAdjVal = hXg * (1 + hGoalAdj) * (1 + hStatusAdj);
-        const aXgAdjVal = aXg * (1 + aGoalAdj) * (1 + aStatusAdj);
-        const hXgaAdjVal = hXga * (1 + hConcAdj) * (1 - hStatusAdj);
-        const aXgaAdjVal = aXga * (1 + aConcAdj) * (1 - aStatusAdj);
+        // 最終調整值 (移除狀態加成，移除主場優勢)
+        const hXgAdjVal = hXg * (1 + hGoalAdj);
+        const aXgAdjVal = aXg * (1 + aGoalAdj);
+        const hXgaAdjVal = hXga * (1 + hConcAdj);
+        const aXgaAdjVal = aXga * (1 + aConcAdj);
 
         // UI 評級用的值
-        let hAttUI = hXgAdjVal * homeMultiplier;
-        let hDefUI = Math.max(0, 3.0 - hXgaAdjVal) * homeMultiplier;
+        let hAttUI = hXgAdjVal;
+        let hDefUI = Math.max(0, 3.0 - hXgaAdjVal);
         let aAttUI = aXgAdjVal;
         let aDefUI = Math.max(0, 3.0 - aXgaAdjVal);
 
@@ -471,8 +443,8 @@
         // ==========================================
         // 1. 新版：預期進球對碰
         // ==========================================
-        const expHomeGoals = ((hXgAdjVal * homeMultiplier) + aXgaAdjVal) / 2;
-        const expAwayGoals = (aXgAdjVal + (hXgaAdjVal / homeMultiplier)) / 2;
+        const expHomeGoals = (hXgAdjVal + aXgaAdjVal) / 2;
+        const expAwayGoals = (aXgAdjVal + hXgaAdjVal) / 2;
         const marginNew = expHomeGoals - expAwayGoals;
         let finalResultNew = "";
         let diffDisplayNew = (marginNew > 0 ? '+' : '') + marginNew.toFixed(2);
@@ -480,8 +452,9 @@
         if (gap >= 30) { finalResultNew = "home"; diffDisplayNew = `+${marginNew.toFixed(2)} (實力碾壓)`; }
         else if (gap <= -30) { finalResultNew = "away"; diffDisplayNew = `${marginNew.toFixed(2)} (實力碾壓)`; }
         else {
-            if (marginNew >= 0.15) finalResultNew = "home"; 
-            else if (marginNew <= -0.15) finalResultNew = "away"; 
+            // 門檻改為 0.3
+            if (marginNew >= 0.3) finalResultNew = "home"; 
+            else if (marginNew <= -0.3) finalResultNew = "away"; 
             else { finalResultNew = "draw"; diffDisplayNew = (marginNew > 0 ? '+' : '') + marginNew.toFixed(2) + ` (膠著)`; }
 
             if (finalResultNew === "home") {
@@ -503,9 +476,10 @@
         let finalResultOld = "";
         let diffDisplayOld = (marginOld > 0 ? '+' : '') + marginOld.toFixed(2);
 
-        if (marginOld >= 0.1) {
+        // 門檻改為 0.3
+        if (marginOld >= 0.3) {
             finalResultOld = "home";
-        } else if (marginOld <= -0.1) {
+        } else if (marginOld <= -0.3) {
             finalResultOld = "away";
         } else {
             finalResultOld = "draw";
