@@ -110,8 +110,8 @@
         .bar-attack { background: #ff6b6b; }
         .bar-defense { background: #6b9fff; }
         .bar-status { background: #fbc02d; }
-        /* 排名橫條改為粉色 */
-        .bar-rank { background: #f472b6; }
+        /* 排名橫條改為淺藍色 */
+        .bar-rank { background: #87ceeb; }
         .bar-odds { background: #4caf50; }
         
         .rating-display { width: 75px; text-align: right; font-weight: bold; font-size: 13px; display: flex; justify-content: flex-end; align-items: center; }
@@ -210,14 +210,14 @@
                     <span style="color: #ff6b6b;">🏠 主隊</span>
                     <span class="badge" id="hStyle">-</span>
                     <span class="badge" id="hStatusBadge">-</span>
-                    <span class="badge" id="hRankBadge" style="display:none;">-</span>
                     <span class="badge" id="hOddsBadge" style="display:none;">-</span>
+                    <span class="badge" id="hRankBadge" style="display:none;">-</span>
                 </div>
                 <div class="rating-row"><div class="rating-label">進攻</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="hAttBar"></div></div><div class="rating-display" id="hAttDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="hDefBar"></div></div><div class="rating-display" id="hDefDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">狀態</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="hStatBar"></div></div><div class="rating-display" id="hStatDisplay">-</div></div>
-                <div class="rating-row" id="hRankRow" style="display:none;"><div class="rating-label">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="hRankBar"></div></div><div class="rating-display" id="hRankDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">賠率</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="hOddsBar"></div></div><div class="rating-display" id="hOddsDisplay">-</div></div>
+                <div class="rating-row" id="hRankRow" style="display:none;"><div class="rating-label">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="hRankBar"></div></div><div class="rating-display" id="hRankDisplay">-</div></div>
                 <div class="overall-row"><span class="overall-label" id="hOverallLabel">綜合總實力</span><span class="overall-value" id="hOverall">E (0.0)</span></div>
             </div>
 
@@ -226,14 +226,14 @@
                     <span style="color: #6b9fff;">✈️ 客隊</span>
                     <span class="badge" id="aStyle">-</span>
                     <span class="badge" id="aStatusBadge">-</span>
-                    <span class="badge" id="aRankBadge" style="display:none;">-</span>
                     <span class="badge" id="aOddsBadge" style="display:none;">-</span>
+                    <span class="badge" id="aRankBadge" style="display:none;">-</span>
                 </div>
                 <div class="rating-row"><div class="rating-label">進攻</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="aAttBar"></div></div><div class="rating-display" id="aAttDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="aDefBar"></div></div><div class="rating-display" id="aDefDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">狀態</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="aStatBar"></div></div><div class="rating-display" id="aStatDisplay">-</div></div>
-                <div class="rating-row" id="aRankRow" style="display:none;"><div class="rating-label">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="aRankBar"></div></div><div class="rating-display" id="aRankDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">賠率</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="aOddsBar"></div></div><div class="rating-display" id="aOddsDisplay">-</div></div>
+                <div class="rating-row" id="aRankRow" style="display:none;"><div class="rating-label">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="aRankBar"></div></div><div class="rating-display" id="aRankDisplay">-</div></div>
                 <div class="overall-row"><span class="overall-label" id="aOverallLabel">綜合總實力</span><span class="overall-value" id="aOverall">E (0.0)</span></div>
             </div>
         </div>
@@ -376,8 +376,9 @@
             document.getElementById(prefix + 'RankDisplay').innerText = `${rankData.grade} (${rankPct.toFixed(1)})`;
             document.getElementById(prefix + 'RankDisplay').style.color = rankData.color;
             
-            radarData = [attPct, defPct, statPct, rankPct, oddsPct];
-            labels = ['ATK', 'DEF', 'STA', 'RNK', 'ODD'];
+            // 排名移至最後（最右側）
+            radarData = [attPct, defPct, statPct, oddsPct, rankPct];
+            labels = ['ATK', 'DEF', 'STA', 'ODD', 'RNK'];
             
             const overallPct = (attPct + defPct + statPct + rankPct + oddsPct) / 5;
             const overallData = getGradeByPercent(overallPct);
@@ -493,16 +494,16 @@
         let hOddsPct = totalOdds > 0 ? (aOdds / totalOdds) * 100 : 50;
         let aOddsPct = totalOdds > 0 ? (hOdds / totalOdds) * 100 : 50;
 
-        // 更新賠率標籤 (上盤淺綠, 下盤深綠)
+        // 更新賠率標籤 (上盤淺綠, 下盤灰色)
         const hOddsBadge = document.getElementById('hOddsBadge');
         const aOddsBadge = document.getElementById('aOddsBadge');
         hOddsBadge.style.display = 'inline-block';
         aOddsBadge.style.display = 'inline-block';
         if (hOdds < aOdds) {
             hOddsBadge.innerText = "上盤"; hOddsBadge.style.color = "#bbf7d0"; hOddsBadge.style.backgroundColor = "#15803d"; 
-            aOddsBadge.innerText = "下盤"; aOddsBadge.style.color = "#15803d"; aOddsBadge.style.backgroundColor = "#bbf7d0"; 
+            aOddsBadge.innerText = "下盤"; aOddsBadge.style.color = "#ccc"; aOddsBadge.style.backgroundColor = "#333"; // 灰色
         } else if (hOdds > aOdds) {
-            hOddsBadge.innerText = "下盤"; hOddsBadge.style.color = "#15803d"; hOddsBadge.style.backgroundColor = "#bbf7d0";
+            hOddsBadge.innerText = "下盤"; hOddsBadge.style.color = "#ccc"; hOddsBadge.style.backgroundColor = "#333"; // 灰色
             aOddsBadge.innerText = "上盤"; aOddsBadge.style.color = "#bbf7d0"; aOddsBadge.style.backgroundColor = "#15803d";
         } else {
             hOddsBadge.style.display = 'none';
