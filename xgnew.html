@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (雙卡片分離顯示版)</title>
+    <title>xG 賽事分析器 (支援保存圖片版)</title>
+    <!-- 引入 html2canvas 庫用於截圖 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -15,7 +17,7 @@
             background: #1a1a1a; padding: 15px; border-radius: 12px; 
             width: 100%; max-width: 500px; position: relative; margin-bottom: 20px;
         }
-        /* 標題永遠在最上方 */
+        /* 標題在最上方 */
         h2 { text-align: center; color: #ffffff; margin-top: 0; font-size: 20px; margin-bottom: 5px; }
         p.subtitle { font-size: 12px; color: #aaaaaa; text-align: center; margin-bottom: 15px; }
         
@@ -62,16 +64,20 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        /* 返回按鈕專用卡片 */
+        /* 按鈕專用卡片 */
         .btn-card {
             padding: 10px;
             margin-bottom: 15px;
-            text-align: center;
+            display: flex; gap: 10px;
         }
-        .btn-return { 
-            background:#444; color:#fff; padding:10px; font-size:14px; 
-            border-radius:14px; border:none; width:100%; cursor:pointer; 
+        .btn-action { 
+            flex: 1; color:#fff; padding:10px; font-size:14px; 
+            border-radius:14px; border:none; cursor:pointer; font-weight: bold;
         }
+        .btn-save { background:#28a745; }
+        .btn-save:hover { background:#218838; }
+        .btn-return { background:#444; }
+        .btn-return:hover { background:#555; }
 
         /* 預測結果 */
         .dual-result-container { display: flex; gap: 8px; margin-bottom: 8px; }
@@ -225,13 +231,14 @@
 
     <!-- 結果區塊 -->
     <div id="result">
-        <!-- 第一張卡片：重新輸入按鈕 -->
+        <!-- 第一張卡片：按鈕區 -->
         <div class="result-card btn-card">
-            <button class="btn-return" onclick="showInput()">⬅️ 重新輸入數據</button>
+            <button class="btn-action btn-return" onclick="showInput()">⬅️ 重新輸入</button>
+            <button class="btn-action btn-save" id="btnSave" onclick="saveAsImage()">📸 保存分析</button>
         </div>
 
-        <!-- 第二張卡片：全部數據與預測 -->
-        <div class="result-card">
+        <!-- 第二張卡片：全部數據與預測 (截圖目標) -->
+        <div class="result-card" id="resultCard">
             <!-- 預測結論 -->
             <div class="dual-result-container">
                 <div class="result-box" id="newBox">
@@ -318,6 +325,37 @@
     function showInput() {
         document.getElementById('inputSection').style.display = 'block';
         document.getElementById('result').style.display = 'none';
+    }
+
+    // 保存圖片功能
+    function saveAsImage() {
+        const target = document.getElementById('resultCard');
+        const btn = document.getElementById('btnSave');
+        const originalText = btn.innerHTML;
+        
+        btn.innerHTML = '⏳ 保存中...';
+        btn.disabled = true;
+
+        // 使用 html2canvas 截圖
+        html2canvas(target, {
+            backgroundColor: '#222222', // 確保背景色正確
+            scale: 2, // 提高解析度
+            useCORS: true
+        }).then(canvas => {
+            // 創建下載連結
+            const link = document.createElement('a');
+            link.download = `xG_Analysis_${new Date().getTime()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }).catch(err => {
+            console.error("截圖失敗:", err);
+            alert("保存圖片失敗，請重試。");
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
     }
 
     function limitInput(input) {
