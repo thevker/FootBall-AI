@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (狀態加權版)</title>
+    <title>xG 賽事分析器 (狀態邏輯修正版)</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -111,7 +111,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">三維精簡版 | 狀態/得分/失球 加權</p>
+    <p class="subtitle">三維精簡版 | 邏輯修正</p>
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
@@ -388,7 +388,7 @@
         // 三維加權調整 (狀態 / 得分 / 失球)
         // ==========================================
         
-        // 1. 狀態加權 (同時影響 xG 與 xGA)
+        // 1. 狀態加權
         let totalStatus = hStatus + aStatus;
         let hStatusAdj = 0, aStatusAdj = 0;
         if (totalStatus > 0) {
@@ -404,7 +404,7 @@
             aGoalAdj = (aGoals / totalGoals) - 0.5;
         }
 
-        // 3. 失球加權 (影響 xGA，失球越少防守越好)
+        // 3. 失球加權 (影響 xGA)
         let totalConceded = hConceded + aConceded;
         let hConcAdj = 0, aConcAdj = 0;
         if (totalConceded > 0) {
@@ -412,13 +412,15 @@
             aConcAdj = (aConceded / totalConceded) - 0.5;
         }
 
-        // 綜合相乘得出最終調整值
+        // 🔥 核心修正：狀態好，進攻 xG 乘 (1+Adj)，防守 xGA 乘 (1-Adj)
         const hXgAdjVal = hXg * (1 + hGoalAdj) * (1 + hStatusAdj);
         const aXgAdjVal = aXg * (1 + aGoalAdj) * (1 + aStatusAdj);
-        const hXgaAdjVal = hXga * (1 + hConcAdj) * (1 + hStatusAdj);
-        const aXgaAdjVal = aXga * (1 + aConcAdj) * (1 + aStatusAdj);
+        
+        // 狀態好 (Adj > 0)，xGA 應下降 (1 - Adj < 1)，防守變強
+        const hXgaAdjVal = hXga * (1 + hConcAdj) * (1 - hStatusAdj);
+        const aXgaAdjVal = aXga * (1 + aConcAdj) * (1 - aStatusAdj);
 
-        // UI 評級用的值 (套用主場優勢)
+        // UI 評級用的值
         let hAttUI = hXgAdjVal * homeMultiplier;
         let hDefUI = Math.max(0, 2.5 - hXgaAdjVal) * homeMultiplier;
         let aAttUI = aXgAdjVal;
@@ -428,7 +430,7 @@
         const aOverallPct = updateTeamUI('a', aAttUI, aDefUI, aStatus);
 
         // ==========================================
-        // 預期進球期望值 (用於判定勝負)
+        // 預期進球期望值
         // ==========================================
         const expHomeGoals = ((hXgAdjVal * homeMultiplier) + aXgaAdjVal) / 2;
         const expAwayGoals = (aXgAdjVal + (hXgaAdjVal / homeMultiplier)) / 2;
@@ -467,7 +469,7 @@
         else { marginEl.innerText = `預計淨勝：0.00 球 (平手)`; marginEl.style.color = '#aaa'; }
 
         // ==========================================
-        // 專屬大小球公式 (使用調整後的值)
+        // 專屬大小球公式
         // ==========================================
         const homeDefense = 2.50 - aXgaAdjVal;
         const awayDefense = 2.50 - hXgaAdjVal;
