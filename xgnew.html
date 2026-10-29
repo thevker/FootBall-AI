@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (完美截圖版)</title>
+    <title>xG 賽事分析器 (總進球優化版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * { box-sizing: border-box; }
@@ -85,7 +85,7 @@
         .result-title span { font-size: 11px; color: #fff; }
         .result-value { font-size: 20px; font-weight: bold; margin-bottom: 0; }
         
-        .result-box.full-width { flex: none; width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 12px; }
+        .result-box.full-width { flex: none; width: 100%; padding: 8px; margin-bottom: 4px; border-radius: 12px; }
         .result-box.full-width .result-title { font-size: 13px; }
         .result-box.full-width .result-value { font-size: 22px; }
         
@@ -248,11 +248,11 @@
 
             <!-- 預測大小 -->
             <div class="result-box full-width" id="goalsResultBox" style="margin-bottom: 4px;">
-                <div class="result-title">預測大小 (2.5球) <span id="goalsDiffInline"></span></div>
+                <div class="result-title">預測大小 (2.5球)</div>
                 <div class="result-value" id="goalsResultValue">-</div>
             </div>
             
-            <!-- 新增：預期總進球數 (純數值顯示) -->
+            <!-- 額外顯示：預期總進球數 -->
             <div style="text-align: center; font-size: 12px; color: #aaa; margin-bottom: 8px;">
                 預期總進球數：<span id="totalExpGoals" style="color: #fff; font-weight: bold; font-size: 14px;">-</span>
             </div>
@@ -707,30 +707,22 @@
         }
         applyResultUI('old', finalResultOld, diffDisplayOld);
 
-        // 原本的大小球邏輯 (攻防相減)
-        const homeDefense = 3.00 - aXgaAdjVal;
-        const awayDefense = 3.00 - hXgaAdjVal;
-        
-        const hAdv = Math.max(0, hXgAdjVal - homeDefense);
-        const aAdv = Math.max(0, aXgAdjVal - awayDefense);
-        
-        const goalsDiff = hAdv + aAdv;
+        // 🔥 直接使用「預期總進球數」判定大小球
+        const totalExpectedGoals = expHomeGoals + expAwayGoals;
+        document.getElementById('totalExpGoals').innerText = totalExpectedGoals.toFixed(2);
 
         const goalsResultBox = document.getElementById('goalsResultBox');
         const goalsResultValue = document.getElementById('goalsResultValue');
-        const goalsDiffInline = document.getElementById('goalsDiffInline');
-
-        goalsDiffInline.innerText = `(${goalsDiff.toFixed(2)})`;
-
+        
         let recommendation = "", boxColor = "", bgColor = "", textColor = "";
         let isOver = false, isUnder = false;
 
-        if (goalsDiff <= 0.5) {
-            recommendation = "建議 2.5 入球細"; textColor = "#8cb8ff"; boxColor = "#8cb8ff"; bgColor = "#1a2633";
-            isUnder = true;
-        } else if (goalsDiff >= 1.5) {
+        if (totalExpectedGoals >= 2.6) {
             recommendation = "建議 2.5 入球大"; textColor = "#f87171"; boxColor = "#f87171"; bgColor = "#331a1a";
             isOver = true;
+        } else if (totalExpectedGoals <= 2.4) {
+            recommendation = "建議 2.5 入球細"; textColor = "#8cb8ff"; boxColor = "#8cb8ff"; bgColor = "#1a2633";
+            isUnder = true;
         } else {
             recommendation = "方向模糊 (不建議)"; textColor = "#aaa"; boxColor = "#555"; bgColor = "#2a2a2a";
         }
@@ -739,12 +731,8 @@
         goalsResultValue.style.color = textColor;
         goalsResultBox.style.borderColor = boxColor;
         goalsResultBox.style.backgroundColor = bgColor;
-        goalsDiffInline.style.color = textColor;
 
-        // 🔥 額外顯示：預期總進球數 (使用新公式)
-        const totalExpectedGoals = expHomeGoals + expAwayGoals;
-        document.getElementById('totalExpGoals').innerText = totalExpectedGoals.toFixed(2);
-
+        // 波膽推薦邏輯
         const betScoreBox = document.getElementById('betScoreBox');
         const betScoreValue = document.getElementById('betScoreValue');
         const betScoreTitle = document.getElementById('betScoreTitle');
