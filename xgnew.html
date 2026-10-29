@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (雙公式切換版)</title>
+    <title>xG 賽事分析器 (雙結果顯示版)</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -56,11 +56,25 @@
         
         #result { margin-top: 25px; display: none; padding-top: 20px; border-top: 1px solid #333; }
         
-        .result-box { text-align: center; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 2px dashed; }
-        .result-title { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #aaa; }
-        .result-value { font-size: 28px; font-weight: bold; margin-bottom: 5px; }
-        .result-diff { font-size: 13px; color: #aaa; margin-bottom: 5px; }
-        .result-margin { font-size: 14px; font-weight: bold; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
+        /* 雙結果並排 */
+        .dual-result-container {
+            display: flex; gap: 10px; margin-bottom: 15px;
+        }
+        .result-box { 
+            flex: 1; text-align: center; padding: 12px 5px; border-radius: 8px; border: 2px dashed;
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .result-title { font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #aaa; }
+        .result-value { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+        .result-diff { font-size: 11px; color: #aaa; margin-bottom: 5px; }
+        .result-margin { font-size: 12px; font-weight: bold; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
+        
+        .result-box.full-width {
+            flex: none; width: 100%; padding: 15px; margin-bottom: 20px;
+        }
+        .result-box.full-width .result-title { font-size: 14px; }
+        .result-box.full-width .result-value { font-size: 28px; }
+        .result-box.full-width .result-diff { font-size: 13px; }
         
         .dual-indicator {
             display: flex; justify-content: center; margin-top: 10px; padding-top: 10px;
@@ -111,18 +125,11 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">雙公式切換版 | 防守 300-xGA</p>
+    <p class="subtitle">雙結果同步顯示版 | 防守 300-xGA</p>
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
     <div class="settings-group">
-        <div class="setting-row">
-            <span class="setting-label">⚔️ 賽果計算模式</span>
-            <select id="matchLogic">
-                <option value="new">新版 (預期進球對碰)</option>
-                <option value="old">舊版 (攻防相減)</option>
-            </select>
-        </div>
         <div class="setting-row">
             <span class="setting-label">🏟️ 主場優勢 (加成主隊攻防)</span>
             <select id="homeAdvantage">
@@ -168,14 +175,27 @@
     <button class="btn-clear" onclick="clearData()">清除數據</button>
 
     <div id="result">
-        <div class="result-box" id="matchResultBox">
-            <div class="result-title">預測賽果</div>
-            <div class="result-value" id="matchResultValue">-</div>
-            <div class="result-diff" id="matchResultDiff">差距值：-</div>
-            <div class="result-margin" id="matchMarginValue">預計淨勝：-</div>
+        <!-- 雙結果並排 -->
+        <div class="dual-result-container">
+            <!-- 新版 (對碰) -->
+            <div class="result-box" id="newBox">
+                <div class="result-title">新版 (預期對碰)</div>
+                <div class="result-value" id="newValue">-</div>
+                <div class="result-diff" id="newDiff">差距值：-</div>
+                <div class="result-margin" id="newMargin">預計淨勝：-</div>
+            </div>
+
+            <!-- 舊版 (相減) -->
+            <div class="result-box" id="oldBox">
+                <div class="result-title">舊版 (攻防相減)</div>
+                <div class="result-value" id="oldValue">-</div>
+                <div class="result-diff" id="oldDiff">差距值：-</div>
+                <div class="result-margin" id="oldMargin">預計淨勝：-</div>
+            </div>
         </div>
 
-        <div class="result-box" id="goalsResultBox" style="margin-bottom: 20px;">
+        <!-- 大小球 (全寬) -->
+        <div class="result-box full-width" id="goalsResultBox">
             <div class="result-title">預測大小 (2.5球)</div>
             <div class="result-value" id="goalsResultValue">-</div>
             <div class="dual-indicator">
@@ -320,11 +340,8 @@
     }
 
     function updateTeamUI(prefix, att, def, status) {
-        // 進攻橫條 (50-250)
         let attPct = Math.min(Math.max(((att - 0.5) / 2.0) * 100, 0), 100);
-        // 防守橫條 (50-250)
         let defPct = Math.min(Math.max(((def - 0.5) / 2.0) * 100, 0), 100);
-        
         let statPct = Math.min(Math.max((status / 3.0) * 100, 0), 100);
 
         document.getElementById(prefix + 'AttBar').style.width = Math.max(attPct, 1) + '%';
@@ -363,6 +380,25 @@
         else { statusBadge.innerText = "狀態欠佳"; statusBadge.style.color = "#ff4d4d"; statusBadge.style.backgroundColor = "#3b1c1c"; }
 
         return overallPct;
+    }
+
+    // 輔助函數：套用賽果 UI
+    function applyResultUI(prefix, finalResult, diffDisplay, predictedMargin) {
+        const box = document.getElementById(prefix + 'Box');
+        const valueEl = document.getElementById(prefix + 'Value');
+        const diffEl = document.getElementById(prefix + 'Diff');
+        const marginEl = document.getElementById(prefix + 'Margin');
+
+        diffEl.innerText = `差距值：${diffDisplay}`;
+        
+        if (predictedMargin > 0.05) { marginEl.innerText = `預計淨勝：主隊 ${predictedMargin.toFixed(2)} 球`; marginEl.style.color = '#4ade80'; }
+        else if (predictedMargin < -0.05) { marginEl.innerText = `預計淨勝：客隊 ${Math.abs(predictedMargin).toFixed(2)} 球`; marginEl.style.color = '#f87171'; }
+        else { marginEl.innerText = `預計淨勝：0.00 球 (平手)`; marginEl.style.color = '#aaa'; }
+
+        if (finalResult === "home") { valueEl.innerText = "主勝"; valueEl.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; }
+        else if (finalResult === "away") { valueEl.innerText = "客勝"; valueEl.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; }
+        else if (finalResult === "draw") { valueEl.innerText = "和局"; valueEl.style.color = "#ffd700"; box.style.borderColor = "#ffd700"; box.style.backgroundColor = "#332d1a"; }
+        else { valueEl.innerText = "不建議"; valueEl.style.color = "#aaa"; box.style.borderColor = "#555"; box.style.backgroundColor = "#2a2a2a"; }
     }
 
     function calculate() {
@@ -421,7 +457,7 @@
         const hXgaAdjVal = hXga * (1 + hConcAdj) * (1 - hStatusAdj);
         const aXgaAdjVal = aXga * (1 + aConcAdj) * (1 - aStatusAdj);
 
-        // 🔥 UI 評級用的值 (防守基礎公式改回 300 - xGA，即 3.0 - xGA)
+        // UI 評級用的值
         let hAttUI = hXgAdjVal * homeMultiplier;
         let hDefUI = Math.max(0, 3.0 - hXgaAdjVal) * homeMultiplier;
         let aAttUI = aXgAdjVal;
@@ -430,67 +466,56 @@
         const hOverallPct = updateTeamUI('h', hAttUI, hDefUI, hStatus);
         const aOverallPct = updateTeamUI('a', aAttUI, aDefUI, aStatus);
 
-        // 賽果計算邏輯切換
-        const matchLogic = document.getElementById('matchLogic').value;
-        let finalResult = ""; 
-        let predictedMargin = 0;
-        let diff = 0;
-        let diffDisplay = "";
         const gap = hOverallPct - aOverallPct;
 
-        if (matchLogic === 'new') {
-            // 🔥 新版：預期進球對碰
-            const expHomeGoals = ((hXgAdjVal * homeMultiplier) + aXgaAdjVal) / 2;
-            const expAwayGoals = (aXgAdjVal + (hXgaAdjVal / homeMultiplier)) / 2;
-            predictedMargin = expHomeGoals - expAwayGoals;
-            diff = predictedMargin;
-            diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2);
+        // ==========================================
+        // 1. 新版：預期進球對碰
+        // ==========================================
+        const expHomeGoals = ((hXgAdjVal * homeMultiplier) + aXgaAdjVal) / 2;
+        const expAwayGoals = (aXgAdjVal + (hXgaAdjVal / homeMultiplier)) / 2;
+        const marginNew = expHomeGoals - expAwayGoals;
+        let finalResultNew = "";
+        let diffDisplayNew = (marginNew > 0 ? '+' : '') + marginNew.toFixed(2);
 
-            if (gap >= 30) { finalResult = "home"; diffDisplay = `+${diff.toFixed(2)} (實力碾壓)`; }
-            else if (gap <= -30) { finalResult = "away"; diffDisplay = `${diff.toFixed(2)} (實力碾壓)`; }
-            else {
-                if (diff >= 0.15) finalResult = "home"; 
-                else if (diff <= -0.15) finalResult = "away"; 
-                else { finalResult = "draw"; diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2) + ` (膠著)`; }
+        if (gap >= 30) { finalResultNew = "home"; diffDisplayNew = `+${marginNew.toFixed(2)} (實力碾壓)`; }
+        else if (gap <= -30) { finalResultNew = "away"; diffDisplayNew = `${marginNew.toFixed(2)} (實力碾壓)`; }
+        else {
+            if (marginNew >= 0.15) finalResultNew = "home"; 
+            else if (marginNew <= -0.15) finalResultNew = "away"; 
+            else { finalResultNew = "draw"; diffDisplayNew = (marginNew > 0 ? '+' : '') + marginNew.toFixed(2) + ` (膠著)`; }
 
-                if (finalResult === "home") {
-                    if (gap < -15) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
-                    else if (gap <= 15) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
-                } else if (finalResult === "away") {
-                    if (gap > 15) { finalResult = "avoid"; diffDisplay += ` (實力不符)`; }
-                    else if (gap >= -15) { finalResult = "draw"; diffDisplay += ` (差距不足)`; }
-                }
-            }
-        } else {
-            // 🛡️ 舊版：攻防相減
-            const hAdvantage = Math.max(0, hAttUI - aDefUI);
-            const aAdvantage = Math.max(0, aAttUI - hDefUI);
-            predictedMargin = hAdvantage - aAdvantage;
-            diff = predictedMargin;
-            diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2);
-
-            if (diff >= 0.1) {
-                finalResult = "home";
-            } else if (diff <= -0.1) {
-                finalResult = "away";
-            } else {
-                finalResult = "draw";
-                diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2) + ` (膠著)`;
+            if (finalResultNew === "home") {
+                if (gap < -15) { finalResultNew = "avoid"; diffDisplayNew += ` (實力不符)`; }
+                else if (gap <= 15) { finalResultNew = "draw"; diffDisplayNew += ` (差距不足)`; }
+            } else if (finalResultNew === "away") {
+                if (gap > 15) { finalResultNew = "avoid"; diffDisplayNew += ` (實力不符)`; }
+                else if (gap >= -15) { finalResultNew = "draw"; diffDisplayNew += ` (差距不足)`; }
             }
         }
+        applyResultUI('new', finalResultNew, diffDisplayNew, marginNew);
 
-        const resultBox = document.getElementById('matchResultBox');
-        const resultValue = document.getElementById('matchResultValue');
-        const resultDiff = document.getElementById('matchResultDiff');
+        // ==========================================
+        // 2. 舊版：攻防相減
+        // ==========================================
+        const hAdvantage = Math.max(0, hAttUI - aDefUI);
+        const aAdvantage = Math.max(0, aAttUI - hDefUI);
+        const marginOld = hAdvantage - aAdvantage;
+        let finalResultOld = "";
+        let diffDisplayOld = (marginOld > 0 ? '+' : '') + marginOld.toFixed(2);
 
-        resultDiff.innerText = `差距值：${diffDisplay}`;
+        if (marginOld >= 0.1) {
+            finalResultOld = "home";
+        } else if (marginOld <= -0.1) {
+            finalResultOld = "away";
+        } else {
+            finalResultOld = "draw";
+            diffDisplayOld = (marginOld > 0 ? '+' : '') + marginOld.toFixed(2) + ` (膠著)`;
+        }
+        applyResultUI('old', finalResultOld, diffDisplayOld, marginOld);
 
-        const marginEl = document.getElementById('matchMarginValue');
-        if (predictedMargin > 0.05) { marginEl.innerText = `預計淨勝：主隊 ${predictedMargin.toFixed(2)} 球`; marginEl.style.color = '#4ade80'; }
-        else if (predictedMargin < -0.05) { marginEl.innerText = `預計淨勝：客隊 ${Math.abs(predictedMargin).toFixed(2)} 球`; marginEl.style.color = '#f87171'; }
-        else { marginEl.innerText = `預計淨勝：0.00 球 (平手)`; marginEl.style.color = '#aaa'; }
-
-        // 🔥 大小球公式 (防守值同步改為 3.0 - xGA)
+        // ==========================================
+        // 3. 大小球公式
+        // ==========================================
         const homeDefense = 3.00 - aXgaAdjVal;
         const awayDefense = 3.00 - hXgaAdjVal;
         
@@ -519,11 +544,6 @@
         goalsResultValue.style.color = textColor;
         goalsResultBox.style.borderColor = boxColor;
         goalsResultBox.style.backgroundColor = bgColor;
-
-        if (finalResult === "home") { resultValue.innerText = "主勝"; resultValue.style.color = "#4ade80"; resultBox.style.borderColor = "#4ade80"; resultBox.style.backgroundColor = "#1a3324"; }
-        else if (finalResult === "away") { resultValue.innerText = "客勝"; resultValue.style.color = "#f87171"; resultBox.style.borderColor = "#f87171"; resultBox.style.backgroundColor = "#331a1a"; }
-        else if (finalResult === "draw") { resultValue.innerText = "和局"; resultValue.style.color = "#ffd700"; resultBox.style.borderColor = "#ffd700"; resultBox.style.backgroundColor = "#332d1a"; }
-        else { resultValue.innerText = "不建議出手"; resultValue.style.color = "#aaa"; resultBox.style.borderColor = "#555"; resultBox.style.backgroundColor = "#2a2a2a"; }
 
         document.getElementById('result').style.display = 'block';
     }
