@@ -158,7 +158,6 @@
         .bar-defense { background: #6b9fff; }
         .bar-status { background: #fbc02d; }
         .bar-odds { background: #4caf50; }
-        /* 🔥 排名改為螢光藍，無暈光 */
         .bar-rank { background: #00e5ff; }
 
         #imageModal {
@@ -247,9 +246,15 @@
                 </div>
             </div>
 
-            <div class="result-box full-width" id="goalsResultBox">
+            <!-- 預測大小 -->
+            <div class="result-box full-width" id="goalsResultBox" style="margin-bottom: 4px;">
                 <div class="result-title">預測大小 (2.5球) <span id="goalsDiffInline"></span></div>
                 <div class="result-value" id="goalsResultValue">-</div>
+            </div>
+            
+            <!-- 新增：預期總進球數 (純數值顯示) -->
+            <div style="text-align: center; font-size: 12px; color: #aaa; margin-bottom: 8px;">
+                預期總進球數：<span id="totalExpGoals" style="color: #fff; font-weight: bold; font-size: 14px;">-</span>
             </div>
 
             <div id="betScoreBox">
@@ -702,6 +707,7 @@
         }
         applyResultUI('old', finalResultOld, diffDisplayOld);
 
+        // 原本的大小球邏輯 (攻防相減)
         const homeDefense = 3.00 - aXgaAdjVal;
         const awayDefense = 3.00 - hXgaAdjVal;
         
@@ -734,6 +740,10 @@
         goalsResultBox.style.borderColor = boxColor;
         goalsResultBox.style.backgroundColor = bgColor;
         goalsDiffInline.style.color = textColor;
+
+        // 🔥 額外顯示：預期總進球數 (使用新公式)
+        const totalExpectedGoals = expHomeGoals + expAwayGoals;
+        document.getElementById('totalExpGoals').innerText = totalExpectedGoals.toFixed(2);
 
         const betScoreBox = document.getElementById('betScoreBox');
         const betScoreValue = document.getElementById('betScoreValue');
