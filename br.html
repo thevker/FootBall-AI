@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Player Skill Card</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+    * { box-sizing: border-box; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: #121212; color: #e0e0e0; margin: 0; padding: 10px;
+        display: flex; justify-content: center; min-height: 100vh;
+        -webkit-overflow-scrolling: touch;
+    }
+    .container {
+        background: #1a1a1a; padding: 15px; border-radius: 12px;
+        width: 100%; max-width: 500px; position: relative; margin-bottom: 20px;
+    }
+    h2 { text-align: center; color: #ffffff; margin-top: 0; font-size: 20px; margin-bottom: 5px; }
+    p.subtitle {
+        font-size: 12px; color: #aaaaaa; text-align: center;
+        margin-bottom: 15px; letter-spacing: 0.5px;
+    }
+    p.subtitle b { color: #4da6ff; }
+
+    /* ===== Randomize Button ===== */
+    .btn-random {
+        width: 100%; padding: 14px; border: none; border-radius: 10px;
+        background: #3a7bd5; color: #ffffff; font-size: 16px; font-weight: bold;
+        cursor: pointer; margin-bottom: 15px; transition: background 0.2s;
+        letter-spacing: 0.5px;
+    }
+    .btn-random:hover { background: #2a5fa5; }
+    .btn-random:active { transform: scale(0.98); }
+
+    .btn-save {
+        width: 100%; padding: 13px; border: none; border-radius: 10px;
+        background: #28a745; color: #ffffff; font-size: 15px; font-weight: bold;
+        cursor: pointer; margin-top: 15px; transition: background 0.2s;
+    }
+    .btn-save:hover { background: #218838; }
+
+    /* ===== Card ===== */
+    .result-card {
+        background: #222222;
+        border: 1px solid #3a3a3a;
+        border-radius: 24px;
+        padding: 18px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+    }
+
+    /* ===== Player Header ===== */
+    .player-header {
+        display: flex; align-items: center; gap: 14px;
+        margin-bottom: 16px;
+    }
+    .avatar {
+        width: 78px; height: 78px; flex: 0 0 78px;
+        border-radius: 16px; overflow: hidden;
+        border: 2px solid #3d3d3d; background: #2a2a2a;
+        box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+    .avatar svg { display: block; width: 100%; height: 100%; }
+
+    .player-info { flex: 1; min-width: 0; }
+    .player-name {
+        font-size: 21px; font-weight: bold; color: #ffffff;
+        margin-bottom: 9px; letter-spacing: 0.3px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .badge {
+        font-size: 11px; padding: 4px 9px; border-radius: 10px;
+        font-weight: bold; white-space: nowrap;
+    }
+
+    @keyframes glow-gold {
+        0%   { box-shadow: 0 0 2px #FFD700; }
+        50%  { box-shadow: 0 0 9px #FFD700; }
+        100% { box-shadow: 0 0 2px #FFD700; }
+    }
+    .rank-badge {
+        color: #FFD700 !important;
+        background-color: #3b331c !important;
+        border: 1px solid #8a7320;
+        animation: glow-gold 1.6s infinite alternate;
+    }
+    .overall-badge {
+        background-color: #333; border: 1px solid #555; color: #ccc;
+    }
+
+    /* ===== Radar ===== */
+    .radar-container {
+        background: #181818;
+        border: 1px solid #333;
+        border-radius: 18px;
+        padding: 4px;
+        margin-bottom: 18px;
+    }
+    .radar-container svg { display: block; width: 100%; height: auto; }
+
+    /* ===== Skill Bars ===== */
+    .stats-list { padding: 0 2px; }
+
+    .rating-row { display: flex; align-items: center; margin-bottom: 6px; font-size: 11px; }
+    .rating-row:last-child { margin-bottom: 0; }
+
+    .rating-label {
+        width: 88px; font-weight: bold; color: #aaa; text-align: right;
+        padding-right: 6px; font-size: 10px; letter-spacing: 0.5px;
+    }
+    .rating-display {
+        width: 74px; text-align: left; font-weight: bold; font-size: 11px; padding-left: 6px;
+    }
+    .rating-bar-bg {
+        flex: 1; background: #181818; height: 18px; border-radius: 6px;
+        overflow: hidden; position: relative; border: 1px solid #333;
+    }
+    .rating-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+
+    .bar-1 { background: #ff6b6b; }
+    .bar-2 { background: #6b9fff; }
+    .bar-3 { background: #fbc02d; }
+    .bar-4 { background: #4caf50; }
+    .bar-5 { background: #00e5ff; box-shadow: 0 0 8px #00e5ff; }
+
+    /* ===== Modal ===== */
+    #imageModal {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.9); z-index: 9999;
+        justify-content: center; align-items: center; flex-direction: column; padding: 20px;
+    }
+    #imageModal img {
+        max-width: 100%; max-height: 78vh;
+        border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+    }
+    .modal-hint {
+        color: #fff; font-size: 14px; font-weight: bold;
+        margin-top: 15px; text-align: center;
+    }
+    .modal-close {
+        margin-top: 15px; padding: 10px 22px; background: #3a7bd5; color: white;
+        border: none; border-radius: 6px; font-weight: bold; cursor: pointer;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🎵 Player Skill Card</h2>
+    <p class="subtitle">Server : <b>Audition BR</b></p>
+
+    <button class="btn-random" id="btnRandom" onclick="randomize()">🎲 Randomize</button>
+
+    <div class="result-card" id="resultCard">
+
+        <!-- Player header -->
+        <div class="player-header">
+            <div class="avatar">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="100" height="100" fill="#2a2a2a"/>
+                    <circle cx="50" cy="36" r="16" fill="#4a4a4a" stroke="#5c5c5c" stroke-width="2"/>
+                    <path d="M16 98 C16 73 31 62 50 62 C69 62 84 73 84 98 Z" fill="#4a4a4a" stroke="#5c5c5c" stroke-width="2"/>
+                    <text x="50" y="44" text-anchor="middle" font-size="22" font-weight="bold"
+                          fill="#b5b5b5" font-family="Arial, Helvetica, sans-serif">?</text>
+                </svg>
+            </div>
+            <div class="player-info">
+                <div class="player-name">Test Player</div>
+                <div class="badge-row">
+                    <span class="badge rank-badge">🏆 Rank #1</span>
+                    <span class="badge overall-badge" id="overallBadge">Overall: -</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Radar -->
+        <div class="radar-container">
+            <svg id="radar" viewBox="0 0 360 300"></svg>
+        </div>
+
+        <!-- Skill bars -->
+        <div class="stats-list">
+            <div class="rating-row">
+                <div class="rating-label">PERFECT</div>
+                <div class="rating-bar-bg"><div class="rating-bar-fill bar-1" id="bar-perfect"></div></div>
+                <div class="rating-display" id="val-perfect">-</div>
+            </div>
+            <div class="rating-row">
+                <div class="rating-label">COMBO</div>
+                <div class="rating-bar-bg"><div class="rating-bar-fill bar-2" id="bar-combo"></div></div>
+                <div class="rating-display" id="val-combo">-</div>
+            </div>
+            <div class="rating-row">
+                <div class="rating-label">ENDURANCE</div>
+                <div class="rating-bar-bg"><div class="rating-bar-fill bar-3" id="bar-endurance"></div></div>
+                <div class="rating-display" id="val-endurance">-</div>
+            </div>
+            <div class="rating-row">
+                <div class="rating-label">FOCUS</div>
+                <div class="rating-bar-bg"><div class="rating-bar-fill bar-4" id="bar-focus"></div></div>
+                <div class="rating-display" id="val-focus">-</div>
+            </div>
+            <div class="rating-row">
+                <div class="rating-label">RHYTHM</div>
+                <div class="rating-bar-bg"><div class="rating-bar-fill bar-5" id="bar-rhythm"></div></div>
+                <div class="rating-display" id="val-rhythm">-</div>
+            </div>
+        </div>
+
+    </div>
+
+    <button class="btn-save" onclick="saveAsImage()">📸 Save Card</button>
+</div>
+
+<div id="imageModal">
+    <img id="previewImg" src="" alt="Player Card">
+    <div class="modal-hint">👇 Long-press the image above to save it</div>
+    <button class="modal-close" onclick="closeModal()">Close</button>
+</div>
+
+<script>
+    const NS = 'http://www.w3.org/2000/svg';
+
+    const skills = [
+        { key: 'perfect',   label: 'PERFECT',   color: '#ff6b6b' },
+        { key: 'combo',     label: 'COMBO',     color: '#6b9fff' },
+        { key: 'endurance', label: 'ENDURANCE', color: '#fbc02d' },
+        { key: 'focus',     label: 'FOCUS',     color: '#4caf50' },
+        { key: 'rhythm',    label: 'RHYTHM',    color: '#00e5ff' }
+    ];
+
+    let values = { perfect: 0, combo: 0, endurance: 0, focus: 0, rhythm: 0 };
+
+    /* ---------- Grade ---------- */
+    function gradeOf(p) {
+        if (p < 20) return { g: 'E',  c: '#c0c0c0' };
+        if (p < 40) return { g: 'D',  c: '#cd7f32' };
+        if (p < 60) return { g: 'C',  c: '#ff4d4d' };
+        if (p < 75) return { g: 'B',  c: '#4ade80' };
+        if (p < 85) return { g: 'A',  c: '#4da6ff' };
+        if (p < 95) return { g: 'S',  c: '#FFD700' };
+        return { g: 'EX', c: '#9b59b6' };
+    }
+
+    /* ---------- Random ---------- */
+    function randomize() {
+        skills.forEach(s => {
+            values[s.key] = Math.round(Math.random() * 1000) / 10;
+        });
+        render();
+    }
+
+    /* ---------- Render ---------- */
+    function render() {
+        let total = 0;
+
+        skills.forEach(s => {
+            const v = values[s.key];
+            total += v;
+            const g = gradeOf(v);
+
+            const bar = document.getElementById('bar-' + s.key);
+            bar.style.width = Math.max(v, 1.5) + '%';
+
+            const val = document.getElementById('val-' + s.key);
+            val.textContent = g.g + ' (' + v.toFixed(1) + ')';
+            val.style.color = g.c;
+        });
+
+        const avg = total / skills.length;
+        const og = gradeOf(avg);
+        const badge = document.getElementById('overallBadge');
+        badge.textContent = 'Overall: ' + og.g + ' (' + avg.toFixed(1) + ')';
+        badge.style.color = og.c;
+        badge.style.borderColor = og.c;
+
+        drawRadar();
+    }
+
+    /* ---------- Radar ---------- */
+    function drawRadar() {
+        const svg = document.getElementById('radar');
+        svg.innerHTML = '';
+
+        const cx = 180, cy = 150, maxR = 95;
+        const n = skills.length;
+        const start = -Math.PI / 2;
+        const step = (Math.PI * 2) / n;
+        const labelR = maxR + 20;
+
+        for (let l = 1; l <= 4; l++) {
+            const r = (maxR / 4) * l;
+            const pts = [];
+            for (let i = 0; i < n; i++) {
+                const a = start + i * step;
+                pts.push((cx + r * Math.cos(a)) + ',' + (cy + r * Math.sin(a)));
+            }
+            const poly = document.createElementNS(NS, 'polygon');
+            poly.setAttribute('points', pts.join(' '));
+            poly.setAttribute('fill', 'none');
+            poly.setAttribute('stroke', l === 4 ? '#4a4a4a' : '#333333');
+            poly.setAttribute('stroke-width', '1');
+            svg.appendChild(poly);
+        }
+
+        for (let i = 0; i < n; i++) {
+            const a = start + i * step;
+            const line = document.createElementNS(NS, 'line');
+            line.setAttribute('x1', cx);
+            line.setAttribute('y1', cy);
+            line.setAttribute('x2', cx + maxR * Math.cos(a));
+            line.setAttribute('y2', cy + maxR * Math.sin(a));
+            line.setAttribute('stroke', '#333333');
+            line.setAttribute('stroke-width', '1');
+            svg.appendChild(line);
+        }
+
+        const pts = [];
+        for (let i = 0; i < n; i++) {
+            const a = start + i * step;
+            const r = maxR * (Math.max(values[skills[i].key], 2) / 100);
+            pts.push((cx + r * Math.cos(a)) + ',' + (cy + r * Math.sin(a)));
+        }
+        const dataPoly = document.createElementNS(NS, 'polygon');
+        dataPoly.setAttribute('points', pts.join(' '));
+        dataPoly.setAttribute('fill', 'rgba(77,166,255,0.22)');
+        dataPoly.setAttribute('stroke', '#4da6ff');
+        dataPoly.setAttribute('stroke-width', '2');
+        dataPoly.setAttribute('stroke-linejoin', 'round');
+        svg.appendChild(dataPoly);
+
+        for (let i = 0; i < n; i++) {
+            const a = start + i * step;
+            const cosv = Math.cos(a);
+            let anchor = 'middle';
+            if (cosv > 0.2) anchor = 'start';
+            else if (cosv < -0.2) anchor = 'end';
+
+            const t = document.createElementNS(NS, 'text');
+            t.setAttribute('x', cx + labelR * Math.cos(a));
+            t.setAttribute('y', cy + labelR * Math.sin(a));
+            t.setAttribute('fill', skills[i].color);
+            t.setAttribute('font-size', '13');
+            t.setAttribute('font-weight', 'bold');
+            t.setAttribute('text-anchor', anchor);
+            t.setAttribute('dominant-baseline', 'middle');
+            t.setAttribute('font-family', 'Arial, Helvetica, sans-serif');
+            t.textContent = skills[i].label;
+            svg.appendChild(t);
+        }
+    }
+
+    /* ---------- Save as image ---------- */
+    function saveAsImage() {
+        const target = document.getElementById('resultCard');
+        const btns = document.querySelectorAll('.btn-save, .btn-random');
+        btns.forEach(b => b.disabled = true);
+
+        setTimeout(() => {
+            html2canvas(target, {
+                backgroundColor: '#222222',
+                scale: 2,
+                useCORS: true
+            }).then(canvas => {
+                document.getElementById('previewImg').src = canvas.toDataURL('image/png');
+                document.getElementById('imageModal').style.display = 'flex';
+                btns.forEach(b => b.disabled = false);
+            }).catch(err => {
+                console.error('Screenshot failed:', err);
+                alert('Failed to generate image, please try again.');
+                btns.forEach(b => b.disabled = false);
+            });
+        }, 100);
+    }
+
+    function closeModal() {
+        document.getElementById('imageModal').style.display = 'none';
+    }
+
+    /* ---------- Init ---------- */
+    randomize();
+</script>
+</body>
+</html>
