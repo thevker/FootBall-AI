@@ -111,7 +111,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">雙公式切換版 | 狀態/得分/失球 加權</p>
+    <p class="subtitle">雙公式切換版 | 防守 300-xGA</p>
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
@@ -320,8 +320,11 @@
     }
 
     function updateTeamUI(prefix, att, def, status) {
+        // 進攻橫條 (50-250)
         let attPct = Math.min(Math.max(((att - 0.5) / 2.0) * 100, 0), 100);
-        let defPct = Math.min(Math.max((def / 2.0) * 100, 0), 100);
+        // 🔥 防守橫條改回 50-250 量程 (即 0.5 - 2.5)
+        let defPct = Math.min(Math.max(((def - 0.5) / 2.0) * 100, 0), 100);
+        
         let statPct = Math.min(Math.max((status / 3.0) * 100, 0), 100);
 
         document.getElementById(prefix + 'AttBar').style.width = Math.max(attPct, 1) + '%';
@@ -418,11 +421,11 @@
         const hXgaAdjVal = hXga * (1 + hConcAdj) * (1 - hStatusAdj);
         const aXgaAdjVal = aXga * (1 + aConcAdj) * (1 - aStatusAdj);
 
-        // UI 評級用的值
+        // 🔥 UI 評級用的值 (防守基礎公式改回 300 - xGA，即 3.0 - xGA)
         let hAttUI = hXgAdjVal * homeMultiplier;
-        let hDefUI = Math.max(0, 2.5 - hXgaAdjVal) * homeMultiplier;
+        let hDefUI = Math.max(0, 3.0 - hXgaAdjVal) * homeMultiplier;
         let aAttUI = aXgAdjVal;
-        let aDefUI = Math.max(0, 2.5 - aXgaAdjVal);
+        let aDefUI = Math.max(0, 3.0 - aXgaAdjVal);
 
         const hOverallPct = updateTeamUI('h', hAttUI, hDefUI, hStatus);
         const aOverallPct = updateTeamUI('a', aAttUI, aDefUI, aStatus);
@@ -459,7 +462,7 @@
                 }
             }
         } else {
-            // 🛡️ 舊版：攻防相減 (純粹看優勢差距)
+            // 🛡️ 舊版：攻防相減
             const hAdvantage = Math.max(0, hAttUI - aDefUI);
             const aAdvantage = Math.max(0, aAttUI - hDefUI);
             predictedMargin = hAdvantage - aAdvantage;
@@ -487,9 +490,9 @@
         else if (predictedMargin < -0.05) { marginEl.innerText = `預計淨勝：客隊 ${Math.abs(predictedMargin).toFixed(2)} 球`; marginEl.style.color = '#f87171'; }
         else { marginEl.innerText = `預計淨勝：0.00 球 (平手)`; marginEl.style.color = '#aaa'; }
 
-        // 大小球公式 (維持不變，使用攻防相減)
-        const homeDefense = 2.50 - aXgaAdjVal;
-        const awayDefense = 2.50 - hXgaAdjVal;
+        // 🔥 大小球公式 (防守值同步改為 3.0 - xGA)
+        const homeDefense = 3.00 - aXgaAdjVal;
+        const awayDefense = 3.00 - hXgaAdjVal;
         
         const hAdv = Math.max(0, hXgAdjVal - homeDefense);
         const aAdv = Math.max(0, aXgAdjVal - awayDefense);
