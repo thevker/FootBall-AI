@@ -124,7 +124,7 @@
     .bar-2 { background: #6b9fff; }
     .bar-3 { background: #fbc02d; }
     .bar-4 { background: #4caf50; }
-    .bar-5 { background: #00e5ff; } /* 已移除 box-shadow 螢光效果 */
+    .bar-5 { background: #00e5ff; }
 
     /* ===== Modal ===== */
     #imageModal {
@@ -291,6 +291,7 @@
         const step = (Math.PI * 2) / n;
         const labelR = maxR + 20;
 
+        // 背景網格線
         for (let l = 1; l <= 4; l++) {
             const r = (maxR / 4) * l;
             const pts = [];
@@ -306,6 +307,7 @@
             svg.appendChild(poly);
         }
 
+        // 軸線
         for (let i = 0; i < n; i++) {
             const a = start + i * step;
             const line = document.createElementNS(NS, 'line');
@@ -318,6 +320,7 @@
             svg.appendChild(line);
         }
 
+        // 數據多邊形（恢復半透明填充，無圓點）
         const pts = [];
         for (let i = 0; i < n; i++) {
             const a = start + i * step;
@@ -326,14 +329,13 @@
         }
         const dataPoly = document.createElementNS(NS, 'polygon');
         dataPoly.setAttribute('points', pts.join(' '));
-        // 核心修改：純線條，無填充，無圓角
-        dataPoly.setAttribute('fill', 'none');
-        dataPoly.setAttribute('stroke', '#4da6ff');
+        dataPoly.setAttribute('fill', 'rgba(77,166,255,0.22)'); // 恢復半透明背景
+        dataPoly.setAttribute('stroke', '#4da6ff');             // 藍色邊框
         dataPoly.setAttribute('stroke-width', '2.5');
-        dataPoly.setAttribute('stroke-linejoin', 'miter');
-        dataPoly.setAttribute('stroke-linecap', 'butt');
+        dataPoly.setAttribute('stroke-linejoin', 'miter');      // 尖角
         svg.appendChild(dataPoly);
 
+        // 文字標籤
         for (let i = 0; i < n; i++) {
             const a = start + i * step;
             const cosv = Math.cos(a);
