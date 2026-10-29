@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (純粹版)</title>
+    <title>xG 賽事分析器 (雙公式切換版)</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -31,7 +31,7 @@
             background: #252525; padding: 12px 15px; border-radius: 8px; border: 1px solid #333;
         }
         .setting-label { font-size: 14px; font-weight: bold; color: #ddd; }
-        .setting-row select { width: 180px; padding: 8px; font-size: 14px; cursor: pointer; background-color: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 6px; outline: none; }
+        .setting-row select { width: 160px; padding: 8px; font-size: 14px; cursor: pointer; background-color: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 6px; outline: none; }
         .setting-row select:focus { border-color: #4da6ff; }
 
         .input-section { margin-bottom: 20px; }
@@ -111,7 +111,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">純粹版 | 無加成計算</p>
+    <p class="subtitle">雙公式切換版 | 防守 300-xGA</p>
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
@@ -123,17 +123,28 @@
                 <option value="old">舊版 (攻防相減)</option>
             </select>
         </div>
+        <div class="setting-row">
+            <span class="setting-label">🏟️ 主場優勢 (加成主隊攻防)</span>
+            <select id="homeAdvantage">
+                <option value="0">0% (預設關閉)</option>
+                <option value="0.10">10%</option>
+            </select>
+        </div>
     </div>
 
     <div class="input-section">
         <div class="section-header home">🏠 主隊數據</div>
         <div class="input-row">
             <div class="input-box"><label>狀態 (0-3)</label><input type="text" inputmode="decimal" id="homeStatus" placeholder="例：1.50" oninput="limitInput(this)" onblur="formatInput(this)"></div>
-            <div class="input-box"><label>主隊 xG</label><input type="text" inputmode="decimal" id="homeXg" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+            <div class="input-box"></div>
         </div>
         <div class="input-row">
+            <div class="input-box"><label>得分</label><input type="text" inputmode="decimal" id="homeGoals" placeholder="例：1.50" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+            <div class="input-box"><label>失球</label><input type="text" inputmode="decimal" id="homeConceded" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+        </div>
+        <div class="input-row">
+            <div class="input-box"><label>主隊 xG</label><input type="text" inputmode="decimal" id="homeXg" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
             <div class="input-box"><label>主隊 xGA</label><input type="text" inputmode="decimal" id="homeXga" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
-            <div class="input-box"></div> <!-- 佔位用 -->
         </div>
     </div>
 
@@ -141,11 +152,15 @@
         <div class="section-header away">✈️ 客隊數據</div>
         <div class="input-row">
             <div class="input-box"><label>狀態 (0-3)</label><input type="text" inputmode="decimal" id="awayStatus" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
-            <div class="input-box"><label>客隊 xG</label><input type="text" inputmode="decimal" id="awayXg" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+            <div class="input-box"></div>
         </div>
         <div class="input-row">
+            <div class="input-box"><label>得分</label><input type="text" inputmode="decimal" id="awayGoals" placeholder="例：0.50" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+            <div class="input-box"><label>失球</label><input type="text" inputmode="decimal" id="awayConceded" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+        </div>
+        <div class="input-row">
+            <div class="input-box"><label>客隊 xG</label><input type="text" inputmode="decimal" id="awayXg" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
             <div class="input-box"><label>客隊 xGA</label><input type="text" inputmode="decimal" id="awayXga" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
-            <div class="input-box"></div> <!-- 佔位用 -->
         </div>
     </div>
 
@@ -236,7 +251,8 @@
     }
 
     function clearData() {
-        const ids = ['homeStatus', 'homeXg', 'homeXga', 'awayStatus', 'awayXg', 'awayXga'];
+        const ids = ['homeStatus', 'homeXg', 'homeXga', 'homeGoals', 'homeConceded',
+                     'awayStatus', 'awayXg', 'awayXga', 'awayGoals', 'awayConceded'];
         ids.forEach(id => document.getElementById(id).value = '');
         document.getElementById('result').style.display = 'none';
         document.getElementById('errorMessage').style.display = 'none';
@@ -308,7 +324,7 @@
         let attPct = Math.min(Math.max(((att - 0.5) / 2.0) * 100, 0), 100);
         // 防守橫條 (50-250)
         let defPct = Math.min(Math.max(((def - 0.5) / 2.0) * 100, 0), 100);
-        // 狀態橫條 (0-3)
+        
         let statPct = Math.min(Math.max((status / 3.0) * 100, 0), 100);
 
         document.getElementById(prefix + 'AttBar').style.width = Math.max(attPct, 1) + '%';
@@ -353,12 +369,17 @@
         const hXgStr = document.getElementById('homeXg').value;
         const hXgaStr = document.getElementById('homeXga').value;
         const hStatusStr = document.getElementById('homeStatus').value;
-        
+        const hGoalsStr = document.getElementById('homeGoals').value;
+        const hConcededStr = document.getElementById('homeConceded').value;
+
         const aXgStr = document.getElementById('awayXg').value;
         const aXgaStr = document.getElementById('awayXga').value;
         const aStatusStr = document.getElementById('awayStatus').value;
+        const aGoalsStr = document.getElementById('awayGoals').value;
+        const aConcededStr = document.getElementById('awayConceded').value;
 
-        if (!hXgStr || !hXgaStr || !hStatusStr || !aXgStr || !aXgaStr || !aStatusStr) {
+        if (!hXgStr || !hXgaStr || !hStatusStr || !hGoalsStr || !hConcededStr ||
+            !aXgStr || !aXgaStr || !aStatusStr || !aGoalsStr || !aConcededStr) {
             document.getElementById('errorMessage').style.display = 'block';
             document.getElementById('result').style.display = 'none';
             return;
@@ -367,12 +388,44 @@
 
         const hXg = parseFloat(hXgStr) || 0, hXga = parseFloat(hXgaStr) || 0, hStatus = parseFloat(hStatusStr) || 0;
         const aXg = parseFloat(aXgStr) || 0, aXga = parseFloat(aXgaStr) || 0, aStatus = parseFloat(aStatusStr) || 0;
+        const hGoals = parseFloat(hGoalsStr) || 0, hConceded = parseFloat(hConcededStr) || 0;
+        const aGoals = parseFloat(aGoalsStr) || 0, aConceded = parseFloat(aConcededStr) || 0;
+        
+        const homeAdv = parseFloat(document.getElementById('homeAdvantage').value) || 0;
+        const homeMultiplier = 1 + homeAdv;
 
-        // 🔥 UI 評級用的值 (防守基礎公式為 300 - xGA，即 3.0 - xGA)
-        let hAttUI = hXg;
-        let hDefUI = Math.max(0, 3.0 - hXga);
-        let aAttUI = aXg;
-        let aDefUI = Math.max(0, 3.0 - aXga);
+        // 三維加權調整
+        let totalStatus = hStatus + aStatus;
+        let hStatusAdj = 0, aStatusAdj = 0;
+        if (totalStatus > 0) {
+            hStatusAdj = (hStatus / totalStatus) - 0.5;
+            aStatusAdj = (aStatus / totalStatus) - 0.5;
+        }
+
+        let totalGoals = hGoals + aGoals;
+        let hGoalAdj = 0, aGoalAdj = 0;
+        if (totalGoals > 0) {
+            hGoalAdj = (hGoals / totalGoals) - 0.5;
+            aGoalAdj = (aGoals / totalGoals) - 0.5;
+        }
+
+        let totalConceded = hConceded + aConceded;
+        let hConcAdj = 0, aConcAdj = 0;
+        if (totalConceded > 0) {
+            hConcAdj = (hConceded / totalConceded) - 0.5;
+            aConcAdj = (aConceded / totalConceded) - 0.5;
+        }
+
+        const hXgAdjVal = hXg * (1 + hGoalAdj) * (1 + hStatusAdj);
+        const aXgAdjVal = aXg * (1 + aGoalAdj) * (1 + aStatusAdj);
+        const hXgaAdjVal = hXga * (1 + hConcAdj) * (1 - hStatusAdj);
+        const aXgaAdjVal = aXga * (1 + aConcAdj) * (1 - aStatusAdj);
+
+        // 🔥 UI 評級用的值 (防守基礎公式改回 300 - xGA，即 3.0 - xGA)
+        let hAttUI = hXgAdjVal * homeMultiplier;
+        let hDefUI = Math.max(0, 3.0 - hXgaAdjVal) * homeMultiplier;
+        let aAttUI = aXgAdjVal;
+        let aDefUI = Math.max(0, 3.0 - aXgaAdjVal);
 
         const hOverallPct = updateTeamUI('h', hAttUI, hDefUI, hStatus);
         const aOverallPct = updateTeamUI('a', aAttUI, aDefUI, aStatus);
@@ -386,9 +439,9 @@
         const gap = hOverallPct - aOverallPct;
 
         if (matchLogic === 'new') {
-            // 新版：預期進球對碰
-            const expHomeGoals = (hXg + aXga) / 2;
-            const expAwayGoals = (aXg + hXga) / 2;
+            // 🔥 新版：預期進球對碰
+            const expHomeGoals = ((hXgAdjVal * homeMultiplier) + aXgaAdjVal) / 2;
+            const expAwayGoals = (aXgAdjVal + (hXgaAdjVal / homeMultiplier)) / 2;
             predictedMargin = expHomeGoals - expAwayGoals;
             diff = predictedMargin;
             diffDisplay = (diff > 0 ? '+' : '') + diff.toFixed(2);
@@ -409,7 +462,7 @@
                 }
             }
         } else {
-            // 舊版：攻防相減
+            // 🛡️ 舊版：攻防相減
             const hAdvantage = Math.max(0, hAttUI - aDefUI);
             const aAdvantage = Math.max(0, aAttUI - hDefUI);
             predictedMargin = hAdvantage - aAdvantage;
@@ -437,12 +490,12 @@
         else if (predictedMargin < -0.05) { marginEl.innerText = `預計淨勝：客隊 ${Math.abs(predictedMargin).toFixed(2)} 球`; marginEl.style.color = '#f87171'; }
         else { marginEl.innerText = `預計淨勝：0.00 球 (平手)`; marginEl.style.color = '#aaa'; }
 
-        // 大小球公式 (防守值同步為 3.0 - xGA)
-        const homeDefense = 3.00 - aXga;
-        const awayDefense = 3.00 - hXga;
+        // 🔥 大小球公式 (防守值同步改為 3.0 - xGA)
+        const homeDefense = 3.00 - aXgaAdjVal;
+        const awayDefense = 3.00 - hXgaAdjVal;
         
-        const hAdv = Math.max(0, hXg - homeDefense);
-        const aAdv = Math.max(0, aXg - awayDefense);
+        const hAdv = Math.max(0, hXgAdjVal - homeDefense);
+        const aAdv = Math.max(0, aXgAdjVal - awayDefense);
         
         const goalsDiff = hAdv + aAdv;
 
