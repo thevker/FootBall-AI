@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (總進球優化版)</title>
+    <title>xG 賽事分析器 (賠率加成版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * { box-sizing: border-box; }
@@ -25,6 +25,16 @@
             border: 1px solid #7a3a3a; animation: shake 0.4s;
         }
         @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
+
+        /* 設定區 */
+        .settings-group { margin-bottom: 15px; }
+        .setting-row {
+            display: flex; align-items: center; justify-content: space-between; 
+            background: #252525; padding: 10px 15px; border-radius: 8px; border: 1px solid #333;
+        }
+        .setting-label { font-size: 13px; font-weight: bold; color: #ddd; }
+        .setting-row select { width: 160px; padding: 6px; font-size: 13px; cursor: pointer; background-color: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 6px; outline: none; }
+        .setting-row select:focus { border-color: #4da6ff; }
 
         #inputSection { transition: opacity 0.3s; }
         .input-section { margin-bottom: 15px; }
@@ -184,6 +194,17 @@
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
     <div id="inputSection">
+        <!-- 賠率加成設定 -->
+        <div class="settings-group">
+            <div class="setting-row">
+                <span class="setting-label">📈 賠率加成 (影響攻防)</span>
+                <select id="oddsBonus">
+                    <option value="off">關閉 (預設)</option>
+                    <option value="on">開啟</option>
+                </select>
+            </div>
+        </div>
+
         <div class="input-section">
             <div class="section-header home">🏠 主隊數據</div>
             <div class="input-row">
@@ -405,6 +426,7 @@
         document.getElementById('errorMessage').style.display = 'none';
         document.getElementById('radar-home').innerHTML = '';
         document.getElementById('radar-away').innerHTML = '';
+        // 不重置賠率加成設定
         showInput();
     }
 
@@ -605,6 +627,7 @@
         let hOddsPct = totalOdds > 0 ? (aOdds / totalOdds) * 100 : 50;
         let aOddsPct = totalOdds > 0 ? (hOdds / totalOdds) * 100 : 50;
 
+        // 更新標籤
         const hOddsBadge = document.getElementById('hOddsBadge');
         const aOddsBadge = document.getElementById('aOddsBadge');
         hOddsBadge.style.display = 'inline-block';
@@ -643,6 +666,7 @@
             aRankBadge.style.display = 'none';
         }
 
+        // 1. 得分加權
         let totalGoals = hGoals + aGoals;
         let hGoalAdj = 0, aGoalAdj = 0;
         if (totalGoals > 0) {
@@ -650,6 +674,7 @@
             aGoalAdj = (aGoals / totalGoals) - 0.5;
         }
 
+        // 2. 失球加權
         let totalConceded = hConceded + aConceded;
         let hConcAdj = 0, aConcAdj = 0;
         if (totalConceded > 0) {
@@ -657,10 +682,25 @@
             aConcAdj = (aConceded / totalConceded) - 0.5;
         }
 
-        const hXgAdjVal = hXg * (1 + hGoalAdj);
-        const aXgAdjVal = aXg * (1 + aGoalAdj);
-        const hXgaAdjVal = hXga * (1 + hConcAdj);
-        const aXgaAdjVal = aXga * (1 + aConcAdj);
+        // 3. 計算原始調整值
+        let hXgAdjVal = hXg * (1 + hGoalAdj);
+        let aXgAdjVal = aXg * (1 + aGoalAdj);
+        let hXgaAdjVal = hXga * (1 + hConcAdj);
+        let aXgaAdjVal = aXga * (1 + aConcAdj);
+
+        // 4. 賠率加成 (若開啟)
+        const isOddsBonusOn = document.getElementById('oddsBonus').value === 'on';
+        if (isOddsBonusOn) {
+            // 賠率百分比 - 50% 就是加成幅度
+            let hOddsAdj = (hOddsPct / 100) - 0.5;
+            let aOddsAdj = (aOddsPct / 100) - 0.5;
+            
+            // 進攻乘以 (1 + 加成)，防守 xGA 乘以 (1 - 加成)
+            hXgAdjVal = hXgAdjVal * (1 + hOddsAdj);
+            hXgaAdjVal = hXgaAdjVal * (1 - hOddsAdj);
+            aXgAdjVal = aXgAdjVal * (1 + aOddsAdj);
+            aXgaAdjVal = aXgaAdjVal * (1 - aOddsAdj);
+        }
 
         let hAttUI = hXgAdjVal;
         let hDefUI = Math.max(0, 3.0 - hXgaAdjVal);
@@ -672,6 +712,7 @@
 
         const gap = hOverallPct - aOverallPct;
 
+        // --- 賽果預測 ---
         const expHomeGoals = (hXgAdjVal + aXgaAdjVal) / 2;
         const expAwayGoals = (aXgAdjVal + hXgaAdjVal) / 2;
         const marginNew = expHomeGoals - expAwayGoals;
@@ -707,7 +748,7 @@
         }
         applyResultUI('old', finalResultOld, diffDisplayOld);
 
-        // 🔥 直接使用「預期總進球數」判定大小球
+        // --- 大小球預測 ---
         const totalExpectedGoals = expHomeGoals + expAwayGoals;
         document.getElementById('totalExpGoals').innerText = totalExpectedGoals.toFixed(2);
 
@@ -717,10 +758,11 @@
         let recommendation = "", boxColor = "", bgColor = "", textColor = "";
         let isOver = false, isUnder = false;
 
-        if (totalExpectedGoals >= 2.6) {
+        // 門檻改為：高於 3.0 大，低於 2.0 小
+        if (totalExpectedGoals >= 3.0) {
             recommendation = "建議 2.5 入球大"; textColor = "#f87171"; boxColor = "#f87171"; bgColor = "#331a1a";
             isOver = true;
-        } else if (totalExpectedGoals <= 2.4) {
+        } else if (totalExpectedGoals <= 2.0) {
             recommendation = "建議 2.5 入球細"; textColor = "#8cb8ff"; boxColor = "#8cb8ff"; bgColor = "#1a2633";
             isUnder = true;
         } else {
@@ -732,7 +774,7 @@
         goalsResultBox.style.borderColor = boxColor;
         goalsResultBox.style.backgroundColor = bgColor;
 
-        // 波膽推薦邏輯
+        // --- 波膽推薦 ---
         const betScoreBox = document.getElementById('betScoreBox');
         const betScoreValue = document.getElementById('betScoreValue');
         const betScoreTitle = document.getElementById('betScoreTitle');
