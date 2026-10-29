@@ -450,7 +450,7 @@
         if (pct < 75) return { grade: 'B', color: '#4ade80' };
         if (pct < 85) return { grade: 'A', color: '#4da6ff' };
         if (pct < 95) return { grade: 'S', color: '#FFD700' };
-        return { grade: 'EX', color: '#9b59b6' };
+        return { grade: 'X', color: '#9b59b6' };
     }
 
     function drawRadar(svgId, data, labels, color, fillColor) {
@@ -654,7 +654,6 @@
         let hOddsPct = totalOdds > 0 ? (aOdds / totalOdds) * 100 : 50;
         let aOddsPct = totalOdds > 0 ? (hOdds / totalOdds) * 100 : 50;
 
-        // 更新標籤
         const hOddsBadge = document.getElementById('hOddsBadge');
         const aOddsBadge = document.getElementById('aOddsBadge');
         hOddsBadge.style.display = 'inline-block';
@@ -693,7 +692,6 @@
             aRankBadge.style.display = 'none';
         }
 
-        // 1. 得分加權
         let totalGoals = hGoals + aGoals;
         let hGoalAdj = 0, aGoalAdj = 0;
         if (totalGoals > 0) {
@@ -701,7 +699,6 @@
             aGoalAdj = (aGoals / totalGoals) - 0.5;
         }
 
-        // 2. 失球加權
         let totalConceded = hConceded + aConceded;
         let hConcAdj = 0, aConcAdj = 0;
         if (totalConceded > 0) {
@@ -709,13 +706,11 @@
             aConcAdj = (aConceded / totalConceded) - 0.5;
         }
 
-        // 基礎調整值 (無賠率加成)
         const hXgAdjVal = hXg * (1 + hGoalAdj);
         const aXgAdjVal = aXg * (1 + aGoalAdj);
         const hXgaAdjVal = hXga * (1 + hConcAdj);
         const aXgaAdjVal = aXga * (1 + aConcAdj);
 
-        // 賠率加成的調整值
         let hOddsAdj = (hOddsPct / 100) - 0.5;
         let aOddsAdj = (aOddsPct / 100) - 0.5;
         
@@ -724,7 +719,6 @@
         const aXgAdj_with = aXgAdjVal * (1 + aOddsAdj);
         const aXgaAdj_with = aXgaAdjVal * (1 - aOddsAdj);
 
-        // UI 繪圖用有賠率的版本
         let hAttUI = hXgAdj_with;
         let hDefUI = Math.max(0, 3.0 - hXgaAdj_with);
         let aAttUI = aXgAdj_with;
@@ -735,22 +729,18 @@
 
         const gap = hOverallPct - aOverallPct;
 
-        // ===== 計算四種賽果 =====
-        // 1. 新版無賠
         const expHome_no = (hXgAdjVal + aXgaAdjVal) / 2;
         const expAway_no = (aXgAdjVal + hXgaAdjVal) / 2;
         const marginNew_no = expHome_no - expAway_no;
         const resNew_no = getMatchResult(marginNew_no, gap);
         applyMiniUI('new_no', resNew_no, marginNew_no.toFixed(2));
 
-        // 2. 新版有賠
         const expHome_with = (hXgAdj_with + aXgaAdj_with) / 2;
         const expAway_with = (aXgAdj_with + hXgaAdj_with) / 2;
         const marginNew_with = expHome_with - expAway_with;
         const resNew_with = getMatchResult(marginNew_with, gap);
         applyMiniUI('new_with', resNew_with, marginNew_with.toFixed(2));
 
-        // 3. 舊版無賠
         const hAdv_no = Math.max(0, hXgAdjVal - (3.0 - aXgaAdjVal));
         const aAdv_no = Math.max(0, aXgAdjVal - (3.0 - hXgaAdjVal));
         const marginOld_no = hAdv_no - aAdv_no;
@@ -759,7 +749,6 @@
         else if (marginOld_no <= -0.5) resOld_no = "away";
         applyMiniUI('old_no', resOld_no, marginOld_no.toFixed(2));
 
-        // 4. 舊版有賠
         const hAdv_with = Math.max(0, hXgAdj_with - (3.0 - aXgaAdj_with));
         const aAdv_with = Math.max(0, aXgAdj_with - (3.0 - hXgaAdj_with));
         const marginOld_with = hAdv_with - aAdv_with;
@@ -768,7 +757,6 @@
         else if (marginOld_with <= -0.5) resOld_with = "away";
         applyMiniUI('old_with', resOld_with, marginOld_with.toFixed(2));
 
-        // ===== 終極賽果判定 =====
         const ultimateMatchBox = document.getElementById('ultimateMatchBox');
         const ultimateMatchValue = document.getElementById('ultimateMatchValue');
         
@@ -788,7 +776,6 @@
             ultimateMatchValue.style.color = '#aaa';
         }
 
-        // ===== 大小球判定 =====
         const totalExp_no = expHome_no + expAway_no;
         const totalExp_with = expHome_with + expAway_with;
         
@@ -820,7 +807,6 @@
             goalsValue.style.color = '#aaa';
         }
 
-        // ===== 波膽推薦 =====
         const betBox = document.getElementById('betBox');
         const betValue = document.getElementById('betValue');
 
