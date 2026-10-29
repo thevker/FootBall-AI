@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (極致緊湊優化版)</title>
+    <title>xG 賽事分析器 (雙卡片分離顯示版)</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -12,9 +12,10 @@
             display: flex; justify-content: center; min-height: 100vh; -webkit-overflow-scrolling: touch;
         }
         .container { 
-            background: #1e1e1e; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+            background: #1a1a1a; padding: 15px; border-radius: 12px; 
             width: 100%; max-width: 500px; position: relative; margin-bottom: 20px;
         }
+        /* 標題永遠在最上方 */
         h2 { text-align: center; color: #ffffff; margin-top: 0; font-size: 20px; margin-bottom: 5px; }
         p.subtitle { font-size: 12px; color: #aaaaaa; text-align: center; margin-bottom: 15px; }
         
@@ -51,16 +52,31 @@
         /* ================= 結果區塊 ================= */
         #result { display: none; }
         
-        /* 按鈕與預測拉開間距 */
-        .btn-return { 
-            background:#444; color:#fff; margin-bottom:15px; padding:8px; font-size:13px; 
-            border-radius:6px; border:none; width:100%; cursor:pointer; 
+        /* 橢圓形卡片共用樣式 */
+        .result-card {
+            background: #222222;
+            border: 1px solid #3a3a3a;
+            border-radius: 24px;
+            padding: 15px 18px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        /* 預測結果 - 高度緊湊 */
+        /* 返回按鈕專用卡片 */
+        .btn-card {
+            padding: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .btn-return { 
+            background:#444; color:#fff; padding:10px; font-size:14px; 
+            border-radius:14px; border:none; width:100%; cursor:pointer; 
+        }
+
+        /* 預測結果 */
         .dual-result-container { display: flex; gap: 8px; margin-bottom: 8px; }
         .result-box { 
-            flex: 1; text-align: center; padding: 6px 5px; border-radius: 8px; border: 2px dashed;
+            flex: 1; text-align: center; padding: 6px 5px; border-radius: 12px; border: 2px dashed;
             display: flex; flex-direction: column; justify-content: center;
         }
         .result-title { 
@@ -70,82 +86,58 @@
         .result-title span { font-size: 11px; color: #fff; }
         .result-value { font-size: 20px; font-weight: bold; margin-bottom: 0; }
         
-        .result-box.full-width { flex: none; width: 100%; padding: 8px; margin-bottom: 8px; }
+        .result-box.full-width { flex: none; width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 12px; }
         .result-box.full-width .result-title { font-size: 13px; }
         .result-box.full-width .result-value { font-size: 22px; }
         
-        .dual-indicator { display: flex; justify-content: center; margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 11px; color: #ccc; gap: 15px; }
-        .dual-item { text-align: center; }
-        .dual-val { font-weight: bold; font-size: 13px; color: #fff; margin-top: 0; }
-
-        /* 波膽推薦區塊 */
+        /* 波膽推薦 */
         #betScoreBox {
-            display: none; text-align: center; padding: 8px; border-radius: 8px; 
-            margin-bottom: 8px; border: 2px solid #555; background-color: #222;
+            display: none; text-align: center; padding: 8px; border-radius: 12px; 
+            margin-bottom: 0; border: 2px solid #555; background-color: #222;
         }
         #betScoreTitle { font-size: 11px; color: #aaa; font-weight: bold; margin-bottom: 2px; }
         #betScoreValue { font-size: 18px; font-weight: bold; color: #888; }
 
-        /* ================= 評級區塊 ================= */
-        .section-box { background: #252525; border: 1px solid #333; padding: 10px; border-radius: 8px; }
-        .section-title { font-size: 13px; font-weight: bold; margin-bottom: 10px; color: #dddddd; border-left: 4px solid #4da6ff; padding-left: 6px; }
+        /* 分隔線 */
+        .divider { height: 1px; background: #333; margin: 15px 0; }
 
-        /* 雷達圖容器 - 重新佈局 */
+        /* ================= 評級區塊 ================= */
+        .section-title { font-size: 14px; font-weight: bold; margin-bottom: 15px; color: #dddddd; text-align: center; }
+
+        /* 雷達圖容器 */
         .radar-container {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 12px; padding: 10px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333;
+            margin-bottom: 15px; padding: 10px; background: #181818; border-radius: 16px; border: 1px solid #333;
         }
         
         /* 垂直文字 */
         .vertical-text { 
-            writing-mode: vertical-rl; 
-            text-orientation: upright; 
-            font-size: 14px; 
-            font-weight: bold; 
-            letter-spacing: 2px;
+            writing-mode: vertical-rl; text-orientation: upright; 
+            font-size: 14px; font-weight: bold; letter-spacing: 2px;
         }
         .vertical-text.home { color: #ff6b6b; }
         .vertical-text.away { color: #6b9fff; }
 
-        .radar-svg-box {
-            flex: 1; 
-            display: flex; 
-            justify-content: space-around; 
-            align-items: center;
-        }
-        
-        svg { width: 150px; height: 150px; }
+        .radar-svg-box { flex: 1; display: flex; justify-content: space-around; align-items: center; }
+        svg { width: 145px; height: 145px; }
 
-        .team-rating-block { margin-bottom: 12px; position: relative; }
+        .team-rating-block { margin-bottom: 15px; position: relative; }
         .team-rating-block:last-child { margin-bottom: 0; }
 
-        /* 左右對稱佈局 */
+        /* 左右對稱佈局，強制不換行 */
         .team-header {
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 6px;
-            min-height: 24px; 
-            white-space: nowrap; /* 強制不換行 */
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 8px; min-height: 24px; white-space: nowrap;
         }
-        .left-area {
-            display: flex; align-items: center; gap: 8px;
-        }
-        .right-area {
-            display: flex; justify-content: flex-end; align-items: center; 
-            gap: 4px;
-        }
+        .left-area { display: flex; align-items: center; gap: 6px; }
+        .right-area { display: flex; justify-content: flex-end; align-items: center; gap: 4px; }
 
         .team-title { font-size: 14px; font-weight: bold; }
         .badge { font-size: 10px; padding: 3px 6px; border-radius: 10px; font-weight: bold; white-space: nowrap; }
         
         .overall-badge {
-            font-size: 11px; 
-            padding: 3px 6px; 
-            border-radius: 6px; 
-            background-color: #333; 
-            border: 1px solid #555; 
-            white-space: nowrap;
+            font-size: 11px; padding: 3px 6px; border-radius: 8px; 
+            background-color: #333; border: 1px solid #555; white-space: nowrap;
         }
 
         /* 特效 */
@@ -164,8 +156,8 @@
         /* 橫條行 */
         .rating-row { display: flex; align-items: center; margin-bottom: 6px; font-size: 11px; }
         .rating-label { width: 40px; font-weight: bold; color: #aaa; text-align: right; padding-right: 4px; } 
-        .rating-bar-bg { flex: 1; background: #1a1a1a; height: 18px; border-radius: 4px; overflow: hidden; margin: 0 6px; position: relative; border: 1px solid #333; }
-        .rating-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+        .rating-bar-bg { flex: 1; background: #181818; height: 18px; border-radius: 6px; overflow: hidden; margin: 0 6px; position: relative; border: 1px solid #333; }
+        .rating-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
         
         .bar-attack { background: #ff6b6b; }
         .bar-defense { background: #6b9fff; }
@@ -179,11 +171,13 @@
 <body>
 
 <div class="container">
+    <!-- 標題在最上方 -->
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">一屏顯示 | 完美對稱排版</p>
+    <p class="subtitle">雙卡片分離顯示版</p>
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
+    <!-- 輸入區塊 -->
     <div id="inputSection">
         <div class="input-section">
             <div class="section-header home">🏠 主隊數據</div>
@@ -229,35 +223,43 @@
         <button class="btn-clear" onclick="clearData()">清除數據</button>
     </div>
 
+    <!-- 結果區塊 -->
     <div id="result">
-        <!-- 返回按鈕與預測拉開距離 -->
-        <button class="btn-return" onclick="showInput()">⬅️ 重新輸入數據</button>
+        <!-- 第一張卡片：重新輸入按鈕 -->
+        <div class="result-card btn-card">
+            <button class="btn-return" onclick="showInput()">⬅️ 重新輸入數據</button>
+        </div>
 
-        <div class="dual-result-container">
-            <div class="result-box" id="newBox">
-                <div class="result-title">新版 <span id="newDiffInline"></span></div>
-                <div class="result-value" id="newValue">-</div>
+        <!-- 第二張卡片：全部數據與預測 -->
+        <div class="result-card">
+            <!-- 預測結論 -->
+            <div class="dual-result-container">
+                <div class="result-box" id="newBox">
+                    <div class="result-title">新版 <span id="newDiffInline"></span></div>
+                    <div class="result-value" id="newValue">-</div>
+                </div>
+                <div class="result-box" id="oldBox">
+                    <div class="result-title">舊版 <span id="oldDiffInline"></span></div>
+                    <div class="result-value" id="oldValue">-</div>
+                </div>
             </div>
-            <div class="result-box" id="oldBox">
-                <div class="result-title">舊版 <span id="oldDiffInline"></span></div>
-                <div class="result-value" id="oldValue">-</div>
+
+            <div class="result-box full-width" id="goalsResultBox">
+                <div class="result-title">預測大小 (2.5球) <span id="goalsDiffInline"></span></div>
+                <div class="result-value" id="goalsResultValue">-</div>
             </div>
-        </div>
 
-        <div class="result-box full-width" id="goalsResultBox">
-            <div class="result-title">預測大小 (2.5球) <span id="goalsDiffInline"></span></div>
-            <div class="result-value" id="goalsResultValue">-</div>
-        </div>
+            <div id="betScoreBox">
+                <div id="betScoreTitle">🎯 波膽推薦</div>
+                <div id="betScoreValue">-</div>
+            </div>
 
-        <div id="betScoreBox">
-            <div id="betScoreTitle">🎯 波膽推薦</div>
-            <div id="betScoreValue">-</div>
-        </div>
+            <div class="divider"></div>
 
-        <div class="section-box">
+            <!-- 實力評級 -->
             <div class="section-title">📊 球隊實力評級</div>
             
-            <!-- 雷達圖兩側垂直文字 -->
+            <!-- 雷達圖與垂直文字 -->
             <div class="radar-container">
                 <div class="vertical-text home">主隊</div>
                 <div class="radar-svg-box">
@@ -267,7 +269,7 @@
                 <div class="vertical-text away">客隊</div>
             </div>
 
-            <!-- 主隊區塊 -->
+            <!-- 主隊橫條 -->
             <div class="team-rating-block">
                 <div class="team-header">
                     <div class="left-area">
@@ -288,7 +290,7 @@
                 <div class="rating-row" id="hRankRow" style="display:none;"><div class="rating-label">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="hRankBar"></div></div><div class="rating-display" id="hRankDisplay">-</div></div>
             </div>
 
-            <!-- 客隊區塊 -->
+            <!-- 客隊橫條 -->
             <div class="team-rating-block">
                 <div class="team-header">
                     <div class="left-area">
