@@ -26,7 +26,6 @@
         }
         @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
 
-        /* ================= 輸入區塊 ================= */
         #inputSection { transition: opacity 0.3s; }
         .input-section { margin-bottom: 15px; }
         .section-header { font-size: 14px; font-weight: bold; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #333; }
@@ -49,7 +48,6 @@
         .btn-clear { background: #5a2a2a; color: #ff9999; margin-top: 8px; border: 1px solid #7a3a3a; }
         .btn-clear:hover { background: #7a3a3a; color: white; }
         
-        /* ================= 結果區塊 ================= */
         #result { display: none; }
         
         .result-card {
@@ -75,7 +73,6 @@
         .btn-return { background:#444; }
         .btn-return:hover { background:#555; }
 
-        /* 預測結果 */
         .dual-result-container { display: flex; gap: 8px; margin-bottom: 8px; }
         .result-box { 
             flex: 1; text-align: center; padding: 6px 5px; border-radius: 12px; border: 2px dashed;
@@ -92,7 +89,6 @@
         .result-box.full-width .result-title { font-size: 13px; }
         .result-box.full-width .result-value { font-size: 22px; }
         
-        /* 波膽推薦 */
         #betScoreBox {
             display: none; text-align: center; padding: 8px; border-radius: 12px; 
             margin-bottom: 0; border: 2px solid #555; background-color: #222;
@@ -104,14 +100,12 @@
 
         .section-title { font-size: 14px; font-weight: bold; margin-bottom: 15px; color: #dddddd; text-align: center; }
 
-        /* 雷達圖容器 */
         .radar-container {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 15px; padding: 10px 15px; background: #181818; border-radius: 16px; border: 1px solid #333;
             position: relative;
         }
         
-        /* 🔥 雷達圖文字強制固定寬度，保證對稱 */
         .vertical-text { 
             width: 30px;
             font-size: 14px; font-weight: bold; text-align: center;
@@ -127,7 +121,6 @@
         .team-rating-block { margin-bottom: 15px; position: relative; }
         .team-rating-block:last-child { margin-bottom: 0; }
 
-        /* 🔥 標題列嚴格左右對稱 */
         .team-header {
             display: flex; justify-content: space-between; align-items: center; 
             margin-bottom: 8px; min-height: 24px; white-space: nowrap;
@@ -143,7 +136,6 @@
             background-color: #333; border: 1px solid #555; white-space: nowrap;
         }
 
-        /* 特效 */
         @keyframes glow-green { 0% { box-shadow: 0 0 2px #4ade80; } 50% { box-shadow: 0 0 8px #4ade80; } 100% { box-shadow: 0 0 2px #4ade80; } }
         @keyframes glow-cyan { 0% { box-shadow: 0 0 2px #0adeff; } 50% { box-shadow: 0 0 8px #0adeff; } 100% { box-shadow: 0 0 2px #0adeff; } }
         .status-glow-green { color: #4ade80 !important; background-color: #1c3b24 !important; animation: glow-green 1.5s infinite alternate; }
@@ -156,7 +148,6 @@
         .rank-glow-silver { color: #f4f4f4 !important; background-color: #666 !important; animation: glow-silver 1.5s infinite alternate; }
         .rank-glow-bronze { color: #cd7f32 !important; background-color: #3b1c1c !important; animation: glow-bronze 1.5s infinite alternate; }
 
-        /* 🔥 橫條行嚴格置中：左邊文字與右邊分數固定為 55px */
         .rating-row { display: flex; align-items: center; margin-bottom: 6px; font-size: 11px; }
         .rating-label { width: 55px; font-weight: bold; color: #aaa; text-align: right; padding-right: 6px; } 
         .rating-display { width: 55px; text-align: left; font-weight: bold; font-size: 11px; padding-left: 6px; }
@@ -169,7 +160,6 @@
         .bar-odds { background: #4caf50; }
         .bar-rank { background: #87ceeb; }
 
-        /* ================= 圖片預覽彈窗 ================= */
         #imageModal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.9); z-index: 9999;
@@ -685,8 +675,9 @@
         if (gap >= 30) { finalResultNew = "home"; diffDisplayNew = `+${marginNew.toFixed(2)} 碾壓`; }
         else if (gap <= -30) { finalResultNew = "away"; diffDisplayNew = `${marginNew.toFixed(2)} 碾壓`; }
         else {
-            if (marginNew >= 0.3) finalResultNew = "home"; 
-            else if (marginNew <= -0.3) finalResultNew = "away"; 
+            // 🔥 門檻改為 0.5
+            if (marginNew >= 0.5) finalResultNew = "home"; 
+            else if (marginNew <= -0.5) finalResultNew = "away"; 
             else { finalResultNew = "draw"; diffDisplayNew = (marginNew > 0 ? '+' : '') + marginNew.toFixed(2) + ` 膠著`; }
 
             if (finalResultNew === "home") {
@@ -705,9 +696,10 @@
         let finalResultOld = "";
         let diffDisplayOld = (marginOld > 0 ? '+' : '') + marginOld.toFixed(2);
 
-        if (marginOld >= 0.3) {
+        // 🔥 門檻改為 0.5
+        if (marginOld >= 0.5) {
             finalResultOld = "home";
-        } else if (marginOld <= -0.3) {
+        } else if (marginOld <= -0.5) {
             finalResultOld = "away";
         } else {
             finalResultOld = "draw";
