@@ -95,12 +95,12 @@
 
         /* 排名特效 */
         @keyframes glow-gold { 0% { box-shadow: 0 0 2px #FFD700; } 50% { box-shadow: 0 0 10px #FFD700; } 100% { box-shadow: 0 0 2px #FFD700; } }
-        @keyframes glow-silver { 0% { box-shadow: 0 0 2px #e0e0e0; } 50% { box-shadow: 0 0 10px #e0e0e0; } 100% { box-shadow: 0 0 2px #e0e0e0; } }
-        @keyframes glow-bronze { 0% { box-shadow: 0 0 2px #e6a87c; } 50% { box-shadow: 0 0 10px #e6a87c; } 100% { box-shadow: 0 0 2px #e6a87c; } }
+        @keyframes glow-silver { 0% { box-shadow: 0 0 2px #f4f4f4; } 50% { box-shadow: 0 0 10px #f4f4f4; } 100% { box-shadow: 0 0 2px #f4f4f4; } }
+        @keyframes glow-bronze { 0% { box-shadow: 0 0 2px #cd7f32; } 50% { box-shadow: 0 0 10px #cd7f32; } 100% { box-shadow: 0 0 2px #cd7f32; } }
         
         .rank-glow-gold { color: #FFD700 !important; background-color: #3b331c !important; animation: glow-gold 1.5s infinite alternate; }
-        .rank-glow-silver { color: #e0e0e0 !important; background-color: #444 !important; animation: glow-silver 1.5s infinite alternate; }
-        .rank-glow-bronze { color: #e6a87c !important; background-color: #3b1c1c !important; animation: glow-bronze 1.5s infinite alternate; }
+        .rank-glow-silver { color: #f4f4f4 !important; background-color: #666 !important; animation: glow-silver 1.5s infinite alternate; }
+        .rank-glow-bronze { color: #cd7f32 !important; background-color: #3b1c1c !important; animation: glow-bronze 1.5s infinite alternate; }
 
         .rating-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 12px; }
         .rating-label { width: 50px; font-weight: bold; color: #aaa; }
@@ -110,7 +110,8 @@
         .bar-attack { background: #ff6b6b; }
         .bar-defense { background: #6b9fff; }
         .bar-status { background: #fbc02d; }
-        .bar-rank { background: #9b59b6; }
+        /* 排名橫條改為粉色 */
+        .bar-rank { background: #f472b6; }
         .bar-odds { background: #4caf50; }
         
         .rating-display { width: 75px; text-align: right; font-weight: bold; font-size: 13px; display: flex; justify-content: flex-end; align-items: center; }
@@ -295,7 +296,6 @@
         return { grade: 'EX', color: '#9b59b6' };
     }
 
-    // 動態繪製雷達圖 (依據 hasRank 決定 4 角或 5 角)
     function drawRadar(svgId, data, labels, color, fillColor) {
         const svg = document.getElementById(svgId);
         svg.innerHTML = ''; 
@@ -379,7 +379,6 @@
             radarData = [attPct, defPct, statPct, rankPct, oddsPct];
             labels = ['ATK', 'DEF', 'STA', 'RNK', 'ODD'];
             
-            // 5 項平均
             const overallPct = (attPct + defPct + statPct + rankPct + oddsPct) / 5;
             const overallData = getGradeByPercent(overallPct);
             const overallEl = document.getElementById(prefix + 'Overall');
@@ -391,7 +390,6 @@
             radarData = [attPct, defPct, statPct, oddsPct];
             labels = ['ATK', 'DEF', 'STA', 'ODD'];
             
-            // 4 項平均
             const overallPct = (attPct + defPct + statPct + oddsPct) / 4;
             const overallData = getGradeByPercent(overallPct);
             const overallEl = document.getElementById(prefix + 'Overall');
@@ -409,12 +407,23 @@
         else if (pctDiff <= -25.0) { styleEl.innerText = "防守型"; styleEl.style.color = "#8cb8ff"; styleEl.style.backgroundColor = "#1a2633"; }
         else { styleEl.innerText = "平衡型"; styleEl.style.color = "#ccc"; styleEl.style.backgroundColor = "#333"; }
 
+        // 狀態判定
         const statusBadge = document.getElementById(prefix + 'StatusBadge');
         statusBadge.className = 'badge'; statusBadge.style.color = ''; statusBadge.style.backgroundColor = ''; 
-        if (status >= 3.0) { statusBadge.innerText = "狀態極佳"; statusBadge.classList.add('status-glow-cyan'); }
-        else if (status >= 2.0) { statusBadge.innerText = "狀態良好"; statusBadge.classList.add('status-glow-green'); }
-        else if (status >= 1.0) { statusBadge.innerText = "狀態一般"; statusBadge.style.color = "#ffd700"; statusBadge.style.backgroundColor = "#3b331c"; }
-        else { statusBadge.innerText = "狀態欠佳"; statusBadge.style.color = "#ff4d4d"; statusBadge.style.backgroundColor = "#3b1c1c"; }
+        
+        if (status <= 0.5) {
+            statusBadge.innerText = "狀態極差"; statusBadge.style.color = "#ff3333"; statusBadge.style.backgroundColor = "#550000";
+        } else if (status <= 1.0) {
+            statusBadge.innerText = "狀態欠佳"; statusBadge.style.color = "#ff6b6b"; statusBadge.style.backgroundColor = "#3b1c1c";
+        } else if (status <= 1.5) {
+            statusBadge.innerText = "狀態一般"; statusBadge.style.color = "#ffd700"; statusBadge.style.backgroundColor = "#3b331c";
+        } else if (status <= 2.0) {
+            statusBadge.innerText = "狀態微優"; statusBadge.style.color = "#a3e635"; statusBadge.style.backgroundColor = "#263b1c";
+        } else if (status <= 2.5) {
+            statusBadge.innerText = "狀態良好"; statusBadge.classList.add('status-glow-green');
+        } else {
+            statusBadge.innerText = "狀態極好"; statusBadge.classList.add('status-glow-cyan');
+        }
 
         return hasRank ? (attPct + defPct + statPct + rankPct + oddsPct) / 5 : (attPct + defPct + statPct + oddsPct) / 4;
     }
@@ -454,7 +463,6 @@
         const aRankStr = document.getElementById('awayRank').value.trim();
         const aOddsStr = document.getElementById('awayOdds').value;
 
-        // 排名是選填，但有沒有填必須兩邊一致（或都不填）
         const hasRank = hRankStr !== "" && aRankStr !== "";
 
         if (!hXgStr || !hXgaStr || !hStatusStr || !hGoalsStr || !hConcededStr || !hOddsStr ||
@@ -474,7 +482,6 @@
         let hRank = hasRank ? parseInt(hRankStr) : 0;
         let aRank = hasRank ? parseInt(aRankStr) : 0;
 
-        // 排名比例 (排名越小越好)
         let hRankPct = 0, aRankPct = 0;
         if (hasRank) {
             let totalRank = hRank + aRank;
@@ -482,22 +489,21 @@
             aRankPct = totalRank > 0 ? (hRank / totalRank) * 100 : 50;
         }
 
-        // 賠率比例
         let totalOdds = hOdds + aOdds;
         let hOddsPct = totalOdds > 0 ? (aOdds / totalOdds) * 100 : 50;
         let aOddsPct = totalOdds > 0 ? (hOdds / totalOdds) * 100 : 50;
 
-        // 更新賠率標籤
+        // 更新賠率標籤 (上盤淺綠, 下盤深綠)
         const hOddsBadge = document.getElementById('hOddsBadge');
         const aOddsBadge = document.getElementById('aOddsBadge');
         hOddsBadge.style.display = 'inline-block';
         aOddsBadge.style.display = 'inline-block';
         if (hOdds < aOdds) {
-            hOddsBadge.innerText = "上盤"; hOddsBadge.style.color = "#e6a87c"; hOddsBadge.style.backgroundColor = "#3b1c1c";
-            aOddsBadge.innerText = "下盤"; aOddsBadge.style.color = "#cd7f32"; aOddsBadge.style.backgroundColor = "#2b1d15";
+            hOddsBadge.innerText = "上盤"; hOddsBadge.style.color = "#bbf7d0"; hOddsBadge.style.backgroundColor = "#15803d"; 
+            aOddsBadge.innerText = "下盤"; aOddsBadge.style.color = "#15803d"; aOddsBadge.style.backgroundColor = "#bbf7d0"; 
         } else if (hOdds > aOdds) {
-            hOddsBadge.innerText = "下盤"; hOddsBadge.style.color = "#cd7f32"; hOddsBadge.style.backgroundColor = "#2b1d15";
-            aOddsBadge.innerText = "上盤"; aOddsBadge.style.color = "#e6a87c"; aOddsBadge.style.backgroundColor = "#3b1c1c";
+            hOddsBadge.innerText = "下盤"; hOddsBadge.style.color = "#15803d"; hOddsBadge.style.backgroundColor = "#bbf7d0";
+            aOddsBadge.innerText = "上盤"; aOddsBadge.style.color = "#bbf7d0"; aOddsBadge.style.backgroundColor = "#15803d";
         } else {
             hOddsBadge.style.display = 'none';
             aOddsBadge.style.display = 'none';
@@ -527,7 +533,6 @@
             aRankBadge.style.display = 'none';
         }
 
-        // 得分加權
         let totalGoals = hGoals + aGoals;
         let hGoalAdj = 0, aGoalAdj = 0;
         if (totalGoals > 0) {
@@ -535,7 +540,6 @@
             aGoalAdj = (aGoals / totalGoals) - 0.5;
         }
 
-        // 失球加權
         let totalConceded = hConceded + aConceded;
         let hConcAdj = 0, aConcAdj = 0;
         if (totalConceded > 0) {
@@ -558,7 +562,6 @@
 
         const gap = hOverallPct - aOverallPct;
 
-        // 1. 新版：預期進球對碰
         const expHomeGoals = (hXgAdjVal + aXgaAdjVal) / 2;
         const expAwayGoals = (aXgAdjVal + hXgaAdjVal) / 2;
         const marginNew = expHomeGoals - expAwayGoals;
@@ -582,7 +585,6 @@
         }
         applyResultUI('new', finalResultNew, diffDisplayNew, marginNew);
 
-        // 2. 舊版：攻防相減
         const hAdvantage = Math.max(0, hAttUI - aDefUI);
         const aAdvantage = Math.max(0, aAttUI - hDefUI);
         const marginOld = hAdvantage - aAdvantage;
@@ -599,7 +601,6 @@
         }
         applyResultUI('old', finalResultOld, diffDisplayOld, marginOld);
 
-        // 3. 大小球公式
         const homeDefense = 3.00 - aXgaAdjVal;
         const awayDefense = 3.00 - hXgaAdjVal;
         
