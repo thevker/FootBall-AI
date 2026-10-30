@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>xG 賽事分析器 (四重驗證終極版)</title>
+    <title>xG 賽事分析器 (五重驗證終極版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * { box-sizing: border-box; }
@@ -73,13 +73,17 @@
         .btn-return { background:#444; }
         .btn-return:hover { background:#555; }
 
-        /* 四重預測排版 (2x2 網格) */
-        .quad-result-container { 
+        /* 五重預測排版 */
+        .grid-5 { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
             gap: 8px; 
             margin-bottom: 12px; 
         }
+        .grid-5 > :nth-child(5) {
+            grid-column: span 2; /* 第五個跨滿整行 */
+        }
+
         .result-box { 
             text-align: center; padding: 8px 4px; border-radius: 12px; border: 2px dashed;
             display: flex; flex-direction: column; justify-content: center;
@@ -205,7 +209,7 @@
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
-    <p class="subtitle">四重驗證終極版</p>
+    <p class="subtitle">五重驗證終極版</p>
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
@@ -261,8 +265,8 @@
         </div>
 
         <div class="result-card" id="resultCard">
-            <!-- 四重預測 -->
-            <div class="quad-result-container">
+            <!-- 五重預測 -->
+            <div class="grid-5">
                 <div class="result-box" id="box_new_no">
                     <div class="result-title">新版 (無賠) <span id="diff_new_no"></span></div>
                     <div class="result-value" id="val_new_no">-</div>
@@ -278,6 +282,11 @@
                 <div class="result-box" id="box_old_with">
                     <div class="result-title">舊版 (有賠) <span id="diff_old_with"></span></div>
                     <div class="result-value" id="val_old_with">-</div>
+                </div>
+                <!-- 新增第五重 -->
+                <div class="result-box" id="box_fifth">
+                    <div class="result-title">得失球碰撞 (第五重) <span id="diff_fifth"></span></div>
+                    <div class="result-value" id="val_fifth">-</div>
                 </div>
             </div>
 
@@ -511,8 +520,7 @@
 
     function updateTeamUI(prefix, att, def, status, rankPct, oddsPct, hasRank) {
         let attPct = Math.min(Math.max(((att - 0.5) / 2.0) * 100, 0), 100);
-        // 🔥 防守橫條改為 50-250 (數值 0.5 為 0%, 2.5 為 100%)
-        let defPct = Math.min(Math.max(((def - 0.5) / 2.0) * 100, 0), 100);
+        let defPct = Math.min(Math.max((def / 2.0) * 100, 0), 100);
         let statPct = Math.min(Math.max((status / 3.0) * 100, 0), 100);
 
         document.getElementById(prefix + 'AttBar').style.width = Math.max(attPct, 1) + '%';
@@ -728,7 +736,6 @@
         const aXgAdj_with = aXgAdjVal * (1 + aOddsAdj);
         const aXgaAdj_with = aXgaAdjVal * (1 - aOddsAdj);
 
-        // 🔥 防守公式改回 300 - xGA (3.0 - xGA)
         let hAttUI = hXgAdj_with;
         let hDefUI = Math.max(0, 3.0 - hXgaAdj_with);
         let aAttUI = aXgAdj_with;
@@ -739,19 +746,21 @@
 
         const gap = hOverallPct - aOverallPct;
 
+        // 1. 新版無賠
         const expHome_no = (hXgAdjVal + aXgaAdjVal) / 2;
         const expAway_no = (aXgAdjVal + hXgaAdjVal) / 2;
         const marginNew_no = expHome_no - expAway_no;
         const resNew_no = getMatchResult(marginNew_no, gap);
         applyMiniUI('new_no', resNew_no, marginNew_no.toFixed(2));
 
+        // 2. 新版有賠
         const expHome_with = (hXgAdj_with + aXgaAdj_with) / 2;
         const expAway_with = (aXgAdj_with + hXgaAdj_with) / 2;
         const marginNew_with = expHome_with - expAway_with;
         const resNew_with = getMatchResult(marginNew_with, gap);
         applyMiniUI('new_with', resNew_with, marginNew_with.toFixed(2));
 
-        // 🔥 舊版防守公式同步改回 3.0
+        // 3. 舊版無賠
         const hAdv_no = Math.max(0, hXgAdjVal - (3.0 - aXgaAdjVal));
         const aAdv_no = Math.max(0, aXgAdjVal - (3.0 - hXgaAdjVal));
         const marginOld_no = hAdv_no - aAdv_no;
@@ -760,6 +769,7 @@
         else if (marginOld_no <= -0.5) resOld_no = "away";
         applyMiniUI('old_no', resOld_no, marginOld_no.toFixed(2));
 
+        // 4. 舊版有賠
         const hAdv_with = Math.max(0, hXgAdj_with - (3.0 - aXgaAdj_with));
         const aAdv_with = Math.max(0, aXgAdj_with - (3.0 - hXgaAdj_with));
         const marginOld_with = hAdv_with - aAdv_with;
@@ -768,10 +778,26 @@
         else if (marginOld_with <= -0.5) resOld_with = "away";
         applyMiniUI('old_with', resOld_with, marginOld_with.toFixed(2));
 
+        // 5. 第五重：純得失球碰撞
+        // 公式：(主得+客失) - (客得+主失)
+        const diffFifth = (hGoals + aConceded) - (aGoals + hConceded);
+        let resFifth = "avoid";
+        if (diffFifth >= 0.5) resFifth = "home";
+        else if (diffFifth <= -0.5) resFifth = "away";
+        else if (diffFifth >= -0.1 && diffFifth <= 0.1) resFifth = "draw";
+        applyMiniUI('fifth', resFifth, diffFifth.toFixed(2));
+
+        // 終極賽果判定 (需五重一致)
         const ultimateMatchBox = document.getElementById('ultimateMatchBox');
         const ultimateMatchValue = document.getElementById('ultimateMatchValue');
         
-        let isMatchConsistent = (resNew_no === resNew_with && resNew_no === resOld_no && resNew_no === resOld_with && resNew_no !== 'avoid');
+        let isMatchConsistent = (
+            resNew_no === resNew_with && 
+            resNew_no === resOld_no && 
+            resNew_no === resOld_with && 
+            resNew_no === resFifth && 
+            resNew_no !== 'avoid'
+        );
         
         if (isMatchConsistent) {
             ultimateMatchBox.style.borderColor = '#ffd700';
@@ -787,6 +813,7 @@
             ultimateMatchValue.style.color = '#aaa';
         }
 
+        // 大小球預測
         const totalExp_no = expHome_no + expAway_no;
         const totalExp_with = expHome_with + expAway_with;
         
@@ -818,6 +845,7 @@
             goalsValue.style.color = '#aaa';
         }
 
+        // 波膽推薦
         const betBox = document.getElementById('betBox');
         const betValue = document.getElementById('betValue');
 
