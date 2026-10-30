@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>基本面比例碰撞分析器</title>
+    <title>基本面直觀預測器</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -50,27 +50,24 @@
         }
         .card-title { font-size: 13px; font-weight: bold; color: #aaa; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 6px; text-align: center;}
 
-        /* 終極哲學判定框 */
+        /* 哲學判定框 */
         .philosophy-box {
             text-align: center; padding: 15px; border-radius: 12px; margin-bottom: 12px;
             border: 2px solid #555; background-color: #1a1a1a;
         }
         .phil-title { font-size: 15px; font-weight: bold; margin-bottom: 8px; }
-        .phil-desc { font-size: 12px; color: #ccc; line-height: 1.4; }
+        .phil-desc { font-size: 12px; color: #ccc; line-height: 1.5; }
         .phil-action { font-size: 16px; font-weight: bold; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #444; }
 
-        /* 賽果與入球網格 */
-        .match-result { font-size: 26px; font-weight: bold; text-align: center; margin: 10px 0; }
-        .match-details { text-align: center; font-size: 12px; color: #ccc; }
-
+        /* 各隊預期進球網格 */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .goals-box {
-            text-align: center; padding: 10px; border-radius: 8px; 
+            text-align: center; padding: 12px 5px; border-radius: 8px; 
             border: 1px solid #444; background: #181818;
         }
-        .goals-title { font-size: 11px; color: #aaa; margin-bottom: 4px; }
-        .goals-val { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
-        .ratio-badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #333; display: inline-block; }
+        .goals-title { font-size: 12px; color: #aaa; margin-bottom: 6px; }
+        .goals-val { font-size: 24px; font-weight: bold; margin-bottom: 4px; }
+        .goals-desc { font-size: 11px; color: #888; }
 
         .over { color: #f87171; }
         .under { color: #8cb8ff; }
@@ -80,19 +77,19 @@
 <body>
 
 <div class="container">
-    <h2>⚽ 基本面比例碰撞</h2>
-    <p class="subtitle">看透數據的「穿透倍數」與矛盾哲學</p>
+    <h2>⚽ 基本面直觀預測</h2>
+    <p class="subtitle">看透進失球交叉碰撞的真實結果</p>
 
     <div class="input-section">
         <div class="section-header home">🏠 主隊數據</div>
         <div class="input-row">
             <div class="input-box">
                 <label>場均得分 (進攻)</label>
-                <input type="text" inputmode="decimal" id="h_goals" placeholder="例：2.00" oninput="limitInput(this)" onblur="formatInput(this)">
+                <input type="text" inputmode="decimal" id="h_goals" placeholder="例：0.80" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
             <div class="input-box">
                 <label>場均失球 (防守)</label>
-                <input type="text" inputmode="decimal" id="h_conceded" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)">
+                <input type="text" inputmode="decimal" id="h_conceded" placeholder="例：1.80" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
         </div>
     </div>
@@ -102,11 +99,11 @@
         <div class="input-row">
             <div class="input-box">
                 <label>場均得分 (進攻)</label>
-                <input type="text" inputmode="decimal" id="a_goals" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)">
+                <input type="text" inputmode="decimal" id="a_goals" placeholder="例：1.80" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
             <div class="input-box">
                 <label>場均失球 (防守)</label>
-                <input type="text" inputmode="decimal" id="a_conceded" placeholder="例：2.00" oninput="limitInput(this)" onblur="formatInput(this)">
+                <input type="text" inputmode="decimal" id="a_conceded" placeholder="例：0.80" oninput="limitInput(this)" onblur="formatInput(this)">
             </div>
         </div>
     </div>
@@ -116,33 +113,26 @@
 
     <div id="result">
         
-        <!-- 終極矛盾判定 -->
+        <!-- 哲學判定 -->
         <div class="philosophy-box" id="philBox">
             <div class="phil-title" id="philTitle">-</div>
             <div class="phil-desc" id="philDesc">-</div>
             <div class="phil-action" id="philAction">-</div>
         </div>
 
-        <!-- 勝平負 -->
+        <!-- 各隊預期進球 -->
         <div class="result-card">
-            <div class="card-title">🏆 純數據預測賽果</div>
-            <div class="match-result" id="matchResult">-</div>
-            <div class="match-details" id="matchDetails">-</div>
-        </div>
-
-        <!-- 各隊進球期望與倍數 -->
-        <div class="result-card">
-            <div class="card-title">🎯 攻防穿透力比例</div>
+            <div class="card-title">🎯 雙方預期進球數</div>
             <div class="grid-2">
                 <div class="goals-box">
                     <div class="goals-title">主隊預期進球</div>
                     <div class="goals-val" id="expH">-</div>
-                    <div class="ratio-badge" id="ratioH">-</div>
+                    <div class="goals-desc" id="descH">-</div>
                 </div>
                 <div class="goals-box">
                     <div class="goals-title">客隊預期進球</div>
                     <div class="goals-val" id="expA">-</div>
-                    <div class="ratio-badge" id="ratioA">-</div>
+                    <div class="goals-desc" id="descA">-</div>
                 </div>
             </div>
         </div>
@@ -198,109 +188,82 @@
             return;
         }
 
-        // 避免除以零
-        const safe_a_conceded = Math.max(a_conceded, 0.01);
-        const safe_h_conceded = Math.max(h_conceded, 0.01);
-
-        // 1. 核心比例計算 (我的進攻 / 對方的失球)
-        const ratioH = h_goals / safe_a_conceded; // 主隊穿透倍數
-        const ratioA = a_goals / safe_h_conceded; // 客隊穿透倍數
-
-        // 2. 預期進球 (直接比例交叉平均)
+        // 1. 核心公式：預期進球 = (自己進攻 + 對手防守) / 2
         const expH = (h_goals + a_conceded) / 2;
         const expA = (a_goals + h_conceded) / 2;
         const totalExp = expH + expA;
 
-        // 3. 判定四大哲學 (基於倍數)
+        // 2. 判定四大哲學 (基於預期進球數)
         const philBox = document.getElementById('philBox');
         const philTitle = document.getElementById('philTitle');
         const philDesc = document.getElementById('philDesc');
         const philAction = document.getElementById('philAction');
 
-        // 判定門檻：倍數大於 1.3 算「打穿」，小於 0.7 算「被鎖死」
-        const highThreshold = 1.3;
-        const lowThreshold = 0.7;
+        // 設定門檻：小於 1.0 算「不進球或進一球」，大於 1.5 算「強大火力」
+        const isH_Weak = expH < 1.0;
+        const isA_Weak = expA < 1.0;
+        const isH_Strong = expH >= 1.5;
+        const isA_Strong = expA >= 1.5;
 
-        if (ratioH >= highThreshold && ratioA >= highThreshold) {
-            // 雙方進攻都能打穿對面防守
+        if (isH_Strong && isA_Strong) {
+            // 雙方預期都能進 1.5 球以上
             philBox.style.borderColor = '#f87171';
             philTitle.innerText = "🔥 大球提款局 (互相打穿)";
             philTitle.style.color = '#f87171';
-            philDesc.innerText = `主隊穿透力 ${ratioH.toFixed(2)} 倍，客隊 ${ratioA.toFixed(2)} 倍。雙方進攻皆能輕易撕裂對方防線，且防守都形同虛設。`;
+            philDesc.innerText = `雙方預期進球皆高（主 ${expH.toFixed(2)} / 客 ${expA.toFixed(2)}）。雙方的矛都能刺穿對方的盾，入球大信號強烈。`;
             philAction.innerText = "👉 強烈建議：入球大";
         } 
-        else if (ratioH <= lowThreshold && ratioA <= lowThreshold) {
-            // 雙方進攻都被對面鎖死
+        else if (isH_Weak && isA_Weak) {
+            // 雙方預期都不到 1.0 球
             philBox.style.borderColor = '#8cb8ff';
             philTitle.innerText = "🛡️ 便秘局 (互相鎖死)";
             philTitle.style.color = '#8cb8ff';
-            philDesc.innerText = `主隊穿透力僅 ${ratioH.toFixed(2)} 倍，客隊 ${ratioA.toFixed(2)} 倍。雙方進攻皆遠弱於對方防守，大概率是一場泥潭戰。`;
+            philDesc.innerText = `雙方預期進球皆低（主 ${expH.toFixed(2)} / 客 ${expA.toFixed(2)}）。大概率互交白卷或 1:0 收場，入球細信號強烈。`;
             philAction.innerText = "👉 強烈建議：入球細";
         }
-        else if (ratioH > highThreshold && ratioA <= lowThreshold) {
-            // 主隊能打穿，客隊被鎖死
+        else if (isH_Strong && isA_Weak) {
+            // 主隊能進，客隊不能進
             philBox.style.borderColor = '#4ade80';
             philTitle.innerText = "⚔️ 單邊壓制局 (主隊佔優)";
             philTitle.style.color = '#4ade80';
-            philDesc.innerText = `主隊穿透力高達 ${ratioH.toFixed(2)} 倍，而客隊僅 ${ratioA.toFixed(2)} 倍。主隊攻防兩端皆壓制客隊。`;
-            philAction.innerText = "👉 建議：主勝 / 入球大";
+            philDesc.innerText = `主隊預期能進 ${expH.toFixed(2)} 球，而客隊僅有 ${expA.toFixed(2)} 球。客隊極大概率被主隊防線鎖死。`;
+            philAction.innerText = "👉 建議：主勝 / 入球大 (視乎總數)";
         }
-        else if (ratioH <= lowThreshold && ratioA > highThreshold) {
-            // 客隊能打穿，主隊被鎖死
+        else if (isH_Weak && isA_Strong) {
+            // 客隊能進，主隊不能進
             philBox.style.borderColor = '#f87171';
             philTitle.innerText = "⚔️ 單邊壓制局 (客隊佔優)";
             philTitle.style.color = '#f87171';
-            philDesc.innerText = `客隊穿透力高達 ${ratioA.toFixed(2)} 倍，而主隊僅 ${ratioH.toFixed(2)} 倍。客隊具備明顯的攻防優勢。`;
-            philAction.innerText = "👉 建議：客勝 / 入球大";
+            philDesc.innerText = `客隊預期能進 ${expA.toFixed(2)} 球，而主隊僅有 ${expH.toFixed(2)} 球。主隊極大概率無法攻破客隊防線。`;
+            philAction.innerText = "👉 建議：客勝 / 入球大 (視乎總數)";
         }
-        else if ((ratioH >= 1.0 && ratioA <= 0.7) || (ratioH <= 0.7 && ratioA >= 1.0) || (ratioH < 1.0 && ratioA < 1.0)) {
-            // 混沌局 (例如弱攻打弱防，倍數都在 0.8 左右，或者極端錯位)
+        else {
+            // 混沌局 (一隊在 1.0-1.5 之間，或者雙方都在 1.0-1.5 之間)
             philBox.style.borderColor = '#ffa500';
             philTitle.innerText = "⚠️ 混沌不明局";
             philTitle.style.color = '#ffa500';
-            philDesc.innerText = `穿透倍數（主 ${ratioH.toFixed(2)} / 客 ${ratioA.toFixed(2)}）呈現膠著。可能是無效控球，也可能是互相送禮。`;
+            philDesc.innerText = `主隊預期 ${expH.toFixed(2)}，客隊預期 ${expA.toFixed(2)}。數據不上不下，可能有意外進球或烏龍球。`;
             philAction.innerText = "👉 強烈建議：避開此場";
         }
-        else {
-            // 普通碰撞
-            philBox.style.borderColor = '#aaa';
-            philTitle.innerText = "⚖️ 常規數據對碰";
-            philTitle.style.color = '#ccc';
-            philDesc.innerText = `主隊穿透 ${ratioH.toFixed(2)} 倍，客隊穿透 ${ratioA.toFixed(2)} 倍。數據呈現正常的矛與盾對決。`;
-            philAction.innerText = `👉 預期總進球：${totalExp.toFixed(2)}`;
-        }
 
-        // 4. 勝平負
-        const matchResultEl = document.getElementById('matchResult');
-        const matchDetailsEl = document.getElementById('matchDetails');
-        
-        matchDetailsEl.innerText = `預期比分：主 ${expH.toFixed(2)} - 客 ${expA.toFixed(2)}`;
-        
-        if (expH - expA > 0.2) {
-            matchResultEl.innerText = "主勝";
-            matchResultEl.style.color = "#4ade80";
-        } else if (expH - expA < -0.2) {
-            matchResultEl.innerText = "客勝";
-            matchResultEl.style.color = "#f87171";
-        } else {
-            matchResultEl.innerText = "和局";
-            matchResultEl.style.color = "#ffd700";
-        }
-
-        // 5. 顯示 UI
+        // 3. 顯示各隊詳細數據
         document.getElementById('expH').innerText = expH.toFixed(2);
         document.getElementById('expA').innerText = expA.toFixed(2);
-        
-        const ratioHEl = document.getElementById('ratioH');
-        const ratioAEl = document.getElementById('ratioA');
-        
-        ratioHEl.innerText = `穿透力: ${ratioH.toFixed(2)} 倍`;
-        ratioAEl.innerText = `穿透力: ${ratioA.toFixed(2)} 倍`;
 
-        // 為穿透倍數上色
-        ratioHEl.style.color = ratioH >= 1.3 ? '#f87171' : (ratioH <= 0.7 ? '#8cb8ff' : '#fff');
-        ratioAEl.style.color = ratioA >= 1.3 ? '#f87171' : (ratioA <= 0.7 ? '#8cb8ff' : '#fff');
+        const descHEl = document.getElementById('descH');
+        if (expH < 0.8) descHEl.innerText = "極大概率不進球";
+        else if (expH < 1.2) descHEl.innerText = "大約進 0 或 1 球";
+        else descHEl.innerText = "具備進球能力";
 
+        const descAEl = document.getElementById('descA');
+        if (expA < 0.8) descAEl.innerText = "極大概率不進球";
+        else if (expA < 1.2) descAEl.innerText = "大約進 0 或 1 球";
+        else descAEl.innerText = "具備進球能力";
+
+        // 上色
+        document.getElementById('expH').style.color = expH >= 1.5 ? "#f87171" : (expH < 1.0 ? "#8cb8ff" : "#fff");
+        document.getElementById('expA').style.color = expA >= 1.5 ? "#f87171" : (expA < 1.0 ? "#8cb8ff" : "#fff");
+        
         document.getElementById('result').style.display = 'block';
     }
 </script>
