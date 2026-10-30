@@ -26,6 +26,16 @@
         }
         @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
 
+        /* 設定區 */
+        .settings-group { margin-bottom: 15px; }
+        .setting-row {
+            display: flex; align-items: center; justify-content: space-between; 
+            background: #252525; padding: 10px 15px; border-radius: 8px; border: 1px solid #333;
+        }
+        .setting-label { font-size: 13px; font-weight: bold; color: #ddd; }
+        .setting-row select { width: 180px; padding: 6px; font-size: 13px; cursor: pointer; background-color: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 6px; outline: none; }
+        .setting-row select:focus { border-color: #4da6ff; }
+
         #inputSection { transition: opacity 0.3s; }
         .input-section { margin-bottom: 15px; }
         .section-header { font-size: 14px; font-weight: bold; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #333; }
@@ -73,17 +83,13 @@
         .btn-return { background:#444; }
         .btn-return:hover { background:#555; }
 
-        /* 五重預測排版 */
-        .grid-5 { 
+        /* 預測賽果區塊 */
+        .quad-grid { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
             gap: 8px; 
-            margin-bottom: 12px; 
+            margin-bottom: 8px; 
         }
-        .grid-5 > :nth-child(5) {
-            grid-column: span 2; /* 第五個跨滿整行 */
-        }
-
         .result-box { 
             text-align: center; padding: 8px 4px; border-radius: 12px; border: 2px dashed;
             display: flex; flex-direction: column; justify-content: center;
@@ -92,9 +98,12 @@
             font-size: 11px; font-weight: bold; margin-bottom: 2px; color: #aaa; 
             display: flex; justify-content: center; align-items: center; gap: 6px;
         }
-        #diff_fifth { font-size: 12px; font-weight: bold; color: #fff; }
         .result-value { font-size: 16px; font-weight: bold; margin-bottom: 0; }
-        #val_fifth { font-size: 20px; }
+        
+        /* 第五重專用 (寬版) */
+        .fifth-box { margin-bottom: 12px; }
+        .fifth-box .result-value { font-size: 20px; }
+        #diff_fifth { font-size: 12px; font-weight: bold; color: #fff; }
 
         /* 全新入球大細與波膽區塊 */
         .new-goals-row {
@@ -204,6 +213,17 @@
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
     <div id="inputSection">
+        <!-- 加成模式設定 -->
+        <div class="settings-group">
+            <div class="setting-row">
+                <span class="setting-label">📈 計算模式</span>
+                <select id="bonusMode">
+                    <option value="off">標準模式 (無加成)</option>
+                    <option value="on">開啟賠率加成</option>
+                </select>
+            </div>
+        </div>
+
         <div class="input-section">
             <div class="section-header home">🏠 主隊數據</div>
             <div class="input-row">
@@ -255,8 +275,8 @@
         </div>
 
         <div class="result-card" id="resultCard">
-            <!-- 五重預測 -->
-            <div class="grid-5">
+            <!-- 前四項預測 (截圖時會隱藏) -->
+            <div id="quad-predictions" class="quad-grid">
                 <div class="result-box" id="box_new_no">
                     <div class="result-title">新版 (無賠) <span id="diff_new_no"></span></div>
                     <div class="result-value" id="val_new_no">-</div>
@@ -273,11 +293,12 @@
                     <div class="result-title">舊版 (有賠) <span id="diff_old_with"></span></div>
                     <div class="result-value" id="val_old_with">-</div>
                 </div>
-                <!-- 第五重 -->
-                <div class="result-box" id="box_fifth">
-                    <div class="result-title">得失球碰撞 (第五重) <span id="diff_fifth"></span></div>
-                    <div class="result-value" id="val_fifth">-</div>
-                </div>
+            </div>
+
+            <!-- 第五重預測 (截圖保留) -->
+            <div class="result-box fifth-box" id="box_fifth">
+                <div class="result-title">得失球碰撞 (第五重) <span id="diff_fifth"></span></div>
+                <div class="result-value" id="val_fifth">-</div>
             </div>
 
             <!-- 全新入球大細預測 (三欄) -->
@@ -373,9 +394,13 @@
     function saveAsImage() {
         const target = document.getElementById('resultCard');
         const btn = document.getElementById('btnSave');
+        const quad = document.getElementById('quad-predictions');
         
         btn.innerHTML = '⏳ 生成中...';
         btn.disabled = true;
+
+        // 截圖前隱藏前四項預測
+        quad.style.display = 'none';
 
         setTimeout(() => {
             html2canvas(target, {
@@ -387,11 +412,15 @@
                 document.getElementById('previewImg').src = imgData;
                 document.getElementById('imageModal').style.display = 'flex';
                 
+                // 恢復顯示
+                quad.style.display = 'grid';
                 btn.innerHTML = '📸 保存分析';
                 btn.disabled = false;
             }).catch(err => {
                 console.error("截圖失敗:", err);
                 alert("生成圖片失敗，請重試。");
+                // 恢復顯示
+                quad.style.display = 'grid';
                 btn.innerHTML = '📸 保存分析';
                 btn.disabled = false;
             });
@@ -717,18 +746,24 @@
         const hXgaAdjVal = hXga * (1 + hConcAdj);
         const aXgaAdjVal = aXga * (1 + aConcAdj);
 
-        let hOddsAdj = (hOddsPct / 100) - 0.5;
-        let aOddsAdj = (aOddsPct / 100) - 0.5;
+        // 判斷是否開啟加成模式
+        const isBonusOn = document.getElementById('bonusMode').value === 'on';
+        let hOddsAdj = 0, aOddsAdj = 0;
+        if (isBonusOn) {
+            hOddsAdj = (hOddsPct / 100) - 0.5;
+            aOddsAdj = (aOddsPct / 100) - 0.5;
+        }
         
         const hXgAdj_with = hXgAdjVal * (1 + hOddsAdj);
         const hXgaAdj_with = hXgaAdjVal * (1 - hOddsAdj);
         const aXgAdj_with = aXgAdjVal * (1 + aOddsAdj);
         const aXgaAdj_with = aXgaAdjVal * (1 - aOddsAdj);
 
-        let hAttUI = hXgAdj_with;
-        let hDefUI = Math.max(0, 3.0 - hXgaAdj_with);
-        let aAttUI = aXgAdj_with;
-        let aDefUI = Math.max(0, 3.0 - aXgaAdj_with);
+        // 如果開啟加成，UI 顯示有加成的數據；否則顯示無加成的
+        let hAttUI = isBonusOn ? hXgAdj_with : hXgAdjVal;
+        let hDefUI = isBonusOn ? Math.max(0, 3.0 - hXgaAdj_with) : Math.max(0, 3.0 - hXgaAdjVal);
+        let aAttUI = isBonusOn ? aXgAdj_with : aXgAdjVal;
+        let aDefUI = isBonusOn ? Math.max(0, 3.0 - aXgaAdj_with) : Math.max(0, 3.0 - aXgaAdjVal);
 
         const hOverallPct = updateTeamUI('h', hAttUI, hDefUI, hStatus, hRankPct, hOddsPct, hasRank);
         const aOverallPct = updateTeamUI('a', aAttUI, aDefUI, aStatus, aRankPct, aOddsPct, hasRank);
@@ -763,12 +798,12 @@
         else if (marginOld_with <= -0.5) resOld_with = "away";
         applyMiniUI('old_with', resOld_with, marginOld_with.toFixed(2));
 
-        // 第五重：得失球碰撞 (更新門檻)
+        // 第五重：得失球碰撞 (門檻 0.1 和 1.0)
         const diffFifth = (hGoals + aConceded) - (aGoals + hConceded);
         let resFifth = "avoid";
-        if (diffFifth >= 0.8) resFifth = "home";
-        else if (diffFifth <= -0.8) resFifth = "away";
-        else if (diffFifth >= -0.2 && diffFifth <= 0.2) resFifth = "draw";
+        if (diffFifth >= 1.0) resFifth = "home";
+        else if (diffFifth <= -1.0) resFifth = "away";
+        else if (diffFifth >= -0.1 && diffFifth <= 0.1) resFifth = "draw";
         applyMiniUI('fifth', resFifth, diffFifth.toFixed(2));
 
         // ==========================================
