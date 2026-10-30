@@ -812,87 +812,110 @@
         applyMiniUI('fifth', resFifth, diffFifth.toFixed(2));
 
         // ==========================================
-        // 全新的入球大細邏輯 (三欄)
+        // 全新入球大細與波膽的兜底檢查邏輯
         // ==========================================
         
-        // 1. 左：主隊入球 1.5
         let hSize15 = "模糊";
+        let aSize15 = "模糊";
+        let totalSize25 = "模糊";
+
+        // 第一輪：基礎條件判定
         if (hGoals <= 1.20 && aConceded <= 1.20) hSize15 = "小";
         else if (hGoals >= 1.80 && aConceded >= 1.80) hSize15 = "大";
-        
+
+        if (aGoals <= 1.20 && hConceded <= 1.20) aSize15 = "小";
+        else if (aGoals >= 1.80 && hConceded >= 1.80) aSize15 = "大";
+
+        if (hSize15 === "小" && aSize15 === "小") totalSize25 = "小";
+        else if (hSize15 === "大" && aSize15 === "大") totalSize25 = "大";
+
+        let isValid = false;
+        let finalScores = [];
+
+        // 如果賽果明確，則進行比分反推檢查 (兜底機制)
+        if (resFifth !== "avoid") {
+            for (let h = 0; h <= 4; h++) {
+                for (let a = 0; a <= 4; a++) {
+                    // 1. 檢查賽果是否相符
+                    let matchRes = (h > a) ? "home" : ((h < a) ? "away" : "draw");
+                    if (matchRes !== resFifth) continue;
+
+                    // 2. 檢查大細條件 (若原本是明確的，則必須符合)
+                    let checkHSize = (h >= 2) ? "大" : "小";
+                    if (hSize15 !== "模糊" && hSize15 !== checkHSize) continue;
+
+                    let checkASize = (a >= 2) ? "大" : "小";
+                    if (aSize15 !== "模糊" && aSize15 !== checkASize) continue;
+
+                    let checkTotal = ((h + a) >= 3) ? "大" : "小";
+                    if (totalSize25 !== "模糊" && totalSize25 !== checkTotal) continue;
+
+                    // 通過所有檢查，加入候選比分
+                    finalScores.push(`${h}:${a}`);
+                    isValid = true;
+                }
+            }
+
+            // 如果反推成功，我們可以利用存活的比分來「補全」大細 (若原本是模糊的)
+            if (isValid) {
+                let hasHBig = finalScores.some(s => parseInt(s.split(':')[0]) >= 2);
+                let hasHSmall = finalScores.some(s => parseInt(s.split(':')[0]) <= 1);
+                if (hSize15 === "模糊") {
+                    if (hasHBig && !hasHSmall) hSize15 = "大";
+                    else if (hasHSmall && !hasHBig) hSize15 = "小";
+                }
+
+                let hasABig = finalScores.some(s => parseInt(s.split(':')[1]) >= 2);
+                let hasASmall = finalScores.some(s => parseInt(s.split(':')[1]) <= 1);
+                if (aSize15 === "模糊") {
+                    if (hasABig && !hasASmall) aSize15 = "大";
+                    else if (hasASmall && !hasABig) aSize15 = "小";
+                }
+
+                let hasTBig = finalScores.some(s => (parseInt(s.split(':')[0]) + parseInt(s.split(':')[1])) >= 3);
+                let hasTSmall = finalScores.some(s => (parseInt(s.split(':')[0]) + parseInt(s.split(':')[1])) <= 2);
+                if (totalSize25 === "模糊") {
+                    if (hasTBig && !hasTSmall) totalSize25 = "大";
+                    else if (hasTSmall && !hasTBig) totalSize25 = "小";
+                }
+            }
+        } else {
+            // 如果賽果模糊，就只依照原本的大細組合給波膽
+            let baseScores = [];
+            if (hSize15 === "小" && aSize15 === "小") { baseScores = ["0:0", "1:1", "1:0", "0:1"]; isValid = true; }
+            else if (hSize15 === "大" && aSize15 === "大") { baseScores = ["2:2", "3:3", "2:3", "3:2"]; isValid = true; }
+            else if (hSize15 === "小" && aSize15 === "大") { baseScores = ["0:3", "1:2", "1:3", "0:2"]; isValid = true; }
+            else if (hSize15 === "大" && aSize15 === "小") { baseScores = ["3:0", "2:1", "3:1", "2:0"]; isValid = true; }
+            finalScores = baseScores;
+        }
+
+        // 更新入球大細 UI
         const valH15 = document.getElementById('val_h_15');
         valH15.innerText = hSize15 === "模糊" ? "方向模糊" : `${hSize15} 1.5`;
         valH15.style.color = hSize15 === '大' ? '#f87171' : (hSize15 === '小' ? '#8cb8ff' : '#aaa');
-
-        // 2. 右：客隊入球 1.5
-        let aSize15 = "模糊";
-        if (aGoals <= 1.20 && hConceded <= 1.20) aSize15 = "小";
-        else if (aGoals >= 1.80 && hConceded >= 1.80) aSize15 = "大";
 
         const valA15 = document.getElementById('val_a_15');
         valA15.innerText = aSize15 === "模糊" ? "方向模糊" : `${aSize15} 1.5`;
         valA15.style.color = aSize15 === '大' ? '#f87171' : (aSize15 === '小' ? '#8cb8ff' : '#aaa');
 
-        // 3. 中：全場總入球 2.5
-        let totalSize25 = "模糊";
-        if (hSize15 === "小" && aSize15 === "小") totalSize25 = "小";
-        else if (hSize15 === "大" && aSize15 === "大") totalSize25 = "大";
-
         const valTotal25 = document.getElementById('val_total_25');
         valTotal25.innerText = totalSize25 === "模糊" ? "方向模糊" : `${totalSize25} 2.5`;
         valTotal25.style.color = totalSize25 === '大' ? '#f87171' : (totalSize25 === '小' ? '#8cb8ff' : '#aaa');
 
-        // ==========================================
-        // 全新波膽推薦邏輯 (結合第五重)
-        // ==========================================
+        // 更新波膽 UI
         const betBox = document.getElementById('betBox');
         const betValue = document.getElementById('betValue');
         
-        let baseScores = [];
-        let isConditionValid = false;
-
-        if (hSize15 === "小" && aSize15 === "小") {
-            baseScores = ["0:0", "1:1", "1:0", "0:1"];
-            isConditionValid = true;
-        } else if (hSize15 === "大" && aSize15 === "大") {
-            baseScores = ["2:2", "3:3", "2:3", "3:2"];
-            isConditionValid = true;
-        } else if (hSize15 === "小" && aSize15 === "大") {
-            baseScores = ["0:3", "1:2", "1:3", "0:2"];
-            isConditionValid = true;
-        } else if (hSize15 === "大" && aSize15 === "小") {
-            baseScores = ["3:0", "2:1", "3:1", "2:0"];
-            isConditionValid = true;
-        }
-
-        let finalScores = [];
-        
-        if (isConditionValid) {
-            for (let score of baseScores) {
-                let [h, a] = score.split(':').map(Number);
-                if (resFifth === "home" && h > a) finalScores.push(score);
-                else if (resFifth === "away" && h < a) finalScores.push(score);
-                else if (resFifth === "draw" && h === a) finalScores.push(score);
-            }
-        }
-
-        if (!isConditionValid) {
+        if (!isValid) {
             betBox.style.borderColor = '#444';
             betBox.style.backgroundColor = '#222';
-            betValue.innerText = '方向模糊 (大細條件不符)';
+            betValue.innerText = '條件矛盾，方向模糊';
             betValue.style.color = '#888';
         } else {
-            if (finalScores.length > 0) {
-                betBox.style.borderColor = '#ffd700';
-                betBox.style.backgroundColor = '#2a2a1a';
-                betValue.innerText = finalScores.join(' / ');
-                betValue.style.color = '#fff';
-            } else {
-                betBox.style.borderColor = '#444';
-                betBox.style.backgroundColor = '#222';
-                betValue.innerText = '無符合波膽 (賽果與大細矛盾)';
-                betValue.style.color = '#888';
-            }
+            betBox.style.borderColor = '#ffd700';
+            betBox.style.backgroundColor = '#2a2a1a';
+            betValue.innerText = finalScores.join(' / ');
+            betValue.style.color = '#fff';
         }
 
         document.getElementById('inputSection').style.display = 'none';
