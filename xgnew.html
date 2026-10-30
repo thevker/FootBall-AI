@@ -219,7 +219,7 @@
                 <span class="setting-label">📈 計算模式</span>
                 <select id="bonusMode">
                     <option value="off">標準模式 (無加成)</option>
-                    <option value="on">開啟賠率加成</option>
+                    <option value="on">開啟得失球與賠率加成</option>
                 </select>
             </div>
         </div>
@@ -727,43 +727,49 @@
             aRankBadge.style.display = 'none';
         }
 
-        let totalGoals = hGoals + aGoals;
-        let hGoalAdj = 0, aGoalAdj = 0;
-        if (totalGoals > 0) {
-            hGoalAdj = (hGoals / totalGoals) - 0.5;
-            aGoalAdj = (aGoals / totalGoals) - 0.5;
-        }
-
-        let totalConceded = hConceded + aConceded;
-        let hConcAdj = 0, aConcAdj = 0;
-        if (totalConceded > 0) {
-            hConcAdj = (hConceded / totalConceded) - 0.5;
-            aConcAdj = (aConceded / totalConceded) - 0.5;
-        }
-
-        const hXgAdjVal = hXg * (1 + hGoalAdj);
-        const aXgAdjVal = aXg * (1 + aGoalAdj);
-        const hXgaAdjVal = hXga * (1 + hConcAdj);
-        const aXgaAdjVal = aXga * (1 + aConcAdj);
-
         // 判斷是否開啟加成模式
         const isBonusOn = document.getElementById('bonusMode').value === 'on';
-        let hOddsAdj = 0, aOddsAdj = 0;
-        if (isBonusOn) {
-            hOddsAdj = (hOddsPct / 100) - 0.5;
-            aOddsAdj = (aOddsPct / 100) - 0.5;
-        }
         
-        const hXgAdj_with = hXgAdjVal * (1 + hOddsAdj);
-        const hXgaAdj_with = hXgaAdjVal * (1 - hOddsAdj);
-        const aXgAdj_with = aXgAdjVal * (1 + aOddsAdj);
-        const aXgaAdj_with = aXgaAdjVal * (1 - aOddsAdj);
+        let hXgAdjVal, aXgAdjVal, hXgaAdjVal, aXgaAdjVal;
 
-        // 如果開啟加成，UI 顯示有加成的數據；否則顯示無加成的
-        let hAttUI = isBonusOn ? hXgAdj_with : hXgAdjVal;
-        let hDefUI = isBonusOn ? Math.max(0, 3.0 - hXgaAdj_with) : Math.max(0, 3.0 - hXgaAdjVal);
-        let aAttUI = isBonusOn ? aXgAdj_with : aXgAdjVal;
-        let aDefUI = isBonusOn ? Math.max(0, 3.0 - aXgaAdj_with) : Math.max(0, 3.0 - aXgaAdjVal);
+        if (isBonusOn) {
+            // 1. 計算得分/失球加權
+            let totalGoals = hGoals + aGoals;
+            let hGoalAdj = 0, aGoalAdj = 0;
+            if (totalGoals > 0) {
+                hGoalAdj = (hGoals / totalGoals) - 0.5;
+                aGoalAdj = (aGoals / totalGoals) - 0.5;
+            }
+
+            let totalConceded = hConceded + aConceded;
+            let hConcAdj = 0, aConcAdj = 0;
+            if (totalConceded > 0) {
+                hConcAdj = (hConceded / totalConceded) - 0.5;
+                aConcAdj = (aConceded / totalConceded) - 0.5;
+            }
+
+            // 2. 計算賠率加權
+            let hOddsAdj = (hOddsPct / 100) - 0.5;
+            let aOddsAdj = (aOddsPct / 100) - 0.5;
+
+            // 3. 雙重加成
+            hXgAdjVal = hXg * (1 + hGoalAdj) * (1 + hOddsAdj);
+            hXgaAdjVal = hXga * (1 + hConcAdj) * (1 - hOddsAdj);
+            aXgAdjVal = aXg * (1 + aGoalAdj) * (1 + aOddsAdj);
+            aXgaAdjVal = aXga * (1 + aConcAdj) * (1 - aOddsAdj);
+        } else {
+            // 標準模式：完全使用原始數據，無任何加權
+            hXgAdjVal = hXg;
+            hXgaAdjVal = hXga;
+            aXgAdjVal = aXg;
+            aXgaAdjVal = aXga;
+        }
+
+        // 雷達圖與橫條使用的數據
+        let hAttUI = hXgAdjVal;
+        let hDefUI = Math.max(0, 3.0 - hXgaAdjVal);
+        let aAttUI = aXgAdjVal;
+        let aDefUI = Math.max(0, 3.0 - aXgaAdjVal);
 
         const hOverallPct = updateTeamUI('h', hAttUI, hDefUI, hStatus, hRankPct, hOddsPct, hasRank);
         const aOverallPct = updateTeamUI('a', aAttUI, aDefUI, aStatus, aRankPct, aOddsPct, hasRank);
@@ -776,10 +782,11 @@
         const resNew_no = getMatchResult(marginNew_no, gap);
         applyMiniUI('new_no', resNew_no, marginNew_no.toFixed(2));
 
-        const expHome_with = (hXgAdj_with + aXgaAdj_with) / 2;
-        const expAway_with = (aXgAdj_with + hXgaAdj_with) / 2;
-        const marginNew_with = expHome_with - expAway_with;
-        const resNew_with = getMatchResult(marginNew_with, gap);
+        // 若關閉加成，有賠版本與無賠版本相同
+        const expHome_with = expHome_no;
+        const expAway_with = expAway_no;
+        const marginNew_with = marginNew_no;
+        const resNew_with = resNew_no;
         applyMiniUI('new_with', resNew_with, marginNew_with.toFixed(2));
 
         const hAdv_no = Math.max(0, hXgAdjVal - (3.0 - aXgaAdjVal));
@@ -790,12 +797,10 @@
         else if (marginOld_no <= -0.5) resOld_no = "away";
         applyMiniUI('old_no', resOld_no, marginOld_no.toFixed(2));
 
-        const hAdv_with = Math.max(0, hXgAdj_with - (3.0 - aXgaAdj_with));
-        const aAdv_with = Math.max(0, aXgAdj_with - (3.0 - hXgaAdj_with));
-        const marginOld_with = hAdv_with - aAdv_with;
-        let resOld_with = "draw";
-        if (marginOld_with >= 0.5) resOld_with = "home";
-        else if (marginOld_with <= -0.5) resOld_with = "away";
+        const hAdv_with = hAdv_no;
+        const aAdv_with = aAdv_no;
+        const marginOld_with = marginOld_no;
+        let resOld_with = resOld_no;
         applyMiniUI('old_with', resOld_with, marginOld_with.toFixed(2));
 
         // 第五重：得失球碰撞 (門檻 0.1 和 1.0)
