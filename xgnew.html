@@ -510,8 +510,10 @@
     }
 
     function updateTeamUI(prefix, att, def, status, rankPct, oddsPct, hasRank) {
+        // 進攻橫條：50-250 (0.5 - 2.5)
         let attPct = Math.min(Math.max(((att - 0.5) / 2.0) * 100, 0), 100);
-        let defPct = Math.min(Math.max(((def - 0.5) / 2.0) * 100, 0), 100);
+        // 防守橫條：0-200 (0 - 2.0)
+        let defPct = Math.min(Math.max((def / 2.0) * 100, 0), 100);
         let statPct = Math.min(Math.max((status / 3.0) * 100, 0), 100);
 
         document.getElementById(prefix + 'AttBar').style.width = Math.max(attPct, 1) + '%';
@@ -727,10 +729,11 @@
         const aXgAdj_with = aXgAdjVal * (1 + aOddsAdj);
         const aXgaAdj_with = aXgaAdjVal * (1 - aOddsAdj);
 
+        // 🔥 防守公式改回 250 - xGA (2.5 - xGA)
         let hAttUI = hXgAdj_with;
-        let hDefUI = Math.max(0, 3.0 - hXgaAdj_with);
+        let hDefUI = Math.max(0, 2.5 - hXgaAdj_with);
         let aAttUI = aXgAdj_with;
-        let aDefUI = Math.max(0, 3.0 - aXgaAdj_with);
+        let aDefUI = Math.max(0, 2.5 - aXgaAdj_with);
 
         const hOverallPct = updateTeamUI('h', hAttUI, hDefUI, hStatus, hRankPct, hOddsPct, hasRank);
         const aOverallPct = updateTeamUI('a', aAttUI, aDefUI, aStatus, aRankPct, aOddsPct, hasRank);
@@ -749,16 +752,17 @@
         const resNew_with = getMatchResult(marginNew_with, gap);
         applyMiniUI('new_with', resNew_with, marginNew_with.toFixed(2));
 
-        const hAdv_no = Math.max(0, hXgAdjVal - (3.0 - aXgaAdjVal));
-        const aAdv_no = Math.max(0, aXgAdjVal - (3.0 - hXgaAdjVal));
+        // 🔥 舊版攻防相減公式，防守基礎改為 2.5
+        const hAdv_no = Math.max(0, hXgAdjVal - (2.5 - aXgaAdjVal));
+        const aAdv_no = Math.max(0, aXgAdjVal - (2.5 - hXgaAdjVal));
         const marginOld_no = hAdv_no - aAdv_no;
         let resOld_no = "draw";
         if (marginOld_no >= 0.5) resOld_no = "home";
         else if (marginOld_no <= -0.5) resOld_no = "away";
         applyMiniUI('old_no', resOld_no, marginOld_no.toFixed(2));
 
-        const hAdv_with = Math.max(0, hXgAdj_with - (3.0 - aXgaAdj_with));
-        const aAdv_with = Math.max(0, aXgAdj_with - (3.0 - hXgaAdj_with));
+        const hAdv_with = Math.max(0, hXgAdj_with - (2.5 - aXgaAdj_with));
+        const aAdv_with = Math.max(0, aXgAdj_with - (2.5 - hXgaAdj_with));
         const marginOld_with = hAdv_with - aAdv_with;
         let resOld_with = "draw";
         if (marginOld_with >= 0.5) resOld_with = "home";
