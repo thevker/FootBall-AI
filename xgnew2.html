@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>xG 賽事分析器 (終極預測版)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #121212; color: #e0e0e0; margin: 0; padding: 10px; 
+            display: flex; justify-content: center; min-height: 100vh; -webkit-overflow-scrolling: touch;
+        }
+        .container { 
+            background: #1a1a1a; padding: 15px; border-radius: 12px; 
+            width: 100%; max-width: 500px; position: relative; margin-bottom: 20px;
+        }
+        h2 { text-align: center; color: #ffffff; margin-top: 0; font-size: 20px; margin-bottom: 5px; }
+        p.subtitle { font-size: 12px; color: #aaaaaa; text-align: center; margin-bottom: 15px; }
+        
+        #errorMessage {
+            display: none; background-color: #331a1a; color: #ff4d4d; padding: 10px; 
+            border-radius: 6px; text-align: center; font-weight: bold; margin-bottom: 10px;
+            border: 1px solid #7a3a3a; animation: shake 0.4s;
+        }
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
+
+        #inputSection { transition: opacity 0.3s; }
+        .input-section { margin-bottom: 15px; }
+        .section-header { font-size: 14px; font-weight: bold; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #333; }
+        .section-header.home { color: #ff6b6b; }
+        .section-header.away { color: #6b9fff; }
+
+        .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .input-box { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+        label { font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #bbbbbb; }
+        input[type="text"] { 
+            width: 100%; padding: 12px 8px; background-color: #2d2d2d; border: 1px solid #444; 
+            color: #ffffff; border-radius: 6px; font-size: 16px; outline: none; transition: border 0.2s; 
+            text-align: center;
+        }
+        input[type="text"]:focus { border-color: #4da6ff; }
+
+        button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .btn-calculate { background: #3a7bd5; color: white; }
+        .btn-calculate:hover { background: #2a5fa5; }
+        .btn-clear { background: #5a2a2a; color: #ff9999; margin-top: 8px; border: 1px solid #7a3a3a; }
+        .btn-clear:hover { background: #7a3a3a; color: white; }
+        
+        #result { display: none; }
+        
+        .result-card {
+            background: #222222;
+            border: 1px solid #3a3a3a;
+            border-radius: 24px;
+            /* 加大上下留白，截圖更好看 */
+            padding: 35px 20px; 
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .btn-card {
+            padding: 10px;
+            margin-bottom: 15px;
+            display: flex; gap: 10px;
+            background: #1a1a1a; /* 按鈕卡片維持原本背景 */
+        }
+        .btn-action { 
+            flex: 1; color:#fff; padding:10px; font-size:14px; 
+            border-radius:14px; border:none; cursor:pointer; font-weight: bold;
+        }
+        .btn-save { background:#28a745; }
+        .btn-save:hover { background:#218838; }
+        .btn-return { background:#444; }
+        .btn-return:hover { background:#555; }
+
+        /* 預測賽果 (原第五重) 放大顯示 */
+        .result-box { 
+            text-align: center; padding: 15px; border-radius: 12px; border: 2px dashed;
+            display: flex; flex-direction: column; justify-content: center;
+            margin-bottom: 15px;
+        }
+        .result-title { 
+            font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #aaa; 
+            display: flex; justify-content: center; align-items: center; gap: 8px;
+        }
+        .result-value { font-size: 28px; font-weight: bold; margin-bottom: 0; }
+        #diff_fifth { font-size: 14px; font-weight: bold; color: #fff; }
+
+        /* 入球大細三欄 */
+        .new-goals-row {
+            display: flex; gap: 8px; margin-bottom: 15px;
+        }
+        .new-goals-box {
+            flex: 1; text-align: center; padding: 12px 5px; border-radius: 12px;
+            border: 2px solid #555; background-color: #222; display: flex; flex-direction: column;
+        }
+        .new-goals-title { font-size: 12px; font-weight: bold; color: #aaa; margin-bottom: 8px; }
+        .new-goals-value { font-size: 18px; font-weight: bold; color: #fff; }
+
+        /* 波膽 */
+        .bet-box {
+            text-align: center; padding: 15px; border-radius: 12px; 
+            border: 2px solid #555; background-color: #222;
+        }
+        .bet-title { font-size: 14px; font-weight: bold; color: #aaa; margin-bottom: 8px; }
+        .bet-value { font-size: 22px; font-weight: bold; color: #888; line-height: 1.5; }
+
+        .divider { height: 1px; background: #333; margin: 20px 0; }
+
+        .section-title { font-size: 15px; font-weight: bold; margin-bottom: 20px; color: #dddddd; text-align: center; }
+
+        /* 評級區塊 */
+        .radar-container {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; padding: 10px 15px; background: #181818; border-radius: 16px; border: 1px solid #333;
+            position: relative;
+        }
+        
+        .vertical-text { 
+            width: 30px;
+            font-size: 14px; font-weight: bold; text-align: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            line-height: 1.2;
+        }
+        .vertical-text.home { color: #ff6b6b; }
+        .vertical-text.away { color: #6b9fff; }
+
+        .radar-svg-box { flex: 1; display: flex; justify-content: space-around; align-items: center; }
+        svg { width: 140px; height: 140px; }
+
+        .team-rating-block { margin-bottom: 20px; position: relative; }
+        .team-rating-block:last-child { margin-bottom: 0; }
+
+        .team-header {
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 10px; min-height: 24px; white-space: nowrap;
+        }
+        .left-area { flex: 1; display: flex; justify-content: flex-start; align-items: center; gap: 6px; }
+        .right-area { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 4px; }
+
+        .team-title { font-size: 15px; font-weight: bold; }
+        .badge { font-size: 11px; padding: 3px 6px; border-radius: 10px; font-weight: bold; white-space: nowrap; }
+        
+        .overall-badge {
+            font-size: 12px; padding: 4px 8px; border-radius: 8px; 
+            background-color: #333; border: 1px solid #555; white-space: nowrap;
+        }
+
+        @keyframes glow-green { 0% { box-shadow: 0 0 2px #4ade80; } 50% { box-shadow: 0 0 8px #4ade80; } 100% { box-shadow: 0 0 2px #4ade80; } }
+        @keyframes glow-cyan { 0% { box-shadow: 0 0 2px #0adeff; } 50% { box-shadow: 0 0 8px #0adeff; } 100% { box-shadow: 0 0 2px #0adeff; } }
+        .status-glow-green { color: #4ade80 !important; background-color: #1c3b24 !important; animation: glow-green 1.5s infinite alternate; }
+        .status-glow-cyan { color: #0adeff !important; background-color: #0e2e36 !important; animation: glow-cyan 1.5s infinite alternate; text-shadow: 0 0 5px rgba(10, 222, 255, 0.5); }
+
+        @keyframes glow-gold { 0% { box-shadow: 0 0 2px #FFD700; } 50% { box-shadow: 0 0 8px #FFD700; } 100% { box-shadow: 0 0 2px #FFD700; } }
+        @keyframes glow-silver { 0% { box-shadow: 0 0 2px #f4f4f4; } 50% { box-shadow: 0 0 8px #f4f4f4; } 100% { box-shadow: 0 0 2px #f4f4f4; } }
+        @keyframes glow-bronze { 0% { box-shadow: 0 0 2px #cd7f32; } 50% { box-shadow: 0 0 8px #cd7f32; } 100% { box-shadow: 0 0 2px #cd7f32; } }
+        .rank-glow-gold { color: #FFD700 !important; background-color: #3b331c !important; animation: glow-gold 1.5s infinite alternate; }
+        .rank-glow-silver { color: #f4f4f4 !important; background-color: #666 !important; animation: glow-silver 1.5s infinite alternate; }
+        .rank-glow-bronze { color: #cd7f32 !important; background-color: #3b1c1c !important; animation: glow-bronze 1.5s infinite alternate; }
+
+        /* 橫條行 */
+        .rating-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 12px; }
+        .rating-label { width: 45px; font-weight: bold; color: #aaa; text-align: right; padding-right: 6px; white-space: nowrap; } 
+        .rating-display { width: 70px; text-align: left; font-weight: bold; font-size: 12px; padding-left: 8px; white-space: nowrap; }
+        .rating-bar-bg { flex: 1; background: #181818; height: 20px; border-radius: 6px; overflow: hidden; position: relative; border: 1px solid #333; }
+        .rating-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+        
+        .bar-attack { background: #ff6b6b; }
+        .bar-defense { background: #6b9fff; }
+        .bar-status { background: #fbc02d; }
+        .bar-odds { background: #4caf50; }
+        .bar-rank { background: #00e5ff; }
+
+        #imageModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.9); z-index: 9999;
+            justify-content: center; align-items: center; flex-direction: column; padding: 20px;
+        }
+        #imageModal img {
+            max-width: 100%; max-height: 80vh; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+        }
+        .modal-hint { color: #fff; font-size: 14px; font-weight: bold; margin-top: 15px; text-align: center; }
+        .modal-close {
+            margin-top: 15px; padding: 10px 20px; background: #3a7bd5; color: white; 
+            border: none; border-radius: 6px; font-weight: bold; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📊 xG 賽事分析器</h2>
+    <p class="subtitle">終極預測版</p>
+    
+    <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
+
+    <div id="inputSection">
+        <div class="input-section">
+            <div class="section-header home">🏠 主隊數據</div>
+            <div class="input-row">
+                <div class="input-box"><label>狀態 (0-3)</label><input type="text" inputmode="decimal" id="homeStatus" placeholder="例：1.50" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+                <div class="input-box"></div>
+            </div>
+            <div class="input-row">
+                <div class="input-box"><label>得分</label><input type="text" inputmode="decimal" id="homeGoals" placeholder="例：1.50" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+                <div class="input-box"><label>失球</label><input type="text" inputmode="decimal" id="homeConceded" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+            </div>
+            <div class="input-row">
+                <div class="input-box"><label>主隊 xG</label><input type="text" inputmode="decimal" id="homeXg" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+                <div class="input-box"><label>主隊 xGA</label><input type="text" inputmode="decimal" id="homeXga" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+            </div>
+            <div class="input-row">
+                <div class="input-box"><label>排名 (選填)</label><input type="text" inputmode="numeric" id="homeRank" placeholder="例：1" oninput="limitInteger(this)"></div>
+                <div class="input-box"><label>賠率</label><input type="text" inputmode="decimal" id="homeOdds" placeholder="例：1.67" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <div class="section-header away">✈️ 客隊數據</div>
+            <div class="input-row">
+                <div class="input-box"><label>狀態 (0-3)</label><input type="text" inputmode="decimal" id="awayStatus" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+                <div class="input-box"></div>
+            </div>
+            <div class="input-row">
+                <div class="input-box"><label>得分</label><input type="text" inputmode="decimal" id="awayGoals" placeholder="例：0.50" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+                <div class="input-box"><label>失球</label><input type="text" inputmode="decimal" id="awayConceded" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+            </div>
+            <div class="input-row">
+                <div class="input-box"><label>客隊 xG</label><input type="text" inputmode="decimal" id="awayXg" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+                <div class="input-box"><label>客隊 xGA</label><input type="text" inputmode="decimal" id="awayXga" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+            </div>
+            <div class="input-row">
+                <div class="input-box"><label>排名 (選填)</label><input type="text" inputmode="numeric" id="awayRank" placeholder="例：2" oninput="limitInteger(this)"></div>
+                <div class="input-box"><label>賠率</label><input type="text" inputmode="decimal" id="awayOdds" placeholder="例：1.27" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+            </div>
+        </div>
+
+        <button class="btn-calculate" onclick="calculate()">開始分析</button>
+        <button class="btn-clear" onclick="clearData()">清除數據</button>
+    </div>
+
+    <div id="result">
+        <div class="result-card btn-card">
+            <button class="btn-action btn-return" onclick="showInput()">⬅️ 重新輸入</button>
+            <button class="btn-action btn-save" id="btnSave" onclick="saveAsImage()">📸 保存分析</button>
+        </div>
+
+        <div class="result-card" id="resultCard">
+            <!-- 預測賽果 -->
+            <div class="result-box" id="box_fifth">
+                <div class="result-title">🏆 預測賽果 <span id="diff_fifth"></span></div>
+                <div class="result-value" id="val_fifth">-</div>
+            </div>
+
+            <!-- 入球大細預測 (三欄) -->
+            <div class="new-goals-row">
+                <div class="new-goals-box" id="box_h_15">
+                    <div class="new-goals-title">主隊入球 (1.5)</div>
+                    <div class="new-goals-value" id="val_h_15">-</div>
+                </div>
+                <div class="new-goals-box" id="box_total_25">
+                    <div class="new-goals-title">總入球 (2.5)</div>
+                    <div class="new-goals-value" id="val_total_25">-</div>
+                </div>
+                <div class="new-goals-box" id="box_a_15">
+                    <div class="new-goals-title">客隊入球 (1.5)</div>
+                    <div class="new-goals-value" id="val_a_15">-</div>
+                </div>
+            </div>
+
+            <!-- 波膽推薦 -->
+            <div class="bet-box" id="betBox">
+                <div class="bet-title">🎯 波膽推薦</div>
+                <div class="bet-value" id="betValue">-</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- 實力評級 -->
+            <div class="section-title">📊 球隊實力評級</div>
+            
+            <div class="radar-container">
+                <div class="vertical-text home">主<br>隊</div>
+                <div class="radar-svg-box">
+                    <svg id="radar-home" viewBox="0 0 200 200"></svg>
+                    <svg id="radar-away" viewBox="0 0 200 200"></svg>
+                </div>
+                <div class="vertical-text away">客<br>隊</div>
+            </div>
+
+            <div class="team-rating-block">
+                <div class="team-header">
+                    <div class="left-area">
+                        <span class="team-title" style="color: #ff6b6b;">🏠 主隊</span>
+                        <span class="overall-badge" id="hOverall">總評分: -</span>
+                    </div>
+                    <div class="right-area">
+                        <span class="badge" id="hStyle">-</span>
+                        <span class="badge" id="hStatusBadge">-</span>
+                        <span class="badge" id="hOddsBadge" style="display:none;">-</span>
+                        <span class="badge" id="hRankBadge" style="display:none;">-</span>
+                    </div>
+                </div>
+                <div class="rating-row"><div class="rating-label">進攻</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="hAttBar"></div></div><div class="rating-display" id="hAttDisplay">-</div></div>
+                <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="hDefBar"></div></div><div class="rating-display" id="hDefDisplay">-</div></div>
+                <div class="rating-row"><div class="rating-label">狀態</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="hStatBar"></div></div><div class="rating-display" id="hStatDisplay">-</div></div>
+                <div class="rating-row"><div class="rating-label">賠率</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="hOddsBar"></div></div><div class="rating-display" id="hOddsDisplay">-</div></div>
+                <div class="rating-row" id="hRankRow" style="display:none;"><div class="rating-label">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="hRankBar"></div></div><div class="rating-display" id="hRankDisplay">-</div></div>
+            </div>
+
+            <div class="team-rating-block">
+                <div class="team-header">
+                    <div class="left-area">
+                        <span class="team-title" style="color: #6b9fff;">✈️ 客隊</span>
+                        <span class="overall-badge" id="aOverall">總評分: -</span>
+                    </div>
+                    <div class="right-area">
+                        <span class="badge" id="aStyle">-</span>
+                        <span class="badge" id="aStatusBadge">-</span>
+                        <span class="badge" id="aOddsBadge" style="display:none;">-</span>
+                        <span class="badge" id="aRankBadge" style="display:none;">-</span>
+                    </div>
+                </div>
+                <div class="rating-row"><div class="rating-label">進攻</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="aAttBar"></div></div><div class="rating-display" id="aAttDisplay">-</div></div>
+                <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="aDefBar"></div></div><div class="rating-display" id="aDefDisplay">-</div></div>
+                <div class="rating-row"><div class="rating-label">狀態</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="aStatBar"></div></div><div class="rating-display" id="aStatDisplay">-</div></div>
+                <div class="rating-row"><div class="rating-label">賠率</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="aOddsBar"></div></div><div class="rating-display" id="aOddsDisplay">-</div></div>
+                <div class="rating-row" id="aRankRow" style="display:none;"><div class="rating-label">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="aRankBar"></div></div><div class="rating-display" id="aRankDisplay">-</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="imageModal">
+    <img id="previewImg" src="" alt="分析結果">
+    <div class="modal-hint">👇 請「長按」上方圖片，選擇「儲存到相片」</div>
+    <button class="modal-close" onclick="closeModal()">關閉</button>
+</div>
+
+<script>
+    function closeModal() {
+        document.getElementById('imageModal').style.display = 'none';
+    }
+
+    function saveAsImage() {
+        const target = document.getElementById('resultCard');
+        const btn = document.getElementById('btnSave');
+        
+        btn.innerHTML = '⏳ 生成中...';
+        btn.disabled = true;
+
+        setTimeout(() => {
+            html2canvas(target, {
+                backgroundColor: '#222222', 
+                scale: 2, 
+                useCORS: true
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                document.getElementById('previewImg').src = imgData;
+                document.getElementById('imageModal').style.display = 'flex';
+                
+                btn.innerHTML = '📸 保存分析';
+                btn.disabled = false;
+            }).catch(err => {
+                console.error("截圖失敗:", err);
+                alert("生成圖片失敗，請重試。");
+                btn.innerHTML = '📸 保存分析';
+                btn.disabled = false;
+            });
+        }, 100);
+    }
+
+    function showInput() {
+        document.getElementById('inputSection').style.display = 'block';
+        document.getElementById('result').style.display = 'none';
+    }
+
+    function limitInput(input) {
+        let val = input.value.replace(/[^0-9.]/g, '');
+        let parts = val.split('.');
+        if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+        if (val.replace(/\./g, '').length > 4) {
+            let newVal = '', count = 0;
+            for (let char of val) { if (char !== '.') { if (count >= 4) break; count++; } newVal += char; }
+            val = newVal;
+        }
+        input.value = val;
+    }
+
+    function formatInput(input) {
+        let val = input.value;
+        if (!val || val === '.') { input.value = ''; return; }
+        if (!val.includes('.')) {
+            if (val.length === 3) val = val.substring(0, 1) + '.' + val.substring(1);
+            else if (val.length === 2) {
+                let num = parseInt(val);
+                val = num > 30 ? '0.' + val : val.substring(0, 1) + '.' + val.substring(1) + '0';
+            } else if (val.length === 1) val = val + '.00';
+        } else {
+            let parts = val.split('.');
+            val = (parts[0] || '0') + '.' + (parts[1] || '').padEnd(2, '0').substring(0, 2);
+        }
+        let num = parseFloat(val);
+        input.value = isNaN(num) ? '0.00' : num.toFixed(2);
+    }
+
+    function limitInteger(input) {
+        let val = input.value.replace(/[^0-9]/g, '');
+        if (val.length > 2) val = val.substring(0, 2);
+        input.value = val;
+    }
+
+    function clearData() {
+        const ids = ['homeStatus', 'homeXg', 'homeXga', 'homeGoals', 'homeConceded', 'homeRank', 'homeOdds',
+                     'awayStatus', 'awayXg', 'awayXga', 'awayGoals', 'awayConceded', 'awayRank', 'awayOdds'];
+        ids.forEach(id => document.getElementById(id).value = '');
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('errorMessage').style.display = 'none';
+        document.getElementById('radar-home').innerHTML = '';
+        document.getElementById('radar-away').innerHTML = '';
+        showInput();
+    }
+
+    function getGradeByPercent(pct) {
+        if (pct < 20) return { grade: 'E', color: '#c0c0c0' };
+        if (pct < 40) return { grade: 'D', color: '#cd7f32' };
+        if (pct < 60) return { grade: 'C', color: '#ff4d4d' };
+        if (pct < 75) return { grade: 'B', color: '#4ade80' };
+        if (pct < 85) return { grade: 'A', color: '#4da6ff' };
+        if (pct < 95) return { grade: 'S', color: '#FFD700' };
+        return { grade: 'X', color: '#9b59b6' };
+    }
+
+    function drawRadar(svgId, data, labels, color, fillColor) {
+        const svg = document.getElementById(svgId);
+        svg.innerHTML = ''; 
+        const cx = 100, cy = 100, maxR = 65, numAxes = data.length;
+        const angleStep = (Math.PI * 2) / numAxes;
+        const startAngle = -Math.PI / 2; 
+
+        for (let l = 1; l <= 4; l++) {
+            const r = (maxR / 4) * l;
+            let points = [];
+            for (let i = 0; i < numAxes; i++) {
+                const angle = startAngle + i * angleStep;
+                points.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
+            }
+            const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            polygon.setAttribute('points', points.join(' '));
+            polygon.setAttribute('fill', 'none'); polygon.setAttribute('stroke', '#444'); polygon.setAttribute('stroke-width', '1');
+            svg.appendChild(polygon);
+        }
+
+        for (let i = 0; i < numAxes; i++) {
+            const angle = startAngle + i * angleStep;
+            const x = cx + maxR * Math.cos(angle), y = cy + maxR * Math.sin(angle);
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', cx); line.setAttribute('y1', cy); line.setAttribute('x2', x); line.setAttribute('y2', y); line.setAttribute('stroke', '#444'); line.setAttribute('stroke-width', '1');
+            svg.appendChild(line);
+
+            const labelR = maxR + 15;
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', cx + labelR * Math.cos(angle));
+            text.setAttribute('y', cy + labelR * Math.sin(angle));
+            text.setAttribute('fill', '#aaa'); text.setAttribute('font-size', '10'); text.setAttribute('font-weight', 'bold'); text.setAttribute('text-anchor', 'middle'); text.setAttribute('dominant-baseline', 'middle');
+            text.textContent = labels[i];
+            svg.appendChild(text);
+        }
+
+        let dataPoints = [];
+        for (let i = 0; i < numAxes; i++) {
+            let pct = Math.max(data[i], 5) / 100; 
+            const r = maxR * pct, angle = startAngle + i * angleStep;
+            dataPoints.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
+        }
+        const dataPolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        dataPolygon.setAttribute('points', dataPoints.join(' '));
+        dataPolygon.setAttribute('fill', fillColor); dataPolygon.setAttribute('stroke', color); dataPolygon.setAttribute('stroke-width', '2');
+        svg.appendChild(dataPolygon);
+    }
+
+    function updateTeamUI(prefix, att, def, status, rankPct, oddsPct, hasRank) {
+        let attPct = Math.min(Math.max(((att - 0.5) / 2.0) * 100, 0), 100);
+        let defPct = Math.min(Math.max((def / 2.0) * 100, 0), 100);
+        let statPct = Math.min(Math.max((status / 3.0) * 100, 0), 100);
+
+        document.getElementById(prefix + 'AttBar').style.width = Math.max(attPct, 1) + '%';
+        document.getElementById(prefix + 'DefBar').style.width = Math.max(defPct, 1) + '%';
+        document.getElementById(prefix + 'StatBar').style.width = Math.max(statPct, 1) + '%';
+        document.getElementById(prefix + 'OddsBar').style.width = Math.max(oddsPct, 1) + '%';
+        
+        const attData = getGradeByPercent(attPct), defData = getGradeByPercent(defPct), statData = getGradeByPercent(statPct);
+        const oddsData = getGradeByPercent(oddsPct);
+
+        document.getElementById(prefix + 'AttDisplay').innerText = `${attData.grade} (${attPct.toFixed(1)})`;
+        document.getElementById(prefix + 'AttDisplay').style.color = attData.color;
+        document.getElementById(prefix + 'DefDisplay').innerText = `${defData.grade} (${defPct.toFixed(1)})`;
+        document.getElementById(prefix + 'DefDisplay').style.color = defData.color;
+        document.getElementById(prefix + 'StatDisplay').innerText = `${statData.grade} (${statPct.toFixed(1)})`;
+        document.getElementById(prefix + 'StatDisplay').style.color = statData.color;
+        document.getElementById(prefix + 'OddsDisplay').innerText = `${oddsData.grade} (${oddsPct.toFixed(1)})`;
+        document.getElementById(prefix + 'OddsDisplay').style.color = oddsData.color;
+
+        let radarData = [];
+        let labels = [];
+        let overallPct = 0;
+
+        if (hasRank) {
+            document.getElementById(prefix + 'RankRow').style.display = 'flex';
+            document.getElementById(prefix + 'RankBar').style.width = Math.max(rankPct, 1) + '%';
+            const rankData = getGradeByPercent(rankPct);
+            document.getElementById(prefix + 'RankDisplay').innerText = `${rankData.grade} (${rankPct.toFixed(1)})`;
+            document.getElementById(prefix + 'RankDisplay').style.color = rankData.color;
+            
+            radarData = [attPct, defPct, statPct, oddsPct, rankPct];
+            labels = ['ATK', 'DEF', 'STA', 'ODD', 'RNK'];
+            overallPct = (attPct + defPct + statPct + rankPct + oddsPct) / 5;
+        } else {
+            document.getElementById(prefix + 'RankRow').style.display = 'none';
+            radarData = [attPct, defPct, statPct, oddsPct];
+            labels = ['ATK', 'DEF', 'STA', 'ODD'];
+            overallPct = (attPct + defPct + statPct + oddsPct) / 4;
+        }
+
+        const overallData = getGradeByPercent(overallPct);
+        const overallEl = document.getElementById(prefix + 'Overall');
+        if (overallEl) {
+            overallEl.innerText = `總評分: ${overallData.grade} (${overallPct.toFixed(1)})`;
+            overallEl.style.color = overallData.color;
+            overallEl.style.borderColor = overallData.color;
+        }
+
+        drawRadar(prefix === 'h' ? 'radar-home' : 'radar-away', radarData, labels, 
+            prefix === 'h' ? '#ff6b6b' : '#6b9fff', prefix === 'h' ? 'rgba(255, 107, 107, 0.3)' : 'rgba(107, 159, 255, 0.3)');
+
+        const styleEl = document.getElementById(prefix + 'Style');
+        const pctDiff = Math.round((attPct - defPct) * 10) / 10;
+        if (pctDiff >= 25.0) { styleEl.innerText = "進攻型"; styleEl.style.color = "#ff8c8c"; styleEl.style.backgroundColor = "#3b1c1c"; }
+        else if (pctDiff <= -25.0) { styleEl.innerText = "防守型"; styleEl.style.color = "#8cb8ff"; styleEl.style.backgroundColor = "#1a2633"; }
+        else { styleEl.innerText = "平衡型"; styleEl.style.color = "#ccc"; styleEl.style.backgroundColor = "#333"; }
+
+        const statusBadge = document.getElementById(prefix + 'StatusBadge');
+        statusBadge.className = 'badge'; statusBadge.style.color = ''; statusBadge.style.backgroundColor = ''; 
+        
+        if (status <= 0.5) {
+            statusBadge.innerText = "狀態極差"; statusBadge.style.color = "#ff3333"; statusBadge.style.backgroundColor = "#550000";
+        } else if (status <= 1.0) {
+            statusBadge.innerText = "狀態欠佳"; statusBadge.style.color = "#ff6b6b"; statusBadge.style.backgroundColor = "#3b1c1c";
+        } else if (status <= 1.5) {
+            statusBadge.innerText = "狀態一般"; statusBadge.style.color = "#ffd700"; statusBadge.style.backgroundColor = "#3b331c";
+        } else if (status <= 2.0) {
+            statusBadge.innerText = "狀態微優"; statusBadge.style.color = "#a3e635"; statusBadge.style.backgroundColor = "#263b1c";
+        } else if (status <= 2.5) {
+            statusBadge.innerText = "狀態良好"; statusBadge.classList.add('status-glow-green');
+        } else {
+            statusBadge.innerText = "狀態極好"; statusBadge.classList.add('status-glow-cyan');
+        }
+
+        return overallPct;
+    }
+
+    function applyMiniUI(id, finalResult, diffDisplay) {
+        const box = document.getElementById('box_' + id);
+        const val = document.getElementById('val_' + id);
+        const diff = document.getElementById('diff_' + id);
+
+        diff.innerText = `(${diffDisplay})`;
+        if (finalResult === "home") { val.innerText = "主勝"; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; diff.style.color = "#4ade80"; }
+        else if (finalResult === "away") { val.innerText = "客勝"; val.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; diff.style.color = "#f87171"; }
+        else if (finalResult === "draw") { val.innerText = "和局"; val.style.color = "#ffd700"; box.style.borderColor = "#ffd700"; box.style.backgroundColor = "#332d1a"; diff.style.color = "#ffd700"; }
+        else { val.innerText = "不建議"; val.style.color = "#aaa"; box.style.borderColor = "#555"; box.style.backgroundColor = "#2a2a2a"; diff.style.color = "#aaa"; }
+    }
+
+    function calculate() {
+        const hXgStr = document.getElementById('homeXg').value;
+        const hXgaStr = document.getElementById('homeXga').value;
+        const hStatusStr = document.getElementById('homeStatus').value;
+        const hGoalsStr = document.getElementById('homeGoals').value;
+        const hConcededStr = document.getElementById('homeConceded').value;
+        const hRankStr = document.getElementById('homeRank').value.trim();
+        const hOddsStr = document.getElementById('homeOdds').value;
+
+        const aXgStr = document.getElementById('awayXg').value;
+        const aXgaStr = document.getElementById('awayXga').value;
+        const aStatusStr = document.getElementById('awayStatus').value;
+        const aGoalsStr = document.getElementById('awayGoals').value;
+        const aConcededStr = document.getElementById('awayConceded').value;
+        const aRankStr = document.getElementById('awayRank').value.trim();
+        const aOddsStr = document.getElementById('awayOdds').value;
+
+        const hasRank = hRankStr !== "" && aRankStr !== "";
+
+        if (!hXgStr || !hXgaStr || !hStatusStr || !hGoalsStr || !hConcededStr || !hOddsStr ||
+            !aXgStr || !aXgaStr || !aStatusStr || !aGoalsStr || !aConcededStr || !aOddsStr) {
+            document.getElementById('errorMessage').style.display = 'block';
+            return;
+        }
+        document.getElementById('errorMessage').style.display = 'none';
+
+        const hXg = parseFloat(hXgStr) || 0, hXga = parseFloat(hXgaStr) || 0, hStatus = parseFloat(hStatusStr) || 0;
+        const aXg = parseFloat(aXgStr) || 0, aXga = parseFloat(aXgaStr) || 0, aStatus = parseFloat(aStatusStr) || 0;
+        const hGoals = parseFloat(hGoalsStr) || 0, hConceded = parseFloat(hConcededStr) || 0;
+        const aGoals = parseFloat(aGoalsStr) || 0, aConceded = parseFloat(aConcededStr) || 0;
+        const hOdds = parseFloat(hOddsStr) || 0, aOdds = parseFloat(aOddsStr) || 0;
+        
+        let hRank = hasRank ? parseInt(hRankStr) : 0;
+        let aRank = hasRank ? parseInt(aRankStr) : 0;
+
+        let hRankPct = 0, aRankPct = 0;
+        if (hasRank) {
+            let totalRank = hRank + aRank;
+            hRankPct = totalRank > 0 ? (aRank / totalRank) * 100 : 50;
+            aRankPct = totalRank > 0 ? (hRank / totalRank) * 100 : 50;
+        }
+
+        let totalOdds = hOdds + aOdds;
+        let hOddsPct = totalOdds > 0 ? (aOdds / totalOdds) * 100 : 50;
+        let aOddsPct = totalOdds > 0 ? (hOdds / totalOdds) * 100 : 50;
+
+        // 更新標籤
+        const hOddsBadge = document.getElementById('hOddsBadge');
+        const aOddsBadge = document.getElementById('aOddsBadge');
+        hOddsBadge.style.display = 'inline-block';
+        aOddsBadge.style.display = 'inline-block';
+        if (hOdds < aOdds) {
+            hOddsBadge.innerText = "上盤"; hOddsBadge.style.color = "#bbf7d0"; hOddsBadge.style.backgroundColor = "#15803d"; 
+            aOddsBadge.innerText = "下盤"; aOddsBadge.style.color = "#ccc"; aOddsBadge.style.backgroundColor = "#333";
+        } else if (hOdds > aOdds) {
+            hOddsBadge.innerText = "下盤"; hOddsBadge.style.color = "#ccc"; hOddsBadge.style.backgroundColor = "#333";
+            aOddsBadge.innerText = "上盤"; aOddsBadge.style.color = "#bbf7d0"; aOddsBadge.style.backgroundColor = "#15803d";
+        } else {
+            hOddsBadge.style.display = 'none';
+            aOddsBadge.style.display = 'none';
+        }
+
+        const hRankBadge = document.getElementById('hRankBadge');
+        const aRankBadge = document.getElementById('aRankBadge');
+        if (hasRank) {
+            hRankBadge.style.display = 'inline-block';
+            hRankBadge.innerText = `第${hRank}名`;
+            hRankBadge.className = 'badge';
+            if (hRank === 1) hRankBadge.classList.add('rank-glow-gold');
+            else if (hRank === 2) hRankBadge.classList.add('rank-glow-silver');
+            else if (hRank === 3) hRankBadge.classList.add('rank-glow-bronze');
+            else { hRankBadge.style.color = '#ccc'; hRankBadge.style.backgroundColor = '#333'; }
+
+            aRankBadge.style.display = 'inline-block';
+            aRankBadge.innerText = `第${aRank}名`;
+            aRankBadge.className = 'badge';
+            if (aRank === 1) aRankBadge.classList.add('rank-glow-gold');
+            else if (aRank === 2) aRankBadge.classList.add('rank-glow-silver');
+            else if (aRank === 3) aRankBadge.classList.add('rank-glow-bronze');
+            else { aRankBadge.style.color = '#ccc'; aRankBadge.style.backgroundColor = '#333'; }
+        } else {
+            hRankBadge.style.display = 'none';
+            aRankBadge.style.display = 'none';
+        }
+
+        // UI 繪圖用的值 (直接使用輸入的 xG/xGA，無加成)
+        let hAttUI = hXg;
+        let hDefUI = Math.max(0, 3.0 - hXga);
+        let aAttUI = aXg;
+        let aDefUI = Math.max(0, 3.0 - aXga);
+
+        const hOverallPct = updateTeamUI('h', hAttUI, hDefUI, hStatus, hRankPct, hOddsPct, hasRank);
+        const aOverallPct = updateTeamUI('a', aAttUI, aDefUI, aStatus, aRankPct, aOddsPct, hasRank);
+
+        // 預測賽果 (原第五重：得失球碰撞)
+        const diffFifth = (hGoals + aConceded) - (aGoals + hConceded);
+        let resFifth = "avoid";
+        if (diffFifth >= 1.0) resFifth = "home";
+        else if (diffFifth <= -1.0) resFifth = "away";
+        else if (diffFifth >= -0.1 && diffFifth <= 0.1) resFifth = "draw";
+        applyMiniUI('fifth', resFifth, diffFifth.toFixed(2));
+
+        // ==========================================
+        // 入球大細與波膽的兜底檢查邏輯
+        // ==========================================
+        
+        let hSize15 = "模糊";
+        let aSize15 = "模糊";
+        let totalSize25 = "模糊";
+
+        if (hGoals <= 1.20 && aConceded <= 1.20) hSize15 = "小";
+        else if (hGoals >= 1.80 && aConceded >= 1.80) hSize15 = "大";
+
+        if (aGoals <= 1.20 && hConceded <= 1.20) aSize15 = "小";
+        else if (aGoals >= 1.80 && hConceded >= 1.80) aSize15 = "大";
+
+        if (hSize15 === "小" && aSize15 === "小") totalSize25 = "小";
+        else if (hSize15 === "大" && aSize15 === "大") totalSize25 = "大";
+
+        let isValid = false;
+        let finalScores = [];
+
+        // 如果賽果明確，則進行比分反推檢查
+        if (resFifth !== "avoid") {
+            // 波膽最高限制為 3 球
+            for (let h = 0; h <= 3; h++) {
+                for (let a = 0; a <= 3; a++) {
+                    // 1. 檢查賽果是否相符
+                    let matchRes = (h > a) ? "home" : ((h < a) ? "away" : "draw");
+                    if (matchRes !== resFifth) continue;
+
+                    // 2. 檢查大細條件 (若原本是明確的，則必須符合)
+                    let checkHSize = (h >= 2) ? "大" : "小";
+                    if (hSize15 !== "模糊" && hSize15 !== checkHSize) continue;
+
+                    let checkASize = (a >= 2) ? "大" : "小";
+                    if (aSize15 !== "模糊" && aSize15 !== checkASize) continue;
+
+                    let checkTotal = ((h + a) >= 3) ? "大" : "小";
+                    if (totalSize25 !== "模糊" && totalSize25 !== checkTotal) continue;
+
+                    // 通過所有檢查，加入候選比分
+                    finalScores.push(`${h}:${a}`);
+                    isValid = true;
+                }
+            }
+
+            // 如果反推成功，我們可以利用存活的比分來「補全」大細
+            if (isValid) {
+                let hasHBig = finalScores.some(s => parseInt(s.split(':')[0]) >= 2);
+                let hasHSmall = finalScores.some(s => parseInt(s.split(':')[0]) <= 1);
+                if (hSize15 === "模糊") {
+                    if (hasHBig && !hasHSmall) hSize15 = "大";
+                    else if (hasHSmall && !hasHBig) hSize15 = "小";
+                }
+
+                let hasABig = finalScores.some(s => parseInt(s.split(':')[1]) >= 2);
+                let hasASmall = finalScores.some(s => parseInt(s.split(':')[1]) <= 1);
+                if (aSize15 === "模糊") {
+                    if (hasABig && !hasASmall) aSize15 = "大";
+                    else if (hasASmall && !hasABig) aSize15 = "小";
+                }
+
+                let hasTBig = finalScores.some(s => (parseInt(s.split(':')[0]) + parseInt(s.split(':')[1])) >= 3);
+                let hasTSmall = finalScores.some(s => (parseInt(s.split(':')[0]) + parseInt(s.split(':')[1])) <= 2);
+                if (totalSize25 === "模糊") {
+                    if (hasTBig && !hasTSmall) totalSize25 = "大";
+                    else if (hasTSmall && !hasTBig) totalSize25 = "小";
+                }
+            }
+        } else {
+            // 賽果模糊，只依照原本的大細組合給波膽
+            let baseScores = [];
+            if (hSize15 === "小" && aSize15 === "小") { baseScores = ["0:0", "1:1", "1:0", "0:1"]; isValid = true; }
+            else if (hSize15 === "大" && aSize15 === "大") { baseScores = ["2:2", "3:3", "2:3", "3:2"]; isValid = true; }
+            else if (hSize15 === "小" && aSize15 === "大") { baseScores = ["0:3", "1:2", "1:3", "0:2"]; isValid = true; }
+            else if (hSize15 === "大" && aSize15 === "小") { baseScores = ["3:0", "2:1", "3:1", "2:0"]; isValid = true; }
+            finalScores = baseScores;
+        }
+
+        // 更新入球大細 UI
+        const valH15 = document.getElementById('val_h_15');
+        valH15.innerText = hSize15 === "模糊" ? "方向模糊" : `${hSize15} 1.5`;
+        valH15.style.color = hSize15 === '大' ? '#f87171' : (hSize15 === '小' ? '#8cb8ff' : '#aaa');
+
+        const valA15 = document.getElementById('val_a_15');
+        valA15.innerText = aSize15 === "模糊" ? "方向模糊" : `${aSize15} 1.5`;
+        valA15.style.color = aSize15 === '大' ? '#f87171' : (aSize15 === '小' ? '#8cb8ff' : '#aaa');
+
+        const valTotal25 = document.getElementById('val_total_25');
+        valTotal25.innerText = totalSize25 === "模糊" ? "方向模糊" : `${totalSize25} 2.5`;
+        valTotal25.style.color = totalSize25 === '大' ? '#f87171' : (totalSize25 === '小' ? '#8cb8ff' : '#aaa');
+
+        // 更新波膽 UI
+        const betBox = document.getElementById('betBox');
+        const betValue = document.getElementById('betValue');
+        
+        if (!isValid) {
+            betBox.style.borderColor = '#444';
+            betBox.style.backgroundColor = '#222';
+            betValue.innerText = '條件矛盾，方向模糊';
+            betValue.style.color = '#888';
+        } else {
+            betBox.style.borderColor = '#ffd700';
+            betBox.style.backgroundColor = '#2a2a1a';
+            betValue.innerText = finalScores.join(' / ');
+            betValue.style.color = '#fff';
+        }
+
+        document.getElementById('inputSection').style.display = 'none';
+        document.getElementById('result').style.display = 'block';
+    }
+</script>
+</body>
+</html>
