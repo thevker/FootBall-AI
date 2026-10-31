@@ -993,15 +993,16 @@
         let exactGD = null;
         let handicapText = "";
 
+        // 更新門檻：包含邊界值
         if (diffFifth > 3.25) {
             resFifth = "home"; exactGD = 3; handicapText = "主勝(-2)";
         } else if (diffFifth > 2.25) {
             resFifth = "home"; exactGD = 2; handicapText = "主勝(-1)";
         } else if (diffFifth > 1.25) {
             resFifth = "home"; exactGD = 1; handicapText = "主勝";
-        } else if (diffFifth > 0.25) {
+        } else if (diffFifth >= 0.15) {
             resFifth = "home_or_draw"; handicapText = "和局/主勝";
-        } else if (diffFifth >= -0.25) {
+        } else if (diffFifth > -0.15) {
             resFifth = "draw"; handicapText = "和局";
         } else if (diffFifth >= -1.25) {
             resFifth = "away_or_draw"; handicapText = "和局/客勝";
@@ -1047,7 +1048,6 @@
         let hasActive = false;
         for (let h = 0; h <= 4; h++) {
             for (let a = 0; a <= 4; a++) {
-                // 1. 先過濾大小球
                 if (hSize15 === "大" && h < 2) continue;
                 if (hSize15 === "小" && h >= 2) continue;
                 if (aSize15 === "大" && a < 2) continue;
@@ -1055,7 +1055,6 @@
                 if (totalSize25 === "大" && (h + a) < 3) continue;
                 if (totalSize25 === "小" && (h + a) >= 3) continue;
 
-                // 2. 判斷賽果與距離上色
                 const cell = document.getElementById(`cell-${h}-${a}`);
                 const currentGD = h - a;
 
@@ -1066,17 +1065,16 @@
                 } else if (exactGD !== null) {
                     const dist = Math.abs(currentGD - exactGD);
                     if (dist === 0) {
-                        cell.classList.add('active'); // 綠色
+                        cell.classList.add('active');
                         hasActive = true;
                     } else if (dist === 1) {
-                        cell.classList.add('yellow'); // 黃色
+                        cell.classList.add('yellow');
                         hasActive = true;
                     } else if (dist === 2) {
-                        cell.classList.add('red'); // 紅色
+                        cell.classList.add('red');
                         hasActive = true;
                     }
                 } else {
-                    // home_or_draw, away_or_draw, draw
                     let matchRes = false;
                     if (resFifth === "home_or_draw" && h >= a) matchRes = true;
                     if (resFifth === "away_or_draw" && h <= a) matchRes = true;
