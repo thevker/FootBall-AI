@@ -434,7 +434,6 @@
 <script>
     let currentMode = 'standard';
 
-    // 模式切換邏輯
     function switchMode(mode) {
         currentMode = mode;
         if (mode === 'standard') {
@@ -445,7 +444,6 @@
             document.getElementById('btnStd').classList.remove('active');
             document.getElementById('btnMin').classList.add('active');
             document.querySelectorAll('.std-only').forEach(el => el.style.display = 'none');
-            // 清空不需要的數據
             ['homeStatus','homeXg','homeXga','homeRank','homeOdds','awayStatus','awayXg','awayXga','awayRank','awayOdds'].forEach(id => {
                 document.getElementById(id).value = '';
             });
@@ -460,7 +458,7 @@
                     const cell = document.createElement('div');
                     cell.className = 'bet-cell';
                     cell.id = `cell-${h}-${a}`;
-                    cell.innerText = `${h}:${a}`; // 帶冒號格式
+                    cell.innerText = `${h}:${a}`;
                     grid.appendChild(cell);
                 }
             }
@@ -860,6 +858,7 @@
         }
         applyMiniUI('fifth', resFifth, diffFifth.toFixed(2), handicapText);
 
+        // 1. 先基於賽前數據獨立計算大小球方向
         let hSize15 = "模糊";
         let aSize15 = "模糊";
         let totalSize25 = "模糊";
@@ -872,6 +871,33 @@
 
         if (hSize15 === "小" && aSize15 === "小") totalSize25 = "小";
         else if (hSize15 === "大" && aSize15 === "大") totalSize25 = "大";
+
+        // 2. 核心：結合賽果進行「邏輯約束與推導」
+        if (resFifth === "draw") {
+            // 和局代表 H == A
+            if (hSize15 === "小") aSize15 = "小";
+            if (hSize15 === "大") aSize15 = "大";
+            if (aSize15 === "小") hSize15 = "小";
+            if (aSize15 === "大") hSize15 = "大";
+            if (hSize15 === "小") totalSize25 = "小";
+            if (hSize15 === "大") totalSize25 = "大";
+        } else if (resFifth === "home_or_draw") {
+            // 和局/主勝代表 H >= A
+            if (hSize15 === "小") { aSize15 = "小"; totalSize25 = "小"; }
+            if (aSize15 === "大") { hSize15 = "大"; totalSize25 = "大"; }
+        } else if (resFifth === "away_or_draw") {
+            // 和局/客勝代表 H <= A
+            if (aSize15 === "小") { hSize15 = "小"; totalSize25 = "小"; }
+            if (hSize15 === "大") { aSize15 = "大"; totalSize25 = "大"; }
+        } else if (resFifth === "home") {
+            // 主勝
+            if (exactGD === 1 && hSize15 === "小") { aSize15 = "小"; totalSize25 = "小"; }
+            if (exactGD === 3) { totalSize25 = "大"; } // 淨勝 3 球，總入球至少 3
+        } else if (resFifth === "away") {
+            // 客勝
+            if (exactGD === -1 && aSize15 === "小") { hSize15 = "小"; totalSize25 = "小"; }
+            if (exactGD === -3) { totalSize25 = "大"; }
+        }
 
         const valH15 = document.getElementById('val_h_15');
         valH15.innerText = hSize15 === "模糊" ? "方向模糊" : `${hSize15} 1.5`;
@@ -890,9 +916,18 @@
             c.classList.remove('active', 'yellow', 'red');
         });
 
+        // 目標淨勝球陣列
+        let targetGDs = [];
+        if (resFifth === "home") targetGDs = [exactGD];
+        else if (resFifth === "away") targetGDs = [exactGD];
+        else if (resFifth === "draw") targetGDs = [0];
+        else if (resFifth === "home_or_draw") targetGDs = [0, 1];
+        else if (resFifth === "away_or_draw") targetGDs = [0, -1];
+
         let hasActive = false;
         for (let h = 0; h <= 4; h++) {
             for (let a = 0; a <= 4; a++) {
+                // 過濾大小球
                 if (hSize15 === "大" && h < 2) continue;
                 if (hSize15 === "小" && h >= 2) continue;
                 if (aSize15 === "大" && a < 2) continue;
@@ -905,28 +940,24 @@
 
                 if (resFifth === "avoid") {
                     if (hSize15 === "模糊" && aSize15 === "模糊" && totalSize25 === "模糊") continue;
-                    cell.classList.add('active');
+                    cell.classList.add('active'); 
                     hasActive = true;
-                } else if (exactGD !== null) {
-                    const dist = Math.abs(currentGD - exactGD);
-                    if (dist === 0) {
+                } else {
+                    // 距離上色
+                    let minDist = 999;
+                    targetGDs.forEach(gd => {
+                        let d = Math.abs(currentGD - gd);
+                        if (d < minDist) minDist = d;
+                    });
+
+                    if (minDist === 0) {
                         cell.classList.add('active');
                         hasActive = true;
-                    } else if (dist === 1) {
+                    } else if (minDist === 1) {
                         cell.classList.add('yellow');
                         hasActive = true;
-                    } else if (dist === 2) {
+                    } else if (minDist === 2) {
                         cell.classList.add('red');
-                        hasActive = true;
-                    }
-                } else {
-                    let matchRes = false;
-                    if (resFifth === "home_or_draw" && h >= a) matchRes = true;
-                    if (resFifth === "away_or_draw" && h <= a) matchRes = true;
-                    if (resFifth === "draw" && h === a) matchRes = true;
-
-                    if (matchRes) {
-                        cell.classList.add('active');
                         hasActive = true;
                     }
                 }
