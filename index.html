@@ -37,6 +37,18 @@
         }
         @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
 
+        /* 模式切換 */
+        .mode-switch {
+            display: flex; gap: 10px; margin-bottom: 15px; background: #222;
+            padding: 5px; border-radius: 8px;
+        }
+        .mode-btn {
+            flex: 1; padding: 10px; background: transparent; color: #888;
+            border: none; border-radius: 6px; font-size: 13px; font-weight: bold;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .mode-btn.active { background: #3a7bd5; color: white; }
+
         #inputSection { transition: opacity 0.3s; }
         .input-section { margin-bottom: 15px; }
         .section-header { font-size: 14px; font-weight: bold; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #333; }
@@ -46,18 +58,17 @@
         .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
         .input-box { display: flex; flex-direction: column; flex: 1; min-width: 0; }
         label { font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #bbbbbb; }
-        input[type="text"], input[type="password"] { 
+        input[type="text"] { 
             width: 100%; padding: 12px 8px; background-color: #2d2d2d; border: 1px solid #444; 
             color: #ffffff; border-radius: 6px; font-size: 16px; outline: none; transition: border 0.2s; 
             text-align: center;
         }
-        input[type="text"]:focus, input[type="password"]:focus { border-color: #4da6ff; }
+        input[type="text"]:focus { border-color: #4da6ff; }
 
-        button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        .btn-calculate { background: #3a7bd5; color: white; }
-        .btn-calculate:hover { background: #2a5fa5; }
-        .btn-clear { background: #5a2a2a; color: #ff9999; margin-top: 8px; border: 1px solid #7a3a3a; }
-        .btn-clear:hover { background: #7a3a3a; color: white; }
+        button.btn-calculate { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; background: #3a7bd5; color: white; }
+        button.btn-calculate:hover { background: #2a5fa5; }
+        button.btn-clear { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; background: #5a2a2a; color: #ff9999; margin-top: 8px; border: 1px solid #7a3a3a; }
+        button.btn-clear:hover { background: #7a3a3a; color: white; }
         
         #result { display: none; }
         
@@ -159,7 +170,6 @@
             box-shadow: 0 0 10px rgba(74, 222, 128, 0.4);
             text-shadow: 0 0 4px rgba(74, 222, 128, 0.6);
         }
-        /* 新增黃色與紅色樣式 */
         .bet-cell.yellow {
             background-color: #3b331c; color: #ffd700;
             border-color: #ffd700;
@@ -252,128 +262,10 @@
             border: none; border-radius: 6px; font-weight: bold; cursor: pointer;
         }
 
-        #sessionTimer {
-            display: none;
-            position: fixed;
-            top: 12px;
-            right: 12px;
-            z-index: 9998;
-            background: rgba(26, 26, 26, 0.95);
-            border: 1px solid #4ade80;
-            color: #4ade80;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: bold;
-            font-variant-numeric: tabular-nums;
-            letter-spacing: 1px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            align-items: center;
-            gap: 6px;
-        }
-        #sessionTimer.warning {
-            border-color: #ff4d4d;
-            color: #ff4d4d;
-            box-shadow: 0 0 12px rgba(255, 77, 77, 0.6);
-            animation: pulse-red 1s infinite alternate;
-        }
-        @keyframes pulse-red {
-            0% { box-shadow: 0 0 4px rgba(255, 77, 77, 0.4); }
-            100% { box-shadow: 0 0 14px rgba(255, 77, 77, 0.9); }
-        }
-
-        /* ====== 登入遮罩 ====== */
-        #loginOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10000;
-            display: none;
-            justify-content: center; align-items: center;
-            background-color: rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            transition: opacity 0.4s ease;
-            padding: 20px;
-        }
-        #loginOverlay.hidden { opacity: 0; pointer-events: none; }
-        .login-card {
-            background: rgba(26, 26, 26, 0.95);
-            border: 1px solid #444;
-            border-radius: 18px;
-            padding: 30px 22px;
-            width: 100%; max-width: 340px;
-            text-align: center;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.7);
-        }
-        .login-icon { font-size: 36px; margin-bottom: 8px; }
-        .login-title { font-size: 18px; font-weight: bold; color: #fff; margin-bottom: 4px; }
-        .login-sub { font-size: 12px; color: #888; margin-bottom: 20px; line-height: 1.5; }
-        .login-card input[type="password"] {
-            padding: 14px 12px; font-size: 18px; letter-spacing: 2px;
-            margin-bottom: 12px; text-align: center;
-        }
-        .btn-login { background: #3a7bd5; color: white; padding: 13px; font-size: 15px; }
-        .btn-login:hover { background: #2a5fa5; }
-        #loginError {
-            display: none; color: #ff4d4d; font-size: 12px; font-weight: bold;
-            margin-top: 10px;
-        }
-        @keyframes loginShake { 
-            0%,100% { transform: translateX(0); } 
-            20%,60% { transform: translateX(-8px); } 
-            40%,80% { transform: translateX(8px); } 
-        }
-        .shake-now { animation: loginShake 0.45s; }
-
-        /* WhatsApp 連結樣式 */
-        .whatsapp-box {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px dashed #444;
-        }
-        .whatsapp-text {
-            font-size: 12px;
-            color: #888;
-            margin-bottom: 8px;
-        }
-        .whatsapp-btn {
-            display: inline-block;
-            background-color: #25D366;
-            color: #ffffff;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: bold;
-            padding: 10px 15px;
-            border-radius: 8px;
-            transition: background 0.2s, transform 0.2s;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        .whatsapp-btn:hover {
-            background-color: #1ebe5d;
-            transform: scale(1.02);
-        }
+        .std-only { display: flex; }
     </style>
 </head>
 <body>
-
-<div id="sessionTimer">⏱ <span id="timerText">60:00</span></div>
-
-<div id="loginOverlay">
-    <div class="login-card" id="loginCard">
-        <div class="login-icon">🔒</div>
-        <div class="login-title">免費使用已結束</div>
-        <div class="login-sub" id="loginSub">輸入密碼以永久解鎖<br><span style="color:#666;font-size:11px;">（解鎖後不再限制使用時間）</span></div>
-        
-        <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter')tryLogin()">
-        <button class="btn-login" onclick="tryLogin()">解鎖</button>
-        <div id="loginError">❌ 密碼錯誤，請重試</div>
-
-        <div class="whatsapp-box">
-            <div class="whatsapp-text">沒有密碼？</div>
-            <a href="https://chat.whatsapp.com/ERTlOXVQSjzBArFNgjyTYo?s=cl&p=i&mlu=4&ilr=4&iam=2" target="_blank" class="whatsapp-btn">💬 加入 WhatsApp 群組獲取密碼</a>
-        </div>
-    </div>
-</div>
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
@@ -384,10 +276,16 @@
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
+    <!-- 模式切換 -->
+    <div class="mode-switch">
+        <button id="btnStd" class="mode-btn active" onclick="switchMode('standard')">標準模式</button>
+        <button id="btnMin" class="mode-btn" onclick="switchMode('minimal')">極簡模式</button>
+    </div>
+
     <div id="inputSection">
         <div class="input-section">
             <div class="section-header home">🏠 主隊數據</div>
-            <div class="input-row">
+            <div class="input-row std-only">
                 <div class="input-box"><label>狀態 (0-3)</label><input type="text" inputmode="decimal" id="homeStatus" placeholder="例：1.50" oninput="limitInput(this)" onblur="formatInput(this)"></div>
                 <div class="input-box"></div>
             </div>
@@ -395,11 +293,11 @@
                 <div class="input-box"><label>得分</label><input type="text" inputmode="decimal" id="homeGoals" placeholder="例：1.50" oninput="limitInput(this)" onblur="formatInput(this)"></div>
                 <div class="input-box"><label>失球</label><input type="text" inputmode="decimal" id="homeConceded" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
             </div>
-            <div class="input-row">
+            <div class="input-row std-only">
                 <div class="input-box"><label>主隊 xG</label><input type="text" inputmode="decimal" id="homeXg" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
                 <div class="input-box"><label>主隊 xGA</label><input type="text" inputmode="decimal" id="homeXga" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
             </div>
-            <div class="input-row">
+            <div class="input-row std-only">
                 <div class="input-box"><label>排名 (選填)</label><input type="text" inputmode="numeric" id="homeRank" placeholder="例：1" oninput="limitInteger(this)"></div>
                 <div class="input-box"><label>賠率</label><input type="text" inputmode="decimal" id="homeOdds" placeholder="例：1.67" oninput="limitInput(this)" onblur="formatInput(this)"></div>
             </div>
@@ -407,7 +305,7 @@
 
         <div class="input-section">
             <div class="section-header away">✈️ 客隊數據</div>
-            <div class="input-row">
+            <div class="input-row std-only">
                 <div class="input-box"><label>狀態 (0-3)</label><input type="text" inputmode="decimal" id="awayStatus" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
                 <div class="input-box"></div>
             </div>
@@ -415,11 +313,11 @@
                 <div class="input-box"><label>得分</label><input type="text" inputmode="decimal" id="awayGoals" placeholder="例：0.50" oninput="limitInput(this)" onblur="formatInput(this)"></div>
                 <div class="input-box"><label>失球</label><input type="text" inputmode="decimal" id="awayConceded" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
             </div>
-            <div class="input-row">
+            <div class="input-row std-only">
                 <div class="input-box"><label>客隊 xG</label><input type="text" inputmode="decimal" id="awayXg" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
                 <div class="input-box"><label>客隊 xGA</label><input type="text" inputmode="decimal" id="awayXga" placeholder="例：1.00" oninput="limitInput(this)" onblur="formatInput(this)"></div>
             </div>
-            <div class="input-row">
+            <div class="input-row std-only">
                 <div class="input-box"><label>排名 (選填)</label><input type="text" inputmode="numeric" id="awayRank" placeholder="例：2" oninput="limitInteger(this)"></div>
                 <div class="input-box"><label>賠率</label><input type="text" inputmode="decimal" id="awayOdds" placeholder="例：1.27" oninput="limitInput(this)" onblur="formatInput(this)"></div>
             </div>
@@ -534,77 +432,23 @@
 </div>
 
 <script>
-    const CORRECT_PASSWORD = "hkjcgoodbye";
-    const TRIAL_DURATION_MS = 60 * 60 * 1000;
-    const TRIAL_KEY = 'xg_trial_start_ts';
-    const UNLOCK_KEY = 'xg_permanent_unlock';
-    let countdownTimer = null;
+    let currentMode = 'standard';
 
-    function isPermanentlyUnlocked() { return localStorage.getItem(UNLOCK_KEY) === '1'; }
-    function getRemainingMs() {
-        const startStr = localStorage.getItem(TRIAL_KEY);
-        if (!startStr) return 0;
-        const start = parseInt(startStr, 10);
-        if (isNaN(start) || start <= 0) return 0;
-        return Math.max(0, TRIAL_DURATION_MS - (Date.now() - start));
-    }
-    function updateTimerText(ms) {
-        const el = document.getElementById('sessionTimer');
-        const txt = document.getElementById('timerText');
-        const totalSec = Math.max(0, Math.floor(ms / 1000));
-        const m = Math.floor(totalSec / 60);
-        const s = totalSec % 60;
-        txt.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        if (ms <= 5 * 60 * 1000) el.classList.add('warning');
-        else el.classList.remove('warning');
-    }
-    function startCountdown() {
-        if (countdownTimer) clearInterval(countdownTimer);
-        document.getElementById('sessionTimer').style.display = 'flex';
-        const tick = () => {
-            const remaining = getRemainingMs();
-            if (remaining <= 0) {
-                clearInterval(countdownTimer);
-                countdownTimer = null;
-                lockSession();
-                return;
-            }
-            updateTimerText(remaining);
-        };
-        tick();
-        countdownTimer = setInterval(tick, 1000);
-    }
-    function lockSession() {
-        document.getElementById('sessionTimer').style.display = 'none';
-        const overlay = document.getElementById('loginOverlay');
-        overlay.style.display = 'flex';
-        void overlay.offsetWidth;
-        overlay.classList.remove('hidden');
-        document.getElementById('loginError').style.display = 'none';
-        const pwd = document.getElementById('loginPassword');
-        pwd.value = '';
-        setTimeout(() => pwd.focus(), 300);
-    }
-    function tryLogin() {
-        const input = document.getElementById('loginPassword');
-        const err = document.getElementById('loginError');
-        const card = document.getElementById('loginCard');
-        if (input.value === CORRECT_PASSWORD) {
-            localStorage.setItem(UNLOCK_KEY, '1');
-            err.style.display = 'none';
-            const overlay = document.getElementById('loginOverlay');
-            overlay.classList.add('hidden');
-            setTimeout(() => { overlay.style.display = 'none'; }, 400);
-            document.getElementById('sessionTimer').style.display = 'none';
-            if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
-            input.value = '';
+    // 模式切換邏輯
+    function switchMode(mode) {
+        currentMode = mode;
+        if (mode === 'standard') {
+            document.getElementById('btnStd').classList.add('active');
+            document.getElementById('btnMin').classList.remove('active');
+            document.querySelectorAll('.std-only').forEach(el => el.style.display = 'flex');
         } else {
-            err.style.display = 'block';
-            card.classList.remove('shake-now');
-            void card.offsetWidth;
-            card.classList.add('shake-now');
-            input.value = '';
-            input.focus();
+            document.getElementById('btnStd').classList.remove('active');
+            document.getElementById('btnMin').classList.add('active');
+            document.querySelectorAll('.std-only').forEach(el => el.style.display = 'none');
+            // 清空不需要的數據
+            ['homeStatus','homeXg','homeXga','homeRank','homeOdds','awayStatus','awayXg','awayXga','awayRank','awayOdds'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
         }
     }
 
@@ -625,23 +469,6 @@
 
     window.addEventListener('load', () => {
         initBetGrid();
-        if (isPermanentlyUnlocked()) {
-            document.getElementById('sessionTimer').style.display = 'none';
-            document.getElementById('loginOverlay').style.display = 'none';
-            return;
-        }
-        const hasTrial = localStorage.getItem(TRIAL_KEY) !== null;
-        const remaining = getRemainingMs();
-        if (!hasTrial) {
-            localStorage.setItem(TRIAL_KEY, Date.now().toString());
-            document.getElementById('loginOverlay').style.display = 'none';
-            startCountdown();
-        } else if (remaining > 0) {
-            document.getElementById('loginOverlay').style.display = 'none';
-            startCountdown();
-        } else {
-            lockSession();
-        }
     });
 
     function closeModal() { document.getElementById('imageModal').style.display = 'none'; }
@@ -891,28 +718,38 @@
     }
 
     function calculate() {
-        const hXgStr = document.getElementById('homeXg').value;
-        const hXgaStr = document.getElementById('homeXga').value;
-        const hStatusStr = document.getElementById('homeStatus').value;
+        const isStd = currentMode === 'standard';
+
         const hGoalsStr = document.getElementById('homeGoals').value;
         const hConcededStr = document.getElementById('homeConceded').value;
-        const hRankStr = document.getElementById('homeRank').value.trim();
-        const hOddsStr = document.getElementById('homeOdds').value;
-
-        const aXgStr = document.getElementById('awayXg').value;
-        const aXgaStr = document.getElementById('awayXga').value;
-        const aStatusStr = document.getElementById('awayStatus').value;
         const aGoalsStr = document.getElementById('awayGoals').value;
         const aConcededStr = document.getElementById('awayConceded').value;
-        const aRankStr = document.getElementById('awayRank').value.trim();
-        const aOddsStr = document.getElementById('awayOdds').value;
 
-        const hasRank = hRankStr !== "" && aRankStr !== "";
-
-        if (!hXgStr || !hXgaStr || !hStatusStr || !hGoalsStr || !hConcededStr || !hOddsStr ||
-            !aXgStr || !aXgaStr || !aStatusStr || !aGoalsStr || !aConcededStr || !aOddsStr) {
-            document.getElementById('errorMessage').style.display = 'block';
+        if (!hGoalsStr || !hConcededStr || !aGoalsStr || !aConcededStr) {
+            alert("請填寫主客隊的得分與失球！");
             return;
+        }
+
+        let hXgStr = "0", hXgaStr = "0", hStatusStr = "0", hRankStr = "", hOddsStr = "0";
+        let aXgStr = "0", aXgaStr = "0", aStatusStr = "0", aRankStr = "", aOddsStr = "0";
+
+        if (isStd) {
+            hXgStr = document.getElementById('homeXg').value;
+            hXgaStr = document.getElementById('homeXga').value;
+            hStatusStr = document.getElementById('homeStatus').value;
+            hRankStr = document.getElementById('homeRank').value.trim();
+            hOddsStr = document.getElementById('homeOdds').value;
+            aXgStr = document.getElementById('awayXg').value;
+            aXgaStr = document.getElementById('awayXga').value;
+            aStatusStr = document.getElementById('awayStatus').value;
+            aRankStr = document.getElementById('awayRank').value.trim();
+            aOddsStr = document.getElementById('awayOdds').value;
+
+            if (!hXgStr || !hXgaStr || !hStatusStr || !hOddsStr ||
+                !aXgStr || !aXgaStr || !aStatusStr || !aOddsStr) {
+                document.getElementById('errorMessage').style.display = 'block';
+                return;
+            }
         }
         document.getElementById('errorMessage').style.display = 'none';
 
@@ -922,6 +759,7 @@
         const aGoals = parseFloat(aGoalsStr) || 0, aConceded = parseFloat(aConcededStr) || 0;
         const hOdds = parseFloat(hOddsStr) || 0, aOdds = parseFloat(aOddsStr) || 0;
         
+        const hasRank = isStd && hRankStr !== "" && aRankStr !== "";
         let hRank = hasRank ? parseInt(hRankStr) : 0;
         let aRank = hasRank ? parseInt(aRankStr) : 0;
 
@@ -942,58 +780,65 @@
         let hConvPct = convTotal > 0 ? (hConv / convTotal) * 100 : 50;
         let aConvPct = convTotal > 0 ? (aConv / convTotal) * 100 : 50;
 
-        const hOddsBadge = document.getElementById('hOddsBadge');
-        const aOddsBadge = document.getElementById('aOddsBadge');
-        hOddsBadge.style.display = 'inline-block';
-        aOddsBadge.style.display = 'inline-block';
-        if (hOdds < aOdds) {
-            hOddsBadge.innerText = "上盤"; hOddsBadge.style.color = "#bbf7d0"; hOddsBadge.style.backgroundColor = "#15803d"; 
-            aOddsBadge.innerText = "下盤"; aOddsBadge.style.color = "#ccc"; aOddsBadge.style.backgroundColor = "#333";
-        } else if (hOdds > aOdds) {
-            hOddsBadge.innerText = "下盤"; hOddsBadge.style.color = "#ccc"; hOddsBadge.style.backgroundColor = "#333";
-            aOddsBadge.innerText = "上盤"; aOddsBadge.style.color = "#bbf7d0"; aOddsBadge.style.backgroundColor = "#15803d";
+        if (isStd) {
+            const hOddsBadge = document.getElementById('hOddsBadge');
+            const aOddsBadge = document.getElementById('aOddsBadge');
+            hOddsBadge.style.display = 'inline-block';
+            aOddsBadge.style.display = 'inline-block';
+            if (hOdds < aOdds) {
+                hOddsBadge.innerText = "上盤"; hOddsBadge.style.color = "#bbf7d0"; hOddsBadge.style.backgroundColor = "#15803d"; 
+                aOddsBadge.innerText = "下盤"; aOddsBadge.style.color = "#ccc"; aOddsBadge.style.backgroundColor = "#333";
+            } else if (hOdds > aOdds) {
+                hOddsBadge.innerText = "下盤"; hOddsBadge.style.color = "#ccc"; hOddsBadge.style.backgroundColor = "#333";
+                aOddsBadge.innerText = "上盤"; aOddsBadge.style.color = "#bbf7d0"; aOddsBadge.style.backgroundColor = "#15803d";
+            } else {
+                hOddsBadge.style.display = 'none';
+                aOddsBadge.style.display = 'none';
+            }
+
+            const hRankBadge = document.getElementById('hRankBadge');
+            const aRankBadge = document.getElementById('aRankBadge');
+            if (hasRank) {
+                hRankBadge.style.display = 'inline-block';
+                hRankBadge.innerText = `第${hRank}名`;
+                hRankBadge.className = 'badge';
+                if (hRank === 1) hRankBadge.classList.add('rank-glow-gold');
+                else if (hRank === 2) hRankBadge.classList.add('rank-glow-silver');
+                else if (hRank === 3) hRankBadge.classList.add('rank-glow-bronze');
+                else { hRankBadge.style.color = '#ccc'; hRankBadge.style.backgroundColor = '#333'; }
+
+                aRankBadge.style.display = 'inline-block';
+                aRankBadge.innerText = `第${aRank}名`;
+                aRankBadge.className = 'badge';
+                if (aRank === 1) aRankBadge.classList.add('rank-glow-gold');
+                else if (aRank === 2) aRankBadge.classList.add('rank-glow-silver');
+                else if (aRank === 3) aRankBadge.classList.add('rank-glow-bronze');
+                else { aRankBadge.style.color = '#ccc'; aRankBadge.style.backgroundColor = '#333'; }
+            } else {
+                hRankBadge.style.display = 'none';
+                aRankBadge.style.display = 'none';
+            }
+
+            let hAttUI = hXg;
+            let hDefUI = Math.max(0, 3.0 - hXga);
+            let aAttUI = aXg;
+            let aDefUI = Math.max(0, 3.0 - aXga);
+
+            updateTeamUI('h', hAttUI, hDefUI, hStatus, hConvPct, hRankPct, hOddsPct, hasRank);
+            updateTeamUI('a', aAttUI, aDefUI, aStatus, aConvPct, aRankPct, aOddsPct, hasRank);
+            
+            document.getElementById('analysisCard').style.display = 'block';
+            document.getElementById('btnSaveAna').style.display = 'block';
         } else {
-            hOddsBadge.style.display = 'none';
-            aOddsBadge.style.display = 'none';
+            document.getElementById('analysisCard').style.display = 'none';
+            document.getElementById('btnSaveAna').style.display = 'none';
         }
-
-        const hRankBadge = document.getElementById('hRankBadge');
-        const aRankBadge = document.getElementById('aRankBadge');
-        if (hasRank) {
-            hRankBadge.style.display = 'inline-block';
-            hRankBadge.innerText = `第${hRank}名`;
-            hRankBadge.className = 'badge';
-            if (hRank === 1) hRankBadge.classList.add('rank-glow-gold');
-            else if (hRank === 2) hRankBadge.classList.add('rank-glow-silver');
-            else if (hRank === 3) hRankBadge.classList.add('rank-glow-bronze');
-            else { hRankBadge.style.color = '#ccc'; hRankBadge.style.backgroundColor = '#333'; }
-
-            aRankBadge.style.display = 'inline-block';
-            aRankBadge.innerText = `第${aRank}名`;
-            aRankBadge.className = 'badge';
-            if (aRank === 1) aRankBadge.classList.add('rank-glow-gold');
-            else if (aRank === 2) aRankBadge.classList.add('rank-glow-silver');
-            else if (aRank === 3) aRankBadge.classList.add('rank-glow-bronze');
-            else { aRankBadge.style.color = '#ccc'; aRankBadge.style.backgroundColor = '#333'; }
-        } else {
-            hRankBadge.style.display = 'none';
-            aRankBadge.style.display = 'none';
-        }
-
-        let hAttUI = hXg;
-        let hDefUI = Math.max(0, 3.0 - hXga);
-        let aAttUI = aXg;
-        let aDefUI = Math.max(0, 3.0 - aXga);
-
-        updateTeamUI('h', hAttUI, hDefUI, hStatus, hConvPct, hRankPct, hOddsPct, hasRank);
-        updateTeamUI('a', aAttUI, aDefUI, aStatus, aConvPct, aRankPct, aOddsPct, hasRank);
 
         const diffFifth = Math.round(((hGoals + aConceded) - (aGoals + hConceded)) * 100) / 100;
         let resFifth = "avoid";
         let exactGD = null;
         let handicapText = "";
 
-        // 更新門檻：包含邊界值
         if (diffFifth > 3.25) {
             resFifth = "home"; exactGD = 3; handicapText = "主勝(-2)";
         } else if (diffFifth > 2.25) {
