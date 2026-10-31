@@ -54,7 +54,6 @@
             background: #222222;
             border: 1px solid #3a3a3a;
             border-radius: 24px;
-            /* 加大上下留白 */
             padding: 25px 15px; 
             margin-bottom: 15px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
@@ -75,13 +74,11 @@
         .btn-return { background:#444; }
         .btn-return:hover { background:#555; }
 
-        /* 預測賽果與大細共用高度 */
         .result-box, .new-goals-row, .bet-box {
             height: 70px;
             margin-bottom: 10px;
         }
 
-        /* 預測賽果 */
         .result-box { 
             text-align: center; padding: 10px; border-radius: 12px; border: 2px dashed;
             display: flex; flex-direction: column; justify-content: center;
@@ -93,7 +90,6 @@
         .result-value { font-size: 22px; font-weight: bold; margin-bottom: 0; }
         #diff_fifth { font-size: 13px; font-weight: bold; color: #fff; }
 
-        /* 入球大細三欄 */
         .new-goals-row {
             display: flex; gap: 8px; 
         }
@@ -105,7 +101,6 @@
         .new-goals-title { font-size: 11px; font-weight: bold; color: #aaa; margin-bottom: 4px; }
         .new-goals-value { font-size: 16px; font-weight: bold; color: #fff; }
 
-        /* 波膽 */
         .bet-box {
             text-align: center; padding: 10px; border-radius: 12px; 
             border: 2px solid #555; background-color: #222;
@@ -117,7 +112,6 @@
 
         .divider { height: 1px; background: #333; margin: 20px 0; }
 
-        /* 評級區塊 */
         .radar-container {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 20px; padding: 10px 15px; background: #181818; border-radius: 16px; border: 1px solid #333;
@@ -149,7 +143,6 @@
         .team-title { font-size: 15px; font-weight: bold; }
         .badge { font-size: 11px; padding: 3px 6px; border-radius: 10px; font-weight: bold; white-space: nowrap; }
         
-        /* 簡化後的總評分樣式 */
         .overall-badge {
             font-size: 12px; padding: 4px 8px; border-radius: 8px; 
             background-color: #333; border: 1px solid #555; white-space: nowrap;
@@ -167,7 +160,6 @@
         .rank-glow-silver { color: #f4f4f4 !important; background-color: #666 !important; animation: glow-silver 1.5s infinite alternate; }
         .rank-glow-bronze { color: #cd7f32 !important; background-color: #3b1c1c !important; animation: glow-bronze 1.5s infinite alternate; }
 
-        /* 橫條行 */
         .rating-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 12px; }
         .rating-label { width: 45px; font-weight: bold; color: #aaa; text-align: right; padding-right: 6px; white-space: nowrap; } 
         .rating-display { width: 70px; text-align: left; font-weight: bold; font-size: 12px; padding-left: 8px; white-space: nowrap; }
@@ -255,13 +247,11 @@
         </div>
 
         <div class="result-card" id="resultCard">
-            <!-- 預測賽果 -->
             <div class="result-box" id="box_fifth">
                 <div class="result-title">🏆 預測賽果 <span id="diff_fifth"></span></div>
                 <div class="result-value" id="val_fifth">-</div>
             </div>
 
-            <!-- 入球大細預測 (三欄) -->
             <div class="new-goals-row">
                 <div class="new-goals-box" id="box_h_15">
                     <div class="new-goals-title">主隊入球 (1.5)</div>
@@ -277,7 +267,6 @@
                 </div>
             </div>
 
-            <!-- 波膽推薦 -->
             <div class="bet-box" id="betBox">
                 <div class="bet-title">🎯 波膽推薦</div>
                 <div class="bet-value" id="betValue">-</div>
@@ -285,7 +274,6 @@
 
             <div class="divider"></div>
 
-            <!-- 實力評級 -->
             <div class="radar-container">
                 <div class="vertical-text home">主<br>隊</div>
                 <div class="radar-svg-box">
@@ -532,7 +520,6 @@
         const overallData = getGradeByPercent(overallPct);
         const overallEl = document.getElementById(prefix + 'Overall');
         if (overallEl) {
-            // 簡化顯示，移除「總評分: 」
             overallEl.innerText = `${overallData.grade} (${overallPct.toFixed(1)})`;
             overallEl.style.color = overallData.color;
             overallEl.style.borderColor = overallData.color;
@@ -573,10 +560,24 @@
         const diff = document.getElementById('diff_' + id);
 
         diff.innerText = `(${diffDisplay})`;
-        if (finalResult === "home") { val.innerText = "主勝"; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; diff.style.color = "#4ade80"; }
-        else if (finalResult === "away") { val.innerText = "客勝"; val.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; diff.style.color = "#f87171"; }
-        else if (finalResult === "draw") { val.innerText = "和局"; val.style.color = "#ffd700"; box.style.borderColor = "#ffd700"; box.style.backgroundColor = "#332d1a"; diff.style.color = "#ffd700"; }
-        else { val.innerText = "不建議"; val.style.color = "#aaa"; box.style.borderColor = "#555"; box.style.backgroundColor = "#2a2a2a"; diff.style.color = "#aaa"; }
+        if (finalResult === "home") { 
+            val.innerText = "主勝"; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; diff.style.color = "#4ade80"; 
+        }
+        else if (finalResult === "away") { 
+            val.innerText = "客勝"; val.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; diff.style.color = "#f87171"; 
+        }
+        else if (finalResult === "draw") { 
+            val.innerText = "和局"; val.style.color = "#ffd700"; box.style.borderColor = "#ffd700"; box.style.backgroundColor = "#332d1a"; diff.style.color = "#ffd700"; 
+        }
+        else if (finalResult === "home_or_draw") { 
+            val.innerText = "主隊不敗"; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; diff.style.color = "#4ade80"; 
+        }
+        else if (finalResult === "away_or_draw") { 
+            val.innerText = "客隊不敗"; val.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; diff.style.color = "#f87171"; 
+        }
+        else { 
+            val.innerText = "不建議"; val.style.color = "#aaa"; box.style.borderColor = "#555"; box.style.backgroundColor = "#2a2a2a"; diff.style.color = "#aaa"; 
+        }
     }
 
     function calculate() {
@@ -625,7 +626,6 @@
         let hOddsPct = totalOdds > 0 ? (aOdds / totalOdds) * 100 : 50;
         let aOddsPct = totalOdds > 0 ? (hOdds / totalOdds) * 100 : 50;
 
-        // 更新標籤
         const hOddsBadge = document.getElementById('hOddsBadge');
         const aOddsBadge = document.getElementById('aOddsBadge');
         hOddsBadge.style.display = 'inline-block';
@@ -664,21 +664,30 @@
             aRankBadge.style.display = 'none';
         }
 
-        // UI 繪圖用的值 (無加成)
         let hAttUI = hXg;
         let hDefUI = Math.max(0, 3.0 - hXga);
         let aAttUI = aXg;
         let aDefUI = Math.max(0, 3.0 - aXga);
 
-        const hOverallPct = updateTeamUI('h', hAttUI, hDefUI, hStatus, hRankPct, hOddsPct, hasRank);
-        const aOverallPct = updateTeamUI('a', aAttUI, aDefUI, aStatus, aRankPct, aOddsPct, hasRank);
+        updateTeamUI('h', hAttUI, hDefUI, hStatus, hRankPct, hOddsPct, hasRank);
+        updateTeamUI('a', aAttUI, aDefUI, aStatus, aRankPct, aOddsPct, hasRank);
 
-        // 預測賽果 (得失球碰撞)
-        const diffFifth = (hGoals + aConceded) - (aGoals + hConceded);
+        // ==========================================
+        // 預測賽果 (得失球碰撞) — 新門檻
+        // ==========================================
+        const diffFifth = Math.round(((hGoals + aConceded) - (aGoals + hConceded)) * 100) / 100;
         let resFifth = "avoid";
-        if (diffFifth >= 1.0) resFifth = "home";
-        else if (diffFifth <= -1.0) resFifth = "away";
-        else if (diffFifth >= -0.1 && diffFifth <= 0.1) resFifth = "draw";
+        if (diffFifth >= 0.5) {
+            resFifth = "home";
+        } else if (diffFifth <= -0.5) {
+            resFifth = "away";
+        } else if (diffFifth >= 0.1) {
+            resFifth = "home_or_draw";
+        } else if (diffFifth <= -0.1) {
+            resFifth = "away_or_draw";
+        } else {
+            resFifth = "draw";
+        }
         applyMiniUI('fifth', resFifth, diffFifth.toFixed(2));
 
         // ==========================================
@@ -698,14 +707,22 @@
         if (hSize15 === "小" && aSize15 === "小") totalSize25 = "小";
         else if (hSize15 === "大" && aSize15 === "大") totalSize25 = "大";
 
+        // 波膽池允許的賽果類型
+        let allowedRes = [];
+        if (resFifth === "home") allowedRes = ["home"];
+        else if (resFifth === "away") allowedRes = ["away"];
+        else if (resFifth === "draw") allowedRes = ["draw"];
+        else if (resFifth === "home_or_draw") allowedRes = ["home", "draw"];
+        else if (resFifth === "away_or_draw") allowedRes = ["away", "draw"];
+
         let isValid = false;
         let finalScores = [];
 
-        if (resFifth !== "avoid") {
+        if (allowedRes.length > 0) {
             for (let h = 0; h <= 3; h++) {
                 for (let a = 0; a <= 3; a++) {
                     let matchRes = (h > a) ? "home" : ((h < a) ? "away" : "draw");
-                    if (matchRes !== resFifth) continue;
+                    if (!allowedRes.includes(matchRes)) continue;
 
                     let checkHSize = (h >= 2) ? "大" : "小";
                     if (hSize15 !== "模糊" && hSize15 !== checkHSize) continue;
@@ -744,6 +761,7 @@
                 }
             }
         } else {
+            // "avoid" 兜底（目前 resFifth 已不會是 avoid，但保留邏輯）
             let baseScores = [];
             if (hSize15 === "小" && aSize15 === "小") { baseScores = ["0:0", "1:1", "1:0", "0:1"]; isValid = true; }
             else if (hSize15 === "大" && aSize15 === "大") { baseScores = ["2:2", "3:3", "2:3", "3:2"]; isValid = true; }
@@ -752,7 +770,6 @@
             finalScores = baseScores;
         }
 
-        // 更新入球大細 UI
         const valH15 = document.getElementById('val_h_15');
         valH15.innerText = hSize15 === "模糊" ? "方向模糊" : `${hSize15} 1.5`;
         valH15.style.color = hSize15 === '大' ? '#f87171' : (hSize15 === '小' ? '#8cb8ff' : '#aaa');
@@ -765,7 +782,6 @@
         valTotal25.innerText = totalSize25 === "模糊" ? "方向模糊" : `${totalSize25} 2.5`;
         valTotal25.style.color = totalSize25 === '大' ? '#f87171' : (totalSize25 === '小' ? '#8cb8ff' : '#aaa');
 
-        // 更新波膽 UI
         const betBox = document.getElementById('betBox');
         const betValue = document.getElementById('betValue');
         
