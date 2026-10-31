@@ -167,6 +167,8 @@
         .overall-badge {
             font-size: 12px; padding: 4px 8px; border-radius: 8px; 
             background-color: #333; border: 1px solid #555; white-space: nowrap;
+            font-style: italic;
+            font-weight: 900;
         }
 
         @keyframes glow-green { 0% { box-shadow: 0 0 2px #4ade80; } 50% { box-shadow: 0 0 8px #4ade80; } 100% { box-shadow: 0 0 2px #4ade80; } }
@@ -191,7 +193,8 @@
         .bar-defense { background: #6b9fff; }
         .bar-status { background: #fbc02d; }
         .bar-odds { background: #4caf50; }
-        .bar-rank { background: #00e5ff; }
+        .bar-conv { background: #00e5ff; }
+        .bar-rank { background: #888; }
 
         #imageModal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -332,6 +335,7 @@
                 <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="hDefBar"></div></div><div class="rating-display" id="hDefDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">狀態</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="hStatBar"></div></div><div class="rating-display" id="hStatDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">賠率</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="hOddsBar"></div></div><div class="rating-display" id="hOddsDisplay">-</div></div>
+                <div class="rating-row"><div class="rating-label">轉換</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-conv" id="hConvBar"></div></div><div class="rating-display" id="hConvDisplay">-</div></div>
                 <div class="rating-row" id="hRankRow" style="display:none;"><div class="rating-label">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="hRankBar"></div></div><div class="rating-display" id="hRankDisplay">-</div></div>
             </div>
 
@@ -352,6 +356,7 @@
                 <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="aDefBar"></div></div><div class="rating-display" id="aDefDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">狀態</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="aStatBar"></div></div><div class="rating-display" id="aStatDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">賠率</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="aOddsBar"></div></div><div class="rating-display" id="aOddsDisplay">-</div></div>
+                <div class="rating-row"><div class="rating-label">轉換</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-conv" id="aConvBar"></div></div><div class="rating-display" id="aConvDisplay">-</div></div>
                 <div class="rating-row" id="aRankRow" style="display:none;"><div class="rating-label">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="aRankBar"></div></div><div class="rating-display" id="aRankDisplay">-</div></div>
             </div>
         </div>
@@ -490,7 +495,7 @@
             const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             text.setAttribute('x', cx + labelR * Math.cos(angle));
             text.setAttribute('y', cy + labelR * Math.sin(angle));
-            text.setAttribute('fill', '#aaa'); text.setAttribute('font-size', '10'); text.setAttribute('font-weight', 'bold'); text.setAttribute('text-anchor', 'middle'); text.setAttribute('dominant-baseline', 'middle');
+            text.setAttribute('fill', '#aaa'); text.setAttribute('font-size', '9'); text.setAttribute('font-weight', 'bold'); text.setAttribute('text-anchor', 'middle'); text.setAttribute('dominant-baseline', 'middle');
             text.textContent = labels[i];
             svg.appendChild(text);
         }
@@ -507,7 +512,7 @@
         svg.appendChild(dataPolygon);
     }
 
-    function updateTeamUI(prefix, att, def, status, rankPct, oddsPct, hasRank) {
+    function updateTeamUI(prefix, att, def, status, convPct, rankPct, oddsPct, hasRank) {
         let attPct = Math.min(Math.max(((att - 0.5) / 2.0) * 100, 0), 100);
         let defPct = Math.min(Math.max(((def - 0.5) / 2.0) * 100, 0), 100);
         let statPct = Math.min(Math.max((status / 3.0) * 100, 0), 100);
@@ -516,9 +521,10 @@
         document.getElementById(prefix + 'DefBar').style.width = Math.max(defPct, 1) + '%';
         document.getElementById(prefix + 'StatBar').style.width = Math.max(statPct, 1) + '%';
         document.getElementById(prefix + 'OddsBar').style.width = Math.max(oddsPct, 1) + '%';
+        document.getElementById(prefix + 'ConvBar').style.width = Math.max(convPct, 1) + '%';
         
         const attData = getGradeByPercent(attPct), defData = getGradeByPercent(defPct), statData = getGradeByPercent(statPct);
-        const oddsData = getGradeByPercent(oddsPct);
+        const oddsData = getGradeByPercent(oddsPct), convData = getGradeByPercent(convPct);
 
         document.getElementById(prefix + 'AttDisplay').innerText = `${attData.grade} (${attPct.toFixed(1)})`;
         document.getElementById(prefix + 'AttDisplay').style.color = attData.color;
@@ -528,6 +534,8 @@
         document.getElementById(prefix + 'StatDisplay').style.color = statData.color;
         document.getElementById(prefix + 'OddsDisplay').innerText = `${oddsData.grade} (${oddsPct.toFixed(1)})`;
         document.getElementById(prefix + 'OddsDisplay').style.color = oddsData.color;
+        document.getElementById(prefix + 'ConvDisplay').innerText = `${convData.grade} (${convPct.toFixed(1)})`;
+        document.getElementById(prefix + 'ConvDisplay').style.color = convData.color;
 
         let radarData = [];
         let labels = [];
@@ -540,20 +548,20 @@
             document.getElementById(prefix + 'RankDisplay').innerText = `${rankData.grade} (${rankPct.toFixed(1)})`;
             document.getElementById(prefix + 'RankDisplay').style.color = rankData.color;
             
-            radarData = [attPct, defPct, statPct, oddsPct, rankPct];
-            labels = ['ATK', 'DEF', 'STA', 'ODD', 'RNK'];
-            overallPct = (attPct + defPct + statPct + rankPct + oddsPct) / 5;
+            radarData = [attPct, defPct, statPct, oddsPct, convPct, rankPct];
+            labels = ['ATK', 'DEF', 'STA', 'ODD', 'COV', 'RNK'];
+            overallPct = (attPct + defPct + statPct + oddsPct + convPct + rankPct) / 6;
         } else {
             document.getElementById(prefix + 'RankRow').style.display = 'none';
-            radarData = [attPct, defPct, statPct, oddsPct];
-            labels = ['ATK', 'DEF', 'STA', 'ODD'];
-            overallPct = (attPct + defPct + statPct + oddsPct) / 4;
+            radarData = [attPct, defPct, statPct, oddsPct, convPct];
+            labels = ['ATK', 'DEF', 'STA', 'ODD', 'COV'];
+            overallPct = (attPct + defPct + statPct + oddsPct + convPct) / 5;
         }
 
         const overallData = getGradeByPercent(overallPct);
         const overallEl = document.getElementById(prefix + 'Overall');
         if (overallEl) {
-            overallEl.innerText = `${overallData.grade} (${overallPct.toFixed(1)})`;
+            overallEl.innerText = `戰力: ${overallData.grade} (${overallPct.toFixed(1)})`;
             overallEl.style.color = overallData.color;
             overallEl.style.borderColor = overallData.color;
         }
@@ -651,6 +659,13 @@
         let hOddsPct = totalOdds > 0 ? (aOdds / totalOdds) * 100 : 50;
         let aOddsPct = totalOdds > 0 ? (hOdds / totalOdds) * 100 : 50;
 
+        // 轉換：主 = 主得分 + 客失球；客 = 客得分 + 主失球
+        let hConv = hGoals + aConceded;
+        let aConv = aGoals + hConceded;
+        let convTotal = hConv + aConv;
+        let hConvPct = convTotal > 0 ? (hConv / convTotal) * 100 : 50;
+        let aConvPct = convTotal > 0 ? (aConv / convTotal) * 100 : 50;
+
         const hOddsBadge = document.getElementById('hOddsBadge');
         const aOddsBadge = document.getElementById('aOddsBadge');
         hOddsBadge.style.display = 'inline-block';
@@ -694,8 +709,8 @@
         let aAttUI = aXg;
         let aDefUI = Math.max(0, 3.0 - aXga);
 
-        updateTeamUI('h', hAttUI, hDefUI, hStatus, hRankPct, hOddsPct, hasRank);
-        updateTeamUI('a', aAttUI, aDefUI, aStatus, aRankPct, aOddsPct, hasRank);
+        updateTeamUI('h', hAttUI, hDefUI, hStatus, hConvPct, hRankPct, hOddsPct, hasRank);
+        updateTeamUI('a', aAttUI, aDefUI, aStatus, aConvPct, aRankPct, aOddsPct, hasRank);
 
         // ==========================================
         // 預測賽果（門檻 1.25 / 2.25 / 3.25）
