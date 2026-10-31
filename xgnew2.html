@@ -17,7 +17,11 @@
             width: 100%; max-width: 500px; position: relative; margin-bottom: 20px;
         }
         h2 { text-align: center; color: #ffffff; margin-top: 0; font-size: 20px; margin-bottom: 5px; }
-        p.subtitle { font-size: 12px; color: #aaaaaa; text-align: center; margin-bottom: 15px; }
+        p.subtitle { font-size: 12px; color: #aaaaaa; text-align: center; margin-bottom: 4px; }
+        p.data-hint { 
+            font-size: 11px; color: #3a7bd5; text-align: center; 
+            margin: 0 0 15px 0; font-weight: bold; letter-spacing: 0.5px;
+        }
         
         #errorMessage {
             display: none; background-color: #331a1a; color: #ff4d4d; padding: 10px; 
@@ -248,6 +252,7 @@
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
     <p class="subtitle">終極預測版</p>
+    <p class="data-hint">📥 數據請使用 FootyStats 匯入</p>
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
 
@@ -410,7 +415,6 @@
             input.focus();
         }
     }
-    // 頁面載入後自動聚焦密碼框
     window.addEventListener('load', () => {
         setTimeout(() => document.getElementById('loginPassword').focus(), 100);
     });
@@ -702,7 +706,6 @@
         let hOddsPct = totalOdds > 0 ? (aOdds / totalOdds) * 100 : 50;
         let aOddsPct = totalOdds > 0 ? (hOdds / totalOdds) * 100 : 50;
 
-        // 轉換：主 = 主得分 + 客失球；客 = 客得分 + 主失球
         let hConv = hGoals + aConceded;
         let aConv = aGoals + hConceded;
         let convTotal = hConv + aConv;
@@ -755,9 +758,6 @@
         updateTeamUI('h', hAttUI, hDefUI, hStatus, hConvPct, hRankPct, hOddsPct, hasRank);
         updateTeamUI('a', aAttUI, aDefUI, aStatus, aConvPct, aRankPct, aOddsPct, hasRank);
 
-        // ==========================================
-        // 預測賽果（門檻 1.25 / 2.25 / 3.25）
-        // ==========================================
         const diffFifth = Math.round(((hGoals + aConceded) - (aGoals + hConceded)) * 100) / 100;
         let resFifth = "avoid";
         let exactGD = null;
@@ -780,9 +780,6 @@
         }
         applyMiniUI('fifth', resFifth, diffFifth.toFixed(2), handicapText);
 
-        // ==========================================
-        // 入球大細（新門檻 1.40 / 1.60）
-        // ==========================================
         let hSize15 = "模糊";
         let aSize15 = "模糊";
         let totalSize25 = "模糊";
@@ -796,9 +793,6 @@
         if (hSize15 === "小" && aSize15 === "小") totalSize25 = "小";
         else if (hSize15 === "大" && aSize15 === "大") totalSize25 = "大";
 
-        // ==========================================
-        // 波膽池（一律顯示，上限 3:3）
-        // ==========================================
         let isValid = false;
         let finalScores = [];
 
@@ -812,7 +806,6 @@
             isValid = finalScores.length > 0;
         }
 
-        // 更新入球大細 UI
         const valH15 = document.getElementById('val_h_15');
         valH15.innerText = hSize15 === "模糊" ? "方向模糊" : `${hSize15} 1.5`;
         valH15.style.color = hSize15 === '大' ? '#f87171' : (hSize15 === '小' ? '#8cb8ff' : '#aaa');
@@ -825,7 +818,6 @@
         valTotal25.innerText = totalSize25 === "模糊" ? "方向模糊" : `${totalSize25} 2.5`;
         valTotal25.style.color = totalSize25 === '大' ? '#f87171' : (totalSize25 === '小' ? '#8cb8ff' : '#aaa');
 
-        // 更新波膽 UI
         const betBox = document.getElementById('betBox');
         const betValue = document.getElementById('betValue');
         
