@@ -2,7 +2,7 @@
 
 > 🔗 **線上使用**：<https://thevker.github.io/FootBall-AI/xgnew2>
 > 
-> 🔑 **密碼請到 WhatsApp 群獲取**：‎開啟此連結即可加入我的 WhatsApp 群組：<https://chat.whatsapp.com/ERTlOXVQSjzBArFNgjyTYo?s=cl&p=i&mlu=4&ilr=4&iam=2>
+> 🔑 **密碼請到 WhatsApp 群獲取**：‎<https://chat.whatsapp.com/ERTlOXVQSjzBArFNgjyTYo?s=cl&p=i&mlu=4&ilr=4&iam=2>
 > 
 > 🎬 **使用教學**：<https://youtube.com/shorts/Xb3Jc_3utFg?si=c_gEf4lHqIbK5nqY>
 > 
