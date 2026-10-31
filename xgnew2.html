@@ -18,6 +18,10 @@
         }
         h2 { text-align: center; color: #ffffff; margin-top: 0; font-size: 20px; margin-bottom: 5px; }
         p.subtitle { font-size: 12px; color: #aaaaaa; text-align: center; margin-bottom: 4px; }
+        p.warning-hint { 
+            font-size: 11px; color: #ff6b6b; text-align: center; 
+            margin: 0 0 8px 0; font-weight: bold; letter-spacing: 0.5px;
+        }
         p.data-hint { 
             font-size: 11px; color: #3a7bd5; text-align: center; 
             margin: 0 0 15px 0; font-weight: bold; letter-spacing: 0.5px;
@@ -228,7 +232,8 @@
         #loginOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 10000;
-            display: flex; justify-content: center; align-items: center;
+            display: none;
+            justify-content: center; align-items: center;
             background-color: rgba(0, 0, 0, 0.45);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
@@ -247,7 +252,7 @@
         }
         .login-icon { font-size: 36px; margin-bottom: 8px; }
         .login-title { font-size: 18px; font-weight: bold; color: #fff; margin-bottom: 4px; }
-        .login-sub { font-size: 12px; color: #888; margin-bottom: 20px; }
+        .login-sub { font-size: 12px; color: #888; margin-bottom: 20px; line-height: 1.5; }
         .login-card input[type="password"] {
             padding: 14px 12px; font-size: 18px; letter-spacing: 2px;
             margin-bottom: 12px; text-align: center;
@@ -271,14 +276,14 @@
 <!-- 倒數計時器（固定右上角） -->
 <div id="sessionTimer">⏱ <span id="timerText">60:00</span></div>
 
-<!-- 登入遮罩 -->
+<!-- 登入遮罩（只在免費期結束後顯示） -->
 <div id="loginOverlay">
     <div class="login-card" id="loginCard">
         <div class="login-icon">🔒</div>
-        <div class="login-title">xG 賽事分析器</div>
-        <div class="login-sub" id="loginSub">請輸入密碼以繼續</div>
+        <div class="login-title">免費使用已結束</div>
+        <div class="login-sub" id="loginSub">輸入密碼以永久解鎖<br><span style="color:#666;font-size:11px;">（解鎖後不再限制使用時間）</span></div>
         <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter')tryLogin()">
-        <button class="btn-login" onclick="tryLogin()">進入</button>
+        <button class="btn-login" onclick="tryLogin()">解鎖</button>
         <div id="loginError">❌ 密碼錯誤，請重試</div>
     </div>
 </div>
@@ -286,6 +291,7 @@
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
     <p class="subtitle">終極預測版</p>
+    <p class="warning-hint">⚠️ 工具只作娛樂分析 切勿沉迷賭博</p>
     <p class="data-hint">📥 數據請使用 FootyStats 匯入</p>
     
     <div id="errorMessage">⚠️ 數據不完整，請填寫所有輸入欄位！</div>
@@ -431,17 +437,22 @@
 
 <script>
     // ====== 會話 / 使用時限 ======
-    const CORRECT_PASSWORD = "y511634a";
-    const SESSION_DURATION_MS = 60 * 60 * 1000; // 1 小時
-    const SESSION_KEY = 'xg_session_start_ts';
+    const CORRECT_PASSWORD = "hkjcgoodbye";
+    const TRIAL_DURATION_MS = 60 * 60 * 1000; // 首次免費 1 小時
+    const TRIAL_KEY = 'xg_trial_start_ts';     // 首次免費開始時間
+    const UNLOCK_KEY = 'xg_permanent_unlock';  // 永久解鎖標記
     let countdownTimer = null;
 
+    function isPermanentlyUnlocked() {
+        return localStorage.getItem(UNLOCK_KEY) === '1';
+    }
+
     function getRemainingMs() {
-        const startStr = localStorage.getItem(SESSION_KEY);
+        const startStr = localStorage.getItem(TRIAL_KEY);
         if (!startStr) return 0;
         const start = parseInt(startStr, 10);
         if (isNaN(start) || start <= 0) return 0;
-        return Math.max(0, SESSION_DURATION_MS - (Date.now() - start));
+        return Math.max(0, TRIAL_DURATION_MS - (Date.now() - start));
     }
 
     function updateTimerText(ms) {
@@ -477,15 +488,12 @@
     }
 
     function lockSession() {
-        localStorage.removeItem(SESSION_KEY);
         document.getElementById('sessionTimer').style.display = 'none';
         const overlay = document.getElementById('loginOverlay');
         overlay.style.display = 'flex';
-        // 強制重繪，讓 opacity 過渡重新觸發
         void overlay.offsetWidth;
         overlay.classList.remove('hidden');
         document.getElementById('loginError').style.display = 'none';
-        document.getElementById('loginSub').textContent = '使用時限已到，請重新輸入密碼';
         const pwd = document.getElementById('loginPassword');
         pwd.value = '';
         setTimeout(() => pwd.focus(), 300);
@@ -496,13 +504,13 @@
         const err = document.getElementById('loginError');
         const card = document.getElementById('loginCard');
         if (input.value === CORRECT_PASSWORD) {
-            localStorage.setItem(SESSION_KEY, Date.now().toString());
+            localStorage.setItem(UNLOCK_KEY, '1');
             err.style.display = 'none';
-            document.getElementById('loginSub').textContent = '請輸入密碼以繼續';
             const overlay = document.getElementById('loginOverlay');
             overlay.classList.add('hidden');
             setTimeout(() => { overlay.style.display = 'none'; }, 400);
-            startCountdown();
+            document.getElementById('sessionTimer').style.display = 'none';
+            if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
             input.value = '';
         } else {
             err.style.display = 'block';
@@ -514,18 +522,23 @@
         }
     }
 
-    // 初始載入：有有效 session 就直接入場，否則保留登入遮罩
     window.addEventListener('load', () => {
+        if (isPermanentlyUnlocked()) {
+            document.getElementById('sessionTimer').style.display = 'none';
+            document.getElementById('loginOverlay').style.display = 'none';
+            return;
+        }
+        const hasTrial = localStorage.getItem(TRIAL_KEY) !== null;
         const remaining = getRemainingMs();
-        if (remaining > 0) {
-            const overlay = document.getElementById('loginOverlay');
-            overlay.style.display = 'none';
-            overlay.classList.add('hidden');
+        if (!hasTrial) {
+            localStorage.setItem(TRIAL_KEY, Date.now().toString());
+            document.getElementById('loginOverlay').style.display = 'none';
+            startCountdown();
+        } else if (remaining > 0) {
+            document.getElementById('loginOverlay').style.display = 'none';
             startCountdown();
         } else {
-            document.getElementById('loginOverlay').style.display = 'flex';
-            document.getElementById('loginOverlay').classList.remove('hidden');
-            setTimeout(() => document.getElementById('loginPassword').focus(), 100);
+            lockSession();
         }
     });
 
