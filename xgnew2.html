@@ -674,7 +674,7 @@
         // ==========================================
         const diffFifth = Math.round(((hGoals + aConceded) - (aGoals + hConceded)) * 100) / 100;
         let resFifth = "avoid";
-        let exactGD = null; // 精準淨勝球數（正 = 主隊淨勝，負 = 客隊淨勝）
+        let exactGD = null;
 
         if (diffFifth >= 3.5) {
             resFifth = "home"; exactGD = 3;
@@ -727,10 +727,9 @@
         let isValid = false;
         let finalScores = [];
 
-        // 左右都沒大小 → 不顯示波膽
+        // 左右都沒大小 → 波膽方向模糊
         if (!bothSizeUnknown) {
             if (exactGD !== null) {
-                // 精準淨勝球池（不套用大細過濾，直接列出）
                 for (let h = 0; h <= 4; h++) {
                     for (let a = 0; a <= 4; a++) {
                         if (h - a !== exactGD) continue;
@@ -739,7 +738,6 @@
                     }
                 }
             } else if (resFifth === "home_or_draw") {
-                // 主隊不敗（主勝 + 和局，套用大細過濾）
                 for (let h = 0; h <= 4; h++) {
                     for (let a = 0; a <= 4; a++) {
                         if (h < a) continue;
@@ -749,7 +747,6 @@
                     }
                 }
             } else if (resFifth === "away_or_draw") {
-                // 客隊不敗（客勝 + 和局，套用大細過濾）
                 for (let h = 0; h <= 4; h++) {
                     for (let a = 0; a <= 4; a++) {
                         if (h > a) continue;
@@ -774,7 +771,7 @@
         valTotal25.innerText = totalSize25 === "模糊" ? "方向模糊" : `${totalSize25} 2.5`;
         valTotal25.style.color = totalSize25 === '大' ? '#f87171' : (totalSize25 === '小' ? '#8cb8ff' : '#aaa');
 
-        // 更新波膽 UI
+        // 更新波膽 UI（保持顯示，文字為「方向模糊」）
         const betBox = document.getElementById('betBox');
         const betValue = document.getElementById('betValue');
         
@@ -782,11 +779,11 @@
             betBox.style.borderColor = '#444';
             betBox.style.backgroundColor = '#222';
             if (bothSizeUnknown) {
-                betValue.innerText = '入球方向模糊，暫不顯示波膽';
+                betValue.innerText = '方向模糊';
             } else if (resFifth === 'avoid') {
                 betValue.innerText = '方向不明，不建議';
             } else {
-                betValue.innerText = '條件矛盾，方向模糊';
+                betValue.innerText = '方向模糊';
             }
             betValue.style.color = '#888';
         } else {
