@@ -716,6 +716,7 @@
         // ==========================================
         // 波膽池建構
         // ==========================================
+        const bothSizeUnknown = (hSize15 === "模糊" && aSize15 === "模糊");
         const checkSizeFilters = (h, a) => {
             if (hSize15 !== "模糊" && hSize15 !== ((h >= 2) ? "大" : "小")) return false;
             if (aSize15 !== "模糊" && aSize15 !== ((a >= 2) ? "大" : "小")) return false;
@@ -726,33 +727,36 @@
         let isValid = false;
         let finalScores = [];
 
-        if (exactGD !== null) {
-            // 精準淨勝球池（不套用大細過濾，直接列出）
-            for (let h = 0; h <= 4; h++) {
-                for (let a = 0; a <= 4; a++) {
-                    if (h - a !== exactGD) continue;
-                    finalScores.push(`${h}:${a}`);
-                    isValid = true;
+        // 左右都沒大小 → 不顯示波膽
+        if (!bothSizeUnknown) {
+            if (exactGD !== null) {
+                // 精準淨勝球池（不套用大細過濾，直接列出）
+                for (let h = 0; h <= 4; h++) {
+                    for (let a = 0; a <= 4; a++) {
+                        if (h - a !== exactGD) continue;
+                        finalScores.push(`${h}:${a}`);
+                        isValid = true;
+                    }
                 }
-            }
-        } else if (resFifth === "home_or_draw") {
-            // 主隊不敗（主勝 + 和局，套用大細過濾）
-            for (let h = 0; h <= 4; h++) {
-                for (let a = 0; a <= 4; a++) {
-                    if (h < a) continue;
-                    if (!checkSizeFilters(h, a)) continue;
-                    finalScores.push(`${h}:${a}`);
-                    isValid = true;
+            } else if (resFifth === "home_or_draw") {
+                // 主隊不敗（主勝 + 和局，套用大細過濾）
+                for (let h = 0; h <= 4; h++) {
+                    for (let a = 0; a <= 4; a++) {
+                        if (h < a) continue;
+                        if (!checkSizeFilters(h, a)) continue;
+                        finalScores.push(`${h}:${a}`);
+                        isValid = true;
+                    }
                 }
-            }
-        } else if (resFifth === "away_or_draw") {
-            // 客隊不敗（客勝 + 和局，套用大細過濾）
-            for (let h = 0; h <= 4; h++) {
-                for (let a = 0; a <= 4; a++) {
-                    if (h > a) continue;
-                    if (!checkSizeFilters(h, a)) continue;
-                    finalScores.push(`${h}:${a}`);
-                    isValid = true;
+            } else if (resFifth === "away_or_draw") {
+                // 客隊不敗（客勝 + 和局，套用大細過濾）
+                for (let h = 0; h <= 4; h++) {
+                    for (let a = 0; a <= 4; a++) {
+                        if (h > a) continue;
+                        if (!checkSizeFilters(h, a)) continue;
+                        finalScores.push(`${h}:${a}`);
+                        isValid = true;
+                    }
                 }
             }
         }
@@ -777,7 +781,13 @@
         if (!isValid) {
             betBox.style.borderColor = '#444';
             betBox.style.backgroundColor = '#222';
-            betValue.innerText = resFifth === 'avoid' ? '方向不明，不建議' : '條件矛盾，方向模糊';
+            if (bothSizeUnknown) {
+                betValue.innerText = '入球方向模糊，暫不顯示波膽';
+            } else if (resFifth === 'avoid') {
+                betValue.innerText = '方向不明，不建議';
+            } else {
+                betValue.innerText = '條件矛盾，方向模糊';
+            }
             betValue.style.color = '#888';
         } else {
             betBox.style.borderColor = '#ffd700';
