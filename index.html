@@ -159,6 +159,19 @@
             box-shadow: 0 0 10px rgba(74, 222, 128, 0.4);
             text-shadow: 0 0 4px rgba(74, 222, 128, 0.6);
         }
+        /* 新增黃色與紅色樣式 */
+        .bet-cell.yellow {
+            background-color: #3b331c; color: #ffd700;
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+            text-shadow: 0 0 4px rgba(255, 215, 0, 0.6);
+        }
+        .bet-cell.red {
+            background-color: #3b1c1c; color: #f87171;
+            border-color: #f87171;
+            box-shadow: 0 0 10px rgba(248, 113, 113, 0.4);
+            text-shadow: 0 0 4px rgba(248, 113, 113, 0.6);
+        }
 
         .divider { height: 1px; background: #333; margin: 20px 0; }
 
@@ -1027,35 +1040,52 @@
         valTotal25.style.color = totalSize25 === '大' ? '#f87171' : (totalSize25 === '小' ? '#8cb8ff' : '#aaa');
 
         const betBox = document.getElementById('betBox');
-        document.querySelectorAll('.bet-cell').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.bet-cell').forEach(c => {
+            c.classList.remove('active', 'yellow', 'red');
+        });
 
         let hasActive = false;
         for (let h = 0; h <= 4; h++) {
             for (let a = 0; a <= 4; a++) {
-                let match = true;
+                // 1. 先過濾大小球
+                if (hSize15 === "大" && h < 2) continue;
+                if (hSize15 === "小" && h >= 2) continue;
+                if (aSize15 === "大" && a < 2) continue;
+                if (aSize15 === "小" && a >= 2) continue;
+                if (totalSize25 === "大" && (h + a) < 3) continue;
+                if (totalSize25 === "小" && (h + a) >= 3) continue;
 
-                if (hSize15 === "大" && h < 2) match = false;
-                if (hSize15 === "小" && h >= 2) match = false;
-                if (aSize15 === "大" && a < 2) match = false;
-                if (aSize15 === "小" && a >= 2) match = false;
-                if (totalSize25 === "大" && (h + a) < 3) match = false;
-                if (totalSize25 === "小" && (h + a) >= 3) match = false;
+                // 2. 判斷賽果與距離上色
+                const cell = document.getElementById(`cell-${h}-${a}`);
+                const currentGD = h - a;
 
                 if (resFifth === "avoid") {
-                    if (hSize15 === "模糊" && aSize15 === "模糊" && totalSize25 === "模糊") match = false;
-                } else if (exactGD !== null) {
-                    if (h - a !== exactGD) match = false;
-                } else if (resFifth === "home_or_draw") {
-                    if (h < a) match = false;
-                } else if (resFifth === "away_or_draw") {
-                    if (h > a) match = false;
-                } else if (resFifth === "draw") {
-                    if (h !== a) match = false;
-                }
-
-                if (match) {
-                    document.getElementById(`cell-${h}-${a}`).classList.add('active');
+                    if (hSize15 === "模糊" && aSize15 === "模糊" && totalSize25 === "模糊") continue;
+                    cell.classList.add('active');
                     hasActive = true;
+                } else if (exactGD !== null) {
+                    const dist = Math.abs(currentGD - exactGD);
+                    if (dist === 0) {
+                        cell.classList.add('active'); // 綠色
+                        hasActive = true;
+                    } else if (dist === 1) {
+                        cell.classList.add('yellow'); // 黃色
+                        hasActive = true;
+                    } else if (dist === 2) {
+                        cell.classList.add('red'); // 紅色
+                        hasActive = true;
+                    }
+                } else {
+                    // home_or_draw, away_or_draw, draw
+                    let matchRes = false;
+                    if (resFifth === "home_or_draw" && h >= a) matchRes = true;
+                    if (resFifth === "away_or_draw" && h <= a) matchRes = true;
+                    if (resFifth === "draw" && h === a) matchRes = true;
+
+                    if (matchRes) {
+                        cell.classList.add('active');
+                        hasActive = true;
+                    }
                 }
             }
         }
