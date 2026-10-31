@@ -197,7 +197,6 @@
             border: none; border-radius: 6px; font-weight: bold; cursor: pointer;
         }
 
-        /* ====== 倒數計時器 ====== */
         #sessionTimer {
             display: none;
             position: fixed;
@@ -228,7 +227,6 @@
             100% { box-shadow: 0 0 14px rgba(255, 77, 77, 0.9); }
         }
 
-        /* ====== 登入遮罩 ====== */
         #loginOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 10000;
@@ -273,10 +271,8 @@
 </head>
 <body>
 
-<!-- 倒數計時器（固定右上角） -->
 <div id="sessionTimer">⏱ <span id="timerText">60:00</span></div>
 
-<!-- 登入遮罩（只在免費期結束後顯示） -->
 <div id="loginOverlay">
     <div class="login-card" id="loginCard">
         <div class="login-icon">🔒</div>
@@ -436,17 +432,13 @@
 </div>
 
 <script>
-    // ====== 會話 / 使用時限 ======
     const CORRECT_PASSWORD = "hkjcgoodbye";
-    const TRIAL_DURATION_MS = 60 * 60 * 1000; // 首次免費 1 小時
-    const TRIAL_KEY = 'xg_trial_start_ts';     // 首次免費開始時間
-    const UNLOCK_KEY = 'xg_permanent_unlock';  // 永久解鎖標記
+    const TRIAL_DURATION_MS = 60 * 60 * 1000;
+    const TRIAL_KEY = 'xg_trial_start_ts';
+    const UNLOCK_KEY = 'xg_permanent_unlock';
     let countdownTimer = null;
 
-    function isPermanentlyUnlocked() {
-        return localStorage.getItem(UNLOCK_KEY) === '1';
-    }
-
+    function isPermanentlyUnlocked() { return localStorage.getItem(UNLOCK_KEY) === '1'; }
     function getRemainingMs() {
         const startStr = localStorage.getItem(TRIAL_KEY);
         if (!startStr) return 0;
@@ -454,7 +446,6 @@
         if (isNaN(start) || start <= 0) return 0;
         return Math.max(0, TRIAL_DURATION_MS - (Date.now() - start));
     }
-
     function updateTimerText(ms) {
         const el = document.getElementById('sessionTimer');
         const txt = document.getElementById('timerText');
@@ -462,17 +453,12 @@
         const m = Math.floor(totalSec / 60);
         const s = totalSec % 60;
         txt.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        if (ms <= 5 * 60 * 1000) {
-            el.classList.add('warning');
-        } else {
-            el.classList.remove('warning');
-        }
+        if (ms <= 5 * 60 * 1000) el.classList.add('warning');
+        else el.classList.remove('warning');
     }
-
     function startCountdown() {
         if (countdownTimer) clearInterval(countdownTimer);
-        const el = document.getElementById('sessionTimer');
-        el.style.display = 'flex';
+        document.getElementById('sessionTimer').style.display = 'flex';
         const tick = () => {
             const remaining = getRemainingMs();
             if (remaining <= 0) {
@@ -486,7 +472,6 @@
         tick();
         countdownTimer = setInterval(tick, 1000);
     }
-
     function lockSession() {
         document.getElementById('sessionTimer').style.display = 'none';
         const overlay = document.getElementById('loginOverlay');
@@ -498,7 +483,6 @@
         pwd.value = '';
         setTimeout(() => pwd.focus(), 300);
     }
-
     function tryLogin() {
         const input = document.getElementById('loginPassword');
         const err = document.getElementById('loginError');
@@ -521,7 +505,6 @@
             input.focus();
         }
     }
-
     window.addEventListener('load', () => {
         if (isPermanentlyUnlocked()) {
             document.getElementById('sessionTimer').style.display = 'none';
@@ -542,44 +525,29 @@
         }
     });
 
-    // ====== 其他原有功能 ======
-    function closeModal() {
-        document.getElementById('imageModal').style.display = 'none';
-    }
-
+    function closeModal() { document.getElementById('imageModal').style.display = 'none'; }
     function saveAsImage() {
         const target = document.getElementById('resultCard');
         const btn = document.getElementById('btnSave');
-        
         btn.innerHTML = '⏳ 生成中...';
         btn.disabled = true;
-
         setTimeout(() => {
-            html2canvas(target, {
-                backgroundColor: '#222222', 
-                scale: 2, 
-                useCORS: true
-            }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                document.getElementById('previewImg').src = imgData;
+            html2canvas(target, { backgroundColor: '#222222', scale: 2, useCORS: true }).then(canvas => {
+                document.getElementById('previewImg').src = canvas.toDataURL('image/png');
                 document.getElementById('imageModal').style.display = 'flex';
-                
                 btn.innerHTML = '📸 保存分析';
                 btn.disabled = false;
             }).catch(err => {
-                console.error("截圖失敗:", err);
                 alert("生成圖片失敗，請重試。");
                 btn.innerHTML = '📸 保存分析';
                 btn.disabled = false;
             });
         }, 100);
     }
-
     function showInput() {
         document.getElementById('inputSection').style.display = 'block';
         document.getElementById('result').style.display = 'none';
     }
-
     function limitInput(input) {
         let val = input.value.replace(/[^0-9.]/g, '');
         let parts = val.split('.');
@@ -591,7 +559,6 @@
         }
         input.value = val;
     }
-
     function formatInput(input) {
         let val = input.value;
         if (!val || val === '.') { input.value = ''; return; }
@@ -608,13 +575,11 @@
         let num = parseFloat(val);
         input.value = isNaN(num) ? '0.00' : num.toFixed(2);
     }
-
     function limitInteger(input) {
         let val = input.value.replace(/[^0-9]/g, '');
         if (val.length > 2) val = val.substring(0, 2);
         input.value = val;
     }
-
     function clearData() {
         const ids = ['homeStatus', 'homeXg', 'homeXga', 'homeGoals', 'homeConceded', 'homeRank', 'homeOdds',
                      'awayStatus', 'awayXg', 'awayXga', 'awayGoals', 'awayConceded', 'awayRank', 'awayOdds'];
@@ -625,7 +590,6 @@
         document.getElementById('radar-away').innerHTML = '';
         showInput();
     }
-
     function getGradeByPercent(pct) {
         if (pct < 20) return { grade: 'E', color: '#c0c0c0' };
         if (pct < 40) return { grade: 'D', color: '#cd7f32' };
@@ -635,14 +599,12 @@
         if (pct < 95) return { grade: 'S', color: '#FFD700' };
         return { grade: 'X', color: '#9b59b6' };
     }
-
     function drawRadar(svgId, data, labels, color, fillColor) {
         const svg = document.getElementById(svgId);
         svg.innerHTML = ''; 
         const cx = 100, cy = 100, maxR = 65, numAxes = data.length;
         const angleStep = (Math.PI * 2) / numAxes;
         const startAngle = -Math.PI / 2; 
-
         for (let l = 1; l <= 4; l++) {
             const r = (maxR / 4) * l;
             let points = [];
@@ -655,14 +617,12 @@
             polygon.setAttribute('fill', 'none'); polygon.setAttribute('stroke', '#444'); polygon.setAttribute('stroke-width', '1');
             svg.appendChild(polygon);
         }
-
         for (let i = 0; i < numAxes; i++) {
             const angle = startAngle + i * angleStep;
             const x = cx + maxR * Math.cos(angle), y = cy + maxR * Math.sin(angle);
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line.setAttribute('x1', cx); line.setAttribute('y1', cy); line.setAttribute('x2', x); line.setAttribute('y2', y); line.setAttribute('stroke', '#444'); line.setAttribute('stroke-width', '1');
             svg.appendChild(line);
-
             const labelR = maxR + 15;
             const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             text.setAttribute('x', cx + labelR * Math.cos(angle));
@@ -671,7 +631,6 @@
             text.textContent = labels[i];
             svg.appendChild(text);
         }
-
         let dataPoints = [];
         for (let i = 0; i < numAxes; i++) {
             let pct = Math.min(Math.max(data[i], 5), 100) / 100; 
@@ -683,12 +642,10 @@
         dataPolygon.setAttribute('fill', fillColor); dataPolygon.setAttribute('stroke', color); dataPolygon.setAttribute('stroke-width', '2');
         svg.appendChild(dataPolygon);
     }
-
     function updateTeamUI(prefix, att, def, status, convPct, rankPct, oddsPct, hasRank) {
         let attPct = Math.min(Math.max(((att - 0.5) / 2.0) * 100, 0), 100);
         let defPct = Math.min(Math.max(((def - 0.5) / 2.0) * 100, 0), 100);
         let statPct = Math.min(Math.max((status / 3.0) * 100, 0), 100);
-
         document.getElementById(prefix + 'AttBar').style.width = Math.max(attPct, 1) + '%';
         document.getElementById(prefix + 'DefBar').style.width = Math.max(defPct, 1) + '%';
         document.getElementById(prefix + 'StatBar').style.width = Math.max(statPct, 1) + '%';
@@ -737,7 +694,6 @@
             overallEl.style.color = overallData.color;
             overallEl.style.borderColor = overallData.color;
         }
-
         drawRadar(prefix === 'h' ? 'radar-home' : 'radar-away', radarData, labels, 
             prefix === 'h' ? '#ff6b6b' : '#6b9fff', prefix === 'h' ? 'rgba(255, 107, 107, 0.3)' : 'rgba(107, 159, 255, 0.3)');
 
@@ -763,7 +719,6 @@
         } else {
             statusBadge.innerText = "狀態極好"; statusBadge.classList.add('status-glow-cyan');
         }
-
         return overallPct;
     }
 
@@ -771,7 +726,6 @@
         const box = document.getElementById('box_' + id);
         const val = document.getElementById('val_' + id);
         const diff = document.getElementById('diff_' + id);
-
         diff.innerText = `(${diffDisplay})`;
         if (finalResult === "home") { 
             val.innerText = handicapText || "主勝"; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; diff.style.color = "#4ade80"; 
@@ -920,10 +874,24 @@
         let isValid = false;
         let finalScores = [];
 
+        // 修復：加入大細球過濾
         if (exactGD !== null) {
             for (let h = 0; h <= 3; h++) {
                 for (let a = 0; a <= 3; a++) {
                     if (h - a !== exactGD) continue;
+
+                    // 檢查主隊入球大細
+                    if (hSize15 === "大" && h < 2) continue;
+                    if (hSize15 === "小" && h >= 2) continue;
+
+                    // 檢查客隊入球大細
+                    if (aSize15 === "大" && a < 2) continue;
+                    if (aSize15 === "小" && a >= 2) continue;
+
+                    // 檢查總入球大細
+                    if (totalSize25 === "大" && (h + a) < 3) continue;
+                    if (totalSize25 === "小" && (h + a) >= 3) continue;
+
                     finalScores.push(`${h}:${a}`);
                 }
             }
@@ -948,7 +916,7 @@
         if (!isValid) {
             betBox.style.borderColor = '#444';
             betBox.style.backgroundColor = '#222';
-            betValue.innerText = resFifth === 'avoid' ? '方向不明，不建議' : '方向模糊';
+            betValue.innerText = resFifth === 'avoid' ? '方向不明，不建議' : '條件矛盾，無合適波膽';
             betValue.style.color = '#888';
         } else {
             betBox.style.borderColor = '#ffd700';
