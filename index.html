@@ -18,6 +18,9 @@
         }
         h2 { text-align: center; color: #ffffff; margin-top: 0; font-size: 20px; margin-bottom: 5px; }
         p.subtitle { font-size: 12px; color: #aaaaaa; text-align: center; margin-bottom: 4px; }
+        p.tutorial-hint { font-size: 12px; text-align: center; margin: 0 0 6px 0; }
+        p.tutorial-hint a { color: #ff4d4d; text-decoration: none; font-weight: bold; }
+        p.tutorial-hint a:hover { text-decoration: underline; }
         p.warning-hint { 
             font-size: 11px; color: #ff6b6b; text-align: center; 
             margin: 0 0 8px 0; font-weight: bold; letter-spacing: 0.5px;
@@ -70,17 +73,19 @@
         .btn-card {
             padding: 10px;
             margin-bottom: 15px;
-            display: flex; gap: 10px;
+            display: flex; gap: 8px;
             background: #1a1a1a; 
         }
         .btn-action { 
-            flex: 1; color:#fff; padding:10px; font-size:14px; 
+            flex: 1; color:#fff; padding:10px; font-size:13px; 
             border-radius:14px; border:none; cursor:pointer; font-weight: bold;
         }
-        .btn-save { background:#28a745; }
-        .btn-save:hover { background:#218838; }
         .btn-return { background:#444; }
         .btn-return:hover { background:#555; }
+        .btn-save-pred { background:#3a7bd5; }
+        .btn-save-pred:hover { background:#2a5fa5; }
+        .btn-save-ana { background:#28a745; }
+        .btn-save-ana:hover { background:#218838; }
 
         .result-box, .new-goals-row {
             height: 70px;
@@ -97,6 +102,22 @@
         }
         .result-value { font-size: 22px; font-weight: bold; margin-bottom: 0; }
         #diff_fifth { font-size: 13px; font-weight: bold; color: #fff; }
+
+        /* 不確定性提示 */
+        #drawWarning {
+            display: none;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #3b331c;
+            color: #ffd700;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            border: 1px solid #ffd700;
+            line-height: 1.4;
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.15);
+        }
 
         .new-goals-row {
             display: flex; gap: 8px; 
@@ -248,6 +269,7 @@
             100% { box-shadow: 0 0 14px rgba(255, 77, 77, 0.9); }
         }
 
+        /* ====== 登入遮罩 ====== */
         #loginOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 10000;
@@ -288,6 +310,35 @@
             40%,80% { transform: translateX(8px); } 
         }
         .shake-now { animation: loginShake 0.45s; }
+
+        /* WhatsApp 連結樣式 */
+        .whatsapp-box {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #444;
+        }
+        .whatsapp-text {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+        .whatsapp-btn {
+            display: inline-block;
+            background-color: #25D366;
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: bold;
+            padding: 10px 15px;
+            border-radius: 8px;
+            transition: background 0.2s, transform 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .whatsapp-btn:hover {
+            background-color: #1ebe5d;
+            transform: scale(1.02);
+        }
     </style>
 </head>
 <body>
@@ -299,15 +350,22 @@
         <div class="login-icon">🔒</div>
         <div class="login-title">免費使用已結束</div>
         <div class="login-sub" id="loginSub">輸入密碼以永久解鎖<br><span style="color:#666;font-size:11px;">（解鎖後不再限制使用時間）</span></div>
+        
         <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter')tryLogin()">
         <button class="btn-login" onclick="tryLogin()">解鎖</button>
         <div id="loginError">❌ 密碼錯誤，請重試</div>
+
+        <div class="whatsapp-box">
+            <div class="whatsapp-text">沒有密碼？</div>
+            <a href="https://chat.whatsapp.com/ERTlOXVQSjzBArFNgjyTYo?s=cl&p=i&mlu=4&ilr=4&iam=2" target="_blank" class="whatsapp-btn">💬 加入 WhatsApp 群組獲取密碼</a>
+        </div>
     </div>
 </div>
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
     <p class="subtitle">終極預測版</p>
+    <p class="tutorial-hint">▶️ <a href="https://youtube.com/shorts/Xb3Jc_3utFg?si=c_gEf4lHqIbK5nqY" target="_blank">點擊觀看使用教學</a></p>
     <p class="warning-hint">⚠️ 工具只作娛樂分析 切勿沉迷賭博</p>
     <p class="data-hint">📥 數據請使用 FootyStats 匯入</p>
     
@@ -359,15 +417,22 @@
     </div>
 
     <div id="result">
+        <!-- 按鈕區塊 -->
         <div class="result-card btn-card">
-            <button class="btn-action btn-return" onclick="showInput()">⬅️ 重新輸入</button>
-            <button class="btn-action btn-save" id="btnSave" onclick="saveAsImage()">📸 保存分析</button>
+            <button class="btn-action btn-return" onclick="showInput()">⬅️ 返回</button>
+            <button class="btn-action btn-save-pred" id="btnSavePred" onclick="savePrediction()">📸 保存預測</button>
+            <button class="btn-action btn-save-ana" id="btnSaveAna" onclick="saveAnalysis()">📸 保存分析</button>
         </div>
 
-        <div class="result-card" id="resultCard">
+        <!-- 區塊一：預測結果 -->
+        <div class="result-card" id="predictionCard">
             <div class="result-box" id="box_fifth">
                 <div class="result-title">🏆 預測賽果 <span id="diff_fifth"></span></div>
                 <div class="result-value" id="val_fifth">-</div>
+            </div>
+
+            <div id="drawWarning">
+                ⚠️ 雙方數據接近或不均衡<br>導致任一結果均可能出現，建議跳過此場
             </div>
 
             <div class="new-goals-row" id="goalsRow">
@@ -385,16 +450,16 @@
                 </div>
             </div>
 
-            <!-- 新版波膽 5x5 網格 -->
             <div class="bet-box" id="betBox">
                 <div class="bet-title">🎯 波膽預測</div>
                 <div class="bet-grid" id="betGrid">
-                    <!-- JS 動態生成 25 個格子 -->
+                    <!-- JS 動態生成 -->
                 </div>
             </div>
+        </div>
 
-            <div class="divider"></div>
-
+        <!-- 區塊二：實力分析 -->
+        <div class="result-card" id="analysisCard">
             <div class="radar-container">
                 <div class="vertical-text home">主<br>隊</div>
                 <div class="radar-svg-box">
@@ -530,7 +595,6 @@
         }
     }
 
-    // 初始化 25 個波膽格子
     function initBetGrid() {
         const grid = document.getElementById('betGrid');
         if (grid.children.length === 0) {
@@ -539,7 +603,7 @@
                     const cell = document.createElement('div');
                     cell.className = 'bet-cell';
                     cell.id = `cell-${h}-${a}`;
-                    cell.innerText = `${h}${a}`;
+                    cell.innerText = `${h}:${a}`; // 帶冒號格式
                     grid.appendChild(cell);
                 }
             }
@@ -568,24 +632,40 @@
     });
 
     function closeModal() { document.getElementById('imageModal').style.display = 'none'; }
-    function saveAsImage() {
-        const target = document.getElementById('resultCard');
-        const btn = document.getElementById('btnSave');
-        btn.innerHTML = '⏳ 生成中...';
-        btn.disabled = true;
+    
+    function captureElement(targetId, btnElement) {
+        const target = document.getElementById(targetId);
+        const originalText = btnElement.innerHTML;
+        btnElement.innerHTML = '⏳ 生成中...';
+        btnElement.disabled = true;
+
         setTimeout(() => {
-            html2canvas(target, { backgroundColor: '#222222', scale: 2, useCORS: true }).then(canvas => {
+            html2canvas(target, {
+                backgroundColor: '#222222', 
+                scale: 2, 
+                useCORS: true
+            }).then(canvas => {
                 document.getElementById('previewImg').src = canvas.toDataURL('image/png');
                 document.getElementById('imageModal').style.display = 'flex';
-                btn.innerHTML = '📸 保存分析';
-                btn.disabled = false;
+                btnElement.innerHTML = originalText;
+                btnElement.disabled = false;
             }).catch(err => {
+                console.error("截圖失敗:", err);
                 alert("生成圖片失敗，請重試。");
-                btn.innerHTML = '📸 保存分析';
-                btn.disabled = false;
+                btnElement.innerHTML = originalText;
+                btnElement.disabled = false;
             });
         }, 100);
     }
+
+    function savePrediction() {
+        captureElement('predictionCard', document.getElementById('btnSavePred'));
+    }
+
+    function saveAnalysis() {
+        captureElement('analysisCard', document.getElementById('btnSaveAna'));
+    }
+
     function showInput() {
         document.getElementById('inputSection').style.display = 'block';
         document.getElementById('result').style.display = 'none';
@@ -769,7 +849,14 @@
         const val = document.getElementById('val_' + id);
         const diff = document.getElementById('diff_' + id);
         diff.innerText = `(${diffDisplay})`;
-        
+
+        const warning = document.getElementById('drawWarning');
+        if (finalResult === "home_or_draw" || finalResult === "away_or_draw" || finalResult === "draw") {
+            warning.style.display = 'block';
+        } else {
+            warning.style.display = 'none';
+        }
+
         if (finalResult === "home") { 
             val.innerText = handicapText || "主勝"; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; diff.style.color = "#4ade80"; 
         }
@@ -888,9 +975,6 @@
         updateTeamUI('h', hAttUI, hDefUI, hStatus, hConvPct, hRankPct, hOddsPct, hasRank);
         updateTeamUI('a', aAttUI, aDefUI, aStatus, aConvPct, aRankPct, aOddsPct, hasRank);
 
-        // ==========================================
-        // 預測賽果（新門檻 -0.25 ~ 0.25 為和局）
-        // ==========================================
         const diffFifth = Math.round(((hGoals + aConceded) - (aGoals + hConceded)) * 100) / 100;
         let resFifth = "avoid";
         let exactGD = null;
@@ -917,9 +1001,6 @@
         }
         applyMiniUI('fifth', resFifth, diffFifth.toFixed(2), handicapText);
 
-        // ==========================================
-        // 入球大細
-        // ==========================================
         let hSize15 = "模糊";
         let aSize15 = "模糊";
         let totalSize25 = "模糊";
@@ -945,9 +1026,6 @@
         valTotal25.innerText = totalSize25 === "模糊" ? "方向模糊" : `${totalSize25} 2.5`;
         valTotal25.style.color = totalSize25 === '大' ? '#f87171' : (totalSize25 === '小' ? '#8cb8ff' : '#aaa');
 
-        // ==========================================
-        // 波膽 5x5 網格亮燈邏輯
-        // ==========================================
         const betBox = document.getElementById('betBox');
         document.querySelectorAll('.bet-cell').forEach(c => c.classList.remove('active'));
 
@@ -956,7 +1034,6 @@
             for (let a = 0; a <= 4; a++) {
                 let match = true;
 
-                // 1. 檢查大小球
                 if (hSize15 === "大" && h < 2) match = false;
                 if (hSize15 === "小" && h >= 2) match = false;
                 if (aSize15 === "大" && a < 2) match = false;
@@ -964,12 +1041,8 @@
                 if (totalSize25 === "大" && (h + a) < 3) match = false;
                 if (totalSize25 === "小" && (h + a) >= 3) match = false;
 
-                // 2. 檢查賽果
                 if (resFifth === "avoid") {
-                    // 若賽果為不建議，只有當大小球有明確方向時才亮燈
-                    if (hSize15 === "模糊" && aSize15 === "模糊" && totalSize25 === "模糊") {
-                        match = false;
-                    }
+                    if (hSize15 === "模糊" && aSize15 === "模糊" && totalSize25 === "模糊") match = false;
                 } else if (exactGD !== null) {
                     if (h - a !== exactGD) match = false;
                 } else if (resFifth === "home_or_draw") {
