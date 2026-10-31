@@ -2,8 +2,6 @@
 
 > 🔗 **線上使用**：<https://thevker.github.io/FootBall-AI/xgnew2>
 > 🔑 **密碼請到 WhatsApp 群獲取**：‎開啟此連結即可加入我的 WhatsApp 群組：<https://chat.whatsapp.com/ERTlOXVQSjzBArFNgjyTYo?s=cl&p=i&mlu=4&ilr=4&iam=2>
-> 📦 **GitHub Repo**：<https://github.com/thevker/FootBall-AI>
-> 👤 **作者**：[@thevker](https://github.com/thevker)
 
 > 基於 xG（預期入球）與得失球數據的足球賽事預測工具，結合狀態、賠率、聯賽排名等多維度指標，提供賽果預測、入球大細及波膽推薦。
 
