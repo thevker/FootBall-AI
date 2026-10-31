@@ -476,13 +476,12 @@
 
     function updateTeamUI(prefix, att, def, status, rankPct, oddsPct, hasRank) {
         let attPct = Math.min(Math.max(((att - 0.5) / 2.0) * 100, 0), 100);
-        // 防守：映射到 50% ~ 250%（def 0→50%，def 3→250%）
-        let defPct = Math.min(Math.max(50 + (def / 3.0) * 200, 50), 250);
-        let defPctClamped = Math.min(defPct, 100); // 用於橫條寬度 / 雷達圖 / 綜合評分
+        // 防守：xGA 0.5 → 100%，xGA 2.5 → 0%（線性），def = 3 - xGA
+        let defPct = Math.min(Math.max(((def - 0.5) / 2.0) * 100, 0), 100);
         let statPct = Math.min(Math.max((status / 3.0) * 100, 0), 100);
 
         document.getElementById(prefix + 'AttBar').style.width = Math.max(attPct, 1) + '%';
-        document.getElementById(prefix + 'DefBar').style.width = Math.max(defPctClamped, 1) + '%';
+        document.getElementById(prefix + 'DefBar').style.width = Math.max(defPct, 1) + '%';
         document.getElementById(prefix + 'StatBar').style.width = Math.max(statPct, 1) + '%';
         document.getElementById(prefix + 'OddsBar').style.width = Math.max(oddsPct, 1) + '%';
         
@@ -509,14 +508,14 @@
             document.getElementById(prefix + 'RankDisplay').innerText = `${rankData.grade} (${rankPct.toFixed(1)})`;
             document.getElementById(prefix + 'RankDisplay').style.color = rankData.color;
             
-            radarData = [attPct, defPctClamped, statPct, oddsPct, rankPct];
+            radarData = [attPct, defPct, statPct, oddsPct, rankPct];
             labels = ['ATK', 'DEF', 'STA', 'ODD', 'RNK'];
-            overallPct = (attPct + defPctClamped + statPct + rankPct + oddsPct) / 5;
+            overallPct = (attPct + defPct + statPct + rankPct + oddsPct) / 5;
         } else {
             document.getElementById(prefix + 'RankRow').style.display = 'none';
-            radarData = [attPct, defPctClamped, statPct, oddsPct];
+            radarData = [attPct, defPct, statPct, oddsPct];
             labels = ['ATK', 'DEF', 'STA', 'ODD'];
-            overallPct = (attPct + defPctClamped + statPct + oddsPct) / 4;
+            overallPct = (attPct + defPct + statPct + oddsPct) / 4;
         }
 
         const overallData = getGradeByPercent(overallPct);
@@ -531,7 +530,7 @@
             prefix === 'h' ? '#ff6b6b' : '#6b9fff', prefix === 'h' ? 'rgba(255, 107, 107, 0.3)' : 'rgba(107, 159, 255, 0.3)');
 
         const styleEl = document.getElementById(prefix + 'Style');
-        const pctDiff = Math.round((attPct - defPctClamped) * 10) / 10;
+        const pctDiff = Math.round((attPct - defPct) * 10) / 10;
         if (pctDiff >= 25.0) { styleEl.innerText = "進攻型"; styleEl.style.color = "#ff8c8c"; styleEl.style.backgroundColor = "#3b1c1c"; }
         else if (pctDiff <= -25.0) { styleEl.innerText = "防守型"; styleEl.style.color = "#8cb8ff"; styleEl.style.backgroundColor = "#1a2633"; }
         else { styleEl.innerText = "平衡型"; styleEl.style.color = "#ccc"; styleEl.style.backgroundColor = "#333"; }
