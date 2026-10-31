@@ -2,6 +2,9 @@
 
 > 🔗 **線上使用**：<https://thevker.github.io/FootBall-AI/xgnew2>
 > 🔑 **密碼請到 WhatsApp 群獲取**：‎開啟此連結即可加入我的 WhatsApp 群組：<https://chat.whatsapp.com/ERTlOXVQSjzBArFNgjyTYo?s=cl&p=i&mlu=4&ilr=4&iam=2>
+> 🎬 **使用教學**：<https://youtube.com/shorts/Xb3Jc_3utFg?si=c_gEf4lHqIbK5nqY>
+> 📦 **GitHub Repo**：<https://github.com/thevker/FootBall-AI>
+> 👤 **作者**：[@thevker](https://github.com/thevker)
 
 > 基於 xG（預期入球）與得失球數據的足球賽事預測工具，結合狀態、賠率、聯賽排名等多維度指標，提供賽果預測、入球大細及波膽推薦。
 
@@ -38,6 +41,8 @@
 
 整個工具**無需後端、無需安裝**，直接用瀏覽器開啟即可使用，並支援一鍵截圖保存分析結果。
 
+> ⚠️ **工具只作娛樂分析，切勿沉迷賭博。**
+
 ---
 
 ## ✨ 功能特色
@@ -69,6 +74,12 @@
 
 - **首次使用**：無需密碼，自動獲得 1 小時免費使用
 - **免費期結束後**：需輸入密碼解鎖（永久使用）
+
+### 🎬 使用教學
+
+如果唔清楚點用，可以睇以下短片教學 👇
+
+👉 <https://youtube.com/shorts/Xb3Jc_3utFg?si=c_gEf4lHqIbK5nqY>
 
 ### 🔑 如何取得密碼
 
@@ -270,6 +281,10 @@ diff = (主隊得分 + 客隊失球) − (客隊得分 + 主隊失球)
 └──────────────────────┘
 ```
 
+### 🎬 影片教學
+
+完整操作示範 👉 <https://youtube.com/shorts/Xb3Jc_3utFg?si=c_gEf4lHqIbK5nqY>
+
 ### 手機保存圖片步驟
 
 1. 點擊「📸 保存分析」
@@ -334,6 +349,9 @@ A: 不需要。首次開啟網頁會自動獲得 **1 小時免費使用**，右�
 
 **Q: 輸入密碼後有時限嗎？**  
 A: 沒有。輸入正確密碼後即**永久解鎖**，不會再有任何時間限制。
+
+**Q: 有冇使用教學？**  
+A: 有，請睇短片教學 👉 <https://youtube.com/shorts/Xb3Jc_3utFg?si=c_gEf4lHqIbK5nqY>
 
 **Q: 排名不填可以嗎？**  
 A: 可以。排名為選填欄位，兩隊都填才會啟用「排名」評分項與六角雷達圖；只填一隊視同未填。
