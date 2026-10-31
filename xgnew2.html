@@ -35,12 +35,12 @@
         .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
         .input-box { display: flex; flex-direction: column; flex: 1; min-width: 0; }
         label { font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #bbbbbb; }
-        input[type="text"] { 
+        input[type="text"], input[type="password"] { 
             width: 100%; padding: 12px 8px; background-color: #2d2d2d; border: 1px solid #444; 
             color: #ffffff; border-radius: 6px; font-size: 16px; outline: none; transition: border 0.2s; 
             text-align: center;
         }
-        input[type="text"]:focus { border-color: #4da6ff; }
+        input[type="text"]:focus, input[type="password"]:focus { border-color: #4da6ff; }
 
         button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         .btn-calculate { background: #3a7bd5; color: white; }
@@ -188,9 +188,62 @@
             margin-top: 15px; padding: 10px 20px; background: #3a7bd5; color: white; 
             border: none; border-radius: 6px; font-weight: bold; cursor: pointer;
         }
+
+        /* ====== 登入遮罩 ====== */
+        #loginOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10000;
+            display: flex; justify-content: center; align-items: center;
+            background-color: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: opacity 0.4s ease;
+            padding: 20px;
+        }
+        #loginOverlay.hidden { opacity: 0; pointer-events: none; }
+        .login-card {
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid #444;
+            border-radius: 18px;
+            padding: 30px 22px;
+            width: 100%; max-width: 340px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+        }
+        .login-icon { font-size: 36px; margin-bottom: 8px; }
+        .login-title { font-size: 18px; font-weight: bold; color: #fff; margin-bottom: 4px; }
+        .login-sub { font-size: 12px; color: #888; margin-bottom: 20px; }
+        .login-card input[type="password"] {
+            padding: 14px 12px; font-size: 18px; letter-spacing: 2px;
+            margin-bottom: 12px; text-align: center;
+        }
+        .btn-login { background: #3a7bd5; color: white; padding: 13px; font-size: 15px; }
+        .btn-login:hover { background: #2a5fa5; }
+        #loginError {
+            display: none; color: #ff4d4d; font-size: 12px; font-weight: bold;
+            margin-top: 10px;
+        }
+        @keyframes loginShake { 
+            0%,100% { transform: translateX(0); } 
+            20%,60% { transform: translateX(-8px); } 
+            40%,80% { transform: translateX(8px); } 
+        }
+        .shake-now { animation: loginShake 0.45s; }
     </style>
 </head>
 <body>
+
+<!-- 登入遮罩 -->
+<div id="loginOverlay">
+    <div class="login-card" id="loginCard">
+        <div class="login-icon">🔒</div>
+        <div class="login-title">xG 賽事分析器</div>
+        <div class="login-sub">請輸入密碼以繼續</div>
+        <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter')tryLogin()">
+        <button class="btn-login" onclick="tryLogin()">進入</button>
+        <div id="loginError">❌ 密碼錯誤，請重試</div>
+    </div>
+</div>
 
 <div class="container">
     <h2>📊 xG 賽事分析器</h2>
@@ -338,6 +391,30 @@
 </div>
 
 <script>
+    // ====== 登入 ======
+    const CORRECT_PASSWORD = "y511634a";
+    function tryLogin() {
+        const input = document.getElementById('loginPassword');
+        const err = document.getElementById('loginError');
+        const card = document.getElementById('loginCard');
+        if (input.value === CORRECT_PASSWORD) {
+            const overlay = document.getElementById('loginOverlay');
+            overlay.classList.add('hidden');
+            setTimeout(() => { overlay.style.display = 'none'; }, 400);
+        } else {
+            err.style.display = 'block';
+            card.classList.remove('shake-now');
+            void card.offsetWidth;
+            card.classList.add('shake-now');
+            input.value = '';
+            input.focus();
+        }
+    }
+    // 頁面載入後自動聚焦密碼框
+    window.addEventListener('load', () => {
+        setTimeout(() => document.getElementById('loginPassword').focus(), 100);
+    });
+
     function closeModal() {
         document.getElementById('imageModal').style.display = 'none';
     }
