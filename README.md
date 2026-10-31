@@ -1,11 +1,11 @@
 # 📊 xG 賽事分析器
 
-> 🔗 **線上使用**：<https://thevker.github.io/FootBall-AI/xgnew2>
+> 🔗 **線上使用**：<https://thevker.github.io/FootBall-AI>
 > 
-> 🔑 **密碼請到 WhatsApp 群獲取**：‎<https://chat.whatsapp.com/ERTlOXVQSjzBArFNgjyTYo?s=cl&p=i&mlu=4&ilr=4&iam=2>
+> 🔑 **密碼請到 WhatsApp 群獲取**：
+<https://chat.whatsapp.com/ERTlOXVQSjzBArFNgjyTYo?s=cl&p=i&mlu=4&ilr=4&iam=2>
 > 
 > 🎬 **使用教學**：<https://youtube.com/shorts/Xb3Jc_3utFg?si=c_gEf4lHqIbK5nqY>
-> 
 
 > 基於 xG（預期入球）與得失球數據的足球賽事預測工具，結合狀態、賠率、聯賽排名等多維度指標，提供賽果預測、入球大細及波膽推薦。
 
@@ -71,7 +71,7 @@
 
 直接打開：
 
-👉 <https://thevker.github.io/FootBall-AI/xgnew2>
+👉 <https://thevker.github.io/FootBall-AI>
 
 - **首次使用**：無需密碼，自動獲得 1 小時免費使用
 - **免費期結束後**：需輸入密碼解鎖（永久使用）
@@ -92,7 +92,7 @@
 
 ### 方式一：本機開啟
 
-1. 將 `xgnew2/index.html` 下載到本機
+1. 將 `index.html` 下載到本機
 2. 用任何現代瀏覽器（Chrome / Safari / Edge / Firefox）雙擊開啟
 3. 首次使用免費 1 小時
 4. 需要長期使用時，到 WhatsApp 群取得密碼解鎖
@@ -118,7 +118,7 @@ python -m http.server 8000
 npx serve .
 ```
 
-然後瀏覽 `http://localhost:8000/xgnew2`。
+然後瀏覽 `http://localhost:8000`。
 
 ---
 
@@ -248,7 +248,7 @@ diff = (主隊得分 + 客隊失球) − (客隊得分 + 主隊失球)
 
 ```
 ┌──────────────────────┐
-│  1. 開啟線上網址      │  thevker.github.io/FootBall-AI/xgnew2
+│  1. 開啟線上網址      │  thevker.github.io/FootBall-AI
 └──────────┬───────────┘
            ▼
 ┌──────────────────────┐
@@ -319,9 +319,8 @@ diff = (主隊得分 + 客隊失球) − (客隊得分 + 主隊失球)
 
 ```
 FootBall-AI/
-├── xgnew2/
-│   └── index.html      # 完整單頁應用（含全部 CSS/JS）
-└── README.md           # 本說明文件
+├── index.html      # 完整單頁應用（含全部 CSS/JS）
+└── README.md       # 本說明文件
 ```
 
 ### 核心函數
