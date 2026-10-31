@@ -42,6 +42,27 @@
         }
         input[type="text"]:focus { border-color: #4da6ff; }
 
+        .toggle-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 14px; background: #222; border-radius: 8px;
+            margin-bottom: 12px; border: 1px solid #333;
+        }
+        .toggle-label { font-size: 13px; font-weight: bold; color: #ccc; }
+        .toggle-hint { font-size: 10px; color: #777; margin-top: 2px; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; margin-left: 10px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #444; transition: .3s; border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px;
+            left: 3px; bottom: 3px; background-color: white; transition: .3s;
+            border-radius: 50%;
+        }
+        .switch input:checked + .slider { background-color: #3a7bd5; }
+        .switch input:checked + .slider:before { transform: translateX(20px); }
+
         button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         .btn-calculate { background: #3a7bd5; color: white; }
         .btn-calculate:hover { background: #2a5fa5; }
@@ -236,6 +257,17 @@
             </div>
         </div>
 
+        <div class="toggle-row">
+            <div>
+                <div class="toggle-label">⚙️ 進階模式</div>
+                <div class="toggle-hint">開啟後顯示入球大細 + 波膽預測</div>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="advancedMode">
+                <span class="slider"></span>
+            </label>
+        </div>
+
         <button class="btn-calculate" onclick="calculate()">開始分析</button>
         <button class="btn-clear" onclick="clearData()">清除數據</button>
     </div>
@@ -252,7 +284,7 @@
                 <div class="result-value" id="val_fifth">-</div>
             </div>
 
-            <div class="new-goals-row">
+            <div class="new-goals-row" id="goalsRow">
                 <div class="new-goals-box" id="box_h_15">
                     <div class="new-goals-title">主隊入球 (1.5)</div>
                     <div class="new-goals-value" id="val_h_15">-</div>
@@ -409,6 +441,7 @@
         const ids = ['homeStatus', 'homeXg', 'homeXga', 'homeGoals', 'homeConceded', 'homeRank', 'homeOdds',
                      'awayStatus', 'awayXg', 'awayXga', 'awayGoals', 'awayConceded', 'awayRank', 'awayOdds'];
         ids.forEach(id => document.getElementById(id).value = '');
+        document.getElementById('advancedMode').checked = false;
         document.getElementById('result').style.display = 'none';
         document.getElementById('errorMessage').style.display = 'none';
         document.getElementById('radar-home').innerHTML = '';
@@ -476,7 +509,6 @@
 
     function updateTeamUI(prefix, att, def, status, rankPct, oddsPct, hasRank) {
         let attPct = Math.min(Math.max(((att - 0.5) / 2.0) * 100, 0), 100);
-        // 防守：xGA 0.5 → 100%，xGA 2.5 → 0%（線性），def = 3 - xGA
         let defPct = Math.min(Math.max(((def - 0.5) / 2.0) * 100, 0), 100);
         let statPct = Math.min(Math.max((status / 3.0) * 100, 0), 100);
 
@@ -555,23 +587,17 @@
         return overallPct;
     }
 
-    function applyMiniUI(id, finalResult, diffDisplay) {
+    function applyMiniUI(id, finalResult, diffDisplay, handicapText) {
         const box = document.getElementById('box_' + id);
         const val = document.getElementById('val_' + id);
         const diff = document.getElementById('diff_' + id);
 
         diff.innerText = `(${diffDisplay})`;
         if (finalResult === "home") { 
-            val.innerText = "主勝"; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; diff.style.color = "#4ade80"; 
+            val.innerText = handicapText || "主勝"; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; diff.style.color = "#4ade80"; 
         }
         else if (finalResult === "away") { 
-            val.innerText = "客勝"; val.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; diff.style.color = "#f87171"; 
-        }
-        else if (finalResult === "home_or_draw") { 
-            val.innerText = "和局/主勝"; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; diff.style.color = "#4ade80"; 
-        }
-        else if (finalResult === "away_or_draw") { 
-            val.innerText = "和局/客勝"; val.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; diff.style.color = "#f87171"; 
+            val.innerText = handicapText || "客勝"; val.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; diff.style.color = "#f87171"; 
         }
         else { 
             val.innerText = "不建議"; val.style.color = "#aaa"; box.style.borderColor = "#555"; box.style.backgroundColor = "#2a2a2a"; diff.style.color = "#aaa"; 
@@ -596,6 +622,7 @@
         const aOddsStr = document.getElementById('awayOdds').value;
 
         const hasRank = hRankStr !== "" && aRankStr !== "";
+        const advancedMode = document.getElementById('advancedMode').checked;
 
         if (!hXgStr || !hXgaStr || !hStatusStr || !hGoalsStr || !hConcededStr || !hOddsStr ||
             !aXgStr || !aXgaStr || !aStatusStr || !aGoalsStr || !aConcededStr || !aOddsStr) {
@@ -671,65 +698,56 @@
         updateTeamUI('a', aAttUI, aDefUI, aStatus, aRankPct, aOddsPct, hasRank);
 
         // ==========================================
-        // 預測賽果（新門檻 + 淨勝球分級）
+        // 預測賽果（門檻 1.25 / 2.25 / 3.25）
         // ==========================================
         const diffFifth = Math.round(((hGoals + aConceded) - (aGoals + hConceded)) * 100) / 100;
         let resFifth = "avoid";
         let exactGD = null;
+        let handicapText = "";
 
-        if (diffFifth >= 3.5) {
-            resFifth = "home"; exactGD = 3;
-        } else if (diffFifth >= 2.5) {
-            resFifth = "home"; exactGD = 2;
-        } else if (diffFifth >= 1.5) {
-            resFifth = "home"; exactGD = 1;
-        } else if (diffFifth >= 1.0) {
-            resFifth = "home_or_draw";
-        } else if (diffFifth <= -3.5) {
-            resFifth = "away"; exactGD = -3;
-        } else if (diffFifth <= -2.5) {
-            resFifth = "away"; exactGD = -2;
-        } else if (diffFifth <= -1.5) {
-            resFifth = "away"; exactGD = -1;
-        } else if (diffFifth <= -1.0) {
-            resFifth = "away_or_draw";
+        if (diffFifth >= 3.25) {
+            resFifth = "home"; exactGD = 3; handicapText = "主勝(-2)";
+        } else if (diffFifth >= 2.25) {
+            resFifth = "home"; exactGD = 2; handicapText = "主勝(-1)";
+        } else if (diffFifth >= 1.25) {
+            resFifth = "home"; exactGD = 1; handicapText = "主勝";
+        } else if (diffFifth <= -3.25) {
+            resFifth = "away"; exactGD = -3; handicapText = "客勝(-2)";
+        } else if (diffFifth <= -2.25) {
+            resFifth = "away"; exactGD = -2; handicapText = "客勝(-1)";
+        } else if (diffFifth <= -1.25) {
+            resFifth = "away"; exactGD = -1; handicapText = "客勝";
         } else {
             resFifth = "avoid";
         }
-        applyMiniUI('fifth', resFifth, diffFifth.toFixed(2));
+        applyMiniUI('fifth', resFifth, diffFifth.toFixed(2), handicapText);
 
         // ==========================================
-        // 入球大細
+        // 進階模式：入球大細 + 波膽
         // ==========================================
-        let hSize15 = "模糊";
-        let aSize15 = "模糊";
-        let totalSize25 = "模糊";
+        if (advancedMode) {
+            document.getElementById('goalsRow').style.display = 'flex';
+            document.getElementById('betBox').style.display = 'flex';
 
-        if (hGoals <= 1.20 && aConceded <= 1.20) hSize15 = "小";
-        else if (hGoals >= 1.80 && aConceded >= 1.80) hSize15 = "大";
+            let hSize15 = "模糊";
+            let aSize15 = "模糊";
+            let totalSize25 = "模糊";
 
-        if (aGoals <= 1.20 && hConceded <= 1.20) aSize15 = "小";
-        else if (aGoals >= 1.80 && hConceded >= 1.80) aSize15 = "大";
+            if (hGoals <= 1.20 && aConceded <= 1.20) hSize15 = "小";
+            else if (hGoals >= 1.80 && aConceded >= 1.80) hSize15 = "大";
 
-        if (hSize15 === "小" && aSize15 === "小") totalSize25 = "小";
-        else if (hSize15 === "大" && aSize15 === "大") totalSize25 = "大";
+            if (aGoals <= 1.20 && hConceded <= 1.20) aSize15 = "小";
+            else if (aGoals >= 1.80 && hConceded >= 1.80) aSize15 = "大";
 
-        // ==========================================
-        // 波膽池建構
-        // ==========================================
-        const bothSizeUnknown = (hSize15 === "模糊" && aSize15 === "模糊");
-        const checkSizeFilters = (h, a) => {
-            if (hSize15 !== "模糊" && hSize15 !== ((h >= 2) ? "大" : "小")) return false;
-            if (aSize15 !== "模糊" && aSize15 !== ((a >= 2) ? "大" : "小")) return false;
-            if (totalSize25 !== "模糊" && totalSize25 !== ((h + a >= 3) ? "大" : "小")) return false;
-            return true;
-        };
+            if (hSize15 === "小" && aSize15 === "小") totalSize25 = "小";
+            else if (hSize15 === "大" && aSize15 === "大") totalSize25 = "大";
 
-        let isValid = false;
-        let finalScores = [];
+            const bothSizeUnknown = (hSize15 === "模糊" && aSize15 === "模糊");
 
-        if (!bothSizeUnknown) {
-            if (exactGD !== null) {
+            let isValid = false;
+            let finalScores = [];
+
+            if (!bothSizeUnknown && exactGD !== null) {
                 for (let h = 0; h <= 4; h++) {
                     for (let a = 0; a <= 4; a++) {
                         if (h - a !== exactGD) continue;
@@ -737,60 +755,43 @@
                         isValid = true;
                     }
                 }
-            } else if (resFifth === "home_or_draw") {
-                for (let h = 0; h <= 4; h++) {
-                    for (let a = 0; a <= 4; a++) {
-                        if (h < a) continue;
-                        if (!checkSizeFilters(h, a)) continue;
-                        finalScores.push(`${h}:${a}`);
-                        isValid = true;
-                    }
-                }
-            } else if (resFifth === "away_or_draw") {
-                for (let h = 0; h <= 4; h++) {
-                    for (let a = 0; a <= 4; a++) {
-                        if (h > a) continue;
-                        if (!checkSizeFilters(h, a)) continue;
-                        finalScores.push(`${h}:${a}`);
-                        isValid = true;
-                    }
-                }
             }
-        }
 
-        // 更新入球大細 UI
-        const valH15 = document.getElementById('val_h_15');
-        valH15.innerText = hSize15 === "模糊" ? "方向模糊" : `${hSize15} 1.5`;
-        valH15.style.color = hSize15 === '大' ? '#f87171' : (hSize15 === '小' ? '#8cb8ff' : '#aaa');
+            const valH15 = document.getElementById('val_h_15');
+            valH15.innerText = hSize15 === "模糊" ? "方向模糊" : `${hSize15} 1.5`;
+            valH15.style.color = hSize15 === '大' ? '#f87171' : (hSize15 === '小' ? '#8cb8ff' : '#aaa');
 
-        const valA15 = document.getElementById('val_a_15');
-        valA15.innerText = aSize15 === "模糊" ? "方向模糊" : `${aSize15} 1.5`;
-        valA15.style.color = aSize15 === '大' ? '#f87171' : (aSize15 === '小' ? '#8cb8ff' : '#aaa');
+            const valA15 = document.getElementById('val_a_15');
+            valA15.innerText = aSize15 === "模糊" ? "方向模糊" : `${aSize15} 1.5`;
+            valA15.style.color = aSize15 === '大' ? '#f87171' : (aSize15 === '小' ? '#8cb8ff' : '#aaa');
 
-        const valTotal25 = document.getElementById('val_total_25');
-        valTotal25.innerText = totalSize25 === "模糊" ? "方向模糊" : `${totalSize25} 2.5`;
-        valTotal25.style.color = totalSize25 === '大' ? '#f87171' : (totalSize25 === '小' ? '#8cb8ff' : '#aaa');
+            const valTotal25 = document.getElementById('val_total_25');
+            valTotal25.innerText = totalSize25 === "模糊" ? "方向模糊" : `${totalSize25} 2.5`;
+            valTotal25.style.color = totalSize25 === '大' ? '#f87171' : (totalSize25 === '小' ? '#8cb8ff' : '#aaa');
 
-        // 更新波膽 UI
-        const betBox = document.getElementById('betBox');
-        const betValue = document.getElementById('betValue');
-        
-        if (!isValid) {
-            betBox.style.borderColor = '#444';
-            betBox.style.backgroundColor = '#222';
-            if (bothSizeUnknown) {
-                betValue.innerText = '方向模糊';
-            } else if (resFifth === 'avoid') {
-                betValue.innerText = '方向不明，不建議';
+            const betBox = document.getElementById('betBox');
+            const betValue = document.getElementById('betValue');
+            
+            if (!isValid) {
+                betBox.style.borderColor = '#444';
+                betBox.style.backgroundColor = '#222';
+                if (bothSizeUnknown) {
+                    betValue.innerText = '方向模糊';
+                } else if (resFifth === 'avoid') {
+                    betValue.innerText = '方向不明，不建議';
+                } else {
+                    betValue.innerText = '方向模糊';
+                }
+                betValue.style.color = '#888';
             } else {
-                betValue.innerText = '方向模糊';
+                betBox.style.borderColor = '#ffd700';
+                betBox.style.backgroundColor = '#2a2a1a';
+                betValue.innerText = finalScores.join(' / ');
+                betValue.style.color = '#fff';
             }
-            betValue.style.color = '#888';
         } else {
-            betBox.style.borderColor = '#ffd700';
-            betBox.style.backgroundColor = '#2a2a1a';
-            betValue.innerText = finalScores.join(' / ');
-            betValue.style.color = '#fff';
+            document.getElementById('goalsRow').style.display = 'none';
+            document.getElementById('betBox').style.display = 'none';
         }
 
         document.getElementById('inputSection').style.display = 'none';
