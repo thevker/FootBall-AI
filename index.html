@@ -853,34 +853,21 @@
         let aSize15 = "模糊";
         let totalSize25 = "模糊";
 
-        // 新邏輯：主得 + 客失 <= 2.0 判小，>= 4.0 判大
+        // 獨立計算：主得 + 客失 <= 2.0 判小，>= 4.0 判大
         let hAttDefSum = hGoals + aConceded;
         if (hAttDefSum <= 2.0) hSize15 = "小";
         else if (hAttDefSum >= 4.0) hSize15 = "大";
 
-        // 新邏輯：客得 + 主失 <= 2.0 判小，>= 4.0 判大
+        // 獨立計算：客得 + 主失 <= 2.0 判小，>= 4.0 判大
         let aAttDefSum = aGoals + hConceded;
         if (aAttDefSum <= 2.0) aSize15 = "小";
         else if (aAttDefSum >= 4.0) aSize15 = "大";
 
+        // 總入球根據左右獨立結果判定（左右都小=小，左右都大=大，否則模糊）
         if (hSize15 === "小" && aSize15 === "小") totalSize25 = "小";
         else if (hSize15 === "大" && aSize15 === "大") totalSize25 = "大";
 
-        // 邏輯推導（保留）
-        if (resFifth === "draw") {
-            if (hSize15 === "小") aSize15 = "小";
-            if (hSize15 === "大") aSize15 = "大";
-            if (aSize15 === "小") hSize15 = "小";
-            if (aSize15 === "大") hSize15 = "大";
-            if (hSize15 === "小") totalSize25 = "小";
-            if (hSize15 === "大") totalSize25 = "大";
-        } else if (resFifth === "home") {
-            if (exactGD === 1 && hSize15 === "小") { aSize15 = "小"; totalSize25 = "小"; }
-            if (exactGD === 3) { totalSize25 = "大"; }
-        } else if (resFifth === "away") {
-            if (exactGD === -1 && aSize15 === "小") { hSize15 = "小"; totalSize25 = "小"; }
-            if (exactGD === -3) { totalSize25 = "大"; }
-        }
+        // 已移除：基於賽果的邏輯推導，保持完全獨立計算
 
         const valH15 = document.getElementById('val_h_15');
         valH15.innerText = hSize15 === "模糊" ? "方向模糊" : `${hSize15} 1.5`;
