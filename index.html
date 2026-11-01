@@ -438,7 +438,7 @@
                     </div>
                 </div>
                 <!-- 紅牌提示 -->
-                <div class="red-card-info" id="hRedCardInfo">🟥 x1 紅牌 - 能力降低 10%</div>
+                <div class="red-card-info" id="hRedCardInfo">🟥 x1 紅牌 - 各項能力降低 10%</div>
                 
                 <div class="rating-row"><div class="rating-label">進攻</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="hAttBar"></div></div><div class="rating-display" id="hAttDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="hDefBar"></div></div><div class="rating-display" id="hDefDisplay">-</div></div>
@@ -462,7 +462,7 @@
                     </div>
                 </div>
                 <!-- 紅牌提示 -->
-                <div class="red-card-info" id="aRedCardInfo">🟥 x1 紅牌 - 能力降低 10%</div>
+                <div class="red-card-info" id="aRedCardInfo">🟥 x1 紅牌 - 各項能力降低 10%</div>
 
                 <div class="rating-row"><div class="rating-label">進攻</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="aAttBar"></div></div><div class="rating-display" id="aAttDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="aDefBar"></div></div><div class="rating-display" id="aDefDisplay">-</div></div>
@@ -656,18 +656,26 @@
         dataPolygon.setAttribute('fill', fillColor); dataPolygon.setAttribute('stroke', color); dataPolygon.setAttribute('stroke-width', '2');
         svg.appendChild(dataPolygon);
     }
-    function updateTeamUI(prefix, att, def, status, convPct, rankPct, oddsPct, hasRank) {
-        let attPct = Math.min(Math.max(((att - 0.5) / 2.0) * 100, 0), 100);
-        let defPct = Math.min(Math.max(((def - 0.5) / 2.0) * 100, 0), 100);
-        let statPct = Math.min(Math.max((status / 3.0) * 100, 0), 100);
+    
+    // 修改：加入紅牌扣減邏輯
+    function updateTeamUI(prefix, att, def, status, convPct, rankPct, oddsPct, hasRank, redCards) {
+        let penalty = Math.max(0, 1 - (redCards * 0.1));
+
+        let attPct = Math.min(Math.max(((att - 0.5) / 2.0) * 100, 0), 100) * penalty;
+        let defPct = Math.min(Math.max(((def - 0.5) / 2.0) * 100, 0), 100) * penalty;
+        let statPct = Math.min(Math.max((status / 3.0) * 100, 0), 100) * penalty;
+        let finalOddsPct = oddsPct * penalty;
+        let finalConvPct = convPct * penalty;
+        let finalRankPct = rankPct; // 排名不扣減
+
         document.getElementById(prefix + 'AttBar').style.width = Math.max(attPct, 1) + '%';
         document.getElementById(prefix + 'DefBar').style.width = Math.max(defPct, 1) + '%';
         document.getElementById(prefix + 'StatBar').style.width = Math.max(statPct, 1) + '%';
-        document.getElementById(prefix + 'OddsBar').style.width = Math.max(oddsPct, 1) + '%';
-        document.getElementById(prefix + 'ConvBar').style.width = Math.max(convPct, 1) + '%';
+        document.getElementById(prefix + 'OddsBar').style.width = Math.max(finalOddsPct, 1) + '%';
+        document.getElementById(prefix + 'ConvBar').style.width = Math.max(finalConvPct, 1) + '%';
         
         const attData = getGradeByPercent(attPct), defData = getGradeByPercent(defPct), statData = getGradeByPercent(statPct);
-        const oddsData = getGradeByPercent(oddsPct), convData = getGradeByPercent(convPct);
+        const oddsData = getGradeByPercent(finalOddsPct), convData = getGradeByPercent(finalConvPct);
 
         document.getElementById(prefix + 'AttDisplay').innerText = `${attData.grade} (${attPct.toFixed(1)})`;
         document.getElementById(prefix + 'AttDisplay').style.color = attData.color;
@@ -675,9 +683,9 @@
         document.getElementById(prefix + 'DefDisplay').style.color = defData.color;
         document.getElementById(prefix + 'StatDisplay').innerText = `${statData.grade} (${statPct.toFixed(1)})`;
         document.getElementById(prefix + 'StatDisplay').style.color = statData.color;
-        document.getElementById(prefix + 'OddsDisplay').innerText = `${oddsData.grade} (${oddsPct.toFixed(1)})`;
+        document.getElementById(prefix + 'OddsDisplay').innerText = `${oddsData.grade} (${finalOddsPct.toFixed(1)})`;
         document.getElementById(prefix + 'OddsDisplay').style.color = oddsData.color;
-        document.getElementById(prefix + 'ConvDisplay').innerText = `${convData.grade} (${convPct.toFixed(1)})`;
+        document.getElementById(prefix + 'ConvDisplay').innerText = `${convData.grade} (${finalConvPct.toFixed(1)})`;
         document.getElementById(prefix + 'ConvDisplay').style.color = convData.color;
 
         let radarData = [];
@@ -686,19 +694,19 @@
 
         if (hasRank) {
             document.getElementById(prefix + 'RankRow').style.display = 'flex';
-            document.getElementById(prefix + 'RankBar').style.width = Math.max(rankPct, 1) + '%';
-            const rankData = getGradeByPercent(rankPct);
-            document.getElementById(prefix + 'RankDisplay').innerText = `${rankData.grade} (${rankPct.toFixed(1)})`;
+            document.getElementById(prefix + 'RankBar').style.width = Math.max(finalRankPct, 1) + '%';
+            const rankData = getGradeByPercent(finalRankPct);
+            document.getElementById(prefix + 'RankDisplay').innerText = `${rankData.grade} (${finalRankPct.toFixed(1)})`;
             document.getElementById(prefix + 'RankDisplay').style.color = rankData.color;
             
-            radarData = [attPct, defPct, statPct, oddsPct, convPct, rankPct];
+            radarData = [attPct, defPct, statPct, finalOddsPct, finalConvPct, finalRankPct];
             labels = ['ATK', 'DEF', 'STA', 'ODD', 'COV', 'RNK'];
-            overallPct = (attPct + defPct + statPct + oddsPct + convPct + rankPct) / 6;
+            overallPct = (attPct + defPct + statPct + finalOddsPct + finalConvPct + finalRankPct) / 6;
         } else {
             document.getElementById(prefix + 'RankRow').style.display = 'none';
-            radarData = [attPct, defPct, statPct, oddsPct, convPct];
+            radarData = [attPct, defPct, statPct, finalOddsPct, finalConvPct];
             labels = ['ATK', 'DEF', 'STA', 'ODD', 'COV'];
-            overallPct = (attPct + defPct + statPct + oddsPct + convPct) / 5;
+            overallPct = (attPct + defPct + statPct + finalOddsPct + finalConvPct) / 5;
         }
 
         const overallData = getGradeByPercent(overallPct);
@@ -875,34 +883,16 @@
                 aRankBadge.style.display = 'none';
             }
 
-            // 紅牌能力扣減
-            let hAttUI = hXg;
-            let hDefUI = Math.max(0, 3.0 - hXga);
-            if (hRed > 0) {
-                let penalty = 1 - (hRed * 0.1);
-                hAttUI *= penalty;
-                hDefUI *= penalty;
-            }
-
-            let aAttUI = aXg;
-            let aDefUI = Math.max(0, 3.0 - aXga);
-            if (aRed > 0) {
-                let penalty = 1 - (aRed * 0.1);
-                aAttUI *= penalty;
-                aDefUI *= penalty;
-            }
-
-            updateTeamUI('h', hAttUI, hDefUI, hStatus, hConvPct, hRankPct, hOddsPct, hasRank);
-            updateTeamUI('a', aAttUI, aDefUI, aStatus, aConvPct, aRankPct, aOddsPct, hasRank);
+            updateTeamUI('h', hXg, Math.max(0, 3.0 - hXga), hStatus, hConvPct, hRankPct, hOddsPct, hasRank, hRed);
+            updateTeamUI('a', aXg, Math.max(0, 3.0 - aXga), aStatus, aConvPct, aRankPct, aOddsPct, hasRank, aRed);
             
             document.getElementById('analysisCard').style.display = 'block';
             document.getElementById('btnSaveAna').style.display = 'block';
 
-            // 顯示紅牌提示
             const hRedInfo = document.getElementById('hRedCardInfo');
             if (hRed > 0) {
                 hRedInfo.style.display = 'flex';
-                hRedInfo.innerHTML = `🟥 x${hRed} 紅牌 - 能力降低 ${hRed * 10}%`;
+                hRedInfo.innerHTML = `🟥 x${hRed} 紅牌 - 各項能力降低 ${hRed * 10}%`;
             } else {
                 hRedInfo.style.display = 'none';
             }
@@ -910,11 +900,10 @@
             const aRedInfo = document.getElementById('aRedCardInfo');
             if (aRed > 0) {
                 aRedInfo.style.display = 'flex';
-                aRedInfo.innerHTML = `🟥 x${aRed} 紅牌 - 能力降低 ${aRed * 10}%`;
+                aRedInfo.innerHTML = `🟥 x${aRed} 紅牌 - 各項能力降低 ${aRed * 10}%`;
             } else {
                 aRedInfo.style.display = 'none';
             }
-            
         } else {
             document.getElementById('analysisCard').style.display = 'none';
             document.getElementById('btnSaveAna').style.display = 'none';
