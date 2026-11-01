@@ -58,12 +58,18 @@
         .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
         .input-box { display: flex; flex-direction: column; flex: 1; min-width: 0; }
         label { font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #bbbbbb; }
-        input[type="text"] { 
+        
+        input[type="text"], select.input-select { 
             width: 100%; padding: 12px 8px; background-color: #2d2d2d; border: 1px solid #444; 
             color: #ffffff; border-radius: 6px; font-size: 16px; outline: none; transition: border 0.2s; 
             text-align: center;
         }
-        input[type="text"]:focus { border-color: #4da6ff; }
+        input[type="text"]:focus, select.input-select:focus { border-color: #4da6ff; }
+        select.input-select {
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
 
         button.btn-calculate { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; background: #3a7bd5; color: white; }
         button.btn-calculate:hover { background: #2a5fa5; }
@@ -208,7 +214,7 @@
 
         .team-header {
             display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 10px; min-height: 24px; white-space: nowrap;
+            margin-bottom: 5px; min-height: 24px; white-space: nowrap;
         }
         .left-area { flex: 1; display: flex; justify-content: flex-start; align-items: center; gap: 6px; }
         .right-area { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 4px; }
@@ -221,6 +227,22 @@
             background-color: #333; border: 1px solid #555; white-space: nowrap;
             font-style: italic;
             font-weight: 900;
+        }
+
+        /* 紅牌提示樣式 */
+        .red-card-info {
+            display: none;
+            font-size: 11px;
+            color: #ff4d4d;
+            font-weight: bold;
+            margin-bottom: 8px;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255, 77, 77, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border-left: 3px solid #ff4d4d;
+            width: fit-content;
         }
 
         @keyframes glow-green { 0% { box-shadow: 0 0 2px #4ade80; } 50% { box-shadow: 0 0 8px #4ade80; } 100% { box-shadow: 0 0 2px #4ade80; } }
@@ -301,6 +323,17 @@
                 <div class="input-box"><label>排名 (選填)</label><input type="text" inputmode="numeric" id="homeRank" placeholder="例：1" oninput="limitInteger(this)"></div>
                 <div class="input-box"><label>賠率</label><input type="text" inputmode="decimal" id="homeOdds" placeholder="例：1.67" oninput="limitInput(this)" onblur="formatInput(this)"></div>
             </div>
+            <div class="input-row std-only">
+                <div class="input-box">
+                    <label>紅牌</label>
+                    <select id="homeRed" class="input-select">
+                        <option value="0">無紅牌</option>
+                        <option value="1">1 張紅牌</option>
+                        <option value="2">2 張紅牌</option>
+                    </select>
+                </div>
+                <div class="input-box"></div>
+            </div>
         </div>
 
         <div class="input-section">
@@ -320,6 +353,17 @@
             <div class="input-row std-only">
                 <div class="input-box"><label>排名 (選填)</label><input type="text" inputmode="numeric" id="awayRank" placeholder="例：2" oninput="limitInteger(this)"></div>
                 <div class="input-box"><label>賠率</label><input type="text" inputmode="decimal" id="awayOdds" placeholder="例：1.27" oninput="limitInput(this)" onblur="formatInput(this)"></div>
+            </div>
+            <div class="input-row std-only">
+                <div class="input-box">
+                    <label>紅牌</label>
+                    <select id="awayRed" class="input-select">
+                        <option value="0">無紅牌</option>
+                        <option value="1">1 張紅牌</option>
+                        <option value="2">2 張紅牌</option>
+                    </select>
+                </div>
+                <div class="input-box"></div>
             </div>
         </div>
 
@@ -393,6 +437,9 @@
                         <span class="badge" id="hRankBadge" style="display:none;">-</span>
                     </div>
                 </div>
+                <!-- 紅牌提示 -->
+                <div class="red-card-info" id="hRedCardInfo">🟥 x1 紅牌 - 能力降低 10%</div>
+                
                 <div class="rating-row"><div class="rating-label">進攻</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="hAttBar"></div></div><div class="rating-display" id="hAttDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="hDefBar"></div></div><div class="rating-display" id="hDefDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">狀態</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="hStatBar"></div></div><div class="rating-display" id="hStatDisplay">-</div></div>
@@ -414,6 +461,9 @@
                         <span class="badge" id="aRankBadge" style="display:none;">-</span>
                     </div>
                 </div>
+                <!-- 紅牌提示 -->
+                <div class="red-card-info" id="aRedCardInfo">🟥 x1 紅牌 - 能力降低 10%</div>
+
                 <div class="rating-row"><div class="rating-label">進攻</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="aAttBar"></div></div><div class="rating-display" id="aAttDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="aDefBar"></div></div><div class="rating-display" id="aDefDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">狀態</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="aStatBar"></div></div><div class="rating-display" id="aStatDisplay">-</div></div>
@@ -447,6 +497,8 @@
             ['homeStatus','homeXg','homeXga','homeRank','homeOdds','awayStatus','awayXg','awayXga','awayRank','awayOdds'].forEach(id => {
                 document.getElementById(id).value = '';
             });
+            document.getElementById('homeRed').value = '0';
+            document.getElementById('awayRed').value = '0';
         }
     }
 
@@ -544,6 +596,8 @@
         const ids = ['homeStatus', 'homeXg', 'homeXga', 'homeGoals', 'homeConceded', 'homeRank', 'homeOdds',
                      'awayStatus', 'awayXg', 'awayXga', 'awayGoals', 'awayConceded', 'awayRank', 'awayOdds'];
         ids.forEach(id => document.getElementById(id).value = '');
+        document.getElementById('homeRed').value = '0';
+        document.getElementById('awayRed').value = '0';
         document.getElementById('result').style.display = 'none';
         document.getElementById('errorMessage').style.display = 'none';
         document.getElementById('radar-home').innerHTML = '';
@@ -730,6 +784,7 @@
 
         let hXgStr = "0", hXgaStr = "0", hStatusStr = "0", hRankStr = "", hOddsStr = "0";
         let aXgStr = "0", aXgaStr = "0", aStatusStr = "0", aRankStr = "", aOddsStr = "0";
+        let hRed = 0, aRed = 0;
 
         if (isStd) {
             hXgStr = document.getElementById('homeXg').value;
@@ -737,11 +792,14 @@
             hStatusStr = document.getElementById('homeStatus').value;
             hRankStr = document.getElementById('homeRank').value.trim();
             hOddsStr = document.getElementById('homeOdds').value;
+            hRed = parseInt(document.getElementById('homeRed').value) || 0;
+
             aXgStr = document.getElementById('awayXg').value;
             aXgaStr = document.getElementById('awayXga').value;
             aStatusStr = document.getElementById('awayStatus').value;
             aRankStr = document.getElementById('awayRank').value.trim();
             aOddsStr = document.getElementById('awayOdds').value;
+            aRed = parseInt(document.getElementById('awayRed').value) || 0;
 
             if (!hXgStr || !hXgaStr || !hStatusStr || !hOddsStr ||
                 !aXgStr || !aXgaStr || !aStatusStr || !aOddsStr) {
@@ -817,16 +875,46 @@
                 aRankBadge.style.display = 'none';
             }
 
+            // 紅牌能力扣減
             let hAttUI = hXg;
             let hDefUI = Math.max(0, 3.0 - hXga);
+            if (hRed > 0) {
+                let penalty = 1 - (hRed * 0.1);
+                hAttUI *= penalty;
+                hDefUI *= penalty;
+            }
+
             let aAttUI = aXg;
             let aDefUI = Math.max(0, 3.0 - aXga);
+            if (aRed > 0) {
+                let penalty = 1 - (aRed * 0.1);
+                aAttUI *= penalty;
+                aDefUI *= penalty;
+            }
 
             updateTeamUI('h', hAttUI, hDefUI, hStatus, hConvPct, hRankPct, hOddsPct, hasRank);
             updateTeamUI('a', aAttUI, aDefUI, aStatus, aConvPct, aRankPct, aOddsPct, hasRank);
             
             document.getElementById('analysisCard').style.display = 'block';
             document.getElementById('btnSaveAna').style.display = 'block';
+
+            // 顯示紅牌提示
+            const hRedInfo = document.getElementById('hRedCardInfo');
+            if (hRed > 0) {
+                hRedInfo.style.display = 'flex';
+                hRedInfo.innerHTML = `🟥 x${hRed} 紅牌 - 能力降低 ${hRed * 10}%`;
+            } else {
+                hRedInfo.style.display = 'none';
+            }
+
+            const aRedInfo = document.getElementById('aRedCardInfo');
+            if (aRed > 0) {
+                aRedInfo.style.display = 'flex';
+                aRedInfo.innerHTML = `🟥 x${aRed} 紅牌 - 能力降低 ${aRed * 10}%`;
+            } else {
+                aRedInfo.style.display = 'none';
+            }
+            
         } else {
             document.getElementById('analysisCard').style.display = 'none';
             document.getElementById('btnSaveAna').style.display = 'none';
@@ -837,7 +925,6 @@
         let exactGD = null;
         let handicapText = "";
 
-        // 更新門檻：主勝 > 1.5，-1 > 2.5，-2 > 3.5
         if (diffFifth > 3.5) {
             resFifth = "home"; exactGD = 3; handicapText = "主勝(-2)";
         } else if (diffFifth > 2.5) {
@@ -863,7 +950,6 @@
         let aSize15 = "模糊";
         let totalSize25 = "模糊";
 
-        // 更新門檻：小改為 1.25 或以下，大改為 1.75 或以上
         if (hGoals <= 1.25 && aConceded <= 1.25) hSize15 = "小";
         else if (hGoals >= 1.75 && aConceded >= 1.75) hSize15 = "大";
 
