@@ -349,15 +349,15 @@
 
             <div class="new-goals-row" id="goalsRow">
                 <div class="new-goals-box" id="box_h_15">
-                    <div class="new-goals-title">主隊入球 (1.5)</div>
+                    <div class="new-goals-title" id="title_h">主隊入球</div>
                     <div class="new-goals-value" id="val_h_15">-</div>
                 </div>
                 <div class="new-goals-box" id="box_total_25">
-                    <div class="new-goals-title">總入球 (2.5)</div>
+                    <div class="new-goals-title" id="title_total">總入球</div>
                     <div class="new-goals-value" id="val_total_25">-</div>
                 </div>
                 <div class="new-goals-box" id="box_a_15">
-                    <div class="new-goals-title">客隊入球 (1.5)</div>
+                    <div class="new-goals-title" id="title_a">客隊入球</div>
                     <div class="new-goals-value" id="val_a_15">-</div>
                 </div>
             </div>
@@ -690,7 +690,6 @@
         diff.innerText = `(${diffDisplay})`;
 
         const warning = document.getElementById('drawWarning');
-        // 移除和局後，這裡永遠隱藏
         warning.style.display = 'none';
 
         if (finalResult === "home") { 
@@ -826,7 +825,6 @@
         let exactGD = null;
         let handicapText = "";
 
-        // 更新門檻：100以上主勝，250以上-1，400以上-2
         if (diffFifth >= 4.0) {
             resFifth = "home"; exactGD = 3; handicapText = "主勝(-2)";
         } else if (diffFifth >= 2.5) {
@@ -844,35 +842,45 @@
         }
         applyMiniUI('fifth', resFifth, diffFifth.toFixed(2), handicapText);
 
-        let hSize15 = "模糊";
-        let aSize15 = "模糊";
-        let totalSize25 = "模糊";
-
-        // 獨立計算：主得 + 客失 <= 2.0 判小，>= 4.0 判大
+        // 動態入球大細判斷
         let hAttDefSum = hGoals + aConceded;
-        if (hAttDefSum <= 2.0) hSize15 = "小";
-        else if (hAttDefSum >= 4.0) hSize15 = "大";
+        let hSize = "模糊";
+        if (hAttDefSum <= 1.0) hSize = "小 0.5";
+        else if (hAttDefSum <= 2.0) hSize = "小 1.5";
+        else if (hAttDefSum >= 5.0) hSize = "大 2.5";
+        else if (hAttDefSum >= 4.0) hSize = "大 1.5";
 
-        // 獨立計算：客得 + 主失 <= 2.0 判小，>= 4.0 判大
         let aAttDefSum = aGoals + hConceded;
-        if (aAttDefSum <= 2.0) aSize15 = "小";
-        else if (aAttDefSum >= 4.0) aSize15 = "大";
+        let aSize = "模糊";
+        if (aAttDefSum <= 1.0) aSize = "小 0.5";
+        else if (aAttDefSum <= 2.0) aSize = "小 1.5";
+        else if (aAttDefSum >= 5.0) aSize = "大 2.5";
+        else if (aAttDefSum >= 4.0) aSize = "大 1.5";
 
-        // 總入球根據左右獨立結果判定
-        if (hSize15 === "小" && aSize15 === "小") totalSize25 = "小";
-        else if (hSize15 === "大" && aSize15 === "大") totalSize25 = "大";
+        // 動態總入球判斷
+        let totalSize = "模糊";
+        if (hSize === "小 0.5" && aSize === "小 0.5") totalSize = "小 0.5";
+        else if ((hSize === "小 0.5" && aSize === "小 1.5") || (hSize === "小 1.5" && aSize === "小 0.5")) totalSize = "小 1.5";
+        else if (hSize === "小 1.5" && aSize === "小 1.5") totalSize = "小 2.5";
+        else if (hSize === "大 1.5" && aSize === "大 1.5") totalSize = "大 3.5";
+        else if ((hSize === "大 1.5" && aSize === "大 2.5") || (hSize === "大 2.5" && aSize === "大 1.5")) totalSize = "大 4.5";
+        else if (hSize === "大 2.5" && aSize === "大 2.5") totalSize = "大 5.5";
 
+        // 更新 UI 顯示
+        document.getElementById('title_h').innerText = hSize === "模糊" ? "主隊入球 (1.5)" : `主隊入球 (${hSize.split(' ')[1]})`;
         const valH15 = document.getElementById('val_h_15');
-        valH15.innerText = hSize15 === "模糊" ? "方向模糊" : `${hSize15} 1.5`;
-        valH15.style.color = hSize15 === '大' ? '#f87171' : (hSize15 === '小' ? '#8cb8ff' : '#aaa');
+        valH15.innerText = hSize === "模糊" ? "方向模糊" : hSize;
+        valH15.style.color = hSize.includes('大') ? '#f87171' : (hSize.includes('小') ? '#8cb8ff' : '#aaa');
 
+        document.getElementById('title_a').innerText = aSize === "模糊" ? "客隊入球 (1.5)" : `客隊入球 (${aSize.split(' ')[1]})`;
         const valA15 = document.getElementById('val_a_15');
-        valA15.innerText = aSize15 === "模糊" ? "方向模糊" : `${aSize15} 1.5`;
-        valA15.style.color = aSize15 === '大' ? '#f87171' : (aSize15 === '小' ? '#8cb8ff' : '#aaa');
+        valA15.innerText = aSize === "模糊" ? "方向模糊" : aSize;
+        valA15.style.color = aSize.includes('大') ? '#f87171' : (aSize.includes('小') ? '#8cb8ff' : '#aaa');
 
+        document.getElementById('title_total').innerText = totalSize === "模糊" ? "總入球 (2.5)" : `總入球 (${totalSize.split(' ')[1]})`;
         const valTotal25 = document.getElementById('val_total_25');
-        valTotal25.innerText = totalSize25 === "模糊" ? "方向模糊" : `${totalSize25} 2.5`;
-        valTotal25.style.color = totalSize25 === '大' ? '#f87171' : (totalSize25 === '小' ? '#8cb8ff' : '#aaa');
+        valTotal25.innerText = totalSize === "模糊" ? "方向模糊" : totalSize;
+        valTotal25.style.color = totalSize.includes('大') ? '#f87171' : (totalSize.includes('小') ? '#8cb8ff' : '#aaa');
 
         const betBox = document.getElementById('betBox');
         document.querySelectorAll('.bet-cell').forEach(c => {
@@ -882,23 +890,38 @@
         let targetGDs = [];
         if (resFifth === "home") targetGDs = [exactGD];
         else if (resFifth === "away") targetGDs = [exactGD];
-        // 已移除 draw
 
         let hasActive = false;
         for (let h = 0; h <= 4; h++) {
             for (let a = 0; a <= 4; a++) {
-                if (hSize15 === "大" && h < 2) continue;
-                if (hSize15 === "小" && h >= 2) continue;
-                if (aSize15 === "大" && a < 2) continue;
-                if (aSize15 === "小" && a >= 2) continue;
-                if (totalSize25 === "大" && (h + a) < 3) continue;
-                if (totalSize25 === "小" && (h + a) >= 3) continue;
+                // 過濾入球大細
+                let hMatch = true;
+                if (hSize === "小 0.5" && h >= 1) hMatch = false;
+                if (hSize === "小 1.5" && h >= 2) hMatch = false;
+                if (hSize === "大 1.5" && h <= 1) hMatch = false;
+                if (hSize === "大 2.5" && h <= 2) hMatch = false;
+
+                let aMatch = true;
+                if (aSize === "小 0.5" && a >= 1) aMatch = false;
+                if (aSize === "小 1.5" && a >= 2) aMatch = false;
+                if (aSize === "大 1.5" && a <= 1) aMatch = false;
+                if (aSize === "大 2.5" && a <= 2) aMatch = false;
+
+                let tMatch = true;
+                if (totalSize === "小 0.5" && (h + a) >= 1) tMatch = false;
+                if (totalSize === "小 1.5" && (h + a) >= 2) tMatch = false;
+                if (totalSize === "小 2.5" && (h + a) >= 3) tMatch = false;
+                if (totalSize === "大 3.5" && (h + a) <= 3) tMatch = false;
+                if (totalSize === "大 4.5" && (h + a) <= 4) tMatch = false;
+                if (totalSize === "大 5.5" && (h + a) <= 5) tMatch = false;
+
+                if (!hMatch || !aMatch || !tMatch) continue;
 
                 const cell = document.getElementById(`cell-${h}-${a}`);
                 const currentGD = h - a;
 
                 if (resFifth === "avoid") {
-                    if (hSize15 === "模糊" && aSize15 === "模糊" && totalSize25 === "模糊") continue;
+                    if (hSize === "模糊" && aSize === "模糊" && totalSize === "模糊") continue;
                     cell.classList.add('active'); 
                     hasActive = true;
                 } else {
