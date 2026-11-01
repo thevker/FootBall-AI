@@ -690,7 +690,7 @@
         diff.innerText = `(${diffDisplay})`;
 
         const warning = document.getElementById('drawWarning');
-        if (finalResult === "home_or_draw" || finalResult === "away_or_draw" || finalResult === "draw") {
+        if (finalResult === "draw") {
             warning.style.display = 'block';
         } else {
             warning.style.display = 'none';
@@ -701,12 +701,6 @@
         }
         else if (finalResult === "away") { 
             val.innerText = handicapText || "客勝"; val.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; diff.style.color = "#f87171"; 
-        }
-        else if (finalResult === "home_or_draw") { 
-            val.innerText = "和局/主勝"; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; diff.style.color = "#4ade80"; 
-        }
-        else if (finalResult === "away_or_draw") { 
-            val.innerText = "和局/客勝"; val.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; diff.style.color = "#f87171"; 
         }
         else if (finalResult === "draw") { 
             val.innerText = "和局"; val.style.color = "#ffd700"; box.style.borderColor = "#ffd700"; box.style.backgroundColor = "#332d1a"; diff.style.color = "#ffd700"; 
@@ -838,21 +832,17 @@
         let exactGD = null;
         let handicapText = "";
 
-        if (diffFifth > 3.5) {
+        if (diffFifth >= 3.0) {
             resFifth = "home"; exactGD = 3; handicapText = "主勝(-2)";
-        } else if (diffFifth > 2.5) {
+        } else if (diffFifth >= 2.0) {
             resFifth = "home"; exactGD = 2; handicapText = "主勝(-1)";
-        } else if (diffFifth > 1.5) {
+        } else if (diffFifth >= 1.0) {
             resFifth = "home"; exactGD = 1; handicapText = "主勝";
-        } else if (diffFifth >= 0.15) {
-            resFifth = "home_or_draw"; handicapText = "和局/主勝";
-        } else if (diffFifth > -0.15) {
+        } else if (diffFifth > -1.0 && diffFifth < 1.0) {
             resFifth = "draw"; handicapText = "和局";
-        } else if (diffFifth >= -1.5) {
-            resFifth = "away_or_draw"; handicapText = "和局/客勝";
-        } else if (diffFifth >= -2.5) {
+        } else if (diffFifth <= -1.0 && diffFifth > -2.0) {
             resFifth = "away"; exactGD = -1; handicapText = "客勝";
-        } else if (diffFifth >= -3.5) {
+        } else if (diffFifth <= -2.0 && diffFifth > -3.0) {
             resFifth = "away"; exactGD = -2; handicapText = "客勝(-1)";
         } else {
             resFifth = "away"; exactGD = -3; handicapText = "客勝(-2)";
@@ -863,16 +853,20 @@
         let aSize15 = "模糊";
         let totalSize25 = "模糊";
 
-        if (hGoals <= 1.25 && aConceded <= 1.25) hSize15 = "小";
-        else if (hGoals >= 1.75 && aConceded >= 1.75) hSize15 = "大";
+        // 新邏輯：主得 + 客失 <= 2.0 判小，>= 4.0 判大
+        let hAttDefSum = hGoals + aConceded;
+        if (hAttDefSum <= 2.0) hSize15 = "小";
+        else if (hAttDefSum >= 4.0) hSize15 = "大";
 
-        if (aGoals <= 1.25 && hConceded <= 1.25) aSize15 = "小";
-        else if (aGoals >= 1.75 && hConceded >= 1.75) aSize15 = "大";
+        // 新邏輯：客得 + 主失 <= 2.0 判小，>= 4.0 判大
+        let aAttDefSum = aGoals + hConceded;
+        if (aAttDefSum <= 2.0) aSize15 = "小";
+        else if (aAttDefSum >= 4.0) aSize15 = "大";
 
         if (hSize15 === "小" && aSize15 === "小") totalSize25 = "小";
         else if (hSize15 === "大" && aSize15 === "大") totalSize25 = "大";
 
-        // 邏輯推導
+        // 邏輯推導（保留）
         if (resFifth === "draw") {
             if (hSize15 === "小") aSize15 = "小";
             if (hSize15 === "大") aSize15 = "大";
@@ -880,12 +874,6 @@
             if (aSize15 === "大") hSize15 = "大";
             if (hSize15 === "小") totalSize25 = "小";
             if (hSize15 === "大") totalSize25 = "大";
-        } else if (resFifth === "home_or_draw") {
-            if (hSize15 === "小") { aSize15 = "小"; totalSize25 = "小"; }
-            if (aSize15 === "大") { hSize15 = "大"; totalSize25 = "大"; }
-        } else if (resFifth === "away_or_draw") {
-            if (aSize15 === "小") { hSize15 = "小"; totalSize25 = "小"; }
-            if (hSize15 === "大") { aSize15 = "大"; totalSize25 = "大"; }
         } else if (resFifth === "home") {
             if (exactGD === 1 && hSize15 === "小") { aSize15 = "小"; totalSize25 = "小"; }
             if (exactGD === 3) { totalSize25 = "大"; }
@@ -915,8 +903,6 @@
         if (resFifth === "home") targetGDs = [exactGD];
         else if (resFifth === "away") targetGDs = [exactGD];
         else if (resFifth === "draw") targetGDs = [0];
-        else if (resFifth === "home_or_draw") targetGDs = [0, 1];
-        else if (resFifth === "away_or_draw") targetGDs = [0, -1];
 
         let hasActive = false;
         for (let h = 0; h <= 4; h++) {
