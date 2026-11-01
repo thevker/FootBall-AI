@@ -690,20 +690,14 @@
         diff.innerText = `(${diffDisplay})`;
 
         const warning = document.getElementById('drawWarning');
-        if (finalResult === "draw") {
-            warning.style.display = 'block';
-        } else {
-            warning.style.display = 'none';
-        }
+        // 移除和局後，這裡永遠隱藏
+        warning.style.display = 'none';
 
         if (finalResult === "home") { 
             val.innerText = handicapText || "主勝"; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; diff.style.color = "#4ade80"; 
         }
         else if (finalResult === "away") { 
             val.innerText = handicapText || "客勝"; val.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; diff.style.color = "#f87171"; 
-        }
-        else if (finalResult === "draw") { 
-            val.innerText = "和局"; val.style.color = "#ffd700"; box.style.borderColor = "#ffd700"; box.style.backgroundColor = "#332d1a"; diff.style.color = "#ffd700"; 
         }
         else { 
             val.innerText = "不建議"; val.style.color = "#aaa"; box.style.borderColor = "#555"; box.style.backgroundColor = "#2a2a2a"; diff.style.color = "#aaa"; 
@@ -832,20 +826,21 @@
         let exactGD = null;
         let handicapText = "";
 
-        if (diffFifth >= 3.0) {
+        // 更新門檻：100以上主勝，250以上-1，400以上-2
+        if (diffFifth >= 4.0) {
             resFifth = "home"; exactGD = 3; handicapText = "主勝(-2)";
-        } else if (diffFifth >= 2.0) {
+        } else if (diffFifth >= 2.5) {
             resFifth = "home"; exactGD = 2; handicapText = "主勝(-1)";
         } else if (diffFifth >= 1.0) {
             resFifth = "home"; exactGD = 1; handicapText = "主勝";
-        } else if (diffFifth > -1.0 && diffFifth < 1.0) {
-            resFifth = "draw"; handicapText = "和局";
-        } else if (diffFifth <= -1.0 && diffFifth > -2.0) {
-            resFifth = "away"; exactGD = -1; handicapText = "客勝";
-        } else if (diffFifth <= -2.0 && diffFifth > -3.0) {
-            resFifth = "away"; exactGD = -2; handicapText = "客勝(-1)";
-        } else {
+        } else if (diffFifth <= -4.0) {
             resFifth = "away"; exactGD = -3; handicapText = "客勝(-2)";
+        } else if (diffFifth <= -2.5) {
+            resFifth = "away"; exactGD = -2; handicapText = "客勝(-1)";
+        } else if (diffFifth <= -1.0) {
+            resFifth = "away"; exactGD = -1; handicapText = "客勝";
+        } else {
+            resFifth = "avoid";
         }
         applyMiniUI('fifth', resFifth, diffFifth.toFixed(2), handicapText);
 
@@ -863,11 +858,9 @@
         if (aAttDefSum <= 2.0) aSize15 = "小";
         else if (aAttDefSum >= 4.0) aSize15 = "大";
 
-        // 總入球根據左右獨立結果判定（左右都小=小，左右都大=大，否則模糊）
+        // 總入球根據左右獨立結果判定
         if (hSize15 === "小" && aSize15 === "小") totalSize25 = "小";
         else if (hSize15 === "大" && aSize15 === "大") totalSize25 = "大";
-
-        // 已移除：基於賽果的邏輯推導，保持完全獨立計算
 
         const valH15 = document.getElementById('val_h_15');
         valH15.innerText = hSize15 === "模糊" ? "方向模糊" : `${hSize15} 1.5`;
@@ -889,7 +882,7 @@
         let targetGDs = [];
         if (resFifth === "home") targetGDs = [exactGD];
         else if (resFifth === "away") targetGDs = [exactGD];
-        else if (resFifth === "draw") targetGDs = [0];
+        // 已移除 draw
 
         let hasActive = false;
         for (let h = 0; h <= 4; h++) {
