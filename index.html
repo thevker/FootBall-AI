@@ -438,7 +438,7 @@
                     </div>
                 </div>
                 <!-- 紅牌提示 -->
-                <div class="red-card-info" id="hRedCardInfo">🟥 x1 紅牌 - 各項能力降低 10%</div>
+                <div class="red-card-info" id="hRedCardInfo">🟥 x1 紅牌 - 能力降低</div>
                 
                 <div class="rating-row"><div class="rating-label">進攻</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="hAttBar"></div></div><div class="rating-display" id="hAttDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="hDefBar"></div></div><div class="rating-display" id="hDefDisplay">-</div></div>
@@ -462,7 +462,7 @@
                     </div>
                 </div>
                 <!-- 紅牌提示 -->
-                <div class="red-card-info" id="aRedCardInfo">🟥 x1 紅牌 - 各項能力降低 10%</div>
+                <div class="red-card-info" id="aRedCardInfo">🟥 x1 紅牌 - 能力降低</div>
 
                 <div class="rating-row"><div class="rating-label">進攻</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="aAttBar"></div></div><div class="rating-display" id="aAttDisplay">-</div></div>
                 <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="aDefBar"></div></div><div class="rating-display" id="aDefDisplay">-</div></div>
@@ -657,9 +657,9 @@
         svg.appendChild(dataPolygon);
     }
     
-    // 修改：加入紅牌扣減邏輯
+    // 修改：紅牌扣減 1張=25%，2張=50%
     function updateTeamUI(prefix, att, def, status, convPct, rankPct, oddsPct, hasRank, redCards) {
-        let penalty = Math.max(0, 1 - (redCards * 0.1));
+        let penalty = redCards === 1 ? 0.75 : (redCards === 2 ? 0.5 : 1.0);
 
         let attPct = Math.min(Math.max(((att - 0.5) / 2.0) * 100, 0), 100) * penalty;
         let defPct = Math.min(Math.max(((def - 0.5) / 2.0) * 100, 0), 100) * penalty;
@@ -892,7 +892,7 @@
             const hRedInfo = document.getElementById('hRedCardInfo');
             if (hRed > 0) {
                 hRedInfo.style.display = 'flex';
-                hRedInfo.innerHTML = `🟥 x${hRed} 紅牌 - 各項能力降低 ${hRed * 10}%`;
+                hRedInfo.innerHTML = `🟥 x${hRed} 紅牌 - 能力降低 ${hRed === 1 ? '25%' : '50%'}`;
             } else {
                 hRedInfo.style.display = 'none';
             }
@@ -900,7 +900,7 @@
             const aRedInfo = document.getElementById('aRedCardInfo');
             if (aRed > 0) {
                 aRedInfo.style.display = 'flex';
-                aRedInfo.innerHTML = `🟥 x${aRed} 紅牌 - 各項能力降低 ${aRed * 10}%`;
+                aRedInfo.innerHTML = `🟥 x${aRed} 紅牌 - 能力降低 ${aRed === 1 ? '25%' : '50%'}`;
             } else {
                 aRedInfo.style.display = 'none';
             }
