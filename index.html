@@ -760,13 +760,12 @@
         }
     }
 
-    // 取得預計入球數 (問號版本)
+    // 取得預計入球數 (新區間)
     function getPredGoals(val) {
-        if (val >= 0 && val <= 0.5) return 0;
-        if (val >= 1.5 && val <= 2.5) return 1;
-        if (val >= 3.5 && val <= 4.5) return 2;
-        if (val >= 5.5) return 3;
-        return "?";
+        if (val < 1.0) return 0;
+        if (val < 3.0) return 1;
+        if (val < 5.0) return 2;
+        return 3;
     }
 
     function calculate() {
@@ -897,15 +896,15 @@
         if (aAttDefSum <= 2.0) aSize = "小 1.5";
         else if (aAttDefSum >= 4.0) aSize = "大 1.5";
 
-        // 總入球判斷（左右都大 -> 大 2.5；左右都小 -> 小 2.5；否則模糊）
+        // 總入球判斷（左右都大 -> 大 3.5；左右都小 -> 小 2.5；否則模糊）
         let totalSize = "模糊";
-        if (hSize === "大 1.5" && aSize === "大 1.5") totalSize = "大 2.5";
+        if (hSize === "大 1.5" && aSize === "大 1.5") totalSize = "大 3.5";
         else if (hSize === "小 1.5" && aSize === "小 1.5") totalSize = "小 2.5";
 
-        // 預測入球數（新規則：0-0.5(0球), 1.5-2.5(1球), 3.5-4.5(2球), 5.5以上(3球), 其他為問號）
+        // 預測入球數（新區間）
         let predHVal = getPredGoals(hAttDefSum);
         let predAVal = getPredGoals(aAttDefSum);
-        let predTVal = (predHVal === "?" || predAVal === "?") ? "?" : (predHVal + predAVal);
+        let predTVal = predHVal + predAVal;
 
         document.getElementById('pred_h_goals').innerText = predHVal === 3 ? "3+" : predHVal;
         document.getElementById('pred_a_goals').innerText = predAVal === 3 ? "3+" : predAVal;
@@ -918,20 +917,20 @@
 
         // 主隊符合
         let hMatched = false;
-        if (hSize === "小 1.5" && predHVal !== "?" && predHVal <= 1) hMatched = true;
-        if (hSize === "大 1.5" && predHVal !== "?" && predHVal >= 2) hMatched = true;
+        if (hSize === "小 1.5" && predHVal <= 1) hMatched = true;
+        if (hSize === "大 1.5" && predHVal >= 2) hMatched = true;
         if (hMatched) hBox.classList.add('matched'); else hBox.classList.remove('matched');
 
         // 客隊符合
         let aMatched = false;
-        if (aSize === "小 1.5" && predAVal !== "?" && predAVal <= 1) aMatched = true;
-        if (aSize === "大 1.5" && predAVal !== "?" && predAVal >= 2) aMatched = true;
+        if (aSize === "小 1.5" && predAVal <= 1) aMatched = true;
+        if (aSize === "大 1.5" && predAVal >= 2) aMatched = true;
         if (aMatched) aBox.classList.add('matched'); else aBox.classList.remove('matched');
 
         // 總入球符合
         let tMatched = false;
-        if (totalSize === "小 2.5" && predTVal !== "?" && predTVal <= 2) tMatched = true;
-        if (totalSize === "大 2.5" && predTVal !== "?" && predTVal >= 3) tMatched = true;
+        if (totalSize === "小 2.5" && predTVal <= 2) tMatched = true;
+        if (totalSize === "大 3.5" && predTVal >= 4) tMatched = true;
         if (tMatched) tBox.classList.add('matched'); else tBox.classList.remove('matched');
 
         // 更新下面的入球大細 UI（有方向就變綠框，文字顏色維持大紅小藍）
@@ -951,7 +950,7 @@
         valA15.style.color = aSize.includes('大') ? '#f87171' : (aSize.includes('小') ? '#8cb8ff' : '#aaa');
         if (aSize !== "模糊") boxA.classList.add('active-box'); else boxA.classList.remove('active-box');
 
-        document.getElementById('title_total').innerText = totalSize === "模糊" ? "總共大小" : `總入球 (2.5)`;
+        document.getElementById('title_total').innerText = totalSize === "模糊" ? "總共大小" : (totalSize === "大 3.5" ? "總入球 (3.5)" : "總入球 (2.5)");
         const valTotal25 = document.getElementById('val_total_25');
         valTotal25.innerText = totalSize === "模糊" ? "方向模糊" : totalSize;
         valTotal25.style.color = totalSize.includes('大') ? '#f87171' : (totalSize.includes('小') ? '#8cb8ff' : '#aaa');
@@ -971,15 +970,11 @@
         // 新預測：基於入球數比較
         // ==========================================
         let resGoalsPred = "avoid";
-        if (predHVal !== "?" && predAVal !== "?") {
-            let predDiff = predHVal - predAVal;
-            if (predDiff > 0) resGoalsPred = "home";
-            else if (predDiff < 0) resGoalsPred = "away";
-            else resGoalsPred = "draw";
-        }
-        
-        let diffText = (predHVal === "?" || predAVal === "?") ? "?" : (predHVal - predAVal).toFixed(0);
-        applyResultUI('box_goals_pred', 'val_goals_pred', 'diff_goals_pred', resGoalsPred, diffText);
+        let predDiff = predHVal - predAVal;
+        if (predDiff > 0) resGoalsPred = "home";
+        else if (predDiff < 0) resGoalsPred = "away";
+        else resGoalsPred = "draw";
+        applyResultUI('box_goals_pred', 'val_goals_pred', 'diff_goals_pred', resGoalsPred, predDiff.toFixed(0));
 
         // 顯示或隱藏和局警告
         const warning = document.getElementById('drawWarning');
@@ -996,8 +991,8 @@
 
         // 波膽池基於「入球數預測」
         let targetGDs = [];
-        if (resGoalsPred === "home") targetGDs = [predHVal - predAVal]; 
-        else if (resGoalsPred === "away") targetGDs = [predHVal - predAVal];
+        if (resGoalsPred === "home") targetGDs = [predDiff]; 
+        else if (resGoalsPred === "away") targetGDs = [predDiff];
         else if (resGoalsPred === "draw") targetGDs = [0];
 
         let hasActive = false;
@@ -1017,7 +1012,7 @@
 
                 let tMatch = true;
                 if (totalSize === "小 2.5" && (h + a) >= 3) tMatch = false;
-                if (totalSize === "大 2.5" && (h + a) <= 2) tMatch = false;
+                if (totalSize === "大 3.5" && (h + a) <= 3) tMatch = false;
 
                 if (!hMatch || !aMatch || !tMatch) continue; // 不滿足，保持原本（灰色）
 
