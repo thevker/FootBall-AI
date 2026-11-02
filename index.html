@@ -115,31 +115,6 @@
         .result-value { font-size: 20px; font-weight: bold; margin-bottom: 0; }
         .diff-text { font-size: 13px; font-weight: bold; color: #fff; }
 
-        /* 預測入球數面板 */
-        .predicted-goals-row {
-            display: flex; gap: 8px; margin-bottom: 10px;
-        }
-        .pred-goal-box {
-            flex: 1; text-align: center; padding: 10px 5px; border-radius: 12px;
-            border: 2px solid #555; background-color: #222; 
-            display: flex; flex-direction: column; justify-content: center;
-            transition: all 0.3s ease;
-        }
-        .pred-goal-title { font-size: 11px; font-weight: bold; color: #aaa; margin-bottom: 4px; transition: color 0.3s; }
-        .pred-goal-value { font-size: 20px; font-weight: bold; color: #666; transition: all 0.3s; }
-
-        /* 符合條件時：綠底綠邊綠字 */
-        .pred-goal-box.matched {
-            border-color: #4ade80;
-            background-color: #1a3324;
-            box-shadow: 0 0 10px rgba(74, 222, 128, 0.2);
-        }
-        .pred-goal-box.matched .pred-goal-title { color: #4ade80; }
-        .pred-goal-box.matched .pred-goal-value {
-            color: #4ade80;
-            text-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
-        }
-
         /* 不確定性提示 */
         #drawWarning {
             display: none;
@@ -372,36 +347,14 @@
 
         <!-- 區塊一：預測結果 -->
         <div class="result-card" id="predictionCard">
-            <!-- 舊預測：碰撞預測 -->
+            <!-- 主客預測 -->
             <div class="result-box" id="box_collision">
-                <div class="result-title">⚔️ 碰撞預測 <span class="diff-text" id="diff_collision"></span></div>
+                <div class="result-title">⚔️ 主客預測 <span class="diff-text" id="diff_collision"></span></div>
                 <div class="result-value" id="val_collision">-</div>
             </div>
 
-            <!-- 新預測：入球數預測 -->
-            <div class="result-box" id="box_goals_pred">
-                <div class="result-title">⚽ 入球數預測 <span class="diff-text" id="diff_goals_pred"></span></div>
-                <div class="result-value" id="val_goals_pred">-</div>
-            </div>
-
             <div id="drawWarning">
-                ⚠️ 雙方數據接近或不均衡<br>導致任一結果均可能出現，建議跳過此場
-            </div>
-
-            <!-- 預測入球數面板 -->
-            <div class="predicted-goals-row">
-                <div class="pred-goal-box" id="pred-box-h">
-                    <div class="pred-goal-title">主隊預計入球</div>
-                    <div class="pred-goal-value" id="pred_h_goals">-</div>
-                </div>
-                <div class="pred-goal-box" id="pred-box-t">
-                    <div class="pred-goal-title">總預計入球</div>
-                    <div class="pred-goal-value" id="pred_t_goals">-</div>
-                </div>
-                <div class="pred-goal-box" id="pred-box-a">
-                    <div class="pred-goal-title">客隊預計入球</div>
-                    <div class="pred-goal-value" id="pred_a_goals">-</div>
-                </div>
+                ⚠️ 數據差距不足 150<br>未能判定明確方向，建議跳過此場
             </div>
 
             <div class="new-goals-row" id="goalsRow">
@@ -410,7 +363,7 @@
                     <div class="new-goals-value" id="val_h_15">-</div>
                 </div>
                 <div class="new-goals-box" id="box_total_25">
-                    <div class="new-goals-title" id="title_total">總共大小</div>
+                    <div class="new-goals-title" id="title_total">總入球大細</div>
                     <div class="new-goals-value" id="val_total_25">-</div>
                 </div>
                 <div class="new-goals-box" id="box_a_15">
@@ -740,33 +693,21 @@
         return overallPct;
     }
 
-    function applyResultUI(boxId, valId, diffId, finalResult, diffDisplay) {
+    function applyResultUI(boxId, valId, diffId, colorKey, displayText, diffDisplay) {
         const box = document.getElementById(boxId);
         const val = document.getElementById(valId);
         const diff = document.getElementById(diffId);
         if(diff) diff.innerText = `(${diffDisplay})`;
 
-        if (finalResult === "home") { 
-            val.innerText = "主勝"; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; if(diff) diff.style.color = "#4ade80"; 
+        if (colorKey === "home") { 
+            val.innerText = displayText; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; if(diff) diff.style.color = "#4ade80"; 
         }
-        else if (finalResult === "away") { 
-            val.innerText = "客勝"; val.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; if(diff) diff.style.color = "#f87171"; 
-        }
-        else if (finalResult === "draw") { 
-            val.innerText = "和局"; val.style.color = "#ffd700"; box.style.borderColor = "#ffd700"; box.style.backgroundColor = "#332d1a"; if(diff) diff.style.color = "#ffd700"; 
+        else if (colorKey === "away") { 
+            val.innerText = displayText; val.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; if(diff) diff.style.color = "#f87171"; 
         }
         else { 
-            val.innerText = "不建議"; val.style.color = "#aaa"; box.style.borderColor = "#555"; box.style.backgroundColor = "#2a2a2a"; if(diff) diff.style.color = "#aaa"; 
+            val.innerText = displayText; val.style.color = "#aaa"; box.style.borderColor = "#555"; box.style.backgroundColor = "#2a2a2a"; if(diff) diff.style.color = "#aaa"; 
         }
-    }
-
-    // 取得預計入球數（新區間：<200 / 200-400 / 400-600 / ≥600）
-    function getPredGoals(val) {
-        const scaled = val * 100;   // 轉為 0-600+ 尺度
-        if (scaled < 200) return 0;
-        if (scaled < 400) return 1;
-        if (scaled < 600) return 2;
-        return 3;
     }
 
     function calculate() {
@@ -886,55 +827,51 @@
             document.getElementById('btnSaveAna').style.display = 'none';
         }
 
-        // 動態入球大細判斷（單隊）
-        let hAttDefSum = hGoals + aConceded;
+        // ==========================================
+        // 主客預測（差值 ×100 分段）
+        // ==========================================
+        const hAttDefSum = hGoals + aConceded;
+        const aAttDefSum = aGoals + hConceded;
+        const diffFifth = Math.round((hAttDefSum - aAttDefSum) * 100) / 100;
+        const absDiff = Math.abs(diffFifth) * 100;
+
+        let resMain = "avoid";
+        let gdTarget = 0;
+        let mainText = "不建議";
+
+        if (absDiff >= 150) {
+            if (absDiff < 250) gdTarget = 1;
+            else if (absDiff < 350) gdTarget = 2;
+            else if (absDiff < 450) gdTarget = 3;
+            else gdTarget = 4;
+
+            resMain = diffFifth > 0 ? "home" : "away";
+            const side = diffFifth > 0 ? "主勝" : "客勝";
+            mainText = gdTarget === 1 ? side : `${side}-${gdTarget - 1}`;
+        }
+        applyResultUI('box_collision', 'val_collision', 'diff_collision', resMain, mainText, diffFifth.toFixed(2));
+
+        // 顯示或隱藏警告（僅不建議時）
+        const warning = document.getElementById('drawWarning');
+        warning.style.display = (resMain === "avoid") ? 'block' : 'none';
+
+        // ==========================================
+        // 入球大細（總入球 ×100：≤250 小、≥350 大）
+        // ==========================================
         let hSize = "模糊";
         if (hAttDefSum <= 2.0) hSize = "小 1.5";
         else if (hAttDefSum >= 4.0) hSize = "大 1.5";
 
-        let aAttDefSum = aGoals + hConceded;
         let aSize = "模糊";
         if (aAttDefSum <= 2.0) aSize = "小 1.5";
         else if (aAttDefSum >= 4.0) aSize = "大 1.5";
 
-        // 總入球判斷（左右都大 -> 大 3.5；左右都小 -> 小 2.5；否則模糊）
         let totalSize = "模糊";
-        if (hSize === "大 1.5" && aSize === "大 1.5") totalSize = "大 3.5";
-        else if (hSize === "小 1.5" && aSize === "小 1.5") totalSize = "小 2.5";
+        const totalScaled = (hAttDefSum + aAttDefSum) * 100;
+        if (totalScaled <= 250) totalSize = "入球小";
+        else if (totalScaled >= 350) totalSize = "入球大";
 
-        // 預測入球數（新區間）
-        let predHVal = getPredGoals(hAttDefSum);
-        let predAVal = getPredGoals(aAttDefSum);
-        let predTVal = predHVal + predAVal;
-
-        document.getElementById('pred_h_goals').innerText = predHVal === 3 ? "3+" : predHVal;
-        document.getElementById('pred_a_goals').innerText = predAVal === 3 ? "3+" : predAVal;
-        document.getElementById('pred_t_goals').innerText = predTVal;
-
-        // 綠色條件符合特效（上面的預計入球面板）
-        const hBox = document.getElementById('pred-box-h');
-        const aBox = document.getElementById('pred-box-a');
-        const tBox = document.getElementById('pred-box-t');
-
-        // 主隊符合
-        let hMatched = false;
-        if (hSize === "小 1.5" && predHVal <= 1) hMatched = true;
-        if (hSize === "大 1.5" && predHVal >= 2) hMatched = true;
-        if (hMatched) hBox.classList.add('matched'); else hBox.classList.remove('matched');
-
-        // 客隊符合
-        let aMatched = false;
-        if (aSize === "小 1.5" && predAVal <= 1) aMatched = true;
-        if (aSize === "大 1.5" && predAVal >= 2) aMatched = true;
-        if (aMatched) aBox.classList.add('matched'); else aBox.classList.remove('matched');
-
-        // 總入球符合
-        let tMatched = false;
-        if (totalSize === "小 2.5" && predTVal <= 2) tMatched = true;
-        if (totalSize === "大 3.5" && predTVal >= 4) tMatched = true;
-        if (tMatched) tBox.classList.add('matched'); else tBox.classList.remove('matched');
-
-        // 更新下面的入球大細 UI（有方向就變綠框，文字顏色維持大紅小藍）
+        // 更新大細 UI
         const boxH = document.getElementById('box_h_15');
         const boxT = document.getElementById('box_total_25');
         const boxA = document.getElementById('box_a_15');
@@ -951,94 +888,53 @@
         valA15.style.color = aSize.includes('大') ? '#f87171' : (aSize.includes('小') ? '#8cb8ff' : '#aaa');
         if (aSize !== "模糊") boxA.classList.add('active-box'); else boxA.classList.remove('active-box');
 
-        document.getElementById('title_total').innerText = totalSize === "模糊" ? "總共大小" : (totalSize === "大 3.5" ? "總入球 (3.5)" : "總入球 (2.5)");
+        document.getElementById('title_total').innerText = "總入球大細";
         const valTotal25 = document.getElementById('val_total_25');
-        valTotal25.innerText = totalSize === "模糊" ? "方向模糊" : totalSize;
-        valTotal25.style.color = totalSize.includes('大') ? '#f87171' : (totalSize.includes('小') ? '#8cb8ff' : '#aaa');
+        valTotal25.innerText = totalSize;
+        valTotal25.style.color = totalSize === "入球大" ? '#f87171' : (totalSize === "入球小" ? '#8cb8ff' : '#aaa');
         if (totalSize !== "模糊") boxT.classList.add('active-box'); else boxT.classList.remove('active-box');
 
         // ==========================================
-        // 保留舊預測：碰撞預測
+        // 波膽 5x5
         // ==========================================
-        const diffFifth = Math.round(((hGoals + aConceded) - (aGoals + hConceded)) * 100) / 100;
-        let resCollision = "avoid";
-        if (diffFifth >= 2.0) resCollision = "home";
-        else if (diffFifth <= -2.0) resCollision = "away";
-        else if (diffFifth === 0) resCollision = "draw";
-        applyResultUI('box_collision', 'val_collision', 'diff_collision', resCollision, diffFifth.toFixed(2));
-
-        // ==========================================
-        // 新預測：基於入球數比較
-        // ==========================================
-        let resGoalsPred = "avoid";
-        let predDiff = predHVal - predAVal;
-        if (predDiff > 0) resGoalsPred = "home";
-        else if (predDiff < 0) resGoalsPred = "away";
-        else resGoalsPred = "draw";
-        applyResultUI('box_goals_pred', 'val_goals_pred', 'diff_goals_pred', resGoalsPred, predDiff.toFixed(0));
-
-        // 顯示或隱藏和局警告
-        const warning = document.getElementById('drawWarning');
-        if (resCollision === "draw" || resGoalsPred === "draw") {
-            warning.style.display = 'block';
-        } else {
-            warning.style.display = 'none';
-        }
-
         const betBox = document.getElementById('betBox');
         document.querySelectorAll('.bet-cell').forEach(c => {
             c.classList.remove('active', 'yellow', 'red');
         });
 
-        // 波膽池基於「入球數預測」
-        let targetGDs = [];
-        if (resGoalsPred === "home") targetGDs = [predDiff]; 
-        else if (resGoalsPred === "away") targetGDs = [predDiff];
-        else if (resGoalsPred === "draw") targetGDs = [0];
+        let targetGD = null;
+        if (resMain === "home") targetGD = gdTarget;
+        else if (resMain === "away") targetGD = -gdTarget;
 
         let hasActive = false;
         for (let h = 0; h <= 4; h++) {
             for (let a = 0; a <= 4; a++) {
                 const cell = document.getElementById(`cell-${h}-${a}`);
-                const currentGD = h - a; 
-                
-                // 先過濾大小球
-                let hMatch = true;
-                if (hSize === "小 1.5" && h >= 2) hMatch = false;
-                if (hSize === "大 1.5" && h <= 1) hMatch = false;
 
-                let aMatch = true;
-                if (aSize === "小 1.5" && a >= 2) aMatch = false;
-                if (aSize === "大 1.5" && a <= 1) aMatch = false;
+                // 總入球大小過濾
+                if (totalSize === "入球小" && (h + a) > 2) continue;
+                if (totalSize === "入球大" && (h + a) < 4) continue;
 
-                let tMatch = true;
-                if (totalSize === "小 2.5" && (h + a) >= 3) tMatch = false;
-                if (totalSize === "大 3.5" && (h + a) <= 3) tMatch = false;
-
-                if (!hMatch || !aMatch || !tMatch) continue; // 不滿足，保持原本（灰色）
-
-                // 判斷底色
-                if (resGoalsPred === "avoid") {
-                    if (hSize === "模糊" && aSize === "模糊" && totalSize === "模糊") continue;
-                    cell.classList.add('active'); // 不建議但符合大小球，亮綠
-                    hasActive = true;
-                } else {
-                    let minDist = 999;
-                    targetGDs.forEach(gd => {
-                        let d = Math.abs(currentGD - gd);
-                        if (d < minDist) minDist = d;
-                    });
-
-                    if (minDist === 0) {
+                if (resMain === "avoid") {
+                    if (totalSize !== "模糊") {
                         cell.classList.add('active');
                         hasActive = true;
-                    } else if (minDist === 1) {
-                        cell.classList.add('yellow');
-                        hasActive = true;
-                    } else if (minDist === 2) {
-                        cell.classList.add('red');
-                        hasActive = true;
                     }
+                    continue;
+                }
+
+                const gd = h - a;
+                const dist = Math.abs(gd - targetGD);
+
+                if (dist === 0) {
+                    cell.classList.add('active');
+                    hasActive = true;
+                } else if (dist === 1) {
+                    cell.classList.add('yellow');
+                    hasActive = true;
+                } else if (dist === 2) {
+                    cell.classList.add('red');
+                    hasActive = true;
                 }
             }
         }
