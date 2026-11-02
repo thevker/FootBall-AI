@@ -825,17 +825,18 @@
         let exactGD = null;
         let handicapText = "";
 
-        if (diffFifth >= 4.0) {
+        // 更新門檻：主勝 >= 1.5, -1 >= 2.5, -2 >= 3.5
+        if (diffFifth >= 3.5) {
             resFifth = "home"; exactGD = 3; handicapText = "主勝(-2)";
         } else if (diffFifth >= 2.5) {
             resFifth = "home"; exactGD = 2; handicapText = "主勝(-1)";
-        } else if (diffFifth >= 1.0) {
+        } else if (diffFifth >= 1.5) {
             resFifth = "home"; exactGD = 1; handicapText = "主勝";
-        } else if (diffFifth <= -4.0) {
+        } else if (diffFifth <= -3.5) {
             resFifth = "away"; exactGD = -3; handicapText = "客勝(-2)";
         } else if (diffFifth <= -2.5) {
             resFifth = "away"; exactGD = -2; handicapText = "客勝(-1)";
-        } else if (diffFifth <= -1.0) {
+        } else if (diffFifth <= -1.5) {
             resFifth = "away"; exactGD = -1; handicapText = "客勝";
         } else {
             resFifth = "avoid";
@@ -845,17 +846,18 @@
         // 動態入球大細判斷
         let hAttDefSum = hGoals + aConceded;
         let hSize = "模糊";
-        if (hAttDefSum <= 1.0) hSize = "小 0.5";
-        else if (hAttDefSum <= 2.0) hSize = "小 1.5";
-        else if (hAttDefSum >= 5.0) hSize = "大 2.5";
-        else if (hAttDefSum >= 4.0) hSize = "大 1.5";
+        // 更新門檻：小0.5 <= 1.5, 小1.5 <= 2.5, 大1.5 >= 3.5, 大2.5 >= 4.5
+        if (hAttDefSum <= 1.5) hSize = "小 0.5";
+        else if (hAttDefSum <= 2.5) hSize = "小 1.5";
+        else if (hAttDefSum >= 4.5) hSize = "大 2.5";
+        else if (hAttDefSum >= 3.5) hSize = "大 1.5";
 
         let aAttDefSum = aGoals + hConceded;
         let aSize = "模糊";
-        if (aAttDefSum <= 1.0) aSize = "小 0.5";
-        else if (aAttDefSum <= 2.0) aSize = "小 1.5";
-        else if (aAttDefSum >= 5.0) aSize = "大 2.5";
-        else if (aAttDefSum >= 4.0) aSize = "大 1.5";
+        if (aAttDefSum <= 1.5) aSize = "小 0.5";
+        else if (aAttDefSum <= 2.5) aSize = "小 1.5";
+        else if (aAttDefSum >= 4.5) aSize = "大 2.5";
+        else if (aAttDefSum >= 3.5) aSize = "大 1.5";
 
         // 動態總入球判斷
         let totalSize = "模糊";
