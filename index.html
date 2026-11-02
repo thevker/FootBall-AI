@@ -165,7 +165,7 @@
             display: flex; flex-direction: column; justify-content: center;
             transition: all 0.3s ease;
         }
-        /* 新增：大細球有方向時的樣式 */
+        /* 大細球有方向時的樣式 */
         .new-goals-box.active-box {
             border-color: #4ade80;
             background-color: #1a3324;
@@ -939,19 +939,16 @@
         const aBox = document.getElementById('pred-box-a');
         const tBox = document.getElementById('pred-box-t');
 
-        // 主隊符合
         let hMatched = false;
         if (hSize === "小 1.5" && predHVal <= 1) hMatched = true;
         if (hSize === "大 1.5" && predHVal >= 2) hMatched = true;
         if (hMatched) hBox.classList.add('matched'); else hBox.classList.remove('matched');
 
-        // 客隊符合
         let aMatched = false;
         if (aSize === "小 1.5" && predAVal <= 1) aMatched = true;
         if (aSize === "大 1.5" && predAVal >= 2) aMatched = true;
         if (aMatched) aBox.classList.add('matched'); else aBox.classList.remove('matched');
 
-        // 總入球符合
         let tMatched = false;
         if (totalSize === "小 2.5" && predTVal <= 2) tMatched = true;
         if (totalSize === "大 2.5" && predTVal >= 3) tMatched = true;
@@ -999,6 +996,14 @@
         else if (predDiff < 0) resGoalsPred = "away";
         else resGoalsPred = "draw";
         applyResultUI('box_goals_pred', 'val_goals_pred', 'diff_goals_pred', resGoalsPred, predDiff.toFixed(0));
+
+        // 顯示或隱藏和局警告
+        const warning = document.getElementById('drawWarning');
+        if (resCollision === "draw" || resGoalsPred === "draw") {
+            warning.style.display = 'block';
+        } else {
+            warning.style.display = 'none';
+        }
 
         const betBox = document.getElementById('betBox');
         document.querySelectorAll('.bet-cell').forEach(c => {
