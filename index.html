@@ -710,6 +710,30 @@
         }
     }
 
+    // 新增：判斷單隊大細類別
+    function getTeamOU(scaledVal) {
+        if (scaledVal <= 50) return { line: 0.5, dir: '細', fuzzy: false };
+        if (scaledVal <= 150) return { line: 1.5, dir: '細', fuzzy: false };
+        if (scaledVal <= 250) return { line: 1.5, dir: '大', fuzzy: false };
+        return { line: 2.5, dir: '大', fuzzy: false };
+    }
+
+    // 新增：格式化大細顯示
+    function formatOU(ou) {
+        if (ou.fuzzy) return "方向模糊";
+        return `${ou.line}入球${ou.dir}`;
+    }
+
+    // 新增：判斷入球數是否符合大細
+    function goalsMatchOU(goals, ou) {
+        if (ou.fuzzy) return true;
+        if (ou.dir === '細') {
+            return goals < ou.line;
+        } else {
+            return goals > ou.line;
+        }
+    }
+
     function calculate() {
         const isStd = currentMode === 'standard';
 
@@ -855,43 +879,80 @@
         warning.style.display = (resMain === "avoid") ? 'block' : 'none';
 
         // ==========================================
-        // 入球大細（總入球 ×100：≤250 小、≥350 大）
+        // 入球大細（新規則）
         // ==========================================
-        let hSize = "模糊";
-        if (hAttDefSum <= 2.0) hSize = "小 1.5";
-        else if (hAttDefSum >= 4.0) hSize = "大 1.5";
+        const hS = hAttDefSum * 100;
+        const aS = aAttDefSum * 100;
+        const T = hS + aS;
 
-        let aSize = "模糊";
-        if (aAttDefSum <= 2.0) aSize = "小 1.5";
-        else if (aAttDefSum >= 4.0) aSize = "大 1.5";
+        const hCat = getTeamOU(hS);
+        const aCat = getTeamOU(aS);
 
-        let totalSize = "模糊";
-        const totalScaled = (hAttDefSum + aAttDefSum) * 100;
-        if (totalScaled <= 250) totalSize = "入球小";
-        else if (totalScaled >= 350) totalSize = "入球大";
+        let hOU, aOU, tOU;
+
+        // 不對稱組合優先
+        if ((hCat.line === 1.5 && hCat.dir === '細' && aCat.line === 0.5 && aCat.dir === '細') ||
+            (hCat.line === 0.5 && hCat.dir === '細' && aCat.line === 1.5 && aCat.dir === '細')) {
+            hOU = hCat;
+            aOU = aCat;
+            tOU = { line: 1.5, dir: '細', fuzzy: false };
+        } else if ((hCat.line === 1.5 && hCat.dir === '大' && aCat.line === 2.5 && aCat.dir === '大') ||
+                   (hCat.line === 2.5 && hCat.dir === '大' && aCat.line === 1.5 && aCat.dir === '大')) {
+            hOU = hCat;
+            aOU = aCat;
+            tOU = { line: 4.5, dir: '大', fuzzy: false };
+        } else if ((hCat.dir === '細') !== (aCat.dir === '細')) {
+            // 一隊細一隊大 -> 模糊
+            hOU = { fuzzy: true };
+            aOU = { fuzzy: true };
+            tOU = { fuzzy: true };
+        } else {
+            // 對稱按總值判斷
+            if (T <= 50) {
+                hOU = { line: 0.5, dir: '細', fuzzy: false };
+                aOU = { line: 0.5, dir: '細', fuzzy: false };
+                tOU = { line: 0.5, dir: '細', fuzzy: false };
+            } else if (T <= 250) {
+                hOU = { line: 1.5, dir: '細', fuzzy: false };
+                aOU = { line: 1.5, dir: '細', fuzzy: false };
+                tOU = { line: 2.5, dir: '細', fuzzy: false };
+            } else if (T >= 350 && T < 550) {
+                hOU = { line: 1.5, dir: '大', fuzzy: false };
+                aOU = { line: 1.5, dir: '大', fuzzy: false };
+                tOU = { line: 3.5, dir: '大', fuzzy: false };
+            } else if (T >= 550) {
+                hOU = { line: 2.5, dir: '大', fuzzy: false };
+                aOU = { line: 2.5, dir: '大', fuzzy: false };
+                tOU = { line: 5.5, dir: '大', fuzzy: false };
+            } else {
+                hOU = { fuzzy: true };
+                aOU = { fuzzy: true };
+                tOU = { fuzzy: true };
+            }
+        }
 
         // 更新大細 UI
         const boxH = document.getElementById('box_h_15');
         const boxT = document.getElementById('box_total_25');
         const boxA = document.getElementById('box_a_15');
 
-        document.getElementById('title_h').innerText = hSize === "模糊" ? "主隊大細" : `主隊入球 (1.5)`;
+        document.getElementById('title_h').innerText = "主隊大細";
         const valH15 = document.getElementById('val_h_15');
-        valH15.innerText = hSize === "模糊" ? "方向模糊" : hSize;
-        valH15.style.color = hSize.includes('大') ? '#f87171' : (hSize.includes('小') ? '#8cb8ff' : '#aaa');
-        if (hSize !== "模糊") boxH.classList.add('active-box'); else boxH.classList.remove('active-box');
+        valH15.innerText = formatOU(hOU);
+        valH15.style.color = hOU.fuzzy ? '#aaa' : (hOU.dir === '大' ? '#f87171' : '#8cb8ff');
+        if (!hOU.fuzzy) boxH.classList.add('active-box'); else boxH.classList.remove('active-box');
 
-        document.getElementById('title_a').innerText = aSize === "模糊" ? "客隊大細" : `客隊入球 (1.5)`;
+        document.getElementById('title_a').innerText = "客隊大細";
         const valA15 = document.getElementById('val_a_15');
-        valA15.innerText = aSize === "模糊" ? "方向模糊" : aSize;
-        valA15.style.color = aSize.includes('大') ? '#f87171' : (aSize.includes('小') ? '#8cb8ff' : '#aaa');
-        if (aSize !== "模糊") boxA.classList.add('active-box'); else boxA.classList.remove('active-box');
+        valA15.innerText = formatOU(aOU);
+        valA15.style.color = aOU.fuzzy ? '#aaa' : (aOU.dir === '大' ? '#f87171' : '#8cb8ff');
+        if (!aOU.fuzzy) boxA.classList.add('active-box'); else boxA.classList.remove('active-box');
 
         document.getElementById('title_total').innerText = "總入球大細";
         const valTotal25 = document.getElementById('val_total_25');
-        valTotal25.innerText = totalSize;
-        valTotal25.style.color = totalSize === "入球大" ? '#f87171' : (totalSize === "入球小" ? '#8cb8ff' : '#aaa');
-        if (totalSize !== "模糊") boxT.classList.add('active-box'); else boxT.classList.remove('active-box');
+        valTotal25.innerText = formatOU(tOU);
+        valTotal25.style.color = tOU.fuzzy ? '#aaa' : (tOU.dir === '大' ? '#f87171' : '#8cb8ff');
+        if (!tOU.fuzzy) boxT.classList.add('active-box'); else boxT.classList.remove('active-box');
 
         // ==========================================
         // 波膽 5x5
@@ -910,12 +971,14 @@
             for (let a = 0; a <= 4; a++) {
                 const cell = document.getElementById(`cell-${h}-${a}`);
 
-                // 總入球大小過濾
-                if (totalSize === "入球小" && (h + a) > 2) continue;
-                if (totalSize === "入球大" && (h + a) < 4) continue;
+                // 大細過濾
+                if (!goalsMatchOU(h, hOU)) continue;
+                if (!goalsMatchOU(a, aOU)) continue;
+                if (!goalsMatchOU(h + a, tOU)) continue;
 
                 if (resMain === "avoid") {
-                    if (totalSize !== "模糊") {
+                    // 只要有方向（非全模糊）就亮綠
+                    if (!hOU.fuzzy || !aOU.fuzzy || !tOU.fuzzy) {
                         cell.classList.add('active');
                         hasActive = true;
                     }
