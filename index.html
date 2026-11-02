@@ -123,9 +123,24 @@
             flex: 1; text-align: center; padding: 10px 5px; border-radius: 12px;
             border: 2px solid #3a7bd5; background-color: #181818; 
             display: flex; flex-direction: column; justify-content: center;
+            transition: all 0.3s ease;
         }
-        .pred-goal-title { font-size: 11px; font-weight: bold; color: #3a7bd5; margin-bottom: 4px; }
-        .pred-goal-value { font-size: 20px; font-weight: bold; color: #fff; text-shadow: 0 0 5px rgba(58, 123, 213, 0.5); }
+        .pred-goal-title { font-size: 11px; font-weight: bold; color: #3a7bd5; margin-bottom: 4px; transition: color 0.3s; }
+        .pred-goal-value { font-size: 20px; font-weight: bold; color: #fff; text-shadow: 0 0 5px rgba(58, 123, 213, 0.5); transition: all 0.3s; }
+
+        /* 符合條件時的綠色樣式 */
+        .pred-goal-box.matched {
+            border-color: #4ade80;
+            background-color: #1a3324;
+            box-shadow: 0 0 10px rgba(74, 222, 128, 0.2);
+        }
+        .pred-goal-box.matched .pred-goal-title {
+            color: #4ade80;
+        }
+        .pred-goal-box.matched .pred-goal-value {
+            color: #4ade80;
+            text-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+        }
 
         /* 不確定性提示 */
         #drawWarning {
@@ -390,15 +405,15 @@
 
             <!-- 預測入球數面板 -->
             <div class="predicted-goals-row">
-                <div class="pred-goal-box">
+                <div class="pred-goal-box" id="pred-box-h">
                     <div class="pred-goal-title">主隊預計入球</div>
                     <div class="pred-goal-value" id="pred_h_goals">-</div>
                 </div>
-                <div class="pred-goal-box">
+                <div class="pred-goal-box" id="pred-box-t">
                     <div class="pred-goal-title">總預計入球</div>
                     <div class="pred-goal-value" id="pred_t_goals">-</div>
                 </div>
-                <div class="pred-goal-box">
+                <div class="pred-goal-box" id="pred-box-a">
                     <div class="pred-goal-title">客隊預計入球</div>
                     <div class="pred-goal-value" id="pred_a_goals">-</div>
                 </div>
@@ -912,6 +927,53 @@
         document.getElementById('pred_h_goals').innerText = predHVal === 3 ? "3+" : predHVal;
         document.getElementById('pred_a_goals').innerText = predAVal === 3 ? "3+" : predAVal;
         document.getElementById('pred_t_goals').innerText = predTVal;
+
+        // 綠色條件符合特效
+        const hBox = document.getElementById('pred-box-h');
+        const hVal = document.getElementById('pred_h_goals');
+        const aBox = document.getElementById('pred-box-a');
+        const aVal = document.getElementById('pred_a_goals');
+        const tBox = document.getElementById('pred-box-t');
+        const tVal = document.getElementById('pred_t_goals');
+
+        // 主隊符合
+        let hMatched = false;
+        if (hSize === "小 1.5" && predHVal <= 1) hMatched = true;
+        if (hSize === "大 1.5" && predHVal >= 2) hMatched = true;
+        
+        if (hMatched) {
+            hBox.classList.add('matched');
+            hVal.classList.add('matched');
+        } else {
+            hBox.classList.remove('matched');
+            hVal.classList.remove('matched');
+        }
+
+        // 客隊符合
+        let aMatched = false;
+        if (aSize === "小 1.5" && predAVal <= 1) aMatched = true;
+        if (aSize === "大 1.5" && predAVal >= 2) aMatched = true;
+        
+        if (aMatched) {
+            aBox.classList.add('matched');
+            aVal.classList.add('matched');
+        } else {
+            aBox.classList.remove('matched');
+            aVal.classList.remove('matched');
+        }
+
+        // 總入球符合
+        let tMatched = false;
+        if (totalSize === "小 2.5" && predTVal <= 2) tMatched = true;
+        if (totalSize === "大 2.5" && predTVal >= 3) tMatched = true;
+        
+        if (tMatched) {
+            tBox.classList.add('matched');
+            tVal.classList.add('matched');
+        } else {
+            tBox.classList.remove('matched');
+            tVal.classList.remove('matched');
+        }
 
         // ==========================================
         // 保留舊預測：碰撞預測
