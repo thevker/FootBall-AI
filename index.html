@@ -99,7 +99,7 @@
         .btn-save-ana { background:#28a745; }
         .btn-save-ana:hover { background:#218838; }
 
-        .result-box, .new-goals-row {
+        .result-box {
             height: 70px;
             margin-bottom: 10px;
         }
@@ -114,6 +114,18 @@
         }
         .result-value { font-size: 22px; font-weight: bold; margin-bottom: 0; }
         #diff_fifth { font-size: 13px; font-weight: bold; color: #fff; }
+
+        /* 預測入球數面板 */
+        .predicted-goals-row {
+            display: flex; gap: 8px; margin-bottom: 10px;
+        }
+        .pred-goal-box {
+            flex: 1; text-align: center; padding: 10px 5px; border-radius: 12px;
+            border: 2px solid #3a7bd5; background-color: #181818; 
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .pred-goal-title { font-size: 11px; font-weight: bold; color: #3a7bd5; margin-bottom: 4px; }
+        .pred-goal-value { font-size: 20px; font-weight: bold; color: #fff; text-shadow: 0 0 5px rgba(58, 123, 213, 0.5); }
 
         /* 不確定性提示 */
         #drawWarning {
@@ -132,7 +144,7 @@
         }
 
         .new-goals-row {
-            display: flex; gap: 8px; 
+            display: flex; gap: 8px; height: 70px; margin-bottom: 15px;
         }
         .new-goals-box {
             flex: 1; text-align: center; padding: 8px 5px; border-radius: 12px;
@@ -164,6 +176,7 @@
             font-size: 14px; font-weight: bold;
             font-variant-numeric: tabular-nums;
             transition: all 0.3s ease;
+            position: relative;
         }
         .bet-cell.active {
             background-color: #1a3324; color: #4ade80;
@@ -182,6 +195,28 @@
             border-color: #f87171;
             box-shadow: 0 0 10px rgba(248, 113, 113, 0.4);
             text-shadow: 0 0 4px rgba(248, 113, 113, 0.6);
+        }
+
+        /* 完美命中特效 */
+        @keyframes pulse-gold {
+            0% { box-shadow: 0 0 5px #fff, inset 0 0 5px #fff; transform: scale(1); }
+            50% { box-shadow: 0 0 20px #FFD700, inset 0 0 10px #FFD700; border-color: #fff; transform: scale(1.1); z-index: 10; }
+            100% { box-shadow: 0 0 5px #fff, inset 0 0 5px #fff; transform: scale(1); }
+        }
+        .bet-cell.special {
+            animation: pulse-gold 1.5s infinite alternate;
+            border-width: 2px;
+            border-color: #FFD700;
+            color: #fff;
+            background-color: #665200;
+        }
+        .bet-cell.special::after {
+            content: "🎯";
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 16px;
+            filter: drop-shadow(0 0 2px #000);
         }
 
         .divider { height: 1px; background: #333; margin: 20px 0; }
@@ -345,6 +380,22 @@
 
             <div id="drawWarning">
                 ⚠️ 雙方數據接近或不均衡<br>導致任一結果均可能出現，建議跳過此場
+            </div>
+
+            <!-- 新增：預測入球數面板 -->
+            <div class="predicted-goals-row">
+                <div class="pred-goal-box">
+                    <div class="pred-goal-title">主隊預計入球</div>
+                    <div class="pred-goal-value" id="pred_h_goals">-</div>
+                </div>
+                <div class="pred-goal-box">
+                    <div class="pred-goal-title">總預計入球</div>
+                    <div class="pred-goal-value" id="pred_t_goals">-</div>
+                </div>
+                <div class="pred-goal-box">
+                    <div class="pred-goal-title">客隊預計入球</div>
+                    <div class="pred-goal-value" id="pred_a_goals">-</div>
+                </div>
             </div>
 
             <div class="new-goals-row" id="goalsRow">
@@ -693,10 +744,13 @@
         warning.style.display = 'none';
 
         if (finalResult === "home") { 
-            val.innerText = handicapText || "主勝"; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; diff.style.color = "#4ade80"; 
+            val.innerText = "主勝"; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; diff.style.color = "#4ade80"; 
         }
         else if (finalResult === "away") { 
-            val.innerText = handicapText || "客勝"; val.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; diff.style.color = "#f87171"; 
+            val.innerText = "客勝"; val.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; diff.style.color = "#f87171"; 
+        }
+        else if (finalResult === "draw") { 
+            val.innerText = "和局"; val.style.color = "#ffd700"; box.style.borderColor = "#ffd700"; box.style.backgroundColor = "#332d1a"; diff.style.color = "#ffd700"; 
         }
         else { 
             val.innerText = "不建議"; val.style.color = "#aaa"; box.style.borderColor = "#555"; box.style.backgroundColor = "#2a2a2a"; diff.style.color = "#aaa"; 
@@ -820,111 +874,127 @@
             document.getElementById('btnSaveAna').style.display = 'none';
         }
 
-        const diffFifth = Math.round(((hGoals + aConceded) - (aGoals + hConceded)) * 100) / 100;
-        let resFifth = "avoid";
-        let exactGD = null;
-        let handicapText = "";
-
-        // 更新門檻：主勝 >= 1.5, -1 >= 2.5, -2 >= 3.5
-        if (diffFifth >= 3.5) {
-            resFifth = "home"; exactGD = 3; handicapText = "主勝(-2)";
-        } else if (diffFifth >= 2.5) {
-            resFifth = "home"; exactGD = 2; handicapText = "主勝(-1)";
-        } else if (diffFifth >= 1.5) {
-            resFifth = "home"; exactGD = 1; handicapText = "主勝";
-        } else if (diffFifth <= -3.5) {
-            resFifth = "away"; exactGD = -3; handicapText = "客勝(-2)";
-        } else if (diffFifth <= -2.5) {
-            resFifth = "away"; exactGD = -2; handicapText = "客勝(-1)";
-        } else if (diffFifth <= -1.5) {
-            resFifth = "away"; exactGD = -1; handicapText = "客勝";
-        } else {
-            resFifth = "avoid";
-        }
-        applyMiniUI('fifth', resFifth, diffFifth.toFixed(2), handicapText);
-
-        // 動態入球大細判斷
+        // 動態入球大細判斷（單隊）
         let hAttDefSum = hGoals + aConceded;
         let hSize = "模糊";
-        // 更新門檻：小0.5 <= 1.5, 小1.5 <= 2.5, 大1.5 >= 3.5, 大2.5 >= 4.5
-        if (hAttDefSum <= 1.5) hSize = "小 0.5";
-        else if (hAttDefSum <= 2.5) hSize = "小 1.5";
-        else if (hAttDefSum >= 4.5) hSize = "大 2.5";
-        else if (hAttDefSum >= 3.5) hSize = "大 1.5";
+        if (hAttDefSum <= 2.0) hSize = "小 1.5";
+        else if (hAttDefSum >= 4.0) hSize = "大 1.5";
 
         let aAttDefSum = aGoals + hConceded;
         let aSize = "模糊";
-        if (aAttDefSum <= 1.5) aSize = "小 0.5";
-        else if (aAttDefSum <= 2.5) aSize = "小 1.5";
-        else if (aAttDefSum >= 4.5) aSize = "大 2.5";
-        else if (aAttDefSum >= 3.5) aSize = "大 1.5";
+        if (aAttDefSum <= 2.0) aSize = "小 1.5";
+        else if (aAttDefSum >= 4.0) aSize = "大 1.5";
 
-        // 動態總入球判斷
+        // 總入球判斷（四個總和）
+        let totalSum = hGoals + hConceded + aGoals + aConceded;
         let totalSize = "模糊";
-        if (hSize === "小 0.5" && aSize === "小 0.5") totalSize = "小 0.5";
-        else if ((hSize === "小 0.5" && aSize === "小 1.5") || (hSize === "小 1.5" && aSize === "小 0.5")) totalSize = "小 1.5";
-        else if (hSize === "小 1.5" && aSize === "小 1.5") totalSize = "小 2.5";
-        else if (hSize === "大 1.5" && aSize === "大 1.5") totalSize = "大 3.5";
-        else if ((hSize === "大 1.5" && aSize === "大 2.5") || (hSize === "大 2.5" && aSize === "大 1.5")) totalSize = "大 4.5";
-        else if (hSize === "大 2.5" && aSize === "大 2.5") totalSize = "大 5.5";
+        if (totalSum <= 4.0) totalSize = "小 2.5";
+        else if (totalSum >= 6.0) totalSize = "大 2.5";
 
-        // 更新 UI 顯示（當模糊時，標題改為「大細」）
-        document.getElementById('title_h').innerText = hSize === "模糊" ? "主隊大細" : `主隊入球 (${hSize.split(' ')[1]})`;
+        // 預測入球數與賽果
+        let predH = "";
+        let predHVal = 0;
+        if (hAttDefSum > 5.0) { predH = "3+"; predHVal = 3; }
+        else if (hAttDefSum > 3.0) { predH = "2"; predHVal = 2; }
+        else if (hAttDefSum > 1.0) { predH = "1"; predHVal = 1; }
+        else { predH = "0"; predHVal = 0; }
+
+        let predA = "";
+        let predAVal = 0;
+        if (aAttDefSum > 5.0) { predA = "3+"; predAVal = 3; }
+        else if (aAttDefSum > 3.0) { predA = "2"; predAVal = 2; }
+        else if (aAttDefSum > 1.0) { predA = "1"; predAVal = 1; }
+        else { predA = "0"; predAVal = 0; }
+
+        let predT = "";
+        if (totalSum > 10.0) predT = "3+";
+        else if (totalSum > 6.0) predT = "2";
+        else if (totalSum > 2.0) predT = "1";
+        else predT = "0";
+
+        document.getElementById('pred_h_goals').innerText = predH;
+        document.getElementById('pred_a_goals').innerText = predA;
+        document.getElementById('pred_t_goals').innerText = predT;
+
+        // 基於原始 diff 判斷賽果
+        const diffFifth = Math.round(((hGoals + aConceded) - (aGoals + hConceded)) * 100) / 100;
+        let resFifth = "avoid";
+        let exactGD = null;
+
+        if (diffFifth >= 2.0) {
+            resFifth = "home"; exactGD = 1; // 主勝，波膽以淨勝1球為基準
+        } else if (diffFifth <= -2.0) {
+            resFifth = "away"; exactGD = -1;
+        } else if (diffFifth === 0) {
+            resFifth = "draw"; exactGD = 0;
+        } else {
+            resFifth = "avoid";
+        }
+        
+        applyMiniUI('fifth', resFifth, diffFifth.toFixed(2), "");
+
+        // 更新 UI 顯示
+        document.getElementById('title_h').innerText = hSize === "模糊" ? "主隊大細" : `主隊入球 (1.5)`;
         const valH15 = document.getElementById('val_h_15');
         valH15.innerText = hSize === "模糊" ? "方向模糊" : hSize;
         valH15.style.color = hSize.includes('大') ? '#f87171' : (hSize.includes('小') ? '#8cb8ff' : '#aaa');
 
-        document.getElementById('title_a').innerText = aSize === "模糊" ? "客隊大細" : `客隊入球 (${aSize.split(' ')[1]})`;
+        document.getElementById('title_a').innerText = aSize === "模糊" ? "客隊大細" : `客隊入球 (1.5)`;
         const valA15 = document.getElementById('val_a_15');
         valA15.innerText = aSize === "模糊" ? "方向模糊" : aSize;
         valA15.style.color = aSize.includes('大') ? '#f87171' : (aSize.includes('小') ? '#8cb8ff' : '#aaa');
 
-        document.getElementById('title_total').innerText = totalSize === "模糊" ? "總共大小" : `總入球 (${totalSize.split(' ')[1]})`;
+        document.getElementById('title_total').innerText = totalSize === "模糊" ? "總共大小" : `總入球 (2.5)`;
         const valTotal25 = document.getElementById('val_total_25');
         valTotal25.innerText = totalSize === "模糊" ? "方向模糊" : totalSize;
         valTotal25.style.color = totalSize.includes('大') ? '#f87171' : (totalSize.includes('小') ? '#8cb8ff' : '#aaa');
 
         const betBox = document.getElementById('betBox');
         document.querySelectorAll('.bet-cell').forEach(c => {
-            c.classList.remove('active', 'yellow', 'red');
+            c.classList.remove('active', 'yellow', 'red', 'special');
         });
 
         let targetGDs = [];
-        if (resFifth === "home") targetGDs = [exactGD];
-        else if (resFifth === "away") targetGDs = [exactGD];
+        if (resFifth === "home") targetGDs = [1, 2, 3]; 
+        else if (resFifth === "away") targetGDs = [-1, -2, -3];
+        else if (resFifth === "draw") targetGDs = [0];
 
         let hasActive = false;
         for (let h = 0; h <= 4; h++) {
             for (let a = 0; a <= 4; a++) {
+                const cell = document.getElementById(`cell-${h}-${a}`);
+                
+                // 判斷是否為「絕對命中的預計入球」
+                let isSpecial = false;
+                let hMatchPred = (predH === "3+" && h >= 3) || (h === parseInt(predH));
+                let aMatchPred = (predA === "3+" && a >= 3) || (a === parseInt(predA));
+                
+                if (hMatchPred && aMatchPred) {
+                    isSpecial = true;
+                    cell.classList.add('special');
+                    hasActive = true;
+                }
+
                 // 過濾入球大細
                 let hMatch = true;
-                if (hSize === "小 0.5" && h >= 1) hMatch = false;
                 if (hSize === "小 1.5" && h >= 2) hMatch = false;
                 if (hSize === "大 1.5" && h <= 1) hMatch = false;
-                if (hSize === "大 2.5" && h <= 2) hMatch = false;
 
                 let aMatch = true;
-                if (aSize === "小 0.5" && a >= 1) aMatch = false;
                 if (aSize === "小 1.5" && a >= 2) aMatch = false;
                 if (aSize === "大 1.5" && a <= 1) aMatch = false;
-                if (aSize === "大 2.5" && a <= 2) aMatch = false;
 
                 let tMatch = true;
-                if (totalSize === "小 0.5" && (h + a) >= 1) tMatch = false;
-                if (totalSize === "小 1.5" && (h + a) >= 2) tMatch = false;
                 if (totalSize === "小 2.5" && (h + a) >= 3) tMatch = false;
-                if (totalSize === "大 3.5" && (h + a) <= 3) tMatch = false;
-                if (totalSize === "大 4.5" && (h + a) <= 4) tMatch = false;
-                if (totalSize === "大 5.5" && (h + a) <= 5) tMatch = false;
+                if (totalSize === "大 2.5" && (h + a) <= 2) tMatch = false;
 
                 if (!hMatch || !aMatch || !tMatch) continue;
 
-                const cell = document.getElementById(`cell-${h}-${a}`);
                 const currentGD = h - a;
 
                 if (resFifth === "avoid") {
                     if (hSize === "模糊" && aSize === "模糊" && totalSize === "模糊") continue;
-                    cell.classList.add('active'); 
+                    if (!isSpecial) cell.classList.add('active'); 
                     hasActive = true;
                 } else {
                     let minDist = 999;
@@ -934,13 +1004,13 @@
                     });
 
                     if (minDist === 0) {
-                        cell.classList.add('active');
+                        if (!isSpecial) cell.classList.add('active');
                         hasActive = true;
                     } else if (minDist === 1) {
-                        cell.classList.add('yellow');
+                        if (!isSpecial) cell.classList.add('yellow');
                         hasActive = true;
                     } else if (minDist === 2) {
-                        cell.classList.add('red');
+                        if (!isSpecial) cell.classList.add('red');
                         hasActive = true;
                     }
                 }
