@@ -200,15 +200,14 @@
         /* 完美命中特效 */
         @keyframes pulse-gold {
             0% { box-shadow: 0 0 5px #fff, inset 0 0 5px #fff; transform: scale(1); }
-            50% { box-shadow: 0 0 20px #FFD700, inset 0 0 10px #FFD700; border-color: #fff; transform: scale(1.1); z-index: 10; }
+            50% { box-shadow: 0 0 20px #FFD700, inset 0 0 10px #FFD700; border-color: #FFD700; transform: scale(1.1); z-index: 10; }
             100% { box-shadow: 0 0 5px #fff, inset 0 0 5px #fff; transform: scale(1); }
         }
         .bet-cell.special {
             animation: pulse-gold 1.5s infinite alternate;
             border-width: 2px;
             border-color: #FFD700;
-            color: #fff;
-            background-color: #665200;
+            z-index: 2;
         }
         .bet-cell.special::after {
             content: "🎯";
@@ -889,11 +888,10 @@
         if (aAttDefSum <= 2.0) aSize = "小 1.5";
         else if (aAttDefSum >= 4.0) aSize = "大 1.5";
 
-        // 總入球判斷（四個總和）
-        let totalSum = hGoals + hConceded + aGoals + aConceded;
+        // 總入球判斷（左右都大 -> 大 2.5；左右都小 -> 小 2.5；否則模糊）
         let totalSize = "模糊";
-        if (totalSum <= 4.0) totalSize = "小 2.5";
-        else if (totalSum >= 6.0) totalSize = "大 2.5";
+        if (hSize === "大 1.5" && aSize === "大 1.5") totalSize = "大 2.5";
+        else if (hSize === "小 1.5" && aSize === "小 1.5") totalSize = "小 2.5";
 
         // 預測入球數（新規則：0-1.0(0球), 1.0-3.0(1球), 3.0-5.0(2球), 5.0以上(3球)）
         let predHVal = 0;
@@ -967,18 +965,7 @@
             for (let a = 0; a <= 4; a++) {
                 const cell = document.getElementById(`cell-${h}-${a}`);
                 
-                // 判斷是否為「絕對命中的預計入球」
-                let isSpecial = false;
-                let hMatchPred = (predHVal === 3 && h >= 3) || (h === predHVal);
-                let aMatchPred = (predAVal === 3 && a >= 3) || (a === predAVal);
-                
-                if (hMatchPred && aMatchPred) {
-                    isSpecial = true;
-                    cell.classList.add('special');
-                    hasActive = true;
-                }
-
-                // 過濾入球大細
+                // 先過濾大小球
                 let hMatch = true;
                 if (hSize === "小 1.5" && h >= 2) hMatch = false;
                 if (hSize === "大 1.5" && h <= 1) hMatch = false;
@@ -991,13 +978,23 @@
                 if (totalSize === "小 2.5" && (h + a) >= 3) tMatch = false;
                 if (totalSize === "大 2.5" && (h + a) <= 2) tMatch = false;
 
-                if (!hMatch || !aMatch || !tMatch) continue;
+                if (!hMatch || !aMatch || !tMatch) continue; // 不滿足，保持原本（灰色）
 
-                const currentGD = h - a;
+                // 判斷是否為「絕對命中的預計入球」
+                let isSpecial = false;
+                let hMatchPred = (predHVal === 3 && h >= 3) || (h === predHVal);
+                let aMatchPred = (predAVal === 3 && a >= 3) || (a === predAVal);
+                
+                if (hMatchPred && aMatchPred) {
+                    isSpecial = true;
+                    cell.classList.add('special');
+                    hasActive = true;
+                }
 
+                // 判斷底色
                 if (resGoalsPred === "avoid") {
                     if (hSize === "模糊" && aSize === "模糊" && totalSize === "模糊") continue;
-                    if (!isSpecial) cell.classList.add('active'); 
+                    cell.classList.add('active'); // 不建議但符合大小球，亮綠
                     hasActive = true;
                 } else {
                     let minDist = 999;
@@ -1007,13 +1004,13 @@
                     });
 
                     if (minDist === 0) {
-                        if (!isSpecial) cell.classList.add('active');
+                        cell.classList.add('active');
                         hasActive = true;
                     } else if (minDist === 1) {
-                        if (!isSpecial) cell.classList.add('yellow');
+                        cell.classList.add('yellow');
                         hasActive = true;
                     } else if (minDist === 2) {
-                        if (!isSpecial) cell.classList.add('red');
+                        cell.classList.add('red');
                         hasActive = true;
                     }
                 }
