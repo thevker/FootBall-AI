@@ -828,7 +828,7 @@
         }
 
         // ==========================================
-        // 主客預測（差值 ×100 分段）
+        // 主客預測（差值 ×100 分段：150-350 主勝 / 350-550 主勝-1 / ≥550 主勝-2）
         // ==========================================
         const hAttDefSum = hGoals + aConceded;
         const aAttDefSum = aGoals + hConceded;
@@ -840,10 +840,9 @@
         let mainText = "不建議";
 
         if (absDiff >= 150) {
-            if (absDiff < 250) gdTarget = 1;
-            else if (absDiff < 350) gdTarget = 2;
-            else if (absDiff < 450) gdTarget = 3;
-            else gdTarget = 4;
+            if (absDiff < 350) gdTarget = 1;        // 主勝 / 客勝
+            else if (absDiff < 550) gdTarget = 2;   // 主勝-1 / 客勝-1
+            else gdTarget = 3;                       // 主勝-2 / 客勝-2
 
             resMain = diffFifth > 0 ? "home" : "away";
             const side = diffFifth > 0 ? "主勝" : "客勝";
