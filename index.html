@@ -121,22 +121,20 @@
         }
         .pred-goal-box {
             flex: 1; text-align: center; padding: 10px 5px; border-radius: 12px;
-            border: 2px solid #3a7bd5; background-color: #181818; 
+            border: 2px solid #555; background-color: #222; 
             display: flex; flex-direction: column; justify-content: center;
             transition: all 0.3s ease;
         }
-        .pred-goal-title { font-size: 11px; font-weight: bold; color: #3a7bd5; margin-bottom: 4px; transition: color 0.3s; }
-        .pred-goal-value { font-size: 20px; font-weight: bold; color: #fff; text-shadow: 0 0 5px rgba(58, 123, 213, 0.5); transition: all 0.3s; }
+        .pred-goal-title { font-size: 11px; font-weight: bold; color: #aaa; margin-bottom: 4px; transition: color 0.3s; }
+        .pred-goal-value { font-size: 20px; font-weight: bold; color: #666; transition: all 0.3s; }
 
-        /* 符合條件時的綠色樣式 */
+        /* 符合條件時：綠底綠邊綠字 */
         .pred-goal-box.matched {
             border-color: #4ade80;
             background-color: #1a3324;
             box-shadow: 0 0 10px rgba(74, 222, 128, 0.2);
         }
-        .pred-goal-box.matched .pred-goal-title {
-            color: #4ade80;
-        }
+        .pred-goal-box.matched .pred-goal-title { color: #4ade80; }
         .pred-goal-box.matched .pred-goal-value {
             color: #4ade80;
             text-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
@@ -165,7 +163,15 @@
             flex: 1; text-align: center; padding: 8px 5px; border-radius: 12px;
             border: 2px solid #555; background-color: #222; 
             display: flex; flex-direction: column; justify-content: center;
+            transition: all 0.3s ease;
         }
+        /* 新增：大細球有方向時的樣式 */
+        .new-goals-box.active-box {
+            border-color: #4ade80;
+            background-color: #1a3324;
+            box-shadow: 0 0 10px rgba(74, 222, 128, 0.2);
+        }
+
         .new-goals-title { font-size: 11px; font-weight: bold; color: #aaa; margin-bottom: 4px; }
         .new-goals-value { font-size: 16px; font-weight: bold; color: #fff; }
 
@@ -928,52 +934,51 @@
         document.getElementById('pred_a_goals').innerText = predAVal === 3 ? "3+" : predAVal;
         document.getElementById('pred_t_goals').innerText = predTVal;
 
-        // 綠色條件符合特效
+        // 綠色條件符合特效（上面的預計入球面板）
         const hBox = document.getElementById('pred-box-h');
-        const hVal = document.getElementById('pred_h_goals');
         const aBox = document.getElementById('pred-box-a');
-        const aVal = document.getElementById('pred_a_goals');
         const tBox = document.getElementById('pred-box-t');
-        const tVal = document.getElementById('pred_t_goals');
 
         // 主隊符合
         let hMatched = false;
         if (hSize === "小 1.5" && predHVal <= 1) hMatched = true;
         if (hSize === "大 1.5" && predHVal >= 2) hMatched = true;
-        
-        if (hMatched) {
-            hBox.classList.add('matched');
-            hVal.classList.add('matched');
-        } else {
-            hBox.classList.remove('matched');
-            hVal.classList.remove('matched');
-        }
+        if (hMatched) hBox.classList.add('matched'); else hBox.classList.remove('matched');
 
         // 客隊符合
         let aMatched = false;
         if (aSize === "小 1.5" && predAVal <= 1) aMatched = true;
         if (aSize === "大 1.5" && predAVal >= 2) aMatched = true;
-        
-        if (aMatched) {
-            aBox.classList.add('matched');
-            aVal.classList.add('matched');
-        } else {
-            aBox.classList.remove('matched');
-            aVal.classList.remove('matched');
-        }
+        if (aMatched) aBox.classList.add('matched'); else aBox.classList.remove('matched');
 
         // 總入球符合
         let tMatched = false;
         if (totalSize === "小 2.5" && predTVal <= 2) tMatched = true;
         if (totalSize === "大 2.5" && predTVal >= 3) tMatched = true;
-        
-        if (tMatched) {
-            tBox.classList.add('matched');
-            tVal.classList.add('matched');
-        } else {
-            tBox.classList.remove('matched');
-            tVal.classList.remove('matched');
-        }
+        if (tMatched) tBox.classList.add('matched'); else tBox.classList.remove('matched');
+
+        // 更新下面的入球大細 UI（有方向就變綠框，文字顏色維持大紅小藍）
+        const boxH = document.getElementById('box_h_15');
+        const boxT = document.getElementById('box_total_25');
+        const boxA = document.getElementById('box_a_15');
+
+        document.getElementById('title_h').innerText = hSize === "模糊" ? "主隊大細" : `主隊入球 (1.5)`;
+        const valH15 = document.getElementById('val_h_15');
+        valH15.innerText = hSize === "模糊" ? "方向模糊" : hSize;
+        valH15.style.color = hSize.includes('大') ? '#f87171' : (hSize.includes('小') ? '#8cb8ff' : '#aaa');
+        if (hSize !== "模糊") boxH.classList.add('active-box'); else boxH.classList.remove('active-box');
+
+        document.getElementById('title_a').innerText = aSize === "模糊" ? "客隊大細" : `客隊入球 (1.5)`;
+        const valA15 = document.getElementById('val_a_15');
+        valA15.innerText = aSize === "模糊" ? "方向模糊" : aSize;
+        valA15.style.color = aSize.includes('大') ? '#f87171' : (aSize.includes('小') ? '#8cb8ff' : '#aaa');
+        if (aSize !== "模糊") boxA.classList.add('active-box'); else boxA.classList.remove('active-box');
+
+        document.getElementById('title_total').innerText = totalSize === "模糊" ? "總共大小" : `總入球 (2.5)`;
+        const valTotal25 = document.getElementById('val_total_25');
+        valTotal25.innerText = totalSize === "模糊" ? "方向模糊" : totalSize;
+        valTotal25.style.color = totalSize.includes('大') ? '#f87171' : (totalSize.includes('小') ? '#8cb8ff' : '#aaa');
+        if (totalSize !== "模糊") boxT.classList.add('active-box'); else boxT.classList.remove('active-box');
 
         // ==========================================
         // 保留舊預測：碰撞預測
@@ -995,22 +1000,6 @@
         else resGoalsPred = "draw";
         applyResultUI('box_goals_pred', 'val_goals_pred', 'diff_goals_pred', resGoalsPred, predDiff.toFixed(0));
 
-        // 更新 UI 顯示
-        document.getElementById('title_h').innerText = hSize === "模糊" ? "主隊大細" : `主隊入球 (1.5)`;
-        const valH15 = document.getElementById('val_h_15');
-        valH15.innerText = hSize === "模糊" ? "方向模糊" : hSize;
-        valH15.style.color = hSize.includes('大') ? '#f87171' : (hSize.includes('小') ? '#8cb8ff' : '#aaa');
-
-        document.getElementById('title_a').innerText = aSize === "模糊" ? "客隊大細" : `客隊入球 (1.5)`;
-        const valA15 = document.getElementById('val_a_15');
-        valA15.innerText = aSize === "模糊" ? "方向模糊" : aSize;
-        valA15.style.color = aSize.includes('大') ? '#f87171' : (aSize.includes('小') ? '#8cb8ff' : '#aaa');
-
-        document.getElementById('title_total').innerText = totalSize === "模糊" ? "總共大小" : `總入球 (2.5)`;
-        const valTotal25 = document.getElementById('val_total_25');
-        valTotal25.innerText = totalSize === "模糊" ? "方向模糊" : totalSize;
-        valTotal25.style.color = totalSize.includes('大') ? '#f87171' : (totalSize.includes('小') ? '#8cb8ff' : '#aaa');
-
         const betBox = document.getElementById('betBox');
         document.querySelectorAll('.bet-cell').forEach(c => {
             c.classList.remove('active', 'yellow', 'red', 'special');
@@ -1026,7 +1015,7 @@
         for (let h = 0; h <= 4; h++) {
             for (let a = 0; a <= 4; a++) {
                 const cell = document.getElementById(`cell-${h}-${a}`);
-                const currentGD = h - a; // 修復：補回缺失的 currentGD 定義
+                const currentGD = h - a; 
                 
                 // 先過濾大小球
                 let hMatch = true;
