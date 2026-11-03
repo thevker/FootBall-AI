@@ -445,30 +445,30 @@ function calculate() {
     const absDiff = Math.abs(diffFifth) * 100;
     let resMain = "avoid", gdTarget = 0, mainText = "不建議";
 
-    // 1) 先按差值分段
     if (absDiff >= 150) {
+        // 差值分段：大細不覆蓋
         if (absDiff < 350) gdTarget = 1;
         else if (absDiff < 550) gdTarget = 2;
         else gdTarget = 3;
         resMain = diffFifth > 0 ? "home" : "away";
         const side = diffFifth > 0 ? "主勝" : "客勝";
         mainText = gdTarget === 1 ? side : `${side}-${gdTarget - 1}`;
-    }
+    } else {
+        // 只有原本不建議時，才用大細輔助
+        const hIsBig = !hOU.fuzzy && hOU.dir === '大';
+        const hIsSmall = !hOU.fuzzy && hOU.dir === '細';
+        const aIsBig = !aOU.fuzzy && aOU.dir === '大';
+        const aIsSmall = !aOU.fuzzy && aOU.dir === '細';
 
-    // 2) 大細輔助：左右都有結果（一隊大、一隊細）時，優先覆蓋原本結果
-    const hIsBig = !hOU.fuzzy && hOU.dir === '大';
-    const hIsSmall = !hOU.fuzzy && hOU.dir === '細';
-    const aIsBig = !aOU.fuzzy && aOU.dir === '大';
-    const aIsSmall = !aOU.fuzzy && aOU.dir === '細';
-
-    if (hIsBig && aIsSmall) {
-        gdTarget = (hOU.line - aOU.line) + 1;
-        resMain = "home";
-        mainText = gdTarget === 1 ? "主勝" : `主勝-${gdTarget - 1}`;
-    } else if (hIsSmall && aIsBig) {
-        gdTarget = (aOU.line - hOU.line) + 1;
-        resMain = "away";
-        mainText = gdTarget === 1 ? "客勝" : `客勝-${gdTarget - 1}`;
+        if (hIsBig && aIsSmall) {
+            gdTarget = (hOU.line - aOU.line) + 1;
+            resMain = "home";
+            mainText = gdTarget === 1 ? "主勝" : `主勝-${gdTarget - 1}`;
+        } else if (hIsSmall && aIsBig) {
+            gdTarget = (aOU.line - hOU.line) + 1;
+            resMain = "away";
+            mainText = gdTarget === 1 ? "客勝" : `客勝-${gdTarget - 1}`;
+        }
     }
 
     applyResultUI('box_collision', 'val_collision', 'diff_collision', resMain, mainText, diffFifth.toFixed(2));
