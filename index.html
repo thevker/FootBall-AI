@@ -328,12 +328,12 @@ function applyResultUI(boxId, valId, diffId, colorKey, displayText, diffDisplay)
 }
 
 // ===== 單隊大細（x = 原始值×100）=====
-// ≤50 → 0.5細；50–250 → 1.5細；250–350 → 模糊；350–550 → 1.5大；≥550 → 2.5大
+// x = 0 → 0.5細；0 < x ≤ 200 → 1.5細；200–400 → 模糊；400 ≤ x < 600 → 1.5大；≥600 → 2.5大
 function getTeamOU(val) {
-    if (val <= 50) return { line: 0.5, dir: '細', fuzzy: false };
-    if (val <= 250) return { line: 1.5, dir: '細', fuzzy: false };
-    if (val < 350) return { fuzzy: true };
-    if (val < 550) return { line: 1.5, dir: '大', fuzzy: false };
+    if (val < 0.5) return { line: 0.5, dir: '細', fuzzy: false };
+    if (val <= 200) return { line: 1.5, dir: '細', fuzzy: false };
+    if (val < 400) return { fuzzy: true };
+    if (val < 600) return { line: 1.5, dir: '大', fuzzy: false };
     return { line: 2.5, dir: '大', fuzzy: false };
 }
 
@@ -435,7 +435,7 @@ function calculate() {
 
     const hAttDefSum = hGoals + aConceded, aAttDefSum = aGoals + hConceded;
 
-    // ===== 大細先算（供主客預測輔助判斷使用）=====
+    // ===== 大細先算 =====
     const hS = hAttDefSum * 100;
     const aS = aAttDefSum * 100;
     const { h: hOU, a: aOU, t: tOU } = getCombinedOU(hS, aS);
