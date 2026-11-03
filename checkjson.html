@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FootyStats 得失球提取器 (容錯版)</title>
+<title>FootyStats 相差值與賽果分析</title>
 <style>
 * { box-sizing: border-box; }
 body {
@@ -37,23 +37,16 @@ button { padding: 12px 20px; border: none; border-radius: 8px; font-size: 14px; 
 h2 { font-size: 16px; color: #fff; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
 .count { font-size: 12px; color: #888; font-weight: normal; }
 
-.big-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px; }
-.stat-card { background: #1e1e1e; border: 1px solid #333; border-radius: 12px; padding: 15px 10px; text-align: center; cursor: pointer; transition: 0.2s; }
-.stat-card:hover { border-color: #4ade80; background: #1a2a1f; }
-.stat-label { font-size: 11px; color: #aaa; margin-bottom: 8px; font-weight: bold; }
-.stat-value { font-size: 28px; font-weight: bold; color: #4ade80; line-height: 1; }
-.stat-card.total .stat-value { color: #fbbf24; }
-.stat-card.a .stat-value { color: #f87171; }
-.stat-hint { font-size: 10px; color: #666; margin-top: 6px; }
-
-.small-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 15px; }
-.small-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 10px; text-align: center; }
-.small-label { font-size: 10px; color: #888; margin-bottom: 4px; }
-.small-value { font-size: 16px; font-weight: bold; color: #ddd; }
+/* 新增：相差值分佈區塊 */
+.dist-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 20px; }
+.dist-card { background: #1e1e1e; border: 1px solid #333; border-radius: 10px; padding: 12px; text-align: center; }
+.dist-title { font-size: 12px; color: #aaa; margin-bottom: 6px; }
+.dist-val { font-size: 20px; font-weight: bold; color: #4ade80; }
+.dist-pct { font-size: 11px; color: #888; margin-top: 4px; }
 
 .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid #2a2a2a; }
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
-thead { background: #1a1a1a; }
+thead { background: #1a1a1a; position: sticky; top: 0; }
 th { padding: 10px 8px; text-align: center; color: #aaa; font-weight: bold; border-bottom: 1px solid #333; white-space: nowrap; }
 td { padding: 8px; text-align: center; border-bottom: 1px solid #222; white-space: nowrap; }
 tbody tr:hover { background: #1a1a1a; }
@@ -63,6 +56,7 @@ tbody tr:hover { background: #1a1a1a; }
 .score-h { color: #4ade80; font-weight: bold; }
 .score-a { color: #f87171; font-weight: bold; }
 .total { font-weight: bold; color: #fff; }
+.highlight { background: rgba(74, 222, 128, 0.1); }
 
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #4ade80; color: #121212; padding: 10px 20px; border-radius: 8px; font-weight: bold; font-size: 14px; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 999; }
 .toast.show { opacity: 1; }
@@ -70,11 +64,11 @@ tbody tr:hover { background: #1a1a1a; }
 </head>
 <body>
 <div class="container">
-  <h1>📊 得失球提取器 (容錯版)</h1>
-  <p class="subtitle">無視 JSON 格式，直接提取主客得失球！</p>
+  <h1>📊 相差值與賽果分析</h1>
+  <p class="subtitle">容錯提取：直接找出主客得失球、A值、B值與相差值</p>
 
   <div class="input-section">
-    <textarea id="jsonInput" placeholder='直接貼上 API 內容，即使被截斷或殘缺都可以，只要文字中包含 "homeGoalCount" 及 "awayGoalCount" 即可。'></textarea>
+    <textarea id="jsonInput" placeholder='直接貼上 API 內容，包含 "homeGoalCount" 及 "awayGoalCount" 即可。'></textarea>
     <div class="btn-row">
       <button class="btn-primary" onclick="analyze()">開始分析</button>
       <button class="btn-secondary" onclick="clearAll()">清除</button>
@@ -83,12 +77,12 @@ tbody tr:hover { background: #1a1a1a; }
   </div>
 
   <div id="result" style="display:none;">
+    <!-- 主勝相差值分佈 -->
     <div class="summary-section">
-      <h2>📈 全部平均值 <span class="count" id="matchCount"></span></h2>
-      <div class="big-stats" id="bigStats"></div>
-      <div class="small-stats" id="smallStats"></div>
-      <button class="btn-copy" onclick="copySummary()">📋 複製全部平均值</button>
+      <h2>🏆 真實主勝時的相差值分佈 <span class="count" id="homeWinCount"></span></h2>
+      <div class="dist-grid" id="distGrid"></div>
     </div>
+
     <div class="detail-section" style="margin-top: 25px;">
       <h2>📋 每場明細</h2>
       <div class="table-wrap">
@@ -96,11 +90,12 @@ tbody tr:hover { background: #1a1a1a; }
           <thead>
             <tr>
               <th>#</th>
-              <th>主得分</th>
-              <th>主失球</th>
-              <th>客得分</th>
-              <th>客失球</th>
-              <th>總入球</th>
+              <th>主得分(h)</th>
+              <th>客得分(a)</th>
+              <th>A值 (h+h)</th>
+              <th>B值 (a+a)</th>
+              <th>相差值 (A-B)</th>
+              <th>真實賽果</th>
             </tr>
           </thead>
           <tbody id="detailBody"></tbody>
@@ -113,8 +108,6 @@ tbody tr:hover { background: #1a1a1a; }
 <div class="toast" id="toast"></div>
 
 <script>
-let summaryText = '';
-
 function analyze() {
   const raw = document.getElementById('jsonInput').value.trim();
   const errEl = document.getElementById('errorMessage');
@@ -131,124 +124,102 @@ function analyze() {
     if (Array.isArray(data)) {
       data.forEach(m => {
         if (m && m.homeGoalCount !== undefined && m.awayGoalCount !== undefined) {
-          matches.push({
-            h: Number(m.homeGoalCount),
-            a: Number(m.awayGoalCount)
-          });
+          matches.push({ h: Number(m.homeGoalCount), a: Number(m.awayGoalCount) });
         }
       });
     }
   } catch (e) {
-    // 第二步：如果解析失敗（例如被截斷），使用正則強行摳出數據
-    console.log("JSON 不完整，啟動正則提取模式");
-    
-    // 1. 嘗試匹配相鄰的 homeGoalCount 和 awayGoalCount
+    // 第二步：如果解析失敗，用正則提取
     const regexAdjacent = /"homeGoalCount"\s*:\s*(\d+)[^}]{0,100}?"awayGoalCount"\s*:\s*(\d+)/g;
     let match;
     while ((match = regexAdjacent.exec(raw)) !== null) {
       matches.push({ h: parseInt(match[1]), a: parseInt(match[2]) });
     }
 
-    // 2. 如果還是沒抓到（可能中間隔了太遠），分開抓取再配對
     if (matches.length === 0) {
       const hRegex = /"homeGoalCount"\s*:\s*(\d+)/g;
       const aRegex = /"awayGoalCount"\s*:\s*(\d+)/g;
       const hs = [], as = [];
       let mh, ma;
-      
       while ((mh = hRegex.exec(raw)) !== null) hs.push(parseInt(mh[1]));
       while ((ma = aRegex.exec(raw)) !== null) as.push(parseInt(ma[1]));
-      
       const len = Math.min(hs.length, as.length);
-      for (let i = 0; i < len; i++) {
-        matches.push({ h: hs[i], a: as[i] });
-      }
+      for (let i = 0; i < len; i++) matches.push({ h: hs[i], a: as[i] });
     }
   }
 
-  // 如果完全找不到數據
   if (matches.length === 0) {
-    showError('❌ 找不到進球數據！請確保你貼上的文字中包含 "homeGoalCount" 和 "awayGoalCount" 這兩個詞。如果是手機複製截斷了，請嘗試重新複製完整的內容。');
+    showError('❌ 找不到進球數據！請確保文字中包含 "homeGoalCount" 和 "awayGoalCount"。');
     return;
   }
 
-  // ===== 開始統計 =====
-  let hScored = 0, hConceded = 0, aScored = 0, aConceded = 0;
-  let totalGoals = 0, homeWins = 0, draws = 0, awayWins = 0, btts = 0, over25 = 0;
+  let homeWins = 0, draws = 0, awayWins = 0;
+  let diffCounts = {}; // 記錄主勝時，各相差值的次數
 
   const rows = matches.map((m, idx) => {
     const h = m.h;
     const a = m.a;
+    
+    // 計算 A值、B值、相差值
+    const A = h + h;
+    const B = a + a;
+    const diff = A - B; // 因為單場客失=主得，主失=客得
+    
+    let resultText = '';
+    let rowCls = '';
+    
+    if (h > a) {
+      resultText = '主勝';
+      rowCls = 'row-home highlight';
+      homeWins++;
+      diffCounts[diff] = (diffCounts[diff] || 0) + 1;
+    } else if (h < a) {
+      resultText = '客勝';
+      rowCls = 'row-away';
+      awayWins++;
+    } else {
+      resultText = '和局';
+      rowCls = 'row-draw';
+      draws++;
+    }
 
-    hScored   += h;
-    hConceded += a;
-    aScored   += a;
-    aConceded += h;
-    totalGoals += h + a;
-
-    if (h > a) homeWins++;
-    else if (h < a) awayWins++;
-    else draws++;
-
-    if (h > 0 && a > 0) btts++;
-    if (h + a > 2.5) over25++;
-
-    return { idx: idx + 1, h, a, total: h + a };
+    return { idx: idx + 1, h, a, A, B, diff, resultText, rowCls };
   });
 
   const n = matches.length;
 
-  // ===== 頂部：五個核心平均值 =====
-  const bigStats = [
-    { label: '主隊場均得分', value: (hScored / n).toFixed(2), cls: 'h' },
-    { label: '主隊場均失球', value: (hConceded / n).toFixed(2), cls: 'h' },
-    { label: '客隊場均得分', value: (aScored / n).toFixed(2), cls: 'a' },
-    { label: '客隊場均失球', value: (aConceded / n).toFixed(2), cls: 'a' },
-    { label: '場均總入球', value: (totalGoals / n).toFixed(2), cls: 'total' }
-  ];
-
-  document.getElementById('bigStats').innerHTML = bigStats.map(s =>
-    `<div class="stat-card ${s.cls}" onclick="copyText('${s.value}')">
-      <div class="stat-label">${s.label}</div>
-      <div class="stat-value">${s.value}</div>
-      <div class="stat-hint">點擊複製</div>
-    </div>`
-  ).join('');
-
-  // ===== 其他統計 =====
-  const smallStats = [
-    { label: '總場次', value: n },
-    { label: '主勝', value: homeWins + ' (' + (homeWins / n * 100).toFixed(0) + '%)' },
-    { label: '和局', value: draws + ' (' + (draws / n * 100).toFixed(0) + '%)' },
-    { label: '客勝', value: awayWins + ' (' + (awayWins / n * 100).toFixed(0) + '%)' },
-    { label: 'BTTS', value: (btts / n * 100).toFixed(0) + '%' },
-    { label: '大2.5', value: (over25 / n * 100).toFixed(0) + '%' }
-  ];
-
-  document.getElementById('smallStats').innerHTML = smallStats.map(s =>
-    `<div class="small-card">
-      <div class="small-label">${s.label}</div>
-      <div class="small-value">${s.value}</div>
-    </div>`
-  ).join('');
-
-  document.getElementById('matchCount').innerText = '（共提取 ' + n + ' 場）';
+  // ===== 頂部：主勝相差值分佈 =====
+  const diffs = Object.keys(diffCounts).sort((a,b) => Number(a) - Number(b));
+  document.getElementById('homeWinCount').innerText = `（主勝共 ${homeWins} 場）`;
+  
+  const distGrid = document.getElementById('distGrid');
+  if (diffs.length === 0) {
+    distGrid.innerHTML = '<div style="color:#888; grid-column: 1/-1;">沒有任何主勝場次。</div>';
+  } else {
+    distGrid.innerHTML = diffs.map(d => {
+      const count = diffCounts[d];
+      const pct = ((count / homeWins) * 100).toFixed(1);
+      return `<div class="dist-card">
+        <div class="dist-title">相差值 = ${d}</div>
+        <div class="dist-val">${count} 場</div>
+        <div class="dist-pct">佔主勝 ${pct}%</div>
+      </div>`;
+    }).join('');
+  }
 
   // ===== 每場明細 =====
   const tbody = document.getElementById('detailBody');
   tbody.innerHTML = rows.map(r => {
-    const rowCls = r.h > r.a ? 'row-home' : (r.h < r.a ? 'row-away' : 'row-draw');
-    return `<tr class="${rowCls}">
+    return `<tr class="${r.rowCls}">
       <td>${r.idx}</td>
       <td class="score-h">${r.h}</td>
-      <td>${r.a}</td>
       <td class="score-a">${r.a}</td>
-      <td>${r.h}</td>
-      <td class="total">${r.total}</td>
+      <td>${r.A}</td>
+      <td>${r.B}</td>
+      <td class="total">${r.diff > 0 ? '+' : ''}${r.diff}</td>
+      <td style="font-weight:bold;">${r.resultText}</td>
     </tr>`;
   }).join('');
-
-  summaryText = `主隊場均得分 ${(hScored / n).toFixed(2)} / 主隊場均失球 ${(hConceded / n).toFixed(2)} / 客隊場均得分 ${(aScored / n).toFixed(2)} / 客隊場均失球 ${(aConceded / n).toFixed(2)} / 場均總入球 ${(totalGoals / n).toFixed(2)}`;
 
   document.getElementById('result').style.display = 'block';
   document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
@@ -264,34 +235,6 @@ function clearAll() {
   document.getElementById('jsonInput').value = '';
   document.getElementById('result').style.display = 'none';
   document.getElementById('errorMessage').style.display = 'none';
-}
-
-function copyText(text) {
-  copyToClipboard(text, '已複製：' + text);
-}
-
-function copySummary() {
-  if (!summaryText) return;
-  copyToClipboard(summaryText, '已複製全部平均值');
-}
-
-function copyToClipboard(text, msg) {
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(text).then(() => showToast(msg)).catch(() => fallbackCopy(text, msg));
-  } else {
-    fallbackCopy(text, msg);
-  }
-}
-
-function fallbackCopy(text, msg) {
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.opacity = '0';
-  document.body.appendChild(ta);
-  ta.select();
-  try { document.execCommand('copy'); showToast(msg); } catch (e) { showToast('複製失敗'); }
-  document.body.removeChild(ta);
 }
 
 let toastTimer;
