@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FootyStats JSON 得失球分析器</title>
+<title>FootyStats 得失球提取器 (容錯版)</title>
 <style>
 * { box-sizing: border-box; }
 body {
@@ -13,10 +13,10 @@ body {
 }
 .container { width: 100%; max-width: 900px; }
 h1 { font-size: 22px; text-align: center; margin: 0 0 6px; color: #fff; }
-.subtitle { text-align: center; font-size: 12px; color: #888; margin: 0 0 20px; }
+.subtitle { text-align: center; font-size: 13px; color: #4ade80; margin: 0 0 20px; font-weight: bold; }
 
 textarea {
-  width: 100%; min-height: 160px; padding: 12px; background: #1e1e1e;
+  width: 100%; min-height: 140px; padding: 12px; background: #1e1e1e;
   border: 1px solid #333; border-radius: 10px; color: #e0e0e0;
   font-family: monospace; font-size: 13px; resize: vertical; outline: none;
 }
@@ -28,23 +28,18 @@ button { padding: 12px 20px; border: none; border-radius: 8px; font-size: 14px; 
 .btn-primary:hover { background: #3bc76d; }
 .btn-secondary { background: #333; color: #ccc; }
 .btn-secondary:hover { background: #444; }
-.btn-copy { background: #3a7bd5; color: #fff; margin-top: 12px; }
+.btn-copy { background: #3a7bd5; color: #fff; margin-top: 15px; width: 100%; }
 .btn-copy:hover { background: #2a5fa5; }
 
-.error { color: #f87171; background: #331a1a; border: 1px solid #7a3a3a; padding: 10px; border-radius: 8px; margin-top: 10px; display: none; font-size: 13px; }
+.error { color: #f87171; background: #331a1a; border: 1px solid #7a3a3a; padding: 12px; border-radius: 8px; margin-top: 10px; display: none; font-size: 13px; line-height: 1.5; }
 
 #result { margin-top: 25px; }
-
 h2 { font-size: 16px; color: #fff; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
 .count { font-size: 12px; color: #888; font-weight: normal; }
 
 .big-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px; }
-.stat-card {
-  background: #1e1e1e; border: 1px solid #333; border-radius: 12px;
-  padding: 15px 10px; text-align: center; cursor: pointer; transition: 0.2s;
-}
+.stat-card { background: #1e1e1e; border: 1px solid #333; border-radius: 12px; padding: 15px 10px; text-align: center; cursor: pointer; transition: 0.2s; }
 .stat-card:hover { border-color: #4ade80; background: #1a2a1f; }
-.stat-card:active { transform: scale(0.97); }
 .stat-label { font-size: 11px; color: #aaa; margin-bottom: 8px; font-weight: bold; }
 .stat-value { font-size: 28px; font-weight: bold; color: #4ade80; line-height: 1; }
 .stat-card.total .stat-value { color: #fbbf24; }
@@ -62,7 +57,6 @@ thead { background: #1a1a1a; }
 th { padding: 10px 8px; text-align: center; color: #aaa; font-weight: bold; border-bottom: 1px solid #333; white-space: nowrap; }
 td { padding: 8px; text-align: center; border-bottom: 1px solid #222; white-space: nowrap; }
 tbody tr:hover { background: #1a1a1a; }
-.team-name { text-align: left !important; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
 .row-home { border-left: 3px solid #4ade80; }
 .row-away { border-left: 3px solid #f87171; }
 .row-draw { border-left: 3px solid #fbbf24; }
@@ -70,25 +64,17 @@ tbody tr:hover { background: #1a1a1a; }
 .score-a { color: #f87171; font-weight: bold; }
 .total { font-weight: bold; color: #fff; }
 
-.toast {
-  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-  background: #4ade80; color: #121212; padding: 10px 20px; border-radius: 8px;
-  font-weight: bold; font-size: 14px; opacity: 0; transition: 0.3s; pointer-events: none;
-  z-index: 999;
-}
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #4ade80; color: #121212; padding: 10px 20px; border-radius: 8px; font-weight: bold; font-size: 14px; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 999; }
 .toast.show { opacity: 1; }
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>📊 得失球 JSON 分析器</h1>
-  <p class="subtitle">貼上 FootyStats API JSON，自動提取所有主客隊得失球並計算平均值</p>
+  <h1>📊 得失球提取器 (容錯版)</h1>
+  <p class="subtitle">無視 JSON 格式，直接提取主客得失球！</p>
 
   <div class="input-section">
-    <textarea id="jsonInput" placeholder='貼上 JSON，例如：
-{"success":true,"data":[{"homeGoalCount":4,"awayGoalCount":1,...},...]}
-或直接貼上 data 陣列：
-[{"homeGoalCount":4,"awayGoalCount":1,...}]'></textarea>
+    <textarea id="jsonInput" placeholder='直接貼上 API 內容，即使被截斷或殘缺都可以，只要文字中包含 "homeGoalCount" 及 "awayGoalCount" 即可。'></textarea>
     <div class="btn-row">
       <button class="btn-primary" onclick="analyze()">開始分析</button>
       <button class="btn-secondary" onclick="clearAll()">清除</button>
@@ -110,12 +96,10 @@ tbody tr:hover { background: #1a1a1a; }
           <thead>
             <tr>
               <th>#</th>
-              <th style="text-align:left;">主隊</th>
               <th>主得分</th>
               <th>主失球</th>
               <th>客得分</th>
               <th>客失球</th>
-              <th style="text-align:left;">客隊</th>
               <th>總入球</th>
             </tr>
           </thead>
@@ -136,45 +120,65 @@ function analyze() {
   const errEl = document.getElementById('errorMessage');
   errEl.style.display = 'none';
 
-  if (!raw) { showError('請先貼上 JSON'); return; }
+  if (!raw) { showError('請先貼上內容'); return; }
 
-  let parsed;
+  let matches = [];
+
+  // 第一步：嘗試正常解析 JSON
   try {
-    parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    const data = Array.isArray(parsed) ? parsed : parsed.data;
+    if (Array.isArray(data)) {
+      data.forEach(m => {
+        if (m && m.homeGoalCount !== undefined && m.awayGoalCount !== undefined) {
+          matches.push({
+            h: Number(m.homeGoalCount),
+            a: Number(m.awayGoalCount)
+          });
+        }
+      });
+    }
   } catch (e) {
-    showError('JSON 格式錯誤：' + e.message);
-    return;
+    // 第二步：如果解析失敗（例如被截斷），使用正則強行摳出數據
+    console.log("JSON 不完整，啟動正則提取模式");
+    
+    // 1. 嘗試匹配相鄰的 homeGoalCount 和 awayGoalCount
+    const regexAdjacent = /"homeGoalCount"\s*:\s*(\d+)[^}]{0,100}?"awayGoalCount"\s*:\s*(\d+)/g;
+    let match;
+    while ((match = regexAdjacent.exec(raw)) !== null) {
+      matches.push({ h: parseInt(match[1]), a: parseInt(match[2]) });
+    }
+
+    // 2. 如果還是沒抓到（可能中間隔了太遠），分開抓取再配對
+    if (matches.length === 0) {
+      const hRegex = /"homeGoalCount"\s*:\s*(\d+)/g;
+      const aRegex = /"awayGoalCount"\s*:\s*(\d+)/g;
+      const hs = [], as = [];
+      let mh, ma;
+      
+      while ((mh = hRegex.exec(raw)) !== null) hs.push(parseInt(mh[1]));
+      while ((ma = aRegex.exec(raw)) !== null) as.push(parseInt(ma[1]));
+      
+      const len = Math.min(hs.length, as.length);
+      for (let i = 0; i < len; i++) {
+        matches.push({ h: hs[i], a: as[i] });
+      }
+    }
   }
 
-  let data;
-  if (Array.isArray(parsed)) {
-    data = parsed;
-  } else if (parsed && Array.isArray(parsed.data)) {
-    data = parsed.data;
-  } else {
-    showError('找不到 data 陣列，請確認貼上的是 FootyStats API 回應');
-    return;
-  }
-
-  // 過濾有效比賽：只計已完成、且有得失球欄位的場次
-  const matches = data.filter(m => {
-    if (!m || typeof m !== 'object') return false;
-    if (m.status && m.status !== 'complete') return false;
-    return m.homeGoalCount !== undefined && m.awayGoalCount !== undefined;
-  });
-
+  // 如果完全找不到數據
   if (matches.length === 0) {
-    showError('沒有找到有效比賽（需要 homeGoalCount / awayGoalCount 欄位）');
+    showError('❌ 找不到進球數據！請確保你貼上的文字中包含 "homeGoalCount" 和 "awayGoalCount" 這兩個詞。如果是手機複製截斷了，請嘗試重新複製完整的內容。');
     return;
   }
 
-  // 統計累加
+  // ===== 開始統計 =====
   let hScored = 0, hConceded = 0, aScored = 0, aConceded = 0;
   let totalGoals = 0, homeWins = 0, draws = 0, awayWins = 0, btts = 0, over25 = 0;
 
   const rows = matches.map((m, idx) => {
-    const h = Number(m.homeGoalCount) || 0;
-    const a = Number(m.awayGoalCount) || 0;
+    const h = m.h;
+    const a = m.a;
 
     hScored   += h;
     hConceded += a;
@@ -189,13 +193,7 @@ function analyze() {
     if (h > 0 && a > 0) btts++;
     if (h + a > 2.5) over25++;
 
-    return {
-      idx: idx + 1,
-      home: m.home_name || ('ID ' + m.homeID),
-      away: m.away_name || ('ID ' + m.awayID),
-      h, a,
-      total: h + a
-    };
+    return { idx: idx + 1, h, a, total: h + a };
   });
 
   const n = matches.length;
@@ -224,11 +222,7 @@ function analyze() {
     { label: '和局', value: draws + ' (' + (draws / n * 100).toFixed(0) + '%)' },
     { label: '客勝', value: awayWins + ' (' + (awayWins / n * 100).toFixed(0) + '%)' },
     { label: 'BTTS', value: (btts / n * 100).toFixed(0) + '%' },
-    { label: '大2.5', value: (over25 / n * 100).toFixed(0) + '%' },
-    { label: '主隊總得分', value: hScored },
-    { label: '主隊總失球', value: hConceded },
-    { label: '客隊總得分', value: aScored },
-    { label: '客隊總失球', value: aConceded }
+    { label: '大2.5', value: (over25 / n * 100).toFixed(0) + '%' }
   ];
 
   document.getElementById('smallStats').innerHTML = smallStats.map(s =>
@@ -238,7 +232,7 @@ function analyze() {
     </div>`
   ).join('');
 
-  document.getElementById('matchCount').innerText = '（共 ' + n + ' 場）';
+  document.getElementById('matchCount').innerText = '（共提取 ' + n + ' 場）';
 
   // ===== 每場明細 =====
   const tbody = document.getElementById('detailBody');
@@ -246,30 +240,23 @@ function analyze() {
     const rowCls = r.h > r.a ? 'row-home' : (r.h < r.a ? 'row-away' : 'row-draw');
     return `<tr class="${rowCls}">
       <td>${r.idx}</td>
-      <td class="team-name">${escapeHtml(r.home)}</td>
       <td class="score-h">${r.h}</td>
       <td>${r.a}</td>
       <td class="score-a">${r.a}</td>
       <td>${r.h}</td>
-      <td class="team-name">${escapeHtml(r.away)}</td>
       <td class="total">${r.total}</td>
     </tr>`;
   }).join('');
 
-  // 準備一鍵複製文字
   summaryText = `主隊場均得分 ${(hScored / n).toFixed(2)} / 主隊場均失球 ${(hConceded / n).toFixed(2)} / 客隊場均得分 ${(aScored / n).toFixed(2)} / 客隊場均失球 ${(aConceded / n).toFixed(2)} / 場均總入球 ${(totalGoals / n).toFixed(2)}`;
 
   document.getElementById('result').style.display = 'block';
   document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
 function showError(msg) {
   const el = document.getElementById('errorMessage');
-  el.innerText = '⚠️ ' + msg;
+  el.innerHTML = msg;
   el.style.display = 'block';
 }
 
