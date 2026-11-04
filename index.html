@@ -41,7 +41,7 @@ button.btn-clear { width: 100%; padding: 12px; border: none; border-radius: 6px;
 .result-title { font-size: 13px; font-weight: bold; margin-bottom: 4px; color: #aaa; display: flex; justify-content: center; align-items: center; gap: 8px; }
 .result-value { font-size: 20px; font-weight: bold; margin-bottom: 0; }
 .diff-text { font-size: 13px; font-weight: bold; color: #fff; }
-#drawWarning { display: none; margin-bottom: 10px; padding: 10px; border-radius: 8px; background-color: #3b331c; color: #ffd700; font-size: 12px; font-weight: bold; text-align: center; border: 1px solid #ffd700; }
+#drawWarning { display: none; margin-bottom: 10px; padding: 10px; border-radius: 8px; background-color: #3b331c; color: #ffd700; font-size: 12px; font-weight: bold; text-align: center; border: 1px solid #ffd700; line-height: 1.4; }
 .new-goals-row { display: flex; gap: 8px; height: 70px; margin-bottom: 15px; }
 .new-goals-box { flex: 1; text-align: center; padding: 8px 5px; border-radius: 12px; border: 2px solid #555; background-color: #222; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease; }
 .new-goals-box.active-box { border-color: #4ade80; background-color: #1a3324; }
@@ -133,7 +133,7 @@ svg { width: 140px; height: 140px; }
 </div>
 <div class="result-card" id="predictionCard">
 <div class="result-box" id="box_collision"><div class="result-title">⚔️ 主客預測 <span class="diff-text" id="diff_collision"></span></div><div class="result-value" id="val_collision">-</div></div>
-<div id="drawWarning">⚠️ 數據差距不足 150<br>未能判定明確方向，建議跳過此場</div>
+<div id="drawWarning">⚠️ 數據差距不足 150<br>實力接近，不建議投注</div>
 <div class="new-goals-row" id="goalsRow">
 <div class="new-goals-box" id="box_h_15"><div class="new-goals-title" id="title_h">主隊大細</div><div class="new-goals-value" id="val_h_15">-</div></div>
 <div class="new-goals-box" id="box_total_25"><div class="new-goals-title" id="title_total">總入球大細</div><div class="new-goals-value" id="val_total_25">-</div></div>
@@ -324,6 +324,7 @@ function applyResultUI(boxId, valId, diffId, colorKey, displayText, diffDisplay)
     if(diff) diff.innerText = `(${diffDisplay})`;
     if (colorKey === "home") { val.innerText = displayText; val.style.color = "#4ade80"; box.style.borderColor = "#4ade80"; box.style.backgroundColor = "#1a3324"; if(diff) diff.style.color = "#4ade80"; }
     else if (colorKey === "away") { val.innerText = displayText; val.style.color = "#f87171"; box.style.borderColor = "#f87171"; box.style.backgroundColor = "#331a1a"; if(diff) diff.style.color = "#f87171"; }
+    else if (colorKey === "draw" || colorKey === "draw_home" || colorKey === "draw_away") { val.innerText = displayText; val.style.color = "#ffd700"; box.style.borderColor = "#ffd700"; box.style.backgroundColor = "#332d1a"; if(diff) diff.style.color = "#ffd700"; }
     else { val.innerText = displayText; val.style.color = "#aaa"; box.style.borderColor = "#555"; box.style.backgroundColor = "#2a2a2a"; if(diff) diff.style.color = "#aaa"; }
 }
 
@@ -446,14 +447,12 @@ function calculate() {
     let resMain = "avoid", gdTarget = 0, mainText = "不建議";
 
     if (absDiff >= 150) {
-        // 差值分段：150-349 主勝 / 350+ 主勝-1
         if (absDiff < 350) gdTarget = 1;
         else gdTarget = 2;
         resMain = diffFifth > 0 ? "home" : "away";
         const side = diffFifth > 0 ? "主勝" : "客勝";
         mainText = gdTarget === 1 ? side : `${side}-${gdTarget - 1}`;
     } else {
-        // 只有原本不建議（<150）時，才用大細輔助
         const hIsBig = !hOU.fuzzy && hOU.dir === '大';
         const hIsSmall = !hOU.fuzzy && hOU.dir === '細';
         const aIsBig = !aOU.fuzzy && aOU.dir === '大';
@@ -467,11 +466,31 @@ function calculate() {
             gdTarget = (aOU.line - hOU.line) + 1;
             resMain = "away";
             mainText = gdTarget === 1 ? "客勝" : `客勝-${gdTarget - 1}`;
+        } else {
+            // 沒有大細輔助，使用和局/主勝 或 和局/客勝
+            if (absDiff === 0 || diffFifth === 0) {
+                resMain = "draw";
+                mainText = "和局";
+                gdTarget = 0;
+            } else if (diffFifth > 0) {
+                resMain = "draw_home";
+                mainText = "和局/主勝";
+            } else {
+                resMain = "draw_away";
+                mainText = "和局/客勝";
+            }
         }
     }
 
     applyResultUI('box_collision', 'val_collision', 'diff_collision', resMain, mainText, diffFifth.toFixed(2));
-    document.getElementById('drawWarning').style.display = (resMain === "avoid") ? 'block' : 'none';
+    
+    const warning = document.getElementById('drawWarning');
+    if (resMain === "draw" || resMain === "draw_home" || resMain === "draw_away") {
+        warning.style.display = 'block';
+        warning.innerHTML = '⚠️ 數據差距不足 150<br>實力接近，不建議投注';
+    } else {
+        warning.style.display = 'none';
+    }
 
     // ===== 大細 UI =====
     const boxH = document.getElementById('box_h_15'), boxT = document.getElementById('box_total_25'), boxA = document.getElementById('box_a_15');
@@ -496,9 +515,14 @@ function calculate() {
     // ===== 波膽 =====
     const betBox = document.getElementById('betBox');
     document.querySelectorAll('.bet-cell').forEach(c => c.classList.remove('active', 'yellow', 'red'));
-    let targetGD = null;
-    if (resMain === "home") targetGD = gdTarget;
-    else if (resMain === "away") targetGD = -gdTarget;
+    
+    let targetGDs = [];
+    if (resMain === "home") targetGDs = [gdTarget];
+    else if (resMain === "away") targetGDs = [-gdTarget];
+    else if (resMain === "draw") targetGDs = [0];
+    else if (resMain === "draw_home") targetGDs = [0, 1];
+    else if (resMain === "draw_away") targetGDs = [0, -1];
+
     let hasActive = false;
     for (let h = 0; h <= 4; h++) {
         for (let a = 0; a <= 4; a++) {
@@ -506,15 +530,22 @@ function calculate() {
             if (!goalsMatchOU(h, hOU)) continue;
             if (!goalsMatchOU(a, aOU)) continue;
             if (!goalsMatchOU(h + a, tOU)) continue;
-            if (resMain === "avoid") {
+            
+            if (targetGDs.length === 0) {
                 if (!hOU.fuzzy || !aOU.fuzzy || !tOU.fuzzy) { cell.classList.add('active'); hasActive = true; }
                 continue;
             }
+            
             const gd = h - a;
-            const dist = Math.abs(gd - targetGD);
-            if (dist === 0) { cell.classList.add('active'); hasActive = true; }
-            else if (dist === 1) { cell.classList.add('yellow'); hasActive = true; }
-            else if (dist === 2) { cell.classList.add('red'); hasActive = true; }
+            let minDist = 999;
+            targetGDs.forEach(tg => {
+                let d = Math.abs(gd - tg);
+                if (d < minDist) minDist = d;
+            });
+
+            if (minDist === 0) { cell.classList.add('active'); hasActive = true; }
+            else if (minDist === 1) { cell.classList.add('yellow'); hasActive = true; }
+            else if (minDist === 2) { cell.classList.add('red'); hasActive = true; }
         }
     }
     if (!hasActive) { betBox.style.borderColor = '#444'; betBox.style.backgroundColor = '#222'; }
