@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>數據與賠率 綜合預測器</title>
+<title>數據與賠率 Ratio 預測器</title>
 <style>
   :root{
     --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
@@ -103,8 +103,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>數據與賠率 綜合預測器</h1>
-  <p class="sub">結合「場均得失球」與「市場 1X2 賠率」。賠率會轉換為隱含機率，動態調整進球期望值，給出最符合市場預期的比分。輸入順序為 <b>主 - 客 - 和</b>。</p>
+  <h1>數據與賠率 Ratio 預測器</h1>
+  <p class="sub">使用市場賠率計算出「比例（Ratio）」。只要某隊賠率極低（大熱門），系統會直接按比例大幅拉高該隊的進球期望。輸入順序為 <b>主 - 客 - 和</b>。</p>
 
   <div class="grid">
     <div class="team">
@@ -206,50 +206,35 @@ function predict(){
   let lH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
   let lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
 
-  // 2. 讀取市場賠率並轉換為隱含機率
+  // 2. 讀取市場賠率並計算 Ratio
   const oddH = parseFloat($('oddH').value);
   const oddA = parseFloat($('oddA').value);
   const oddD = parseFloat($('oddD').value);
   const hasOdds = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
   
-  let mkH = 0, mkA = 0, mkD = 0;
   if (hasOdds) {
     const sum = (1/oddH) + (1/oddA) + (1/oddD);
-    mkH = (1/oddH) / sum;
-    mkA = (1/oddA) / sum;
-    mkD = (1/oddD) / sum;
-  }
+    const mkH = (1/oddH) / sum;
+    const mkA = (1/oddA) / sum;
+    const mkD = (1/oddD) / sum;
 
-  // 3. 計算基礎泊松機率
-  let baseH = 0, baseD = 0, baseA = 0;
-  for (let i = 0; i <= MAXG; i++){
-    for (let j = 0; j <= MAXG; j++){
-      let p = poisson(i, lH) * poisson(j, lA);
-      if (i > j) baseH += p; 
-      else if (i === j) baseD += p; 
-      else baseA += p;
-    }
-  }
+    // ⚡ 核心 Ratio 邏輯：以 33.3% 為基準，計算熱度倍數
+    // 例如主勝隱含機率 55.7%，ratio = 55.7 / 33.3 = 1.67 倍
+    let ratioH = mkH / 0.3333;
+    let ratioA = mkA / 0.3333;
 
-  // 4. 若有賠率，動態調整 λ
-  if (hasOdds) {
-    const ratioH = mkH / (baseH || 0.01);
-    const ratioA = mkA / (baseA || 0.01);
+    // 防呆限制：最多放大到 2 倍，最低降到 0.3 倍（防止極端比分）
+    ratioH = Math.min(Math.max(ratioH, 0.3), 2.0);
+    ratioA = Math.min(Math.max(ratioA, 0.3), 2.0);
 
-    // 限制調整幅度 (0.6 ~ 1.6 倍)，避免極端比分
-    const adjH = Math.min(Math.max(ratioH, 0.6), 1.6);
-    const adjA = Math.min(Math.max(ratioA, 0.6), 1.6);
+    // 直接將進球期望乘以這個倍數
+    lH = lH * ratioH;
+    lA = lA * ratioA;
 
-    lH = lH * adjH;
-    lA = lA * adjA;
-
-    // 若市場和局機率很高，稍微降低總進球數
-    if (mkD > baseD) {
-      const drawAdj = mkD / (baseD || 0.01);
-      if (drawAdj > 1.2) {
-        lH *= 0.9;
-        lA *= 0.9;
-      }
+    // 如果和局機率極高（>35%），代表防守大戰，壓低雙方進球
+    if (mkD > 0.35) {
+      lH *= 0.8;
+      lA *= 0.8;
     }
   }
 
@@ -257,7 +242,7 @@ function predict(){
   lH = Math.min(Math.max(lH, 0.1), 8);
   lA = Math.min(Math.max(lA, 0.1), 8);
 
-  // 5. 用最終的 λ 計算泊松矩陣
+  // 3. 用最終的 λ 計算泊松矩陣
   const m = [];
   let total = 0;
   for (let i = 0; i <= MAXG; i++){
@@ -352,7 +337,7 @@ function predict(){
   if (draw > maxProb) { maxName = '和局'; maxProb = draw; }
   if (awayWin > maxProb) { maxName = '客勝'; maxProb = awayWin; }
 
-  $('advice').innerHTML = `🎯 綜合數據與市場賠率，首選：<b style="color:var(--accent2);font-size:16px;">${maxName}</b> (機率 ${pct(maxProb)})`;
+  $('advice').innerHTML = `🎯 綜合數據與 Ratio 賠率，首選：<b style="color:var(--accent2);font-size:16px;">${maxName}</b> (機率 ${pct(maxProb)})`;
 
   $('topList').innerHTML = `
     <table>
