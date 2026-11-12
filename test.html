@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>平均得分/失球 比分預測器</title>
+<title>數據與賠率 綜合預測器</title>
 <style>
   :root{
     --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
     --txt:#e8eefc; --muted:#8fa3c4;
-    --accent:#3ddc97; --accent2:#4da3ff; --warn:#ffb347;
+    --accent:#3ddc97; --accent2:#4da3ff; --warn:#ffb347; --danger:#ff5e5e;
   }
   *{box-sizing:border-box}
   body{
@@ -19,6 +19,7 @@
   .wrap{width:100%;max-width:880px}
   h1{font-size:22px;margin:0 0 4px;letter-spacing:.5px}
   .sub{color:var(--muted);font-size:13px;margin:0 0 20px;line-height:1.6}
+  
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:620px){.grid{grid-template-columns:1fr}}
   .team{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:16px;padding:16px}
@@ -30,6 +31,24 @@
   .row{display:flex;gap:10px}
   .row>div{flex:1}
   
+  .hint-box {
+    margin-top: 14px; padding: 12px 16px; background: rgba(77,163,255,.08); 
+    border-left: 3px solid var(--accent2); border-radius: 4px 8px 8px 4px;
+    font-size: 12px; color: var(--muted); line-height: 1.6;
+  }
+  .hint-box b { color: var(--txt); }
+
+  /* 賠率輸入區 */
+  .odds-panel { margin-top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  .odds-title { font-size: 14px; color: var(--accent); margin-bottom: 12px; font-weight: 700; display: flex; justify-content: space-between; }
+  .odds-title span { font-size: 11px; color: var(--muted); font-weight: normal; }
+  .odds-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:620px){.odds-grid{grid-template-columns:1fr}}
+  .odds-sub { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .odds-inputs { display: flex; gap: 8px; }
+  .odds-inputs input { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: #0e1626; color: var(--txt); text-align: center; font-size: 14px; outline: none; }
+  .odds-inputs input:focus { border-color: var(--accent); }
+
   .actions{display:flex;gap:12px;margin-top:20px}
   button{padding:14px;border:0;border-radius:14px;cursor:pointer;font-size:16px;font-weight:800;color:#06231a;background:linear-gradient(135deg,#3ddc97,#4da3ff);transition:.15s;flex:1}
   button:hover{filter:brightness(1.08)}
@@ -51,7 +70,6 @@
   .pct{font-size:14px;color:var(--muted)}
   .pct b{color:var(--txt)}
   
-  /* 總入球與球隊入球雙選樣式 */
   .extra-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
   @media(max-width:620px){.extra-sections{grid-template-columns:1fr}}
   
@@ -59,9 +77,7 @@
   .extra-title { font-size: 13px; color: var(--muted); margin-bottom: 10px; text-align: center; letter-spacing: 1px; }
   
   .tg-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .tg-card {
-    background: #0e1626; border: 1px solid var(--line); border-radius: 10px; padding: 10px; text-align: center;
-  }
+  .tg-card { background: #0e1626; border: 1px solid var(--line); border-radius: 10px; padding: 10px; text-align: center; }
   .tg-card.one { border-color: rgba(77,163,255,.55); background: #15233a; }
   .tg-card .tag { font-size: 10px; color: var(--muted); }
   .tg-card .val { font-size: 20px; font-weight: 800; color: var(--accent2); margin: 4px 0; }
@@ -73,11 +89,19 @@
   
   .panel{margin-top:18px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
   .panel h3{margin:0 0 12px;font-size:13px;color:var(--muted);font-weight:600;letter-spacing:1px}
-  .bar{display:flex;align-items:center;gap:10px;margin:9px 0;font-size:13px}
-  .bar .nm{width:96px;flex:none;color:var(--muted)}
-  .bar .tr{flex:1;height:8px;background:#0e1626;border-radius:99px;overflow:hidden}
-  .bar .fl{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#3ddc97,#4da3ff);transition:width .7s cubic-bezier(.2,.8,.2,1)}
-  .bar .vl{width:56px;text-align:right;font-variant-numeric:tabular-nums}
+  
+  /* 賠率對比條 */
+  .compare-row { display: flex; align-items: center; gap: 10px; margin: 12px 0; font-size: 13px; }
+  .compare-row .nm { width: 60px; color: var(--muted); flex: none; }
+  .compare-row .tr { flex: 1; display: flex; height: 10px; border-radius: 99px; overflow: hidden; background: #0e1626; position: relative; }
+  .compare-row .tr .model { background: var(--accent2); height: 100%; transition: width .7s ease; z-index: 2; position: relative; }
+  .compare-row .tr .market { background: rgba(255, 179, 71, 0.4); height: 100%; position: absolute; top: 0; left: 0; transition: width .7s ease; z-index: 1; }
+  .compare-row .vl { width: 100px; text-align: right; font-variant-numeric: tabular-nums; font-size: 12px; }
+  .compare-row .vl span { color: var(--accent2); font-weight: bold; }
+  .compare-row .vl span.mk { color: var(--warn); font-weight: bold; }
+  
+  .advice-box { margin-top: 16px; padding: 12px; border-radius: 10px; background: rgba(255, 179, 71, 0.1); border: 1px solid rgba(255, 179, 71, 0.3); font-size: 13px; line-height: 1.6; }
+  .advice-box.good { background: rgba(61, 220, 151, 0.1); border-color: rgba(61, 220, 151, 0.3); }
   
   table{width:100%;border-collapse:collapse;font-size:13px}
   th,td{padding:8px 6px;text-align:left;border-bottom:1px solid var(--line)}
@@ -89,37 +113,61 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>平均得分/失球 比分預測器</h1>
-  <p class="sub">輸入兩隊的場均得分與場均失球，系統以標準 Poisson 模型計算最可能的比分與各項入球預測。<br>
-  小提示：輸入 <code>093</code> 會自動變成 <code>0.93</code>；輸入 <code>190</code> 會變成 <code>1.90</code>。</p>
+  <h1>數據與賠率 綜合預測器</h1>
+  <p class="sub">輸入主隊「主場數據」與客隊「客場數據」，並選擇性輸入市場賠率，系統將結合 Poisson 模型與市場隱含機率進行分析。</p>
 
   <div class="grid">
     <div class="team">
-      <h2>🏠 主隊</h2>
+      <h2>🏠 主隊 (填寫主場數據)</h2>
       <div class="row">
-        <div><label>場均得分（攻）</label><input class="num-input" id="hGF" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 1.60"></div>
-        <div><label>場均失球（守）</label><input class="num-input" id="hGA" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 1.10"></div>
+        <div><label>主場場均得分</label><input class="num-input" id="hGF" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 1.80"></div>
+        <div><label>主場場均失球</label><input class="num-input" id="hGA" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 0.90"></div>
       </div>
     </div>
     <div class="team away">
-      <h2>✈️ 客隊</h2>
+      <h2>✈️ 客隊 (填寫客場數據)</h2>
       <div class="row">
-        <div><label>場均得分（攻）</label><input class="num-input" id="aGF" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 1.20"></div>
-        <div><label>場均失球（守）</label><input class="num-input" id="aGA" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 1.35"></div>
+        <div><label>客場場均得分</label><input class="num-input" id="aGF" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 1.10"></div>
+        <div><label>客場場均失球</label><input class="num-input" id="aGA" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 1.50"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hint-box">
+    💡 <b>提升命中率建議：</b>請取雙方<b>最近 6~8 場</b>的主/客場數據，或使用 <b>xG（預期進球）</b> 替代實際得分。
+  </div>
+
+  <!-- 賠率輸入 -->
+  <div class="odds-panel">
+    <div class="odds-title">市場賠率輸入 <span>選填，留空則不進行對比</span></div>
+    <div class="odds-grid">
+      <div>
+        <div class="odds-sub">勝平負 (1X2) 賠率</div>
+        <div class="odds-inputs">
+          <input type="number" id="oddH" step="0.01" placeholder="主勝">
+          <input type="number" id="oddD" step="0.01" placeholder="和局">
+          <input type="number" id="oddA" step="0.01" placeholder="客勝">
+        </div>
+      </div>
+      <div>
+        <div class="odds-sub">大小球 2.5 賠率</div>
+        <div class="odds-inputs">
+          <input type="number" id="oddOver" step="0.01" placeholder="大球">
+          <input type="number" id="oddUnder" step="0.01" placeholder="小球">
+        </div>
       </div>
     </div>
   </div>
 
   <div class="actions">
-    <button id="go">預測比分</button>
-    <button id="clear" class="ghost">清除數據</button>
+    <button id="go">開始預測與對比</button>
+    <button id="clear" class="ghost">清除</button>
   </div>
 
   <div id="result">
-    <!-- 精準比分雙選 -->
+    <!-- 比分預測 -->
     <div class="scores" id="scores"></div>
     
-    <!-- 總入球與球隊入球 -->
     <div class="extra-sections">
       <div class="extra-box">
         <div class="extra-title">雙選總入球數</div>
@@ -127,21 +175,25 @@
       </div>
       <div class="extra-box">
         <div class="extra-title">雙選球隊入球數</div>
-        <div class="tg-cards" id="teamGoals" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
-          <!-- 這裡由 JS 動態生成主客隊入球 -->
-        </div>
+        <div class="tg-cards" id="teamGoals" style="grid-template-columns: 1fr 1fr 1fr 1fr;"></div>
       </div>
     </div>
     
     <div class="lam" id="lam"></div>
+
+    <!-- 賠率對比區 -->
+    <div class="panel" id="oddsComparePanel" style="display: none;">
+      <h3>模型 vs 市場 機率對比</h3>
+      <div id="compareBars"></div>
+      <div id="advice" class="advice-box"></div>
+    </div>
     
-    <div class="panel"><h3>賽果機率</h3><div id="bars"></div></div>
+    <div class="panel"><h3>賽果機率 (純模型)</h3><div id="bars"></div></div>
     <div class="panel"><h3>最可能比分 Top 6</h3><div id="topList"></div></div>
     
     <div class="note">
-      ※ 計算方式：主隊期望入球 λH = ½(主隊場均得分 + 客隊場均失球)；客隊期望入球 λA = ½(客隊場均得分 + 主隊場均失球)。無主場優勢加成。<br>
-      ※ 總入球數與球隊入球數為所有比分組合的邊際機率加總。<br>
-      ※ 此為統計模型，僅供參考，不構成投注建議。
+      ※ 去水隱含機率：將賠率轉為機率後，去除博彩公司抽水（Vig），反映市場真實預期。<br>
+      ※ 數據模型有盲區（如傷病、戰意），結合賠率可大幅避開陷阱。
     </div>
   </div>
 </div>
@@ -155,30 +207,22 @@ const fact = n => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; };
 const poisson = (k, l) => Math.exp(-l) * Math.pow(l, k) / fact(k);
 const pct = p => (p * 100).toFixed(1) + '%';
 
-/* ---------- 輸入格式化：093 → 0.93，190 → 1.90 ---------- */
+/* ---------- 輸入格式化 ---------- */
 function normalizeInput(el){
   let v = el.value.trim().replace(',', '.');
   if (v === '') return;
   if (/^0\d+$/.test(v)) { el.value = (parseInt(v, 10) / 100).toFixed(2); return; }
-  if (/^\d+$/.test(v)){
-    const n = parseInt(v, 10);
-    if (n >= 100) el.value = (n / 100).toFixed(2);
-    return;
-  }
-  if (/^\d*\.\d+$/.test(v) || /^\d+\.$/.test(v)){
-    const n = parseFloat(v);
-    if (isFinite(n)) el.value = n.toFixed(2);
-  }
+  if (/^\d+$/.test(v)){ const n = parseInt(v, 10); if (n >= 100) el.value = (n / 100).toFixed(2); return; }
+  if (/^\d*\.\d+$/.test(v) || /^\d+\.$/.test(v)){ const n = parseFloat(v); if (isFinite(n)) el.value = n.toFixed(2); }
 }
-
 document.querySelectorAll('.num-input').forEach(el => {
   el.addEventListener('blur', () => normalizeInput(el));
   el.addEventListener('keydown', e => { if (e.key === 'Enter') { normalizeInput(el); predict(); } });
 });
 
-/* ---------- 清除數據 ---------- */
+/* ---------- 清除 ---------- */
 $('clear').addEventListener('click', () => {
-  document.querySelectorAll('.num-input').forEach(el => el.value = '');
+  document.querySelectorAll('input').forEach(el => el.value = '');
   $('result').classList.remove('show');
 });
 
@@ -192,11 +236,10 @@ function predict(){
   const aGF = parseFloat($('aGF').value), aGA = parseFloat($('aGA').value);
 
   if ([hGF, hGA, aGF, aGA].some(v => !isFinite(v) || v < 0)) {
-    alert('請輸入完整的非負數值（場均得分 / 失球）。');
+    alert('請輸入完整的非負數值。');
     return;
   }
 
-  // 標準 Poisson 期望入球（無主場優勢）
   let lH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
   let lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
 
@@ -215,9 +258,9 @@ function predict(){
   // 統計數據
   let homeWin = 0, draw = 0, awayWin = 0, over25 = 0, btts = 0;
   const list = [];
-  const goalProbs = Array(2 * MAXG + 1).fill(0); // 總入球 0~20
-  const hGoalProbs = Array(MAXG + 1).fill(0);    // 主隊入球 0~10
-  const aGoalProbs = Array(MAXG + 1).fill(0);    // 客隊入球 0~10
+  const goalProbs = Array(2 * MAXG + 1).fill(0);
+  const hGoalProbs = Array(MAXG + 1).fill(0);
+  const aGoalProbs = Array(MAXG + 1).fill(0);
 
   for (let i = 0; i <= MAXG; i++){
     for (let j = 0; j <= MAXG; j++){
@@ -228,9 +271,9 @@ function predict(){
       if (i + j > 2.5) over25 += p;
       if (i > 0 && j > 0) btts += p;
       
-      goalProbs[i + j] += p; // 累加總入球
-      hGoalProbs[i] += p;    // 累加主隊入球
-      aGoalProbs[j] += p;    // 累加客隊入球
+      goalProbs[i + j] += p;
+      hGoalProbs[i] += p;
+      aGoalProbs[j] += p;
       
       list.push({ h: i, a: j, p });
     }
@@ -240,12 +283,11 @@ function predict(){
   // 提取 Top 2
   const top2Scores = list.slice(0, 2);
   const getTop2 = arr => arr.map((p, val) => ({ val, p })).sort((a, b) => b.p - a.p).slice(0, 2);
-  
   const top2Total = getTop2(goalProbs);
   const top2H = getTop2(hGoalProbs);
   const top2A = getTop2(aGoalProbs);
 
-  // 渲染首選/次選比分
+  // 渲染比分與入球區塊 (原有邏輯)
   $('scores').innerHTML = top2Scores.map((s, idx) => `
     <div class="score ${idx === 0 ? 'one' : ''}">
       <div class="tag">${idx === 0 ? '首選比分' : '次選比分'}</div>
@@ -254,7 +296,6 @@ function predict(){
     </div>
   `).join('');
 
-  // 渲染雙選總入球
   $('totalGoals').innerHTML = top2Total.map((g, idx) => `
     <div class="tg-card ${idx === 0 ? 'one' : ''}">
       <div class="tag">${idx === 0 ? '首選' : '次選'}</div>
@@ -263,7 +304,6 @@ function predict(){
     </div>
   `).join('');
 
-  // 渲染雙選球隊入球（主隊2個 + 客隊2個）
   $('teamGoals').innerHTML = `
     <div class="tg-card ${top2H[0].val >= top2H[1].val ? 'one' : ''}">
       <div class="tag">主首選</div><div class="val">${top2H[0].val}</div><div class="pct">${pct(top2H[0].p)}</div>
@@ -284,48 +324,118 @@ function predict(){
     <div>客隊期望入球 <b>${lA.toFixed(2)}</b></div>
   `;
 
-  // 渲染進度條
+  // 渲染純模型賽果
   const bars = [
-    ['主勝', homeWin],
-    ['和局', draw],
-    ['客勝', awayWin],
-    ['大 2.5 球', over25],
-    ['細 2.5 球', 1 - over25],
-    ['兩隊入球', btts]
+    ['主勝', homeWin], ['和局', draw], ['客勝', awayWin],
+    ['大 2.5 球', over25], ['細 2.5 球', 1 - over25], ['兩隊入球', btts]
   ];
   $('bars').innerHTML = bars.map(([nm, v]) => `
     <div class="bar">
       <div class="nm">${nm}</div>
-      <div class="tr"><div class="fl" data-w="${(v * 100).toFixed(1)}"></div></div>
+      <div class="tr"><div class="fl" style="width: ${(v * 100).toFixed(1)}%;"></div></div>
       <div class="vl">${pct(v)}</div>
     </div>
   `).join('');
 
-  // 渲染 Top 6 表格
   $('topList').innerHTML = `
     <table>
       <thead><tr><th>#</th><th>比分（主 - 客）</th><th>機率</th></tr></thead>
       <tbody>
-        ${list.slice(0, 6).map((s, i) => `
-          <tr><td>${i + 1}</td><td>${s.h} - ${s.a}</td><td>${pct(s.p)}</td></tr>
-        `).join('')}
+        ${list.slice(0, 6).map((s, i) => `<tr><td>${i + 1}</td><td>${s.h} - ${s.a}</td><td>${pct(s.p)}</td></tr>`).join('')}
       </tbody>
     </table>
   `;
 
-  // 顯示與動畫
+  // ================= 賠率對比邏輯 =================
+  const oddH = parseFloat($('oddH').value);
+  const oddD = parseFloat($('oddD').value);
+  const oddA = parseFloat($('oddA').value);
+  const oddOver = parseFloat($('oddOver').value);
+  const oddUnder = parseFloat($('oddUnder').value);
+
+  let has1X2 = [oddH, oddD, oddA].every(v => isFinite(v) && v > 1);
+  let hasOU = [oddOver, oddUnder].every(v => isFinite(v) && v > 1);
+
+  if (has1X2 || hasOU) {
+    $('oddsComparePanel').style.display = 'block';
+    let compareHTML = '';
+    let adviceText = '';
+
+    // 處理 1X2 對比
+    if (has1X2) {
+      const sum = (1/oddH) + (1/oddD) + (1/oddA);
+      const mkH = (1/oddH) / sum;
+      const mkD = (1/oddD) / sum;
+      const mkA = (1/oddA) / sum;
+
+      compareHTML += renderCompareBar('主勝', homeWin, mkH);
+      compareHTML += renderCompareBar('和局', draw, mkD);
+      compareHTML += renderCompareBar('客勝', awayWin, mkA);
+
+      // 簡單的建議邏輯
+      if (homeWin > mkH + 0.05) adviceText += `📈 模型認為主勝機率（${pct(homeWin)}）明顯高於市場（${pct(mkH)}），存在價值。<br>`;
+      else if (homeWin < mkH - 0.05) adviceText += `⚠️ 市場對主勝信心（${pct(mkH)}）高於模型（${pct(homeWin)}），可能有不為人知的利好，需防主勝。<br>`;
+      
+      if (awayWin > mkA + 0.05) adviceText += `📈 模型認為客勝機率（${pct(awayWin)}）高於市場（${pct(mkA)}）。<br>`;
+    }
+
+    // 處理大小球對比
+    if (hasOU) {
+      const sumOU = (1/oddOver) + (1/oddUnder);
+      const mkOver = (1/oddOver) / sumOU;
+      const mkUnder = (1/oddUnder) / sumOU;
+
+      compareHTML += renderCompareBar('大 2.5', over25, mkOver);
+      compareHTML += renderCompareBar('小 2.5', 1 - over25, mkUnder);
+
+      if (over25 > mkOver + 0.05) adviceText += `⚽ 模型看好大球（${pct(over25)}），高於市場預期（${pct(mkOver)}）。<br>`;
+      else if (over25 < mkOver - 0.05) adviceText += `🛡️ 市場預期進球更多（大球機率 ${pct(mkOver)}），而模型偏保守（${pct(over25)}），注意防大。<br>`;
+    }
+
+    $('compareBars').innerHTML = compareHTML;
+    
+    // 設置建議框顏色
+    const advEl = $('advice');
+    if (adviceText === '') {
+      adviceText = '🤝 模型與市場預期基本一致，無明顯分歧。';
+      advEl.className = 'advice-box';
+    } else {
+      advEl.className = 'advice-box good';
+    }
+    advEl.innerHTML = `<b>分析提示：</b><br>${adviceText}`;
+
+  } else {
+    $('oddsComparePanel').style.display = 'none';
+  }
+
+  // 顯示結果
   const box = $('result');
   box.classList.remove('show');
   void box.offsetWidth;
   box.classList.add('show');
-
-  requestAnimationFrame(() => {
-    document.querySelectorAll('.fl').forEach(el => {
-      el.style.width = el.dataset.w + '%';
-    });
-  });
-
   box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// 輔助函數：渲染對比條
+function renderCompareBar(name, modelP, marketP) {
+  // 將機率放大以利於視覺對比 (例如最高設為 60%)
+  const maxVal = Math.max(modelP, marketP, 0.6);
+  const mw = (modelP / maxVal) * 100;
+  const mkw = (marketP / maxVal) * 100;
+  
+  return `
+    <div class="compare-row">
+      <div class="nm">${name}</div>
+      <div class="tr">
+        <div class="market" style="width: ${mkw}%"></div>
+        <div class="model" style="width: ${mw}%"></div>
+      </div>
+      <div class="vl">
+        模型 <span>${pct(modelP)}</span> <br>
+        市場 <span class="mk">${pct(marketP)}</span>
+      </div>
+    </div>
+  `;
 }
 </script>
 </body>
