@@ -104,21 +104,21 @@
 <body>
 <div class="wrap">
   <h1>勝率分餅 混合預測器</h1>
-  <p class="sub">結合「基礎得失球」與「市場賠率」。市場的勝率會直接決定總進球數的分配比例。例如主勝 1.20，主隊會分到大部分的進球期望。輸入順序為 <b>主 - 客 - 和</b>。</p>
+  <p class="sub">結合「基礎得失球」與「市場賠率」。市場勝率會決定進球數的分配。加入「勝負傾向排序」，當機率相同時，優先顯示符合賠率方向的比分。輸入順序為 <b>主 - 客 - 和</b>。</p>
 
   <div class="grid">
     <div class="team">
       <h2>🏠 主隊 (主場數據)</h2>
       <div class="row">
-        <div><label>場均得分</label><input class="num-input" id="hGF" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.70"></div>
-        <div><label>場均失球</label><input class="num-input" id="hGA" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.20"></div>
+        <div><label>場均得分</label><input class="num-input" id="hGF" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.80"></div>
+        <div><label>場均失球</label><input class="num-input" id="hGA" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.40"></div>
       </div>
     </div>
     <div class="team away">
       <h2>✈️ 客隊 (客場數據)</h2>
       <div class="row">
-        <div><label>場均得分</label><input class="num-input" id="aGF" type="number" step="0.01" inputmode="decimal" placeholder="例如 2.20"></div>
-        <div><label>場均失球</label><input class="num-input" id="aGA" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.40"></div>
+        <div><label>場均得分</label><input class="num-input" id="aGF" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.70"></div>
+        <div><label>場均失球</label><input class="num-input" id="aGA" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.80"></div>
       </div>
     </div>
   </div>
@@ -220,7 +220,7 @@ function predict(){
   let base_lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
   let totalGoals = base_lH + base_lA;
 
-  // 2. 讀取市場賠率並轉換為去水真實機率
+  // 2. 讀取市場賠率
   const oddH = parseFloat($('oddH').value);
   const oddA = parseFloat($('oddA').value);
   const oddD = parseFloat($('oddD').value);
@@ -228,21 +228,23 @@ function predict(){
   
   let lH = base_lH;
   let lA = base_lA;
+  let isHomeFav = false; // 用於排序微調
 
   if (hasOdds) {
     const sum = (1/oddH) + (1/oddA) + (1/oddD);
     const mkH = (1/oddH) / sum;
     const mkA = (1/oddA) / sum;
+    isHomeFav = mkH > mkA;
 
-    // ⚡ 核心修復：勝率分餅法
-    // 根據市場的主客勝率比例，把總進球數分配給兩隊
+    // 勝率分餅法
     const ratioH = mkH / (mkH + mkA);
     const market_lH = totalGoals * ratioH;
     const market_lA = totalGoals * (1 - ratioH);
 
-    // 將「純數據期望」與「市場分配期望」各取 50% 混合
     lH = base_lH * 0.5 + market_lH * 0.5;
     lA = base_lA * 0.5 + market_lA * 0.5;
+  } else {
+    isHomeFav = base_lH > base_lA;
   }
 
   // 安全限制
@@ -283,7 +285,23 @@ function predict(){
       list.push({ h: i, a: j, p });
     }
   }
-  list.sort((x, y) => y.p - x.p);
+  
+  // ⚡ 核心優化：排序時加入「勝負傾向」微調
+  // 如果兩者機率相差極小（小於 0.002），則優先讓符合熱門方向的比分排前面
+  list.sort((x, y) => {
+    if (Math.abs(x.p - y.p) < 0.002) {
+      if (isHomeFav) {
+        // 主隊熱門，優先排主勝比分 (h > a)
+        if (x.h > x.a && y.h <= y.a) return -1;
+        if (y.h > y.a && x.h <= x.a) return 1;
+      } else {
+        // 客隊熱門，優先排客勝比分 (a > h)
+        if (x.a > x.h && y.a <= y.h) return -1;
+        if (y.a > y.h && x.a <= x.h) return 1;
+      }
+    }
+    return y.p - x.p;
+  });
 
   const top2Scores = list.slice(0, 2);
   const getTop2 = arr => arr.map((p, val) => ({ val, p })).sort((a, b) => b.p - a.p).slice(0, 2);
