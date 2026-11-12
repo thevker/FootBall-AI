@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>雙模式 綜合預測器</title>
+<title>專屬預測器 (自訂比例)</title>
 <style>
   :root{
     --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
@@ -53,31 +53,19 @@
   #result.show{display:block;animation:fade .3s ease}
   @keyframes fade{from{opacity:0}to{opacity:1}}
   
-  /* 兩模式對比區 */
-  .compare-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
-  @media(max-width:620px){.compare-modes{grid-template-columns:1fr}}
-  .cm-card { background: var(--card2); border: 1px solid var(--line); border-radius: 14px; padding: 14px; text-align: center; cursor: pointer; transition: border-color 0.2s; }
-  .cm-card:hover { border-color: var(--accent2); }
-  .cm-card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; background: #142a3f; }
-  .cm-title { font-size: 13px; color: var(--muted); font-weight: bold; margin-bottom: 8px; }
-  .cm-score { font-size: 28px; font-weight: 800; color: var(--accent2); }
-  .cm-score.active-score { color: var(--accent); }
-  .cm-prob { font-size: 13px; color: var(--muted); margin-top: 4px; }
-
-  /* 詳細結果標題 */
-  .detail-title { font-size: 14px; color: var(--txt); font-weight: 700; margin-bottom: 12px; border-left: 3px solid var(--accent2); padding-left: 8px; display: flex; justify-content: space-between; align-items: center; }
+  /* 支援多卡片動態佈局 */
+  .scores{display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:14px;margin-bottom: 16px;}
+  @media(max-width:620px){.scores{grid-template-columns:1fr 1fr}}
   
-  .scores{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:620px){.scores{grid-template-columns:1fr}}
-  .score{background:linear-gradient(160deg,#173049,#101b2c);border:1px solid var(--line);border-radius:18px;padding:18px;text-align:center}
+  .score{background:linear-gradient(160deg,#173049,#101b2c);border:1px solid var(--line);border-radius:18px;padding:16px;text-align:center}
   .score.one{border-color:rgba(61,220,151,.55);box-shadow:0 0 0 1px rgba(61,220,151,.15) inset,0 12px 30px -18px #3ddc97}
-  .tag{font-size:11px;letter-spacing:2px;color:var(--muted)}
-  .big{font-size:44px;font-weight:800;margin:8px 0 2px;font-variant-numeric:tabular-nums;letter-spacing:2px}
+  .tag{font-size:11px;letter-spacing:1px;color:var(--muted); margin-bottom: 6px;}
+  .big{font-size:36px;font-weight:800;margin:4px 0;font-variant-numeric:tabular-nums;letter-spacing:1px}
   .one .big{color:var(--accent)}
-  .pct{font-size:14px;color:var(--muted)}
+  .pct{font-size:13px;color:var(--muted)}
   .pct b{color:var(--txt)}
   
-  .extra-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  .extra-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media(max-width:620px){.extra-sections{grid-template-columns:1fr}}
   
   .extra-box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
@@ -116,8 +104,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>雙模式 綜合預測器</h1>
-  <p class="sub">保留「自訂矩陣比例」與「期望值調整」兩種算法。可點擊上方卡片切換下方詳細數據。</p>
+  <h1>專屬預測器 (自訂比例)</h1>
+  <p class="sub">使用「2.5 / 賠率」與「3.5 / 賠率」直接縮放比分矩陣。顯示所有機率 ≥ 10% 的比分（若不足則顯示前兩名）。</p>
 
   <div class="grid">
     <div class="team">
@@ -137,7 +125,7 @@
   </div>
 
   <div class="odds-panel">
-    <div class="panel-title">市場 1X2 賠率 <span>主 - 客 - 和</span></div>
+    <div class="panel-title">市場 1X2 賠率 <span>主 - 客 - 和，留空則純看數據</span></div>
     <div class="odds-inputs">
       <input type="text" inputmode="decimal" class="num-input" id="oddH" placeholder="主勝賠率">
       <input type="text" inputmode="decimal" class="num-input" id="oddA" placeholder="客勝賠率">
@@ -151,25 +139,7 @@
   </div>
 
   <div id="result">
-    <!-- 雙模式對比區 -->
-    <div class="compare-modes" id="compareModes">
-      <div class="cm-card active" id="card-mode0" onclick="switchView(0)">
-        <div class="cm-title">自訂（矩陣比例）</div>
-        <div class="cm-score" id="sc0">-</div>
-        <div class="cm-prob" id="pr0">-</div>
-      </div>
-      <div class="cm-card" id="card-mode2" onclick="switchView(1)">
-        <div class="cm-title">自訂（期望調整）</div>
-        <div class="cm-score" id="sc1">-</div>
-        <div class="cm-prob" id="pr1">-</div>
-      </div>
-    </div>
-
-    <!-- 詳細結果 -->
-    <div class="detail-title">
-      <span id="detailLabel">正在顯示：自訂（矩陣比例）</span>
-    </div>
-    
+    <!-- 比分卡片區塊 -->
     <div class="scores" id="scores"></div>
     
     <div class="extra-sections">
@@ -205,21 +175,6 @@ const MAXG = 10;
 const fact = n => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; };
 const poisson = (k, l) => Math.exp(-l) * Math.pow(l, k) / fact(k);
 const pct = p => (p * 100).toFixed(1) + '%';
-
-let currentView = 0; 
-let resultsData = []; 
-
-function switchView(index) {
-  currentView = index;
-  for (let i = 0; i < 2; i++) {
-    document.getElementById('card-mode' + (i === 0 ? '0' : '2')).className = i === index ? 'cm-card active' : 'cm-card';
-  }
-  if (resultsData[index]) {
-    renderDetail(resultsData[index]);
-    const labels = ['自訂（矩陣比例）', '自訂（期望調整）'];
-    $('detailLabel').textContent = '正在顯示：' + labels[index];
-  }
-}
 
 function restrictInput(el) {
   const originalValue = el.value;
@@ -263,31 +218,68 @@ $('clear').addEventListener('click', () => {
 
 $('go').addEventListener('click', predict);
 
-function calculateMatrix(lH, lA, ratioH, ratioA, ratioD) {
-  const m = [];
+function predict(){
+  document.querySelectorAll('.num-input').forEach(normalizeInput);
+
+  const hGF = parseFloat($('hGF').value), hGA = parseFloat($('hGA').value);
+  const aGF = parseFloat($('aGF').value), aGA = parseFloat($('aGA').value);
+
+  if ([hGF, hGA, aGF, aGA].some(v => !isFinite(v) || v < 0)) {
+    alert('請輸入完整的場均得分與失球。');
+    return;
+  }
+
+  // 1. 基礎期望入球 (λ)
+  let lH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
+  let lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
+
+  // 2. 讀取賠率
+  const oddH = parseFloat($('oddH').value);
+  const oddA = parseFloat($('oddA').value);
+  const oddD = parseFloat($('oddD').value);
+  const hasOdds = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
+
+  let isHomeFav = false;
   let finalTotal = 0;
-  let final_lH = 0, final_lA = 0;
+  
+  const m = [];
+  for (let i = 0; i <= MAXG; i++){
+    m[i] = [];
+  }
+
+  if (hasOdds) {
+    isHomeFav = oddH < oddA;
+    const ratioH = 2.5 / oddH;
+    const ratioA = 2.5 / oddA;
+    const ratioD = 3.5 / oddD;
+
+    for (let i = 0; i <= MAXG; i++){
+      for (let j = 0; j <= MAXG; j++){
+        let p = poisson(i, lH) * poisson(j, lA);
+        if (i > j) m[i][j] = p * ratioH;
+        else if (i === j) m[i][j] = p * ratioD;
+        else m[i][j] = p * ratioA;
+        finalTotal += m[i][j];
+      }
+    }
+  } else {
+    isHomeFav = lH > lA;
+    for (let i = 0; i <= MAXG; i++){
+      for (let j = 0; j <= MAXG; j++){
+        let p = poisson(i, lH) * poisson(j, lA);
+        m[i][j] = p;
+        finalTotal += p;
+      }
+    }
+  }
+
+  // 3. 統計最終數據
   let homeWin = 0, draw = 0, awayWin = 0, over25 = 0, btts = 0;
+  let final_lH = 0, final_lA = 0;
   const list = [];
   const goalProbs = Array(2 * MAXG + 1).fill(0);
   const hGoalProbs = Array(MAXG + 1).fill(0);
   const aGoalProbs = Array(MAXG + 1).fill(0);
-
-  for (let i = 0; i <= MAXG; i++){
-    m[i] = [];
-    for (let j = 0; j <= MAXG; j++){
-      let p = poisson(i, lH) * poisson(j, lA);
-      
-      if (ratioH || ratioA || ratioD) {
-        if (i > j) m[i][j] = p * ratioH;
-        else if (i === j) m[i][j] = p * ratioD;
-        else m[i][j] = p * ratioA;
-      } else {
-        m[i][j] = p;
-      }
-      finalTotal += m[i][j];
-    }
-  }
 
   for (let i = 0; i <= MAXG; i++){
     for (let j = 0; j <= MAXG; j++){
@@ -309,8 +301,7 @@ function calculateMatrix(lH, lA, ratioH, ratioA, ratioD) {
     }
   }
 
-  let isHomeFav = ratioH && ratioA ? (ratioH > ratioA) : (lH > lA);
-  
+  // 嚴格排序
   list.sort((x, y) => {
     if (Math.abs(x.p - y.p) > 1e-6) return y.p - x.p;
     if (isHomeFav) {
@@ -323,76 +314,29 @@ function calculateMatrix(lH, lA, ratioH, ratioA, ratioD) {
     return 0;
   });
 
+  // ⚡ 抓取大於等於 10% 的比分，如果少於 2 個，則補齊至 2 個
+  let topScores = list.filter(s => s.p >= 0.10);
+  if (topScores.length < 2) {
+    topScores = list.slice(0, 2);
+  }
+
   const getTop2 = arr => arr.map((p, val) => ({ val, p })).sort((a, b) => b.p - a.p).slice(0, 2);
+  const top2Total = getTop2(goalProbs);
+  const top2H = getTop2(hGoalProbs);
+  const top2A = getTop2(aGoalProbs);
 
-  return {
-    list, top2Scores: list.slice(0, 2),
-    top2Total: getTop2(goalProbs), top2H: getTop2(hGoalProbs), top2A: getTop2(aGoalProbs),
-    homeWin, draw, awayWin, over25, btts, final_lH, final_lA, finalTotal
-  };
-}
-
-function predict(){
-  document.querySelectorAll('.num-input').forEach(normalizeInput);
-
-  const hGF = parseFloat($('hGF').value), hGA = parseFloat($('hGA').value);
-  const aGF = parseFloat($('aGF').value), aGA = parseFloat($('aGA').value);
-
-  if ([hGF, hGA, aGF, aGA].some(v => !isFinite(v) || v < 0)) {
-    alert('請輸入完整的場均得分與失球。');
-    return;
-  }
-
-  let lH_base = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
-  let lA_base = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
-
-  const oddH = parseFloat($('oddH').value);
-  const oddA = parseFloat($('oddA').value);
-  const oddD = parseFloat($('oddD').value);
-  const hasOdds = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
-
-  resultsData = [];
-
-  if (hasOdds) {
-    const ratioH = 2.5 / oddH;
-    const ratioA = 2.5 / oddA;
-    const ratioD = 3.5 / oddD;
-
-    // 模式 0: 矩陣比例
-    resultsData.push(calculateMatrix(lH_base, lA_base, ratioH, ratioA, ratioD));
-    
-    // 模式 2: 期望值調整
-    let lH_adj = Math.min(Math.max(lH_base * ratioH, 0.05), 8);
-    let lA_adj = Math.min(Math.max(lA_base * ratioA, 0.05), 8);
-    resultsData.push(calculateMatrix(lH_adj, lA_adj, null, null, null));
-  } else {
-    // 沒賠率時兩種結果一樣
-    const res = calculateMatrix(lH_base, lA_base, null, null, null);
-    resultsData = [res, res];
-  }
-
-  // 更新上方對比卡片
-  for (let i = 0; i < 2; i++) {
-    $('sc' + i).textContent = resultsData[i].top2Scores[0].h + ' - ' + resultsData[i].top2Scores[0].a;
-    $('pr' + i).textContent = '機率 ' + pct(resultsData[i].top2Scores[0].p);
-  }
-
-  // 渲染當前視圖
-  switchView(currentView);
-
-  $('result').classList.add('show');
-}
-
-function renderDetail(data) {
-  $('scores').innerHTML = data.top2Scores.map((s, idx) => `
+  // 渲染動態比分卡片
+  $('scores').innerHTML = topScores.map((s, idx) => {
+    let label = idx === 0 ? '首選比分' : (idx === 1 ? '次選比分' : `第 ${idx+1} 順位`);
+    return `
     <div class="score ${idx === 0 ? 'one' : ''}">
-      <div class="tag">${idx === 0 ? '首選比分' : '次選比分'}</div>
+      <div class="tag">${label}</div>
       <div class="big">${s.h} - ${s.a}</div>
       <div class="pct">機率 <b>${pct(s.p)}</b></div>
     </div>
-  `).join('');
+  `}).join('');
 
-  $('totalGoals').innerHTML = data.top2Total.map((g, idx) => `
+  $('totalGoals').innerHTML = top2Total.map((g, idx) => `
     <div class="tg-card ${idx === 0 ? 'one' : ''}">
       <div class="tag">${idx === 0 ? '首選' : '次選'}</div>
       <div class="val">${g.val} 球</div>
@@ -401,28 +345,28 @@ function renderDetail(data) {
   `).join('');
 
   $('teamGoals').innerHTML = `
-    <div class="tg-card ${data.top2H[0].val >= data.top2H[1].val ? 'one' : ''}">
-      <div class="tag">主首選</div><div class="val">${data.top2H[0].val}</div><div class="pct">${pct(data.top2H[0].p)}</div>
+    <div class="tg-card ${top2H[0].val >= top2H[1].val ? 'one' : ''}">
+      <div class="tag">主首選</div><div class="val">${top2H[0].val}</div><div class="pct">${pct(top2H[0].p)}</div>
     </div>
     <div class="tg-card">
-      <div class="tag">主次選</div><div class="val">${data.top2H[1].val}</div><div class="pct">${pct(data.top2H[1].p)}</div>
+      <div class="tag">主次選</div><div class="val">${top2H[1].val}</div><div class="pct">${pct(top2H[1].p)}</div>
     </div>
-    <div class="tg-card ${data.top2A[0].val >= data.top2A[1].val ? 'one' : ''}">
-      <div class="tag">客首選</div><div class="val">${data.top2A[0].val}</div><div class="pct">${pct(data.top2A[0].p)}</div>
+    <div class="tg-card ${top2A[0].val >= top2A[1].val ? 'one' : ''}">
+      <div class="tag">客首選</div><div class="val">${top2A[0].val}</div><div class="pct">${pct(top2A[0].p)}</div>
     </div>
     <div class="tg-card">
-      <div class="tag">客次選</div><div class="val">${data.top2A[1].val}</div><div class="pct">${pct(data.top2A[1].p)}</div>
+      <div class="tag">客次選</div><div class="val">${top2A[1].val}</div><div class="pct">${pct(top2A[1].p)}</div>
     </div>
   `;
 
   $('lam').innerHTML = `
-    <div>最終主期望入球 <b>${data.final_lH.toFixed(2)}</b></div>
-    <div>最終客期望入球 <b>${data.final_lA.toFixed(2)}</b></div>
+    <div>最終主期望入球 <b>${final_lH.toFixed(2)}</b></div>
+    <div>最終客期望入球 <b>${final_lA.toFixed(2)}</b></div>
   `;
 
   const bars = [
-    ['主勝', data.homeWin], ['和局', data.draw], ['客勝', data.awayWin],
-    ['大 2.5 球', data.over25], ['細 2.5 球', 1 - data.over25], ['兩隊入球', data.btts]
+    ['主勝', homeWin], ['和局', draw], ['客勝', awayWin],
+    ['大 2.5 球', over25], ['細 2.5 球', 1 - over25], ['兩隊入球', btts]
   ];
   $('bars').innerHTML = bars.map(([nm, v]) => `
     <div class="bar">
@@ -432,13 +376,15 @@ function renderDetail(data) {
     </div>
   `).join('');
 
-  let maxName = '主勝', maxProb = data.homeWin;
-  if (data.draw > maxProb) { maxName = '和局'; maxProb = data.draw; }
-  if (data.awayWin > maxProb) { maxName = '客勝'; maxProb = data.awayWin; }
+  let maxName = '主勝', maxProb = homeWin;
+  if (draw > maxProb) { maxName = '和局'; maxProb = draw; }
+  if (awayWin > maxProb) { maxName = '客勝'; maxProb = awayWin; }
 
   $('advice').innerHTML = `🎯 最終預測首選：<b style="color:var(--accent2);font-size:16px;">${maxName}</b> (機率 ${pct(maxProb)})`;
 
-  const filteredList = data.list.filter(s => s.p >= 0.01);
+  // 列表只過濾 1% 以上的比分
+  const filteredList = list.filter(s => s.p >= 0.01);
+  
   $('topList').innerHTML = `
     <table>
       <thead><tr><th>#</th><th>比分（主 - 客）</th><th>機率</th></tr></thead>
@@ -447,6 +393,8 @@ function renderDetail(data) {
       </tbody>
     </table>
   `;
+
+  $('result').classList.add('show');
 }
 </script>
 </body>
