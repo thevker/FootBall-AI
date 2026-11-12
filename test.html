@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>基本面與賠率 混合預測器</title>
+<title>勝率分餅 混合預測器</title>
 <style>
   :root{
     --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
@@ -103,22 +103,22 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>基本面與賠率 混合預測器</h1>
-  <p class="sub">結合「場均得失球」與「市場賠率」。採用各佔 50% 的混合權重，不會因為莊家開出平手盤，就無視主隊原本的數據優勢。輸入順序為 <b>主 - 客 - 和</b>。</p>
+  <h1>勝率分餅 混合預測器</h1>
+  <p class="sub">結合「基礎得失球」與「市場賠率」。市場的勝率會直接決定總進球數的分配比例。例如主勝 1.20，主隊會分到大部分的進球期望。輸入順序為 <b>主 - 客 - 和</b>。</p>
 
   <div class="grid">
     <div class="team">
       <h2>🏠 主隊 (主場數據)</h2>
       <div class="row">
-        <div><label>場均得分</label><input class="num-input" id="hGF" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.13"></div>
-        <div><label>場均失球</label><input class="num-input" id="hGA" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.13"></div>
+        <div><label>場均得分</label><input class="num-input" id="hGF" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.70"></div>
+        <div><label>場均失球</label><input class="num-input" id="hGA" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.20"></div>
       </div>
     </div>
     <div class="team away">
       <h2>✈️ 客隊 (客場數據)</h2>
       <div class="row">
-        <div><label>場均得分</label><input class="num-input" id="aGF" type="number" step="0.01" inputmode="decimal" placeholder="例如 0.88"></div>
-        <div><label>場均失球</label><input class="num-input" id="aGA" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.25"></div>
+        <div><label>場均得分</label><input class="num-input" id="aGF" type="number" step="0.01" inputmode="decimal" placeholder="例如 2.20"></div>
+        <div><label>場均失球</label><input class="num-input" id="aGA" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.40"></div>
       </div>
     </div>
   </div>
@@ -216,50 +216,40 @@ function predict(){
   }
 
   // 1. 基礎期望入球 (λ)
-  let lH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
-  let lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
+  let base_lH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
+  let base_lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
+  let totalGoals = base_lH + base_lA;
 
-  // 2. 計算基本面勝平負機率
-  let baseH = 0, baseD = 0, baseA = 0;
-  for (let i = 0; i <= MAXG; i++){
-    for (let j = 0; j <= MAXG; j++){
-      let p = poisson(i, lH) * poisson(j, lA);
-      if (i > j) baseH += p; else if (i === j) baseD += p; else baseA += p;
-    }
-  }
-
-  // 3. 讀取市場賠率
+  // 2. 讀取市場賠率並轉換為去水真實機率
   const oddH = parseFloat($('oddH').value);
   const oddA = parseFloat($('oddA').value);
   const oddD = parseFloat($('oddD').value);
   const hasOdds = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
   
-  let finalH = baseH, finalD = baseD, finalA = baseA;
+  let lH = base_lH;
+  let lA = base_lA;
 
   if (hasOdds) {
     const sum = (1/oddH) + (1/oddA) + (1/oddD);
     const mkH = (1/oddH) / sum;
     const mkA = (1/oddA) / sum;
-    const mkD = (1/oddD) / sum;
 
-    // ⚡ 核心修正：各佔 50% 權重混合
-    // 就算市場開平手盤 (mkH === mkA)，只要 baseH > baseA，混合後的主勝機率依然會大於客勝
-    finalH = (baseH * 0.5) + (mkH * 0.5);
-    finalD = (baseD * 0.5) + (mkD * 0.5);
-    finalA = (baseA * 0.5) + (mkA * 0.5);
+    // ⚡ 核心修復：勝率分餅法
+    // 根據市場的主客勝率比例，把總進球數分配給兩隊
+    const ratioH = mkH / (mkH + mkA);
+    const market_lH = totalGoals * ratioH;
+    const market_lA = totalGoals * (1 - ratioH);
 
-    // 根據混合後的機率，反向微調進球期望 (讓比分能反映出來)
-    const bias = finalH - finalA;
-    const formBias = (bias / 0.3); // 歸一化
-    lH = lH * (1 + formBias * 0.2);
-    lA = lA * (1 - formBias * 0.2);
+    // 將「純數據期望」與「市場分配期望」各取 50% 混合
+    lH = base_lH * 0.5 + market_lH * 0.5;
+    lA = base_lA * 0.5 + market_lA * 0.5;
   }
 
   // 安全限制
   lH = Math.min(Math.max(lH, 0.1), 8);
   lA = Math.min(Math.max(lA, 0.1), 8);
 
-  // 4. 生成最終泊松矩陣
+  // 3. 生成最終泊松矩陣
   const m = [];
   let total = 0;
   for (let i = 0; i <= MAXG; i++){
