@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>勝率分餅 混合預測器</title>
+<title>狀態與賠率 混合預測器</title>
 <style>
   :root{
     --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
@@ -38,9 +38,18 @@
   .row{display:flex;gap:10px}
   .row>div{flex:1}
   
-  .odds-panel { margin-top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  /* 狀態輸入區 */
+  .panel-input { margin-top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
   .panel-title { font-size: 14px; color: var(--accent); margin-bottom: 12px; font-weight: 700; display: flex; justify-content: space-between; }
   .panel-title span { font-size: 11px; color: var(--muted); font-weight: normal; }
+  .pct-inputs { display: flex; gap: 10px; }
+  .pct-input-wrap { position: relative; flex: 1; }
+  .pct-input-wrap input { width: 100%; padding: 10px 24px 10px 10px; text-align: right; border-radius: 8px; border: 1px solid var(--line); background: #0e1626; color: var(--txt); font-variant-numeric: tabular-nums; }
+  .pct-input-wrap input:focus { border-color: var(--accent2); }
+  .pct-input-wrap span { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; pointer-events: none; }
+
+  /* 賠率輸入區 */
+  .odds-panel { margin-top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
   .odds-inputs { display: flex; gap: 8px; }
   .odds-inputs input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: #0e1626; color: var(--txt); text-align: center; }
   .odds-inputs input:focus { border-color: var(--accent); }
@@ -93,27 +102,19 @@
 
   .advice-box { margin-top: 16px; padding: 12px; border-radius: 10px; background: rgba(61, 220, 151, 0.1); border: 1px solid rgba(61, 220, 151, 0.3); font-size: 14px; line-height: 1.6; text-align: center; font-weight: bold; }
   
-  /* 比分表格滾動與固定表頭 */
-  .table-container {
-    max-height: 400px;
-    overflow-y: auto;
-    border-radius: 8px;
-    border: 1px solid var(--line);
-  }
+  .table-container { max-height: 400px; overflow-y: auto; border-radius: 8px; border: 1px solid var(--line); }
   table{width:100%;border-collapse:collapse;font-size:13px}
   th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}
   th{color:var(--muted);font-weight:500;font-size:12px;background:var(--card);position:sticky;top:0;z-index:1;box-shadow:0 1px 0 var(--line)}
   th:last-child,td:last-child{text-align:right;font-variant-numeric:tabular-nums}
   tr:last-child td{border-bottom:0}
   tr:hover td { background: rgba(255,255,255,0.02); }
-  
-  .note{margin-top:18px;font-size:12px;color:var(--muted);line-height:1.8}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>勝率分餅 混合預測器</h1>
-  <p class="sub">結合「基礎得失球」與「市場賠率」。市場勝率決定進球分配。完整列出所有大於 1% 的比分。輸入順序為 <b>主 - 客 - 和</b>。</p>
+  <h1>狀態與賠率 混合預測器</h1>
+  <p class="sub">結合「基礎得失球」、「綜合近況預期」與「市場賠率」。狀態與賠率會直接改變總進球數的分配比例。輸入順序為 <b>主 - 客 - 和</b>。</p>
 
   <div class="grid">
     <div class="team">
@@ -132,8 +133,19 @@
     </div>
   </div>
 
+  <!-- 狀態輸入 -->
+  <div class="panel-input">
+    <div class="panel-title">綜合近況預估 (%) <span>主 - 客 - 和，選填</span></div>
+    <div class="pct-inputs">
+      <div class="pct-input-wrap"><input type="number" step="0.1" inputmode="decimal" class="num-input" id="estH" placeholder="主勝"><span>%</span></div>
+      <div class="pct-input-wrap"><input type="number" step="0.1" inputmode="decimal" class="num-input" id="estA" placeholder="客勝"><span>%</span></div>
+      <div class="pct-input-wrap"><input type="number" step="0.1" inputmode="decimal" class="num-input" id="estD" placeholder="和局"><span>%</span></div>
+    </div>
+  </div>
+
+  <!-- 賠率輸入 -->
   <div class="odds-panel">
-    <div class="panel-title">市場 1X2 賠率 <span>主 - 客 - 和，留空則純看數據</span></div>
+    <div class="panel-title">市場 1X2 賠率 <span>主 - 客 - 和，選填</span></div>
     <div class="odds-inputs">
       <input type="number" step="0.01" inputmode="decimal" class="num-input" id="oddH" placeholder="主勝賠率">
       <input type="number" step="0.01" inputmode="decimal" class="num-input" id="oddA" placeholder="客勝賠率">
@@ -232,27 +244,51 @@ function predict(){
   let base_lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
   let totalGoals = base_lH + base_lA;
 
-  // 2. 讀取市場賠率
+  // 2. 讀取狀態預期與市場賠率
+  let estH = parseFloat($('estH').value) || 0;
+  let estA = parseFloat($('estA').value) || 0;
+  let estD = parseFloat($('estD').value) || 0;
+  let estSum = estH + estA + estD;
+  const hasEst = estSum > 0;
+  if (hasEst) { estH /= estSum; estA /= estSum; }
+
   const oddH = parseFloat($('oddH').value);
   const oddA = parseFloat($('oddA').value);
   const oddD = parseFloat($('oddD').value);
   const hasOdds = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
   
+  let mkH = 0.33, mkA = 0.33;
+  if (hasOdds) {
+    const sum = (1/oddH) + (1/oddA) + (1/oddD);
+    mkH = (1/oddH) / sum;
+    mkA = (1/oddA) / sum;
+  }
+
   let lH = base_lH;
   let lA = base_lA;
   let isHomeFav = false;
 
-  if (hasOdds) {
-    const sum = (1/oddH) + (1/oddA) + (1/oddD);
-    const mkH = (1/oddH) / sum;
-    const mkA = (1/oddA) / sum;
-    isHomeFav = mkH > mkA;
+  // ⚡ 核心：混合「狀態」與「賠率」來決定進球分配
+  if (hasEst || hasOdds) {
+    let finalH = 0, finalA = 0;
+    
+    if (hasEst && hasOdds) {
+      finalH = mkH * 0.5 + estH * 0.5;
+      finalA = mkA * 0.5 + estA * 0.5;
+    } else if (hasOdds) {
+      finalH = mkH; finalA = mkA;
+    } else if (hasEst) {
+      finalH = estH; finalA = estA;
+    }
 
-    // 勝率分餅法
-    const ratioH = mkH / (mkH + mkA);
+    isHomeFav = finalH > finalA;
+
+    // 根據混合後的勝率比例，把總進球數分配給兩隊
+    const ratioH = finalH / (finalH + finalA || 1);
     const market_lH = totalGoals * ratioH;
     const market_lA = totalGoals * (1 - ratioH);
 
+    // 各取 50% 混合
     lH = base_lH * 0.5 + market_lH * 0.5;
     lA = base_lA * 0.5 + market_lA * 0.5;
   } else {
@@ -373,7 +409,7 @@ function predict(){
 
   $('advice').innerHTML = `🎯 混合校準後的首選：<b style="color:var(--accent2);font-size:16px;">${maxName}</b> (機率 ${pct(maxProb)})`;
 
-  // ⚡ 過濾掉機率小於 1% 的比分，只顯示 1% 或以上的
+  // ⚡ 過濾掉機率小於 1% 的比分
   const filteredList = list.filter(s => s.p >= 0.01);
   
   $('topList').innerHTML = `
