@@ -29,8 +29,7 @@
   .team.away h2{color:var(--warn)}
   label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
   
-  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-  input[type=number] { -moz-appearance: textfield; }
+  /* 移除 type number 的上下箭頭 */
   input { font-size: 16px !important; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
   
   .num-input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0e1626;color:var(--txt);font-variant-numeric:tabular-nums}
@@ -121,15 +120,15 @@
     <div class="team">
       <h2>🏠 主隊 (主場數據)</h2>
       <div class="row">
-        <div><label>場均得分</label><input class="num-input" id="hGF" type="number" step="0.01" inputmode="decimal" placeholder="例如 2.14"></div>
-        <div><label>場均失球</label><input class="num-input" id="hGA" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.29"></div>
+        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="hGF" placeholder="例如 2.14"></div>
+        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="hGA" placeholder="例如 1.29"></div>
       </div>
     </div>
     <div class="team away">
       <h2>✈️ 客隊 (客場數據)</h2>
       <div class="row">
-        <div><label>場均得分</label><input class="num-input" id="aGF" type="number" step="0.01" inputmode="decimal" placeholder="例如 0.88"></div>
-        <div><label>場均失球</label><input class="num-input" id="aGA" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.25"></div>
+        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="aGF" placeholder="例如 0.88"></div>
+        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="aGA" placeholder="例如 1.25"></div>
       </div>
     </div>
   </div>
@@ -137,15 +136,15 @@
   <!-- 模式切換 -->
   <div class="mode-switch">
     <div class="mode-btn active" id="modeCustom" onclick="setMode('custom')">自訂 Ratio (2.5/3.5)</div>
-    <div class="mode-btn" id="modeOld" onclick="setMode('old')">舊模式 (市場去水)</div>
+    <div class="mode-btn" id="modeOld" onclick="setMode('old')">舊模式 (無去水純賠率)</div>
   </div>
 
   <div class="odds-panel">
     <div class="panel-title">市場 1X2 賠率 <span>主 - 客 - 和，留空則純看數據</span></div>
     <div class="odds-inputs">
-      <input type="number" step="0.01" inputmode="decimal" class="num-input" id="oddH" placeholder="主勝賠率">
-      <input type="number" step="0.01" inputmode="decimal" class="num-input" id="oddA" placeholder="客勝賠率">
-      <input type="number" step="0.01" inputmode="decimal" class="num-input" id="oddD" placeholder="和局賠率">
+      <input type="text" inputmode="decimal" class="num-input" id="oddH" placeholder="主勝賠率">
+      <input type="text" inputmode="decimal" class="num-input" id="oddA" placeholder="客勝賠率">
+      <input type="text" inputmode="decimal" class="num-input" id="oddD" placeholder="和局賠率">
     </div>
   </div>
 
@@ -207,34 +206,78 @@ const fact = n => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; };
 const poisson = (k, l) => Math.exp(-l) * Math.pow(l, k) / fact(k);
 const pct = p => (p * 100).toFixed(1) + '%';
 
+/* 
+ * ⚡ 修復光標跳動的核心邏輯：
+ * 記錄原本的游標位置，過濾字元後，將游標放回正確的相對位置
+ */
 function restrictInput(el) {
-  let val = el.value;
-  val = val.replace(/[^0-9.]/g, '');
+  const originalValue = el.value;
+  const start = el.selectionStart;
+  
+  // 1. 只保留數字和小數點
+  let val = originalValue.replace(/[^0-9.]/g, '');
+  
+  // 2. 處理多個小數點（只保留第一個）
   const parts = val.split('.');
-  if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
-  if (val.startsWith('.')) val = '0' + val;
-  el.value = val;
+  if (parts.length > 2) {
+    val = parts[0] + '.' + parts.slice(1).join('');
+  }
+  
+  // 3. 處理開頭是小數點
+  if (val.startsWith('.')) {
+    val = '0' + val;
+  }
+
+  // 4. 如果內容被過濾了，才重新賦值並恢復游標
+  if (val !== originalValue) {
+    el.value = val;
+    
+    // 計算原本游標前面有幾個合法字元
+    let newPos = originalValue.slice(0, start).replace(/[^0-9.]/g, '').length;
+    
+    // 如果開頭補了 0，游標需要往後移一位
+    if (originalValue.startsWith('.') && val.startsWith('0.')) {
+      newPos++;
+    }
+    
+    // 安全限制：游標不能超過字串長度
+    if (newPos > val.length) newPos = val.length;
+    
+    el.setSelectionRange(newPos, newPos);
+  }
 }
 
 function normalizeInput(el){
   let v = el.value.trim();
   if (v === '') return;
-  if (/^0\d+$/.test(v)) { el.value = (parseInt(v, 10) / 100).toFixed(2); return; }
-  if (/^\d+$/.test(v)){ const n = parseInt(v, 10); if (n >= 100) el.value = (n / 100).toFixed(2); return; }
-  if (/^\d*\.\d+$/.test(v) || /^\d+\.$/.test(v)){ const n = parseFloat(v); if (isFinite(n)) el.value = n.toFixed(2); }
+  
+  let originalValue = v;
+  
+  if (/^0\d+$/.test(v)) { 
+    v = (parseInt(v, 10) / 100).toFixed(2); 
+  } else if (/^\d+$/.test(v)){ 
+    const n = parseInt(v, 10); 
+    if (n >= 100) v = (n / 100).toFixed(2); 
+  } else if (/^\d*\.\d+$/.test(v) || /^\d+\.$/.test(v)){ 
+    const n = parseFloat(v); 
+    if (isFinite(n)) v = n.toFixed(2); 
+  }
+  
+  if (v !== originalValue) {
+    el.value = v;
+  }
 }
 
 document.querySelectorAll('input').forEach(el => {
   el.addEventListener('input', () => restrictInput(el));
   el.addEventListener('keydown', (e) => { 
-    if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault(); 
     if (e.key === 'Enter') { normalizeInput(el); predict(); }
   });
   if (el.classList.contains('num-input')) el.addEventListener('blur', () => normalizeInput(el));
 });
 
 $('clear').addEventListener('click', () => {
-  document.querySelectorAll('input[type=number]').forEach(el => el.value = '');
+  document.querySelectorAll('input[type=text]').forEach(el => el.value = '');
   $('result').classList.remove('show');
 });
 
@@ -299,13 +342,11 @@ function predict(){
         }
       }
     } else {
-      // ⚡ 模式二：舊模式 (市場去水真實機率重塑矩陣)
-      const sum = (1/oddH) + (1/oddA) + (1/oddD);
-      const mkH = (1/oddH) / sum;
-      const mkA = (1/oddA) / sum;
-      const mkD = (1/oddD) / sum;
+      // ⚡ 模式二：舊模式 (刪除去水，直接使用 1 / 賠率 作為權重縮放矩陣)
+      const mkH = 1 / oddH;
+      const mkA = 1 / oddA;
+      const mkD = 1 / oddD;
 
-      // 根據市場真實機率，算出各區塊的縮放係數
       const scaleH = mkH / (baseH || 0.001);
       const scaleD = mkD / (baseD || 0.001);
       const scaleA = mkA / (baseA || 0.001);
