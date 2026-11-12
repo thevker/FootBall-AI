@@ -61,7 +61,8 @@
   .sr-score {font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;}
   .sr-prob {font-size:14px;color:var(--txt);font-weight:600;}
   
-  .mc-lams {display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);}
+  .lam{display:flex;justify-content:center;gap:22px;font-size:13px;color:var(--muted);margin-top:18px; padding:12px; background:var(--card); border-radius:12px; border:1px solid var(--line);}
+  .lam b{color:var(--txt);}
   
   .panel{margin-top:18px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
   .panel h3{margin:0 0 12px;font-size:13px;color:var(--muted);font-weight:600;letter-spacing:1px}
@@ -83,15 +84,17 @@
     <div class="team">
       <h2>🏠 主隊</h2>
       <div class="row">
-        <div><label>場均 xG（攻）</label><input class="num-input" id="hXG" type="text" inputmode="decimal" autocomplete="off" placeholder="1.60" value="1.60"></div>
-        <div><label>場均 xGA（守）</label><input class="num-input" id="hXGA" type="text" inputmode="decimal" autocomplete="off" placeholder="1.10" value="1.10"></div>
+        <!-- 移除 value 屬性，保留 placeholder -->
+        <div><label>場均 xG（攻）</label><input class="num-input" id="hXG" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 1.60"></div>
+        <div><label>場均 xGA（守）</label><input class="num-input" id="hXGA" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 1.10"></div>
       </div>
     </div>
     <div class="team away">
       <h2>✈️ 客隊</h2>
       <div class="row">
-        <div><label>場均 xG（攻）</label><input class="num-input" id="aXG" type="text" inputmode="decimal" autocomplete="off" placeholder="1.20" value="1.20"></div>
-        <div><label>場均 xGA（守）</label><input class="num-input" id="aXGA" type="text" inputmode="decimal" autocomplete="off" placeholder="1.35" value="1.35"></div>
+        <!-- 移除 value 屬性，保留 placeholder -->
+        <div><label>場均 xG（攻）</label><input class="num-input" id="aXG" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 1.20"></div>
+        <div><label>場均 xGA（守）</label><input class="num-input" id="aXGA" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 1.35"></div>
       </div>
     </div>
   </div>
@@ -103,6 +106,8 @@
 
   <div id="result">
     <div class="models-grid" id="modelsGrid"></div>
+    
+    <div class="lam" id="lam"></div>
     
     <div class="panel">
       <h3>賽果機率對比</h3>
@@ -173,60 +178,70 @@ $('clear').addEventListener('click', () => {
 $('go').addEventListener('click', predict);
 
 function predict(){
-  document.querySelectorAll('.num-input').forEach(normalizeInput);
+  try {
+    document.querySelectorAll('.num-input').forEach(normalizeInput);
 
-  const hXG = parseFloat($('hXG').value), hXGA = parseFloat($('hXGA').value);
-  const aXG = parseFloat($('aXG').value), aXGA = parseFloat($('aXGA').value);
+    const hXG = parseFloat($('hXG').value), hXGA = parseFloat($('hXGA').value);
+    const aXG = parseFloat($('aXG').value), aXGA = parseFloat($('aXGA').value);
 
-  if ([hXG, hXGA, aXG, aXGA].some(v => !isFinite(v) || v < 0)) {
-    alert('請輸入有效的非負數字（xG / xGA）。');
-    return;
-  }
-
-  // 基礎期望入球（無主場優勢）
-  let lH = Math.min(Math.max((hXG + aXGA) / 2, 0.05), 6);
-  let lA = Math.min(Math.max((aXG + hXGA) / 2, 0.05), 6);
-
-  // --- 模型 1: 標準 Poisson ---
-  let mPoi = [], tPoi = 0;
-  for(let i=0; i<=MAXG; i++){ 
-    mPoi[i]=[]; 
-    for(let j=0; j<=MAXG; j++){
-      let p = poisson(i, lH) * poisson(j, lA); 
-      mPoi[i][j]=p; tPoi+=p;
+    if ([hXG, hXGA, aXG, aXGA].some(v => !isFinite(v) || v < 0)) {
+      alert('請輸入完整的數值（xG / xGA）。');
+      return;
     }
-  }
-  const resPoi = processMatrix(mPoi, tPoi);
 
-  // --- 模型 2: Dixon-Coles ---
-  let mDC = [], tDC = 0;
-  for(let i=0; i<=MAXG; i++){ 
-    mDC[i]=[]; 
-    for(let j=0; j<=MAXG; j++){
-      let p = poisson(i, lH) * poisson(j, lA);
-      let tau = 1;
-      if(i===0 && j===0) tau = 1 - lH*lA*RHO;
-      else if(i===0 && j===1) tau = 1 + lH*RHO;
-      else if(i===1 && j===0) tau = 1 + lA*RHO;
-      else if(i===1 && j===1) tau = 1 - RHO;
-      
-      p = Math.max(0, tau * p);
-      mDC[i][j]=p; tDC+=p;
+    // 基礎期望入球（無主場優勢）
+    let lH = Math.min(Math.max((hXG + aXGA) / 2, 0.05), 6);
+    let lA = Math.min(Math.max((aXG + hXGA) / 2, 0.05), 6);
+
+    // --- 模型 1: 標準 Poisson ---
+    let mPoi = [], tPoi = 0;
+    for(let i=0; i<=MAXG; i++){ 
+      mPoi[i]=[]; 
+      for(let j=0; j<=MAXG; j++){
+        let p = poisson(i, lH) * poisson(j, lA); 
+        mPoi[i][j]=p; tPoi+=p;
+      }
     }
+    const resPoi = processMatrix(mPoi, tPoi);
+
+    // --- 模型 2: Dixon-Coles ---
+    let mDC = [], tDC = 0;
+    for(let i=0; i<=MAXG; i++){ 
+      mDC[i]=[]; 
+      for(let j=0; j<=MAXG; j++){
+        let p = poisson(i, lH) * poisson(j, lA);
+        let tau = 1;
+        if(i===0 && j===0) tau = 1 - lH*lA*RHO;
+        else if(i===0 && j===1) tau = 1 + lH*RHO;
+        else if(i===1 && j===0) tau = 1 + lA*RHO;
+        else if(i===1 && j===1) tau = 1 - RHO;
+        
+        p = Math.max(0, tau * p);
+        mDC[i][j]=p; tDC+=p;
+      }
+    }
+    const resDC = processMatrix(mDC, tDC);
+
+    // 渲染 UI
+    renderModelCards([
+      {name: '標準 Poisson', cls: 'mc-poi', desc: '傳統獨立泊松模型，作為基準線。', res: resPoi},
+      {name: 'Dixon-Coles', cls: 'mc-dc', desc: '修正低比分和局機率，對 0-0, 1-1 更敏感。', res: resDC}
+    ]);
+    renderCompareTable([resPoi, resDC]);
+    
+    // 更新期望入球顯示
+    $('lam').innerHTML = `<div>期望入球：主隊 <b>${lH.toFixed(2)}</b> ｜ 客隊 <b>${lA.toFixed(2)}</b></div>`;
+
+    const box = $('result');
+    box.classList.remove('show'); 
+    void box.offsetWidth; 
+    box.classList.add('show');
+    box.scrollIntoView({behavior:'smooth', block:'nearest'});
+
+  } catch (error) {
+    console.error(error);
+    alert("發生錯誤，請重新整理網頁或檢查輸入。");
   }
-  const resDC = processMatrix(mDC, tDC);
-
-  // 渲染 UI
-  renderModelCards([
-    {name: '標準 Poisson', cls: 'mc-poi', desc: '傳統獨立泊松模型，作為基準線。', res: resPoi},
-    {name: 'Dixon-Coles', cls: 'mc-dc', desc: '修正低比分和局機率，對 0-0, 1-1 更敏感。', res: resDC}
-  ]);
-  renderCompareTable([resPoi, resDC]);
-  $('lam').innerHTML = `<div>期望入球：主隊 <b>${lH.toFixed(2)}</b> ｜ 客隊 <b>${lA.toFixed(2)}</b></div>`;
-
-  const box = $('result');
-  box.classList.remove('show'); void box.offsetWidth; box.classList.add('show');
-  box.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
 // 處理矩陣並提取資訊
