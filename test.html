@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>數據、狀態、賠率 綜合預測器</title>
+<title>權重混合 綜合預測器</title>
 <style>
   :root{
     --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
@@ -11,14 +11,9 @@
     --accent:#3ddc97; --accent2:#4da3ff; --warn:#ffb347;
   }
   *{box-sizing:border-box}
-  
-  html {
-    -webkit-text-size-adjust: 100%;
-    overflow-anchor: none;
-  }
+  html { -webkit-text-size-adjust: 100%; overflow-anchor: none; }
   body{
-    margin:0;min-height:100vh;
-    font-family:system-ui,-apple-system,"Segoe UI","Noto Sans TC",sans-serif;
+    margin:0;min-height:100vh;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans TC",sans-serif;
     background:radial-gradient(1200px 600px at 20% -10%,#1a2c4d 0%,transparent 60%),var(--bg);
     color:var(--txt);padding:24px 16px 60px;display:flex;justify-content:center;
     -webkit-overflow-scrolling: touch;
@@ -34,22 +29,9 @@
   .team.away h2{color:var(--warn)}
   label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
   
-  /* 隱藏 type="number" 的上下箭頭 */
-  input[type=number]::-webkit-inner-spin-button,
-  input[type=number]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-  input[type=number] {
-    -moz-appearance: textfield;
-  }
-
-  input {
-    font-size: 16px !important; 
-    outline: none; 
-    transition: border-color 0.15s;
-    -webkit-appearance: none;
-  }
+  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+  input { font-size: 16px !important; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
   
   .num-input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0e1626;color:var(--txt);font-variant-numeric:tabular-nums}
   .num-input:focus{border-color:var(--accent2)}
@@ -117,21 +99,7 @@
   .bar .fl{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#3ddc97,#4da3ff);transition:width .5s ease}
   .bar .vl{width:56px;text-align:right;font-variant-numeric:tabular-nums}
 
-  .compare-row { display: flex; align-items: center; gap: 10px; margin: 12px 0; font-size: 13px; }
-  .compare-row .nm { width: 50px; color: var(--muted); flex: none; }
-  .compare-row .tr { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-  .compare-bar-group { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: #0e1626; position: relative; }
-  .compare-bar-group .model { background: var(--accent2); height: 100%; z-index: 3; transition:width .5s ease; }
-  .compare-bar-group .form { background: var(--accent); height: 100%; position: absolute; top: 0; left: 0; z-index: 2; opacity: 0.8; transition:width .5s ease; }
-  .compare-bar-group .market { background: var(--warn); height: 100%; position: absolute; top: 0; left: 0; z-index: 1; opacity: 0.6; transition:width .5s ease; }
-  
-  .compare-row .vl { width: 120px; text-align: right; font-variant-numeric: tabular-nums; font-size: 11px; line-height: 1.4; }
-  .vl .v-model { color: var(--accent2); font-weight: bold; }
-  .vl .v-form { color: var(--accent); }
-  .vl .v-market { color: var(--warn); }
-
-  .advice-box { margin-top: 16px; padding: 12px; border-radius: 10px; background: rgba(255, 179, 71, 0.1); border: 1px solid rgba(255, 179, 71, 0.3); font-size: 13px; line-height: 1.6; }
-  .advice-box.good { background: rgba(61, 220, 151, 0.1); border-color: rgba(61, 220, 151, 0.3); }
+  .advice-box { margin-top: 16px; padding: 12px; border-radius: 10px; background: rgba(61, 220, 151, 0.1); border: 1px solid rgba(61, 220, 151, 0.3); font-size: 14px; line-height: 1.6; text-align: center; font-weight: bold; }
   
   table{width:100%;border-collapse:collapse;font-size:13px}
   th,td{padding:8px 6px;text-align:left;border-bottom:1px solid var(--line)}
@@ -143,22 +111,22 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>數據、狀態、賠率 綜合預測器</h1>
-  <p class="sub">結合「基礎得失球」、「綜合近況預估」與「市場 1X2 賠率」，全方位預測比分。請注意輸入順序為 <b>主 - 客 - 和</b>。</p>
+  <h1>權重混合 綜合預測器</h1>
+  <p class="sub">系統會將「基礎得失球」、「近期狀態預期」與「市場賠率」按權重混合，直接反推最真實的進球期望值（λ）。輸入順序為 <b>主 - 客 - 和</b>。</p>
 
   <div class="grid">
     <div class="team">
       <h2>🏠 主隊 (填寫主場數據)</h2>
       <div class="row">
-        <div><label>主場場均得分</label><input class="num-input" id="hGF" type="number" step="0.01" inputmode="decimal" autocomplete="off" placeholder="例如 1.80"></div>
-        <div><label>主場場均失球</label><input class="num-input" id="hGA" type="number" step="0.01" inputmode="decimal" autocomplete="off" placeholder="例如 0.90"></div>
+        <div><label>主場場均得分</label><input class="num-input" id="hGF" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.80"></div>
+        <div><label>主場場均失球</label><input class="num-input" id="hGA" type="number" step="0.01" inputmode="decimal" placeholder="例如 0.90"></div>
       </div>
     </div>
     <div class="team away">
       <h2>✈️ 客隊 (填寫客場數據)</h2>
       <div class="row">
-        <div><label>客場場均得分</label><input class="num-input" id="aGF" type="number" step="0.01" inputmode="decimal" autocomplete="off" placeholder="例如 1.10"></div>
-        <div><label>客場場均失球</label><input class="num-input" id="aGA" type="number" step="0.01" inputmode="decimal" autocomplete="off" placeholder="例如 1.50"></div>
+        <div><label>客場場均得分</label><input class="num-input" id="aGF" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.10"></div>
+        <div><label>客場場均失球</label><input class="num-input" id="aGA" type="number" step="0.01" inputmode="decimal" placeholder="例如 1.50"></div>
       </div>
     </div>
   </div>
@@ -173,7 +141,7 @@
   </div>
 
   <div class="odds-panel">
-    <div class="panel-title">市場 1X2 賠率 <span>主 - 客 - 和，留空則不進行對比</span></div>
+    <div class="panel-title">市場 1X2 賠率 <span>主 - 客 - 和，留空則不混合</span></div>
     <div class="odds-inputs">
       <input type="number" step="0.01" inputmode="decimal" class="num-input" id="oddH" placeholder="主勝賠率">
       <input type="number" step="0.01" inputmode="decimal" class="num-input" id="oddA" placeholder="客勝賠率">
@@ -182,7 +150,7 @@
   </div>
 
   <div class="actions">
-    <button id="go">開始綜合預測</button>
+    <button id="go">開始混合預測</button>
     <button id="clear" class="ghost">清除</button>
   </div>
 
@@ -203,22 +171,16 @@
     <div class="lam" id="lam"></div>
 
     <div class="panel">
-      <h3>模型、狀態與市場 三維對比</h3>
-      <div id="compareBars" style="margin-bottom: 10px;"></div>
-      <div id="advice" class="advice-box"></div>
-    </div>
-    
-    <div class="panel">
-      <h3>綜合賽果機率 (基於調整後模型)</h3>
+      <h3>最終綜合賽果機率 (已混合狀態與賠率)</h3>
       <div id="bars"></div>
+      <div id="advice" class="advice-box"></div>
     </div>
 
     <div class="panel"><h3>最可能比分 Top 6</h3><div id="topList"></div></div>
     
     <div class="note">
-      ※ 狀態修正：根據您輸入的綜合預估，系統會計算主客隊的強弱差異，微調雙方進球期望值（最多 ±15%）。<br>
-      ※ 市場隱含機率：將賠率轉為機率並去除抽水。<br>
-      ※ 分析提示：當「模型」與「狀態」同時高於「市場」時，通常是最佳機會。
+      ※ 混合公式：基礎進球期望 λ 會根據您的「狀態預期」與「市場賠率」進行雙重校準，最終輸出唯一的結果。<br>
+      ※ 這意味著，如果狀態和賠率都極度看好主隊，系統會直接算出主隊大勝的比分。
     </div>
   </div>
 </div>
@@ -227,53 +189,28 @@
 const $ = id => document.getElementById(id);
 const MAXG = 10;
 
-// 基本數學
 const fact = n => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; };
 const poisson = (k, l) => Math.exp(-l) * Math.pow(l, k) / fact(k);
 const pct = p => (p * 100).toFixed(1) + '%';
 
-/* ---------- 格式化：093 → 0.93，190 → 1.90 ---------- */
 function normalizeInput(el){
   let v = el.value.trim();
   if (v === '') return;
-
-  if (/^0\d+$/.test(v)) {
-    el.value = (parseInt(v, 10) / 100).toFixed(2);
-    return;
-  }
-
-  if (/^\d+$/.test(v)){
-    const n = parseInt(v, 10);
-    if (n >= 100) el.value = (n / 100).toFixed(2);
-    return;
-  }
-
-  if (/^\d*\.\d+$/.test(v) || /^\d+\.$/.test(v)){
-    const n = parseFloat(v);
-    if (isFinite(n)) el.value = n.toFixed(2);
-  }
+  if (/^0\d+$/.test(v)) { el.value = (parseInt(v, 10) / 100).toFixed(2); return; }
+  if (/^\d+$/.test(v)){ const n = parseInt(v, 10); if (n >= 100) el.value = (n / 100).toFixed(2); return; }
+  if (/^\d*\.\d+$/.test(v) || /^\d+\.$/.test(v)){ const n = parseFloat(v); if (isFinite(n)) el.value = n.toFixed(2); }
 }
 
-// 攔截非法字元 (針對 type="number" 允許的 e, E, +, -)
 document.querySelectorAll('input').forEach(el => {
-  el.addEventListener('keydown', (e) => {
-    if (['e', 'E', '+', '-'].includes(e.key)) {
-      e.preventDefault();
-    }
-  });
-  
-  if (el.classList.contains('num-input')) {
-    el.addEventListener('blur', () => normalizeInput(el));
-  }
+  el.addEventListener('keydown', (e) => { if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault(); });
+  if (el.classList.contains('num-input')) el.addEventListener('blur', () => normalizeInput(el));
 });
 
-/* ---------- 清除 ---------- */
 $('clear').addEventListener('click', () => {
   document.querySelectorAll('input').forEach(el => el.value = '');
   $('result').classList.remove('show');
 });
 
-/* ---------- 預測 ---------- */
 $('go').addEventListener('click', predict);
 
 function predict(){
@@ -291,27 +228,40 @@ function predict(){
   let lH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
   let lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
 
-  // 2. 讀取並標準化綜合預估百分比 (主-客-和 順序)
+  // 2. 讀取狀態預期與市場賠率
   let estH = parseFloat($('estH').value) || 0;
   let estA = parseFloat($('estA').value) || 0;
   let estD = parseFloat($('estD').value) || 0;
   let estSum = estH + estA + estD;
+  if (estSum > 0) { estH /= estSum; estA /= estSum; estD /= estSum; } 
+  else { estH = 0.333; estA = 0.333; estD = 0.334; }
+
+  const oddH = parseFloat($('oddH').value);
+  const oddA = parseFloat($('oddA').value);
+  const oddD = parseFloat($('oddD').value);
+  const hasOdds = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
   
-  if (estSum > 0) {
-    estH = (estH / estSum) * 100;
-    estA = (estA / estSum) * 100;
-    estD = (estD / estSum) * 100;
-  } else {
-    estH = 33.3; estD = 33.4; estA = 33.3;
+  let mkH = 0.333, mkA = 0.333, mkD = 0.334;
+  if (hasOdds) {
+    const sum = (1/oddH) + (1/oddA) + (1/oddD);
+    mkH = (1/oddH) / sum;
+    mkA = (1/oddA) / sum;
+    mkD = (1/oddD) / sum;
   }
 
-  const bias = (estH - estA) / 100;
+  // 3. 核心：將狀態與賠率混合，反推並調整 λ
+  // 計算「市場與狀態」對主客隊的綜合偏差程度
+  const biasForm = (estH - estA); 
+  const biasMarket = hasOdds ? (mkH - mkA) : 0;
   
-  // 調整 λ (最多影響 ±15%)
-  const lH_adj = lH * (1 + bias * 0.15);
-  const lA_adj = lA * (1 - bias * 0.15);
+  // 權重設定：狀態權重 0.15，賠率權重 0.25 (賠率通常更準)
+  const totalBias = (biasForm * 0.15) + (biasMarket * 0.25);
 
-  // 構建比分矩陣
+  // 調整 λ (注意：最高不能超過基礎的 1.5 倍，最低不能低於 0.5 倍，防止極端比分)
+  const lH_adj = Math.min(Math.max(lH * (1 + totalBias), 0.1), 8);
+  const lA_adj = Math.min(Math.max(lA * (1 - totalBias), 0.1), 8);
+
+  // 4. 基於混合後的 λ 進行 Poisson 計算
   const m = [];
   let total = 0;
   for (let i = 0; i <= MAXG; i++){
@@ -323,7 +273,6 @@ function predict(){
     }
   }
 
-  // 統計數據
   let homeWin = 0, draw = 0, awayWin = 0, over25 = 0, btts = 0;
   const list = [];
   const goalProbs = Array(2 * MAXG + 1).fill(0);
@@ -348,14 +297,13 @@ function predict(){
   }
   list.sort((x, y) => y.p - x.p);
 
-  // 提取 Top 2
   const top2Scores = list.slice(0, 2);
   const getTop2 = arr => arr.map((p, val) => ({ val, p })).sort((a, b) => b.p - a.p).slice(0, 2);
   const top2Total = getTop2(goalProbs);
   const top2H = getTop2(hGoalProbs);
   const top2A = getTop2(aGoalProbs);
 
-  // 渲染區塊
+  // 渲染
   $('scores').innerHTML = top2Scores.map((s, idx) => `
     <div class="score ${idx === 0 ? 'one' : ''}">
       <div class="tag">${idx === 0 ? '首選比分' : '次選比分'}</div>
@@ -388,18 +336,13 @@ function predict(){
   `;
 
   $('lam').innerHTML = `
-    <div>調整後主期望入球 <b>${lH_adj.toFixed(2)}</b></div>
-    <div>調整後客期望入球 <b>${lA_adj.toFixed(2)}</b></div>
+    <div>混合後主期望入球 <b>${lH_adj.toFixed(2)}</b></div>
+    <div>混合後客期望入球 <b>${lA_adj.toFixed(2)}</b></div>
   `;
 
-  // 渲染基礎賽果機率
   const bars = [
-    ['主勝', homeWin],
-    ['和局', draw],
-    ['客勝', awayWin],
-    ['大 2.5 球', over25],
-    ['細 2.5 球', 1 - over25],
-    ['兩隊入球', btts]
+    ['主勝', homeWin], ['和局', draw], ['客勝', awayWin],
+    ['大 2.5 球', over25], ['細 2.5 球', 1 - over25], ['兩隊入球', btts]
   ];
   $('bars').innerHTML = bars.map(([nm, v]) => `
     <div class="bar">
@@ -409,65 +352,13 @@ function predict(){
     </div>
   `).join('');
 
-  // ================= 三維對比與分析 =================
-  const oddH = parseFloat($('oddH').value);
-  const oddA = parseFloat($('oddA').value);
-  const oddD = parseFloat($('oddD').value);
-  const hasOdds = [oddH, oddD, oddA].every(v => isFinite(v) && v > 1);
-  
-  let mkH = null, mkD = null, mkA = null;
-  if (hasOdds) {
-    const sum = (1/oddH) + (1/oddA) + (1/oddD);
-    mkH = (1/oddH) / sum;
-    mkA = (1/oddA) / sum;
-    mkD = (1/oddD) / sum;
-  }
+  // 給出最終唯一的建議
+  let maxName = '主勝', maxProb = homeWin;
+  if (draw > maxProb) { maxName = '和局'; maxProb = draw; }
+  if (awayWin > maxProb) { maxName = '客勝'; maxProb = awayWin; }
 
-  const fH = estH / 100;
-  const fD = estD / 100;
-  const fA = estA / 100;
+  $('advice').innerHTML = `🎯 綜合數據、狀態與市場後，本場首選：<b style="color:var(--accent2);font-size:16px;">${maxName}</b> (機率 ${pct(maxProb)})`;
 
-  let compareHTML = '';
-  compareHTML += renderCompareBar('主勝', homeWin, fH, mkH);
-  compareHTML += renderCompareBar('和局', draw, fD, mkD);
-  compareHTML += renderCompareBar('客勝', awayWin, fA, mkA);
-  $('compareBars').innerHTML = compareHTML;
-
-  // 生成建議
-  let adviceText = '';
-  let isGood = false;
-  
-  if (hasOdds) {
-    if (homeWin > mkH + 0.04 && fH > mkH) {
-      adviceText += `🔥 <b>主勝強烈推薦：</b>模型看好（${pct(homeWin)}）、近況預期高（${pct(fH)}）、且雙雙高於市場（${pct(mkH)}）。<br>`;
-      isGood = true;
-    } else if (awayWin > mkA + 0.04 && fA > mkA) {
-      adviceText += `🔥 <b>客勝強烈推薦：</b>模型看好（${pct(awayWin)}）、近況預期高（${pct(fA)}）、且雙雙高於市場（${pct(mkA)}）。<br>`;
-      isGood = true;
-    } else if (homeWin > mkH + 0.06) {
-      adviceText += `📈 <b>主勝有價值：</b>模型認為主勝機率（${pct(homeWin)}）明顯高於市場（${pct(mkH)}）。<br>`;
-      isGood = true;
-    } else if (awayWin > mkA + 0.06) {
-      adviceText += `📈 <b>客勝有價值：</b>模型認為客勝機率（${pct(awayWin)}）明顯高於市場（${pct(mkA)}）。<br>`;
-      isGood = true;
-    } else if (homeWin < mkH - 0.06 && fH < mkH) {
-      adviceText += `⚠️ <b>主勝陷阱：</b>市場防範主勝，但模型與近況預期均不支持，慎防主隊不勝。<br>`;
-    } else if (awayWin < mkA - 0.06 && fA < mkA) {
-      adviceText += `⚠️ <b>客勝陷阱：</b>市場防範客勝，但模型與近況預期均不支持，慎防客隊不勝。<br>`;
-    } else {
-      adviceText += `🤝 <b>無明顯傾向：</b>模型、狀態與市場預期基本一致，建議觀望。<br>`;
-    }
-  } else {
-    adviceText += `*(提示：輸入市場賠率可獲得精確的價值分析。)*<br>`;
-    if (fH > fA + 0.2) adviceText += `📈 您的近況預期明顯偏向主隊。<br>`;
-    else if (fA > fH + 0.2) adviceText += `📈 您的近況預期明顯偏向客隊。<br>`;
-  }
-  
-  const advEl = $('advice');
-  advEl.className = isGood ? 'advice-box good' : 'advice-box';
-  advEl.innerHTML = `<b>綜合分析提示：</b><br>${adviceText}`;
-
-  // 渲染 Top 6
   $('topList').innerHTML = `
     <table>
       <thead><tr><th>#</th><th>比分（主 - 客）</th><th>機率</th></tr></thead>
@@ -477,34 +368,7 @@ function predict(){
     </table>
   `;
 
-  // 顯示結果
   $('result').classList.add('show');
-}
-
-// 渲染三維對比條
-function renderCompareBar(name, modelP, formP, marketP) {
-  const maxVal = Math.max(modelP, formP, marketP || 0, 0.6);
-  const mw = (modelP / maxVal) * 100;
-  const fw = (formP / maxVal) * 100;
-  const mkw = marketP ? (marketP / maxVal) * 100 : 0;
-  
-  return `
-    <div class="compare-row">
-      <div class="nm">${name}</div>
-      <div class="tr">
-        <div class="compare-bar-group">
-          ${marketP ? `<div class="market" style="width: ${mkw}%"></div>` : ''}
-          <div class="form" style="width: ${fw}%"></div>
-          <div class="model" style="width: ${mw}%"></div>
-        </div>
-      </div>
-      <div class="vl">
-        <span class="v-model">模 ${pct(modelP)}</span> | 
-        <span class="v-form">態 ${pct(formP)}</span> 
-        ${marketP ? `<br><span class="v-market">市 ${pct(marketP)}</span>` : ''}
-      </div>
-    </div>
-  `;
 }
 </script>
 </body>
