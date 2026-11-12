@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>絕對主導 綜合預測器</title>
+<title>強制機率校準 預測器</title>
 <style>
   :root{
     --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
@@ -52,11 +52,6 @@
   .odds-inputs { display: flex; gap: 8px; }
   .odds-inputs input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: #0e1626; color: var(--txt); text-align: center; }
   .odds-inputs input:focus { border-color: var(--accent); }
-
-  /* 模式切換開關 */
-  .toggle-wrap { display: flex; align-items: center; justify-content: center; margin-top: 20px; gap: 10px; cursor: pointer; background: rgba(255,179,71,.1); padding: 12px; border-radius: 12px; border: 1px dashed rgba(255,179,71,.4);}
-  .toggle-wrap input { width: 20px; height: 20px; accent-color: var(--warn); cursor: pointer; }
-  .toggle-wrap label { margin: 0; font-size: 14px; color: var(--warn); font-weight: bold; cursor: pointer; }
 
   .actions{display:flex;gap:12px;margin-top:20px}
   button{padding:14px;border:0;border-radius:14px;cursor:pointer;font-size:16px;font-weight:800;color:#06231a;background:linear-gradient(135deg,#3ddc97,#4da3ff);flex:1; -webkit-tap-highlight-color: transparent;}
@@ -116,8 +111,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>絕對主導 綜合預測器</h1>
-  <p class="sub">結合「基礎得失球」、「綜合近況」與「市場賠率」。可開啟絕對主導模式，讓狀態與賠率 100% 決定比分走向。</p>
+  <h1>強制機率校準 預測器</h1>
+  <p class="sub">系統會將你的「綜合近況」與「市場賠率」混合成目標勝平負機率，並**強行重塑泊松比分矩陣**，讓最終機率完全服從你的輸入。輸入順序為 <b>主 - 客 - 和</b>。</p>
 
   <div class="grid">
     <div class="team">
@@ -154,12 +149,6 @@
     </div>
   </div>
 
-  <!-- 絕對主導模式開關 -->
-  <div class="toggle-wrap" id="toggleWrap">
-    <input type="checkbox" id="absoluteMode">
-    <label for="absoluteMode">⚡ 開啟絕對主導模式 (狀態與賠率 100% 決定比分)</label>
-  </div>
-
   <div class="actions">
     <button id="go">開始預測</button>
     <button id="clear" class="ghost">清除</button>
@@ -182,7 +171,7 @@
     <div class="lam" id="lam"></div>
 
     <div class="panel">
-      <h3>最終綜合賽果機率</h3>
+      <h3>最終強制校準賽果機率</h3>
       <div id="bars"></div>
       <div id="advice" class="advice-box"></div>
     </div>
@@ -214,7 +203,6 @@ document.querySelectorAll('input').forEach(el => {
 
 $('clear').addEventListener('click', () => {
   document.querySelectorAll('input[type=number]').forEach(el => el.value = '');
-  $('absoluteMode').checked = false;
   $('result').classList.remove('show');
 });
 
@@ -231,18 +219,13 @@ function predict(){
     return;
   }
 
-  // 1. 基礎期望入球
-  let lH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
-  let lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
-  let totalBase = lH + lA;
-
-  // 2. 讀取狀態預期與市場賠率
+  // 1. 讀取狀態預期與市場賠率
   let estH = parseFloat($('estH').value) || 0;
   let estA = parseFloat($('estA').value) || 0;
   let estD = parseFloat($('estD').value) || 0;
   let estSum = estH + estA + estD;
-  if (estSum > 0) { estH /= estSum; estA /= estSum; estD /= estSum; } 
-  else { estH = 0.333; estA = 0.333; estD = 0.334; }
+  const hasEst = estSum > 0;
+  if (hasEst) { estH /= estSum; estA /= estSum; estD /= estSum; }
 
   const oddH = parseFloat($('oddH').value);
   const oddA = parseFloat($('oddA').value);
@@ -257,59 +240,63 @@ function predict(){
     mkD = (1/oddD) / sum;
   }
 
-  // 計算綜合勝率 (狀態與賠率平均，若有缺少則用另一項)
-  const hasEst = estSum > 0;
-  let finalH = hasEst ? (estH + mkH) / 2 : mkH;
-  let finalA = hasEst ? (estA + mkA) / 2 : mkA;
-  let finalD = hasEst ? (estD + mkD) / 2 : mkD;
-
-  // 正規化
-  const fSum = finalH + finalA + finalD;
-  finalH /= fSum; finalA /= fSum; finalD /= fSum;
-
-  let lH_adj = lH;
-  let lA_adj = lA;
-
-  const isAbsolute = $('absoluteMode').checked;
-
-  if (isAbsolute && (hasOdds || hasEst)) {
-    // ⚡ 絕對主導模式：100% 用狀態/賠率分配進球數
-    // 總進球數保持基礎值，但平局機率高時，總進球數略微下調；平局機率低時，略微上調
-    let targetTotal = totalBase;
-    if (finalD > 0.33) targetTotal *= 0.85; // 防守大戰
-    if (finalD < 0.20) targetTotal *= 1.15; // 對攻大戰
-
-    // 根據主客勝率比例，直接瓜分總進球
-    const winRatio = finalH / (finalH + finalA);
-    lH_adj = targetTotal * winRatio;
-    lA_adj = targetTotal * (1 - winRatio);
-
+  // 2. 計算最終目標勝平負機率 (狀態與賠率混合)
+  let targetH = 0.33, targetD = 0.34, targetA = 0.33;
+  
+  if (hasEst && hasOdds) {
+    // 兩者都有：賠率權重 0.6，狀態權重 0.4
+    targetH = mkH * 0.6 + estH * 0.4;
+    targetA = mkA * 0.6 + estA * 0.4;
+    targetD = mkD * 0.6 + estD * 0.4;
+  } else if (hasOdds) {
+    targetH = mkH; targetA = mkA; targetD = mkD;
+  } else if (hasEst) {
+    targetH = estH; targetA = estA; targetD = estD;
   } else {
-    // 微調模式：以基礎 λ 為主，狀態/賠率做修正
-    const biasForm = (estH - estA); 
-    const biasMarket = hasOdds ? (mkH - mkA) : 0;
-    const totalBias = (biasForm * 0.15) + (biasMarket * 0.25);
-
-    lH_adj = lH * (1 + totalBias);
-    lA_adj = lA * (1 - totalBias);
+    // 都沒填，走純基礎模型
+    targetH = 0; targetA = 0; targetD = 0;
   }
 
-  // 安全限制
-  lH_adj = Math.min(Math.max(lH_adj, 0.1), 8);
-  lA_adj = Math.min(Math.max(lA_adj, 0.1), 8);
+  // 3. 生成基礎泊松矩陣 (用於決定具體比分形狀)
+  let lH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
+  let lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
+  
+  let m = [];
+  let baseTotal = 0;
+  let baseH = 0, baseD = 0, baseA = 0;
 
-  // 3. 泊松計算
-  const m = [];
-  let total = 0;
   for (let i = 0; i <= MAXG; i++){
     m[i] = [];
     for (let j = 0; j <= MAXG; j++){
-      let p = poisson(i, lH_adj) * poisson(j, lA_adj);
+      let p = poisson(i, lH) * poisson(j, lA);
       m[i][j] = p;
-      total += p;
+      baseTotal += p;
+      
+      if (i > j) baseH += p;
+      else if (i === j) baseD += p;
+      else baseA += p;
     }
   }
 
+  // 4. 強制縮放矩陣 (核心邏輯)
+  let finalTotal = 0;
+  if (targetH > 0 || targetA > 0 || targetD > 0) {
+    for (let i = 0; i <= MAXG; i++){
+      for (let j = 0; j <= MAXG; j++){
+        let multiplier = 1;
+        if (i > j) multiplier = targetH / baseH;
+        else if (i === j) multiplier = targetD / baseD;
+        else multiplier = targetA / baseA;
+        
+        m[i][j] *= multiplier;
+        finalTotal += m[i][j];
+      }
+    }
+  } else {
+    finalTotal = baseTotal;
+  }
+
+  // 5. 統計最終數據
   let homeWin = 0, draw = 0, awayWin = 0, over25 = 0, btts = 0;
   const list = [];
   const goalProbs = Array(2 * MAXG + 1).fill(0);
@@ -318,7 +305,7 @@ function predict(){
 
   for (let i = 0; i <= MAXG; i++){
     for (let j = 0; j <= MAXG; j++){
-      const p = m[i][j] / total;
+      const p = m[i][j] / finalTotal;
       if (i > j) homeWin += p;
       else if (i === j) draw += p;
       else awayWin += p;
@@ -373,8 +360,8 @@ function predict(){
   `;
 
   $('lam').innerHTML = `
-    <div>最終主期望入球 <b>${lH_adj.toFixed(2)}</b></div>
-    <div>最終客期望入球 <b>${lA_adj.toFixed(2)}</b></div>
+    <div>基礎進球期望：主 <b>${lH.toFixed(2)}</b> ｜ 客 <b>${lA.toFixed(2)}</b></div>
+    <div style="color:var(--warn)">(最終機率已按您的權重強制校準)</div>
   `;
 
   const bars = [
@@ -393,7 +380,7 @@ function predict(){
   if (draw > maxProb) { maxName = '和局'; maxProb = draw; }
   if (awayWin > maxProb) { maxName = '客勝'; maxProb = awayWin; }
 
-  $('advice').innerHTML = `🎯 最終預測首選：<b style="color:var(--accent2);font-size:16px;">${maxName}</b> (機率 ${pct(maxProb)})`;
+  $('advice').innerHTML = `🎯 經強制校準後的首選：<b style="color:var(--accent2);font-size:16px;">${maxName}</b> (機率 ${pct(maxProb)})`;
 
   $('topList').innerHTML = `
     <table>
