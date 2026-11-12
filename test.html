@@ -93,18 +93,27 @@
 
   .advice-box { margin-top: 16px; padding: 12px; border-radius: 10px; background: rgba(61, 220, 151, 0.1); border: 1px solid rgba(61, 220, 151, 0.3); font-size: 14px; line-height: 1.6; text-align: center; font-weight: bold; }
   
+  /* 比分表格滾動與固定表頭 */
+  .table-container {
+    max-height: 400px;
+    overflow-y: auto;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+  }
   table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{padding:8px 6px;text-align:left;border-bottom:1px solid var(--line)}
-  th{color:var(--muted);font-weight:500;font-size:12px}
+  th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:500;font-size:12px;background:var(--card);position:sticky;top:0;z-index:1;box-shadow:0 1px 0 var(--line)}
   th:last-child,td:last-child{text-align:right;font-variant-numeric:tabular-nums}
   tr:last-child td{border-bottom:0}
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  
   .note{margin-top:18px;font-size:12px;color:var(--muted);line-height:1.8}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>勝率分餅 混合預測器</h1>
-  <p class="sub">結合「基礎得失球」與「市場賠率」。市場勝率會決定進球數的分配。加入「勝負傾向排序」，當機率相同時，優先顯示符合賠率方向的比分。輸入順序為 <b>主 - 客 - 和</b>。</p>
+  <p class="sub">結合「基礎得失球」與「市場賠率」。市場勝率決定進球分配。完整列出所有大於 1% 的比分。輸入順序為 <b>主 - 客 - 和</b>。</p>
 
   <div class="grid">
     <div class="team">
@@ -159,7 +168,10 @@
       <div id="advice" class="advice-box"></div>
     </div>
 
-    <div class="panel"><h3>最可能比分 Top 6</h3><div id="topList"></div></div>
+    <div class="panel">
+      <h3>完整比分機率分佈 (大於 1%)</h3>
+      <div class="table-container" id="topList"></div>
+    </div>
   </div>
 </div>
 
@@ -228,7 +240,7 @@ function predict(){
   
   let lH = base_lH;
   let lA = base_lA;
-  let isHomeFav = false; // 用於排序微調
+  let isHomeFav = false;
 
   if (hasOdds) {
     const sum = (1/oddH) + (1/oddA) + (1/oddD);
@@ -286,16 +298,13 @@ function predict(){
     }
   }
   
-  // ⚡ 核心優化：排序時加入「勝負傾向」微調
-  // 如果兩者機率相差極小（小於 0.002），則優先讓符合熱門方向的比分排前面
+  // 排序時加入「勝負傾向」微調
   list.sort((x, y) => {
     if (Math.abs(x.p - y.p) < 0.002) {
       if (isHomeFav) {
-        // 主隊熱門，優先排主勝比分 (h > a)
         if (x.h > x.a && y.h <= y.a) return -1;
         if (y.h > y.a && x.h <= x.a) return 1;
       } else {
-        // 客隊熱門，優先排客勝比分 (a > h)
         if (x.a > x.h && y.a <= y.h) return -1;
         if (y.a > y.h && x.a <= x.h) return 1;
       }
@@ -364,11 +373,14 @@ function predict(){
 
   $('advice').innerHTML = `🎯 混合校準後的首選：<b style="color:var(--accent2);font-size:16px;">${maxName}</b> (機率 ${pct(maxProb)})`;
 
+  // ⚡ 過濾掉機率小於 1% 的比分，只顯示 1% 或以上的
+  const filteredList = list.filter(s => s.p >= 0.01);
+  
   $('topList').innerHTML = `
     <table>
       <thead><tr><th>#</th><th>比分（主 - 客）</th><th>機率</th></tr></thead>
       <tbody>
-        ${list.slice(0, 6).map((s, i) => `<tr><td>${i + 1}</td><td>${s.h} - ${s.a}</td><td>${pct(s.p)}</td></tr>`).join('')}
+        ${filteredList.map((s, i) => `<tr><td>${i + 1}</td><td>${s.h} - ${s.a}</td><td>${pct(s.p)}</td></tr>`).join('')}
       </tbody>
     </table>
   `;
