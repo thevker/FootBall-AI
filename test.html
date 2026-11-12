@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>三大演算法 綜合預測器</title>
+<title>雙模式 綜合預測器</title>
 <style>
   :root{
     --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
     --txt:#e8eefc; --muted:#8fa3c4;
-    --accent:#3ddc97; --accent2:#4da3ff; --warn:#ffb347; --danger:#ff5e5e;
+    --accent:#3ddc97; --accent2:#4da3ff; --warn:#ffb347;
   }
   *{box-sizing:border-box}
   html { -webkit-text-size-adjust: 100%; overflow-anchor: none; }
@@ -53,16 +53,16 @@
   #result.show{display:block;animation:fade .3s ease}
   @keyframes fade{from{opacity:0}to{opacity:1}}
   
-  /* 三模式對比區 */
-  .compare-modes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  /* 兩模式對比區 */
+  .compare-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
   @media(max-width:620px){.compare-modes{grid-template-columns:1fr}}
-  .cm-card { background: var(--card2); border: 1px solid var(--line); border-radius: 14px; padding: 12px; text-align: center; cursor: pointer; transition: border-color 0.2s; }
+  .cm-card { background: var(--card2); border: 1px solid var(--line); border-radius: 14px; padding: 14px; text-align: center; cursor: pointer; transition: border-color 0.2s; }
   .cm-card:hover { border-color: var(--accent2); }
   .cm-card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; background: #142a3f; }
-  .cm-title { font-size: 12px; color: var(--muted); font-weight: bold; margin-bottom: 8px; }
-  .cm-score { font-size: 24px; font-weight: 800; color: var(--accent2); }
+  .cm-title { font-size: 13px; color: var(--muted); font-weight: bold; margin-bottom: 8px; }
+  .cm-score { font-size: 28px; font-weight: 800; color: var(--accent2); }
   .cm-score.active-score { color: var(--accent); }
-  .cm-prob { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .cm-prob { font-size: 13px; color: var(--muted); margin-top: 4px; }
 
   /* 詳細結果標題 */
   .detail-title { font-size: 14px; color: var(--txt); font-weight: 700; margin-bottom: 12px; border-left: 3px solid var(--accent2); padding-left: 8px; display: flex; justify-content: space-between; align-items: center; }
@@ -116,8 +116,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>三大演算法 綜合預測器</h1>
-  <p class="sub">同時展示「原始比例」、「進球加權 (方法一)」與「期望值調整 (方法二)」的結果。可點擊上方卡片切換下方詳細數據。</p>
+  <h1>雙模式 綜合預測器</h1>
+  <p class="sub">保留「自訂矩陣比例」與「期望值調整」兩種算法。可點擊上方卡片切換下方詳細數據。</p>
 
   <div class="grid">
     <div class="team">
@@ -151,28 +151,23 @@
   </div>
 
   <div id="result">
-    <!-- 三模式對比區 -->
+    <!-- 雙模式對比區 -->
     <div class="compare-modes" id="compareModes">
       <div class="cm-card active" id="card-mode0" onclick="switchView(0)">
-        <div class="cm-title">原始比例</div>
+        <div class="cm-title">自訂（矩陣比例）</div>
         <div class="cm-score" id="sc0">-</div>
         <div class="cm-prob" id="pr0">-</div>
       </div>
-      <div class="cm-card" id="card-mode1" onclick="switchView(1)">
-        <div class="cm-title">方法一 (進球加權)</div>
+      <div class="cm-card" id="card-mode2" onclick="switchView(1)">
+        <div class="cm-title">自訂（期望調整）</div>
         <div class="cm-score" id="sc1">-</div>
         <div class="cm-prob" id="pr1">-</div>
-      </div>
-      <div class="cm-card" id="card-mode2" onclick="switchView(2)">
-        <div class="cm-title">方法二 (期望調整)</div>
-        <div class="cm-score" id="sc2">-</div>
-        <div class="cm-prob" id="pr2">-</div>
       </div>
     </div>
 
     <!-- 詳細結果 -->
     <div class="detail-title">
-      <span id="detailLabel">正在顯示：原始比例</span>
+      <span id="detailLabel">正在顯示：自訂（矩陣比例）</span>
     </div>
     
     <div class="scores" id="scores"></div>
@@ -211,17 +206,17 @@ const fact = n => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; };
 const poisson = (k, l) => Math.exp(-l) * Math.pow(l, k) / fact(k);
 const pct = p => (p * 100).toFixed(1) + '%';
 
-let currentView = 0; // 0: 原始, 1: 加權, 2: 調整 λ
-let resultsData = []; // 存儲三種算法的結果
+let currentView = 0; 
+let resultsData = []; 
 
 function switchView(index) {
   currentView = index;
-  for (let i = 0; i < 3; i++) {
-    document.getElementById('card-mode' + i).className = i === index ? 'cm-card active' : 'cm-card';
+  for (let i = 0; i < 2; i++) {
+    document.getElementById('card-mode' + (i === 0 ? '0' : '2')).className = i === index ? 'cm-card active' : 'cm-card';
   }
   if (resultsData[index]) {
     renderDetail(resultsData[index]);
-    const labels = ['原始比例', '方法一 (進球加權)', '方法二 (期望調整)'];
+    const labels = ['自訂（矩陣比例）', '自訂（期望調整）'];
     $('detailLabel').textContent = '正在顯示：' + labels[index];
   }
 }
@@ -268,7 +263,7 @@ $('clear').addEventListener('click', () => {
 
 $('go').addEventListener('click', predict);
 
-function calculateMatrix(lH, lA, ratioH, ratioA, ratioD, useWeight) {
+function calculateMatrix(lH, lA, ratioH, ratioA, ratioD) {
   const m = [];
   let finalTotal = 0;
   let final_lH = 0, final_lA = 0;
@@ -284,15 +279,9 @@ function calculateMatrix(lH, lA, ratioH, ratioA, ratioD, useWeight) {
       let p = poisson(i, lH) * poisson(j, lA);
       
       if (ratioH || ratioA || ratioD) {
-        if (i > j) {
-          let weight = useWeight ? (1 + 0.2 * i) : 1; // 方法一：進球數線性加權
-          m[i][j] = p * ratioH * weight;
-        } else if (i === j) {
-          m[i][j] = p * ratioD;
-        } else {
-          let weight = useWeight ? (1 + 0.2 * j) : 1;
-          m[i][j] = p * ratioA * weight;
-        }
+        if (i > j) m[i][j] = p * ratioH;
+        else if (i === j) m[i][j] = p * ratioD;
+        else m[i][j] = p * ratioA;
       } else {
         m[i][j] = p;
       }
@@ -369,24 +358,21 @@ function predict(){
     const ratioA = 2.5 / oddA;
     const ratioD = 3.5 / oddD;
 
-    // 模式 0: 原始
-    resultsData.push(calculateMatrix(lH_base, lA_base, ratioH, ratioA, ratioD, false));
+    // 模式 0: 矩陣比例
+    resultsData.push(calculateMatrix(lH_base, lA_base, ratioH, ratioA, ratioD));
     
-    // 模式 1: 進球加權
-    resultsData.push(calculateMatrix(lH_base, lA_base, ratioH, ratioA, ratioD, true));
-
-    // 模式 2: 調整 λ (直接用 ratio 乘進球期望)
+    // 模式 2: 期望值調整
     let lH_adj = Math.min(Math.max(lH_base * ratioH, 0.05), 8);
     let lA_adj = Math.min(Math.max(lA_base * ratioA, 0.05), 8);
-    resultsData.push(calculateMatrix(lH_adj, lA_adj, null, null, null, false));
+    resultsData.push(calculateMatrix(lH_adj, lA_adj, null, null, null));
   } else {
-    // 沒賠率時三種演算法結果一樣
-    const res = calculateMatrix(lH_base, lA_base, null, null, null, false);
-    resultsData = [res, res, res];
+    // 沒賠率時兩種結果一樣
+    const res = calculateMatrix(lH_base, lA_base, null, null, null);
+    resultsData = [res, res];
   }
 
   // 更新上方對比卡片
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 2; i++) {
     $('sc' + i).textContent = resultsData[i].top2Scores[0].h + ' - ' + resultsData[i].top2Scores[0].a;
     $('pr' + i).textContent = '機率 ' + pct(resultsData[i].top2Scores[0].p);
   }
