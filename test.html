@@ -29,6 +29,7 @@
   .team.away h2{color:var(--warn)}
   label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
   
+  /* 隱藏 type="number" 的上下箭頭 */
   input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; }
   input { font-size: 16px !important; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
@@ -104,7 +105,7 @@
 <body>
 <div class="wrap">
   <h1>精準校準 綜合預測器</h1>
-  <p class="sub">完全服從市場賠率！系統將你的賠率轉換為目標機率，並強行重塑比分矩陣。不管和局機率多低，只要賠率有給，1-1 就不會消失。輸入順序為 <b>主 - 客 - 和</b>。</p>
+  <p class="sub">完全服從莊家真實定價！系統將你的賠率轉換為「去水後的真實機率」，並重塑比分矩陣。輸入順序為 <b>主 - 客 - 和</b>。</p>
 
   <div class="grid">
     <div class="team">
@@ -154,7 +155,7 @@
     <div class="lam" id="lam"></div>
 
     <div class="panel">
-      <h3>最終賽果機率</h3>
+      <h3>最終賽果機率 (已對齊莊家)</h3>
       <div id="bars"></div>
       <div id="advice" class="advice-box"></div>
     </div>
@@ -167,21 +168,56 @@
 const $ = id => document.getElementById(id);
 const MAXG = 10;
 
+// 基本數學
 const fact = n => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; };
 const poisson = (k, l) => Math.exp(-l) * Math.pow(l, k) / fact(k);
 const pct = p => (p * 100).toFixed(1) + '%';
 
+/* ---------- 嚴格限制只能輸入數字和小數點 ---------- */
+function restrictInput(el) {
+  let val = el.value;
+  val = val.replace(/[^0-9.]/g, '');
+  const parts = val.split('.');
+  if (parts.length > 2) {
+    val = parts[0] + '.' + parts.slice(1).join('');
+  }
+  if (val.startsWith('.')) {
+    val = '0' + val;
+  }
+  el.value = val;
+}
+
+/* ---------- 格式化：093 → 0.93，190 → 1.90 ---------- */
 function normalizeInput(el){
   let v = el.value.trim();
   if (v === '') return;
-  if (/^0\d+$/.test(v)) { el.value = (parseInt(v, 10) / 100).toFixed(2); return; }
-  if (/^\d+$/.test(v)){ const n = parseInt(v, 10); if (n >= 100) el.value = (n / 100).toFixed(2); return; }
-  if (/^\d*\.\d+$/.test(v) || /^\d+\.$/.test(v)){ const n = parseFloat(v); if (isFinite(n)) el.value = n.toFixed(2); }
+
+  if (/^0\d+$/.test(v)) {
+    el.value = (parseInt(v, 10) / 100).toFixed(2);
+    return;
+  }
+
+  if (/^\d+$/.test(v)){
+    const n = parseInt(v, 10);
+    if (n >= 100) el.value = (n / 100).toFixed(2);
+    return;
+  }
+
+  if (/^\d*\.\d+$/.test(v) || /^\d+\.$/.test(v)){
+    const n = parseFloat(v);
+    if (isFinite(n)) el.value = n.toFixed(2);
+  }
 }
 
 document.querySelectorAll('input').forEach(el => {
-  el.addEventListener('keydown', (e) => { if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault(); });
-  if (el.classList.contains('num-input')) el.addEventListener('blur', () => normalizeInput(el));
+  el.addEventListener('input', () => restrictInput(el));
+  el.addEventListener('keydown', (e) => { 
+    if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault(); 
+    if (e.key === 'Enter') { normalizeInput(el); predict(); }
+  });
+  if (el.classList.contains('num-input')) {
+    el.addEventListener('blur', () => normalizeInput(el));
+  }
 });
 
 $('clear').addEventListener('click', () => {
@@ -206,7 +242,7 @@ function predict(){
   let lH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
   let lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
 
-  // 2. 讀取市場賠率並轉換為隱含機率
+  // 2. 讀取市場賠率並轉換為去水真實機率
   const oddH = parseFloat($('oddH').value);
   const oddA = parseFloat($('oddA').value);
   const oddD = parseFloat($('oddD').value);
@@ -237,10 +273,9 @@ function predict(){
     }
   }
 
-  // 4. 如果輸入了賠率，強制重塑矩陣 (保留形狀，改變總量)
+  // 4. 強制重塑矩陣 (完全服從賠率機率)
   let finalTotal = 0;
   if (hasOdds) {
-    // 計算每個賽果的縮放倍數
     const scaleH = targetH / (baseH || 0.001);
     const scaleD = targetD / (baseD || 0.001);
     const scaleA = targetA / (baseA || 0.001);
@@ -321,8 +356,8 @@ function predict(){
   `;
 
   $('lam').innerHTML = `
-    <div>基礎進球期望：主 <b>${lH.toFixed(2)}</b> ｜ 客 <b>${lA.toFixed(2)}</b></div>
-    <div style="color:var(--warn)">(最終機率已完全服從市場賠率)</div>
+    <div>純數據進球期望：主 <b>${lH.toFixed(2)}</b> ｜ 客 <b>${lA.toFixed(2)}</b></div>
+    <div style="color:var(--warn)">(已根據賠率重塑比分機率)</div>
   `;
 
   const bars = [
@@ -341,7 +376,7 @@ function predict(){
   if (draw > maxProb) { maxName = '和局'; maxProb = draw; }
   if (awayWin > maxProb) { maxName = '客勝'; maxProb = awayWin; }
 
-  $('advice').innerHTML = `🎯 嚴格校準後的首選：<b style="color:var(--accent2);font-size:16px;">${maxName}</b> (機率 ${pct(maxProb)})`;
+  $('advice').innerHTML = `🎯 嚴格對齊莊家後的首選：<b style="color:var(--accent2);font-size:16px;">${maxName}</b> (機率 ${pct(maxProb)})`;
 
   $('topList').innerHTML = `
     <table>
