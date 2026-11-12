@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>數據與賠率 Ratio 預測器</title>
+<title>精準校準 綜合預測器</title>
 <style>
   :root{
     --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
@@ -103,8 +103,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>數據與賠率 Ratio 預測器</h1>
-  <p class="sub">使用市場賠率計算出「比例（Ratio）」。只要某隊賠率極低（大熱門），系統會直接按比例大幅拉高該隊的進球期望。輸入順序為 <b>主 - 客 - 和</b>。</p>
+  <h1>精準校準 綜合預測器</h1>
+  <p class="sub">完全服從市場賠率！系統將你的賠率轉換為目標機率，並強行重塑比分矩陣。不管和局機率多低，只要賠率有給，1-1 就不會消失。輸入順序為 <b>主 - 客 - 和</b>。</p>
 
   <div class="grid">
     <div class="team">
@@ -206,54 +206,58 @@ function predict(){
   let lH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
   let lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
 
-  // 2. 讀取市場賠率並計算 Ratio
+  // 2. 讀取市場賠率並轉換為隱含機率
   const oddH = parseFloat($('oddH').value);
   const oddA = parseFloat($('oddA').value);
   const oddD = parseFloat($('oddD').value);
   const hasOdds = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
   
+  let targetH = 0, targetD = 0, targetA = 0;
   if (hasOdds) {
     const sum = (1/oddH) + (1/oddA) + (1/oddD);
-    const mkH = (1/oddH) / sum;
-    const mkA = (1/oddA) / sum;
-    const mkD = (1/oddD) / sum;
-
-    // ⚡ 核心 Ratio 邏輯：以 33.3% 為基準，計算熱度倍數
-    // 例如主勝隱含機率 55.7%，ratio = 55.7 / 33.3 = 1.67 倍
-    let ratioH = mkH / 0.3333;
-    let ratioA = mkA / 0.3333;
-
-    // 防呆限制：最多放大到 2 倍，最低降到 0.3 倍（防止極端比分）
-    ratioH = Math.min(Math.max(ratioH, 0.3), 2.0);
-    ratioA = Math.min(Math.max(ratioA, 0.3), 2.0);
-
-    // 直接將進球期望乘以這個倍數
-    lH = lH * ratioH;
-    lA = lA * ratioA;
-
-    // 如果和局機率極高（>35%），代表防守大戰，壓低雙方進球
-    if (mkD > 0.35) {
-      lH *= 0.8;
-      lA *= 0.8;
-    }
+    targetH = (1/oddH) / sum;
+    targetA = (1/oddA) / sum;
+    targetD = (1/oddD) / sum;
   }
 
-  // 安全限制
-  lH = Math.min(Math.max(lH, 0.1), 8);
-  lA = Math.min(Math.max(lA, 0.1), 8);
-
-  // 3. 用最終的 λ 計算泊松矩陣
+  // 3. 生成基礎泊松矩陣
   const m = [];
-  let total = 0;
+  let baseTotal = 0;
+  let baseH = 0, baseD = 0, baseA = 0;
+
   for (let i = 0; i <= MAXG; i++){
     m[i] = [];
     for (let j = 0; j <= MAXG; j++){
       let p = poisson(i, lH) * poisson(j, lA);
       m[i][j] = p;
-      total += p;
+      baseTotal += p;
+      if (i > j) baseH += p;
+      else if (i === j) baseD += p;
+      else baseA += p;
     }
   }
 
+  // 4. 如果輸入了賠率，強制重塑矩陣 (保留形狀，改變總量)
+  let finalTotal = 0;
+  if (hasOdds) {
+    // 計算每個賽果的縮放倍數
+    const scaleH = targetH / (baseH || 0.001);
+    const scaleD = targetD / (baseD || 0.001);
+    const scaleA = targetA / (baseA || 0.001);
+
+    for (let i = 0; i <= MAXG; i++){
+      for (let j = 0; j <= MAXG; j++){
+        if (i > j) m[i][j] *= scaleH;
+        else if (i === j) m[i][j] *= scaleD;
+        else m[i][j] *= scaleA;
+        finalTotal += m[i][j];
+      }
+    }
+  } else {
+    finalTotal = baseTotal;
+  }
+
+  // 5. 統計最終數據
   let homeWin = 0, draw = 0, awayWin = 0, over25 = 0, btts = 0;
   const list = [];
   const goalProbs = Array(2 * MAXG + 1).fill(0);
@@ -262,7 +266,7 @@ function predict(){
 
   for (let i = 0; i <= MAXG; i++){
     for (let j = 0; j <= MAXG; j++){
-      const p = m[i][j] / total;
+      const p = m[i][j] / finalTotal;
       if (i > j) homeWin += p;
       else if (i === j) draw += p;
       else awayWin += p;
@@ -317,8 +321,8 @@ function predict(){
   `;
 
   $('lam').innerHTML = `
-    <div>調整後主期望入球 <b>${lH.toFixed(2)}</b></div>
-    <div>調整後客期望入球 <b>${lA.toFixed(2)}</b></div>
+    <div>基礎進球期望：主 <b>${lH.toFixed(2)}</b> ｜ 客 <b>${lA.toFixed(2)}</b></div>
+    <div style="color:var(--warn)">(最終機率已完全服從市場賠率)</div>
   `;
 
   const bars = [
@@ -337,7 +341,7 @@ function predict(){
   if (draw > maxProb) { maxName = '和局'; maxProb = draw; }
   if (awayWin > maxProb) { maxName = '客勝'; maxProb = awayWin; }
 
-  $('advice').innerHTML = `🎯 綜合數據與 Ratio 賠率，首選：<b style="color:var(--accent2);font-size:16px;">${maxName}</b> (機率 ${pct(maxProb)})`;
+  $('advice').innerHTML = `🎯 嚴格校準後的首選：<b style="color:var(--accent2);font-size:16px;">${maxName}</b> (機率 ${pct(maxProb)})`;
 
   $('topList').innerHTML = `
     <table>
