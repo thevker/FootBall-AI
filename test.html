@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>專屬預測器 (雙模式切換)</title>
+<title>三大演算法 綜合預測器</title>
 <style>
   :root{
     --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
     --txt:#e8eefc; --muted:#8fa3c4;
-    --accent:#3ddc97; --accent2:#4da3ff; --warn:#ffb347;
+    --accent:#3ddc97; --accent2:#4da3ff; --warn:#ffb347; --danger:#ff5e5e;
   }
   *{box-sizing:border-box}
   html { -webkit-text-size-adjust: 100%; overflow-anchor: none; }
@@ -29,7 +29,6 @@
   .team.away h2{color:var(--warn)}
   label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
   
-  /* 移除 type number 的上下箭頭 */
   input { font-size: 16px !important; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
   
   .num-input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0e1626;color:var(--txt);font-variant-numeric:tabular-nums}
@@ -37,16 +36,6 @@
   .row{display:flex;gap:10px}
   .row>div{flex:1}
   
-  /* 模式切換開關 */
-  .mode-switch {
-    display: flex; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 4px; margin-top: 16px;
-  }
-  .mode-btn {
-    flex: 1; text-align: center; padding: 10px; font-size: 13px; font-weight: bold; color: var(--muted); cursor: pointer; border-radius: 8px; transition: all 0.2s;
-  }
-  .mode-btn.active { background: rgba(77,163,255,.15); color: var(--accent2); border: 1px solid rgba(77,163,255,.3); }
-  .mode-btn.active-warn { background: rgba(255,179,71,.15); color: var(--warn); border: 1px solid rgba(255,179,71,.3); }
-
   .odds-panel { margin-top: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
   .panel-title { font-size: 14px; color: var(--accent); margin-bottom: 12px; font-weight: 700; display: flex; justify-content: space-between; }
   .panel-title span { font-size: 11px; color: var(--muted); font-weight: normal; }
@@ -63,6 +52,20 @@
   #result{display:none;margin-top:26px}
   #result.show{display:block;animation:fade .3s ease}
   @keyframes fade{from{opacity:0}to{opacity:1}}
+  
+  /* 三模式對比區 */
+  .compare-modes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  @media(max-width:620px){.compare-modes{grid-template-columns:1fr}}
+  .cm-card { background: var(--card2); border: 1px solid var(--line); border-radius: 14px; padding: 12px; text-align: center; cursor: pointer; transition: border-color 0.2s; }
+  .cm-card:hover { border-color: var(--accent2); }
+  .cm-card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; background: #142a3f; }
+  .cm-title { font-size: 12px; color: var(--muted); font-weight: bold; margin-bottom: 8px; }
+  .cm-score { font-size: 24px; font-weight: 800; color: var(--accent2); }
+  .cm-score.active-score { color: var(--accent); }
+  .cm-prob { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* 詳細結果標題 */
+  .detail-title { font-size: 14px; color: var(--txt); font-weight: 700; margin-bottom: 12px; border-left: 3px solid var(--accent2); padding-left: 8px; display: flex; justify-content: space-between; align-items: center; }
   
   .scores{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:620px){.scores{grid-template-columns:1fr}}
@@ -113,34 +116,28 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>專屬預測器 (雙模式切換)</h1>
-  <p class="sub">預設為您的「自訂 Ratio」模式。切換模式可對比不同算法。輸入順序為 <b>主 - 客 - 和</b>。</p>
+  <h1>三大演算法 綜合預測器</h1>
+  <p class="sub">同時展示「原始比例」、「進球加權 (方法一)」與「期望值調整 (方法二)」的結果。可點擊上方卡片切換下方詳細數據。</p>
 
   <div class="grid">
     <div class="team">
       <h2>🏠 主隊 (主場數據)</h2>
       <div class="row">
-        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="hGF" placeholder="例如 2.14"></div>
-        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="hGA" placeholder="例如 1.29"></div>
+        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="hGF" placeholder="例如 1.10"></div>
+        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="hGA" placeholder="例如 0.90"></div>
       </div>
     </div>
     <div class="team away">
       <h2>✈️ 客隊 (客場數據)</h2>
       <div class="row">
-        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="aGF" placeholder="例如 0.88"></div>
-        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="aGA" placeholder="例如 1.25"></div>
+        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="aGF" placeholder="例如 1.00"></div>
+        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="aGA" placeholder="例如 1.20"></div>
       </div>
     </div>
   </div>
 
-  <!-- 模式切換 -->
-  <div class="mode-switch">
-    <div class="mode-btn active" id="modeCustom" onclick="setMode('custom')">自訂 Ratio (2.5/3.5)</div>
-    <div class="mode-btn" id="modeOld" onclick="setMode('old')">舊模式 (無去水純賠率)</div>
-  </div>
-
   <div class="odds-panel">
-    <div class="panel-title">市場 1X2 賠率 <span>主 - 客 - 和，留空則純看數據</span></div>
+    <div class="panel-title">市場 1X2 賠率 <span>主 - 客 - 和</span></div>
     <div class="odds-inputs">
       <input type="text" inputmode="decimal" class="num-input" id="oddH" placeholder="主勝賠率">
       <input type="text" inputmode="decimal" class="num-input" id="oddA" placeholder="客勝賠率">
@@ -154,6 +151,30 @@
   </div>
 
   <div id="result">
+    <!-- 三模式對比區 -->
+    <div class="compare-modes" id="compareModes">
+      <div class="cm-card active" id="card-mode0" onclick="switchView(0)">
+        <div class="cm-title">原始比例</div>
+        <div class="cm-score" id="sc0">-</div>
+        <div class="cm-prob" id="pr0">-</div>
+      </div>
+      <div class="cm-card" id="card-mode1" onclick="switchView(1)">
+        <div class="cm-title">方法一 (進球加權)</div>
+        <div class="cm-score" id="sc1">-</div>
+        <div class="cm-prob" id="pr1">-</div>
+      </div>
+      <div class="cm-card" id="card-mode2" onclick="switchView(2)">
+        <div class="cm-title">方法二 (期望調整)</div>
+        <div class="cm-score" id="sc2">-</div>
+        <div class="cm-prob" id="pr2">-</div>
+      </div>
+    </div>
+
+    <!-- 詳細結果 -->
+    <div class="detail-title">
+      <span id="detailLabel">正在顯示：原始比例</span>
+    </div>
+    
     <div class="scores" id="scores"></div>
     
     <div class="extra-sections">
@@ -183,22 +204,6 @@
 </div>
 
 <script>
-let currentMode = 'custom'; // 預設自訂模式
-
-function setMode(mode) {
-  currentMode = mode;
-  const btnCustom = document.getElementById('modeCustom');
-  const btnOld = document.getElementById('modeOld');
-  
-  if (mode === 'custom') {
-    btnCustom.className = 'mode-btn active';
-    btnOld.className = 'mode-btn';
-  } else {
-    btnCustom.className = 'mode-btn';
-    btnOld.className = 'mode-btn active-warn';
-  }
-}
-
 const $ = id => document.getElementById(id);
 const MAXG = 10;
 
@@ -206,43 +211,34 @@ const fact = n => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; };
 const poisson = (k, l) => Math.exp(-l) * Math.pow(l, k) / fact(k);
 const pct = p => (p * 100).toFixed(1) + '%';
 
-/* 
- * ⚡ 修復光標跳動的核心邏輯：
- * 記錄原本的游標位置，過濾字元後，將游標放回正確的相對位置
- */
+let currentView = 0; // 0: 原始, 1: 加權, 2: 調整 λ
+let resultsData = []; // 存儲三種算法的結果
+
+function switchView(index) {
+  currentView = index;
+  for (let i = 0; i < 3; i++) {
+    document.getElementById('card-mode' + i).className = i === index ? 'cm-card active' : 'cm-card';
+  }
+  if (resultsData[index]) {
+    renderDetail(resultsData[index]);
+    const labels = ['原始比例', '方法一 (進球加權)', '方法二 (期望調整)'];
+    $('detailLabel').textContent = '正在顯示：' + labels[index];
+  }
+}
+
 function restrictInput(el) {
   const originalValue = el.value;
   const start = el.selectionStart;
-  
-  // 1. 只保留數字和小數點
   let val = originalValue.replace(/[^0-9.]/g, '');
-  
-  // 2. 處理多個小數點（只保留第一個）
   const parts = val.split('.');
-  if (parts.length > 2) {
-    val = parts[0] + '.' + parts.slice(1).join('');
-  }
-  
-  // 3. 處理開頭是小數點
-  if (val.startsWith('.')) {
-    val = '0' + val;
-  }
+  if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+  if (val.startsWith('.')) val = '0' + val;
 
-  // 4. 如果內容被過濾了，才重新賦值並恢復游標
   if (val !== originalValue) {
     el.value = val;
-    
-    // 計算原本游標前面有幾個合法字元
     let newPos = originalValue.slice(0, start).replace(/[^0-9.]/g, '').length;
-    
-    // 如果開頭補了 0，游標需要往後移一位
-    if (originalValue.startsWith('.') && val.startsWith('0.')) {
-      newPos++;
-    }
-    
-    // 安全限制：游標不能超過字串長度
+    if (originalValue.startsWith('.') && val.startsWith('0.')) newPos++;
     if (newPos > val.length) newPos = val.length;
-    
     el.setSelectionRange(newPos, newPos);
   }
 }
@@ -250,22 +246,11 @@ function restrictInput(el) {
 function normalizeInput(el){
   let v = el.value.trim();
   if (v === '') return;
-  
   let originalValue = v;
-  
-  if (/^0\d+$/.test(v)) { 
-    v = (parseInt(v, 10) / 100).toFixed(2); 
-  } else if (/^\d+$/.test(v)){ 
-    const n = parseInt(v, 10); 
-    if (n >= 100) v = (n / 100).toFixed(2); 
-  } else if (/^\d*\.\d+$/.test(v) || /^\d+\.$/.test(v)){ 
-    const n = parseFloat(v); 
-    if (isFinite(n)) v = n.toFixed(2); 
-  }
-  
-  if (v !== originalValue) {
-    el.value = v;
-  }
+  if (/^0\d+$/.test(v)) { v = (parseInt(v, 10) / 100).toFixed(2); } 
+  else if (/^\d+$/.test(v)){ const n = parseInt(v, 10); if (n >= 100) v = (n / 100).toFixed(2); } 
+  else if (/^\d*\.\d+$/.test(v) || /^\d+\.$/.test(v)){ const n = parseFloat(v); if (isFinite(n)) v = n.toFixed(2); }
+  if (v !== originalValue) el.value = v;
 }
 
 document.querySelectorAll('input').forEach(el => {
@@ -283,6 +268,81 @@ $('clear').addEventListener('click', () => {
 
 $('go').addEventListener('click', predict);
 
+function calculateMatrix(lH, lA, ratioH, ratioA, ratioD, useWeight) {
+  const m = [];
+  let finalTotal = 0;
+  let final_lH = 0, final_lA = 0;
+  let homeWin = 0, draw = 0, awayWin = 0, over25 = 0, btts = 0;
+  const list = [];
+  const goalProbs = Array(2 * MAXG + 1).fill(0);
+  const hGoalProbs = Array(MAXG + 1).fill(0);
+  const aGoalProbs = Array(MAXG + 1).fill(0);
+
+  for (let i = 0; i <= MAXG; i++){
+    m[i] = [];
+    for (let j = 0; j <= MAXG; j++){
+      let p = poisson(i, lH) * poisson(j, lA);
+      
+      if (ratioH || ratioA || ratioD) {
+        if (i > j) {
+          let weight = useWeight ? (1 + 0.2 * i) : 1; // 方法一：進球數線性加權
+          m[i][j] = p * ratioH * weight;
+        } else if (i === j) {
+          m[i][j] = p * ratioD;
+        } else {
+          let weight = useWeight ? (1 + 0.2 * j) : 1;
+          m[i][j] = p * ratioA * weight;
+        }
+      } else {
+        m[i][j] = p;
+      }
+      finalTotal += m[i][j];
+    }
+  }
+
+  for (let i = 0; i <= MAXG; i++){
+    for (let j = 0; j <= MAXG; j++){
+      const p = m[i][j] / finalTotal;
+      if (i > j) homeWin += p;
+      else if (i === j) draw += p;
+      else awayWin += p;
+      if (i + j > 2.5) over25 += p;
+      if (i > 0 && j > 0) btts += p;
+      
+      final_lH += i * p;
+      final_lA += j * p;
+
+      goalProbs[i + j] += p;
+      hGoalProbs[i] += p;
+      aGoalProbs[j] += p;
+      
+      list.push({ h: i, a: j, p });
+    }
+  }
+
+  let isHomeFav = ratioH && ratioA ? (ratioH > ratioA) : (lH > lA);
+  
+  list.sort((x, y) => {
+    if (Math.abs(x.p - y.p) > 1e-6) return y.p - x.p;
+    if (isHomeFav) {
+      if (x.h > x.a && y.h <= y.a) return -1;
+      if (y.h > y.a && x.h <= x.a) return 1;
+    } else {
+      if (x.a > x.h && y.a <= y.h) return -1;
+      if (y.a > y.h && x.a <= x.h) return 1;
+    }
+    return 0;
+  });
+
+  const getTop2 = arr => arr.map((p, val) => ({ val, p })).sort((a, b) => b.p - a.p).slice(0, 2);
+
+  return {
+    list, top2Scores: list.slice(0, 2),
+    top2Total: getTop2(goalProbs), top2H: getTop2(hGoalProbs), top2A: getTop2(aGoalProbs),
+    homeWin, draw, awayWin, over25, btts, final_lH, final_lA, finalTotal
+  };
+}
+
 function predict(){
   document.querySelectorAll('.num-input').forEach(normalizeInput);
 
@@ -294,124 +354,51 @@ function predict(){
     return;
   }
 
-  // 1. 基礎期望入球 (λ)
-  let lH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
-  let lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
+  let lH_base = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
+  let lA_base = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
 
-  // 2. 生成基礎泊松矩陣
-  const m = [];
-  let baseTotal = 0;
-  let baseH = 0, baseD = 0, baseA = 0;
-
-  for (let i = 0; i <= MAXG; i++){
-    m[i] = [];
-    for (let j = 0; j <= MAXG; j++){
-      let p = poisson(i, lH) * poisson(j, lA);
-      m[i][j] = p;
-      baseTotal += p;
-      if (i > j) baseH += p;
-      else if (i === j) baseD += p;
-      else baseA += p;
-    }
-  }
-
-  // 3. 讀取賠率
   const oddH = parseFloat($('oddH').value);
   const oddA = parseFloat($('oddA').value);
   const oddD = parseFloat($('oddD').value);
   const hasOdds = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
 
-  let isHomeFav = false;
-  let finalTotal = 0;
+  resultsData = [];
 
   if (hasOdds) {
-    isHomeFav = oddH < oddA;
+    const ratioH = 2.5 / oddH;
+    const ratioA = 2.5 / oddA;
+    const ratioD = 3.5 / oddD;
+
+    // 模式 0: 原始
+    resultsData.push(calculateMatrix(lH_base, lA_base, ratioH, ratioA, ratioD, false));
     
-    if (currentMode === 'custom') {
-      // ⚡ 模式一：自訂 Ratio (主客 2.5 / 賠率，和局 3.5 / 賠率)
-      const ratioH = 2.5 / oddH;
-      const ratioA = 2.5 / oddA;
-      const ratioD = 3.5 / oddD;
+    // 模式 1: 進球加權
+    resultsData.push(calculateMatrix(lH_base, lA_base, ratioH, ratioA, ratioD, true));
 
-      for (let i = 0; i <= MAXG; i++){
-        for (let j = 0; j <= MAXG; j++){
-          if (i > j) m[i][j] *= ratioH;
-          else if (i === j) m[i][j] *= ratioD;
-          else m[i][j] *= ratioA;
-          finalTotal += m[i][j];
-        }
-      }
-    } else {
-      // ⚡ 模式二：舊模式 (刪除去水，直接使用 1 / 賠率 作為權重縮放矩陣)
-      const mkH = 1 / oddH;
-      const mkA = 1 / oddA;
-      const mkD = 1 / oddD;
-
-      const scaleH = mkH / (baseH || 0.001);
-      const scaleD = mkD / (baseD || 0.001);
-      const scaleA = mkA / (baseA || 0.001);
-
-      for (let i = 0; i <= MAXG; i++){
-        for (let j = 0; j <= MAXG; j++){
-          if (i > j) m[i][j] *= scaleH;
-          else if (i === j) m[i][j] *= scaleD;
-          else m[i][j] *= scaleA;
-          finalTotal += m[i][j];
-        }
-      }
-    }
+    // 模式 2: 調整 λ (直接用 ratio 乘進球期望)
+    let lH_adj = Math.min(Math.max(lH_base * ratioH, 0.05), 8);
+    let lA_adj = Math.min(Math.max(lA_base * ratioA, 0.05), 8);
+    resultsData.push(calculateMatrix(lH_adj, lA_adj, null, null, null, false));
   } else {
-    isHomeFav = lH > lA;
-    finalTotal = baseTotal;
+    // 沒賠率時三種演算法結果一樣
+    const res = calculateMatrix(lH_base, lA_base, null, null, null, false);
+    resultsData = [res, res, res];
   }
 
-  // 4. 統計最終數據
-  let homeWin = 0, draw = 0, awayWin = 0, over25 = 0, btts = 0;
-  const list = [];
-  const goalProbs = Array(2 * MAXG + 1).fill(0);
-  const hGoalProbs = Array(MAXG + 1).fill(0);
-  const aGoalProbs = Array(MAXG + 1).fill(0);
-
-  for (let i = 0; i <= MAXG; i++){
-    for (let j = 0; j <= MAXG; j++){
-      const p = m[i][j] / finalTotal;
-      if (i > j) homeWin += p;
-      else if (i === j) draw += p;
-      else awayWin += p;
-      if (i + j > 2.5) over25 += p;
-      if (i > 0 && j > 0) btts += p;
-      
-      goalProbs[i + j] += p;
-      hGoalProbs[i] += p;
-      aGoalProbs[j] += p;
-      
-      list.push({ h: i, a: j, p });
-    }
+  // 更新上方對比卡片
+  for (let i = 0; i < 3; i++) {
+    $('sc' + i).textContent = resultsData[i].top2Scores[0].h + ' - ' + resultsData[i].top2Scores[0].a;
+    $('pr' + i).textContent = '機率 ' + pct(resultsData[i].top2Scores[0].p);
   }
 
-  // 嚴格排序：只有機率完全相同時才看方向
-  list.sort((x, y) => {
-    if (Math.abs(x.p - y.p) > 1e-6) {
-      return y.p - x.p;
-    }
-    if (isHomeFav) {
-      if (x.h > x.a && y.h <= y.a) return -1;
-      if (y.h > y.a && x.h <= x.a) return 1;
-    } else {
-      if (x.a > x.h && y.a <= y.h) return -1;
-      if (y.a > y.h && x.a <= x.h) return 1;
-    }
-    return 0;
-  });
+  // 渲染當前視圖
+  switchView(currentView);
 
-  const top2Scores = list.slice(0, 2);
-  const getTop2 = arr => arr.map((p, val) => ({ val, p })).sort((a, b) => b.p - a.p).slice(0, 2);
-  const top2Total = getTop2(goalProbs);
-  const top2H = getTop2(hGoalProbs);
-  const top2A = getTop2(aGoalProbs);
+  $('result').classList.add('show');
+}
 
-  // 渲染
-  $('scores').innerHTML = top2Scores.map((s, idx) => `
+function renderDetail(data) {
+  $('scores').innerHTML = data.top2Scores.map((s, idx) => `
     <div class="score ${idx === 0 ? 'one' : ''}">
       <div class="tag">${idx === 0 ? '首選比分' : '次選比分'}</div>
       <div class="big">${s.h} - ${s.a}</div>
@@ -419,7 +406,7 @@ function predict(){
     </div>
   `).join('');
 
-  $('totalGoals').innerHTML = top2Total.map((g, idx) => `
+  $('totalGoals').innerHTML = data.top2Total.map((g, idx) => `
     <div class="tg-card ${idx === 0 ? 'one' : ''}">
       <div class="tag">${idx === 0 ? '首選' : '次選'}</div>
       <div class="val">${g.val} 球</div>
@@ -428,28 +415,28 @@ function predict(){
   `).join('');
 
   $('teamGoals').innerHTML = `
-    <div class="tg-card ${top2H[0].val >= top2H[1].val ? 'one' : ''}">
-      <div class="tag">主首選</div><div class="val">${top2H[0].val}</div><div class="pct">${pct(top2H[0].p)}</div>
+    <div class="tg-card ${data.top2H[0].val >= data.top2H[1].val ? 'one' : ''}">
+      <div class="tag">主首選</div><div class="val">${data.top2H[0].val}</div><div class="pct">${pct(data.top2H[0].p)}</div>
     </div>
     <div class="tg-card">
-      <div class="tag">主次選</div><div class="val">${top2H[1].val}</div><div class="pct">${pct(top2H[1].p)}</div>
+      <div class="tag">主次選</div><div class="val">${data.top2H[1].val}</div><div class="pct">${pct(data.top2H[1].p)}</div>
     </div>
-    <div class="tg-card ${top2A[0].val >= top2A[1].val ? 'one' : ''}">
-      <div class="tag">客首選</div><div class="val">${top2A[0].val}</div><div class="pct">${pct(top2A[0].p)}</div>
+    <div class="tg-card ${data.top2A[0].val >= data.top2A[1].val ? 'one' : ''}">
+      <div class="tag">客首選</div><div class="val">${data.top2A[0].val}</div><div class="pct">${pct(data.top2A[0].p)}</div>
     </div>
     <div class="tg-card">
-      <div class="tag">客次選</div><div class="val">${top2A[1].val}</div><div class="pct">${pct(top2A[1].p)}</div>
+      <div class="tag">客次選</div><div class="val">${data.top2A[1].val}</div><div class="pct">${pct(data.top2A[1].p)}</div>
     </div>
   `;
 
   $('lam').innerHTML = `
-    <div>基礎主期望入球 <b>${lH.toFixed(2)}</b></div>
-    <div>基礎客期望入球 <b>${lA.toFixed(2)}</b></div>
+    <div>最終主期望入球 <b>${data.final_lH.toFixed(2)}</b></div>
+    <div>最終客期望入球 <b>${data.final_lA.toFixed(2)}</b></div>
   `;
 
   const bars = [
-    ['主勝', homeWin], ['和局', draw], ['客勝', awayWin],
-    ['大 2.5 球', over25], ['細 2.5 球', 1 - over25], ['兩隊入球', btts]
+    ['主勝', data.homeWin], ['和局', data.draw], ['客勝', data.awayWin],
+    ['大 2.5 球', data.over25], ['細 2.5 球', 1 - data.over25], ['兩隊入球', data.btts]
   ];
   $('bars').innerHTML = bars.map(([nm, v]) => `
     <div class="bar">
@@ -459,15 +446,13 @@ function predict(){
     </div>
   `).join('');
 
-  let maxName = '主勝', maxProb = homeWin;
-  if (draw > maxProb) { maxName = '和局'; maxProb = draw; }
-  if (awayWin > maxProb) { maxName = '客勝'; maxProb = awayWin; }
+  let maxName = '主勝', maxProb = data.homeWin;
+  if (data.draw > maxProb) { maxName = '和局'; maxProb = data.draw; }
+  if (data.awayWin > maxProb) { maxName = '客勝'; maxProb = data.awayWin; }
 
   $('advice').innerHTML = `🎯 最終預測首選：<b style="color:var(--accent2);font-size:16px;">${maxName}</b> (機率 ${pct(maxProb)})`;
 
-  // 過濾 1% 以上的比分
-  const filteredList = list.filter(s => s.p >= 0.01);
-  
+  const filteredList = data.list.filter(s => s.p >= 0.01);
   $('topList').innerHTML = `
     <table>
       <thead><tr><th>#</th><th>比分（主 - 客）</th><th>機率</th></tr></thead>
@@ -476,8 +461,6 @@ function predict(){
       </tbody>
     </table>
   `;
-
-  $('result').classList.add('show');
 }
 </script>
 </body>
