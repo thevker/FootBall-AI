@@ -51,7 +51,24 @@
   .pct{font-size:14px;color:var(--muted)}
   .pct b{color:var(--txt)}
   
-  .lam{display:flex;justify-content:center;gap:22px;font-size:12px;color:var(--muted);margin-top:12px}
+  /* 總入球與球隊入球雙選樣式 */
+  .extra-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  @media(max-width:620px){.extra-sections{grid-template-columns:1fr}}
+  
+  .extra-box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  .extra-title { font-size: 13px; color: var(--muted); margin-bottom: 10px; text-align: center; letter-spacing: 1px; }
+  
+  .tg-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tg-card {
+    background: #0e1626; border: 1px solid var(--line); border-radius: 10px; padding: 10px; text-align: center;
+  }
+  .tg-card.one { border-color: rgba(77,163,255,.55); background: #15233a; }
+  .tg-card .tag { font-size: 10px; color: var(--muted); }
+  .tg-card .val { font-size: 20px; font-weight: 800; color: var(--accent2); margin: 4px 0; }
+  .tg-card.one .val { color: var(--accent); }
+  .tg-card .pct { font-size: 11px; }
+
+  .lam{display:flex;justify-content:center;gap:22px;font-size:12px;color:var(--muted);margin-top:14px}
   .lam b{color:var(--txt)}
   
   .panel{margin-top:18px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
@@ -73,7 +90,7 @@
 <body>
 <div class="wrap">
   <h1>平均得分/失球 比分預測器</h1>
-  <p class="sub">輸入兩隊的場均得分與場均失球，系統以標準 Poisson 模型計算最可能的比分。<br>
+  <p class="sub">輸入兩隊的場均得分與場均失球，系統以標準 Poisson 模型計算最可能的比分與各項入球預測。<br>
   小提示：輸入 <code>093</code> 會自動變成 <code>0.93</code>；輸入 <code>190</code> 會變成 <code>1.90</code>。</p>
 
   <div class="grid">
@@ -99,7 +116,23 @@
   </div>
 
   <div id="result">
+    <!-- 精準比分雙選 -->
     <div class="scores" id="scores"></div>
+    
+    <!-- 總入球與球隊入球 -->
+    <div class="extra-sections">
+      <div class="extra-box">
+        <div class="extra-title">雙選總入球數</div>
+        <div class="tg-cards" id="totalGoals"></div>
+      </div>
+      <div class="extra-box">
+        <div class="extra-title">雙選球隊入球數</div>
+        <div class="tg-cards" id="teamGoals" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+          <!-- 這裡由 JS 動態生成主客隊入球 -->
+        </div>
+      </div>
+    </div>
+    
     <div class="lam" id="lam"></div>
     
     <div class="panel"><h3>賽果機率</h3><div id="bars"></div></div>
@@ -107,7 +140,8 @@
     
     <div class="note">
       ※ 計算方式：主隊期望入球 λH = ½(主隊場均得分 + 客隊場均失球)；客隊期望入球 λA = ½(客隊場均得分 + 主隊場均失球)。無主場優勢加成。<br>
-      ※ 比分機率 = Poisson(λH, 主隊入球) × Poisson(λA, 客隊入球)。此為統計模型，僅供參考，不構成投注建議。
+      ※ 總入球數與球隊入球數為所有比分組合的邊際機率加總。<br>
+      ※ 此為統計模型，僅供參考，不構成投注建議。
     </div>
   </div>
 </div>
@@ -125,21 +159,12 @@ const pct = p => (p * 100).toFixed(1) + '%';
 function normalizeInput(el){
   let v = el.value.trim().replace(',', '.');
   if (v === '') return;
-
-  // 處理前導零如 "093" -> "0.93"
-  if (/^0\d+$/.test(v)) {
-    el.value = (parseInt(v, 10) / 100).toFixed(2);
-    return;
-  }
-
-  // 處理純整數且 >= 100 如 "190" -> "1.90"
+  if (/^0\d+$/.test(v)) { el.value = (parseInt(v, 10) / 100).toFixed(2); return; }
   if (/^\d+$/.test(v)){
     const n = parseInt(v, 10);
     if (n >= 100) el.value = (n / 100).toFixed(2);
     return;
   }
-
-  // 處理含小數點的輸入，統一補到兩位
   if (/^\d*\.\d+$/.test(v) || /^\d+\.$/.test(v)){
     const n = parseFloat(v);
     if (isFinite(n)) el.value = n.toFixed(2);
@@ -148,9 +173,7 @@ function normalizeInput(el){
 
 document.querySelectorAll('.num-input').forEach(el => {
   el.addEventListener('blur', () => normalizeInput(el));
-  el.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { normalizeInput(el); predict(); }
-  });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') { normalizeInput(el); predict(); } });
 });
 
 /* ---------- 清除數據 ---------- */
@@ -189,9 +212,13 @@ function predict(){
     }
   }
 
-  // 統計各項賽果
+  // 統計數據
   let homeWin = 0, draw = 0, awayWin = 0, over25 = 0, btts = 0;
   const list = [];
+  const goalProbs = Array(2 * MAXG + 1).fill(0); // 總入球 0~20
+  const hGoalProbs = Array(MAXG + 1).fill(0);    // 主隊入球 0~10
+  const aGoalProbs = Array(MAXG + 1).fill(0);    // 客隊入球 0~10
+
   for (let i = 0; i <= MAXG; i++){
     for (let j = 0; j <= MAXG; j++){
       const p = m[i][j] / total;
@@ -200,20 +227,57 @@ function predict(){
       else awayWin += p;
       if (i + j > 2.5) over25 += p;
       if (i > 0 && j > 0) btts += p;
+      
+      goalProbs[i + j] += p; // 累加總入球
+      hGoalProbs[i] += p;    // 累加主隊入球
+      aGoalProbs[j] += p;    // 累加客隊入球
+      
       list.push({ h: i, a: j, p });
     }
   }
   list.sort((x, y) => y.p - x.p);
 
+  // 提取 Top 2
+  const top2Scores = list.slice(0, 2);
+  const getTop2 = arr => arr.map((p, val) => ({ val, p })).sort((a, b) => b.p - a.p).slice(0, 2);
+  
+  const top2Total = getTop2(goalProbs);
+  const top2H = getTop2(hGoalProbs);
+  const top2A = getTop2(aGoalProbs);
+
   // 渲染首選/次選比分
-  const top2 = list.slice(0, 2);
-  $('scores').innerHTML = top2.map((s, idx) => `
+  $('scores').innerHTML = top2Scores.map((s, idx) => `
     <div class="score ${idx === 0 ? 'one' : ''}">
       <div class="tag">${idx === 0 ? '首選比分' : '次選比分'}</div>
       <div class="big">${s.h} - ${s.a}</div>
       <div class="pct">機率 <b>${pct(s.p)}</b></div>
     </div>
   `).join('');
+
+  // 渲染雙選總入球
+  $('totalGoals').innerHTML = top2Total.map((g, idx) => `
+    <div class="tg-card ${idx === 0 ? 'one' : ''}">
+      <div class="tag">${idx === 0 ? '首選' : '次選'}</div>
+      <div class="val">${g.val} 球</div>
+      <div class="pct">${pct(g.p)}</div>
+    </div>
+  `).join('');
+
+  // 渲染雙選球隊入球（主隊2個 + 客隊2個）
+  $('teamGoals').innerHTML = `
+    <div class="tg-card ${top2H[0].val >= top2H[1].val ? 'one' : ''}">
+      <div class="tag">主首選</div><div class="val">${top2H[0].val}</div><div class="pct">${pct(top2H[0].p)}</div>
+    </div>
+    <div class="tg-card">
+      <div class="tag">主次選</div><div class="val">${top2H[1].val}</div><div class="pct">${pct(top2H[1].p)}</div>
+    </div>
+    <div class="tg-card ${top2A[0].val >= top2A[1].val ? 'one' : ''}">
+      <div class="tag">客首選</div><div class="val">${top2A[0].val}</div><div class="pct">${pct(top2A[0].p)}</div>
+    </div>
+    <div class="tg-card">
+      <div class="tag">客次選</div><div class="val">${top2A[1].val}</div><div class="pct">${pct(top2A[1].p)}</div>
+    </div>
+  `;
 
   $('lam').innerHTML = `
     <div>主隊期望入球 <b>${lH.toFixed(2)}</b></div>
