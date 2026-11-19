@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>專屬預測器 (自訂比例)</title>
+<style>
+  :root{
+    --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
+    --txt:#e8eefc; --muted:#8fa3c4;
+    --accent:#3ddc97; --accent2:#4da3ff; --warn:#ffb347;
+  }
+  *{box-sizing:border-box}
+  html { -webkit-text-size-adjust: 100%; overflow-anchor: none; }
+  body{
+    margin:0;min-height:100vh;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans TC",sans-serif;
+    background:radial-gradient(1200px 600px at 20% -10%,#1a2c4d 0%,transparent 60%),var(--bg);
+    color:var(--txt);padding:24px 16px 60px;display:flex;justify-content:center;
+    -webkit-overflow-scrolling: touch;
+  }
+  .wrap{width:100%;max-width:880px}
+  h1{font-size:22px;margin:0 0 4px;letter-spacing:.5px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 20px;line-height:1.6}
+  
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:620px){.grid{grid-template-columns:1fr}}
+  .team{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:16px;padding:16px}
+  .team h2{font-size:15px;margin:0 0 10px;color:var(--accent2);display:flex;align-items:center;gap:8px}
+  .team.away h2{color:var(--warn)}
+  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+  
+  input { font-size: 16px !important; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
+  
+  .num-input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0e1626;color:var(--txt);font-variant-numeric:tabular-nums}
+  .num-input:focus{border-color:var(--accent2)}
+  .row{display:flex;gap:10px}
+  .row>div{flex:1}
+  
+  .odds-panel { margin-top: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  .panel-title { font-size: 14px; color: var(--accent); margin-bottom: 12px; font-weight: 700; display: flex; justify-content: space-between; }
+  .panel-title span { font-size: 11px; color: var(--muted); font-weight: normal; }
+  .odds-inputs { display: flex; gap: 8px; }
+  .odds-inputs input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: #0e1626; color: var(--txt); text-align: center; }
+  .odds-inputs input:focus { border-color: var(--accent); }
+
+  .actions{display:flex;gap:12px;margin-top:20px}
+  button{padding:14px;border:0;border-radius:14px;cursor:pointer;font-size:16px;font-weight:800;color:#06231a;background:linear-gradient(135deg,#3ddc97,#4da3ff);flex:1; -webkit-tap-highlight-color: transparent;}
+  button:active{transform:translateY(1px)}
+  button.ghost{flex:0 0 auto;background:transparent;border:1px solid var(--line);color:var(--muted);font-weight:600;padding:14px 20px}
+  button.ghost:active{color:var(--txt);border-color:var(--accent2);background:rgba(77,163,255,.08)}
+  
+  #result{display:none;margin-top:26px}
+  #result.show{display:block;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  
+  /* 支援多卡片動態佈局 */
+  .scores{display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:14px;margin-bottom: 16px;}
+  @media(max-width:620px){.scores{grid-template-columns:1fr 1fr}}
+  
+  .score{background:linear-gradient(160deg,#173049,#101b2c);border:1px solid var(--line);border-radius:18px;padding:16px;text-align:center}
+  .score.one{border-color:rgba(61,220,151,.55);box-shadow:0 0 0 1px rgba(61,220,151,.15) inset,0 12px 30px -18px #3ddc97}
+  .tag{font-size:11px;letter-spacing:1px;color:var(--muted); margin-bottom: 6px;}
+  .big{font-size:36px;font-weight:800;margin:4px 0;font-variant-numeric:tabular-nums;letter-spacing:1px}
+  .one .big{color:var(--accent)}
+  .pct{font-size:13px;color:var(--muted)}
+  .pct b{color:var(--txt)}
+  
+  .extra-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media(max-width:620px){.extra-sections{grid-template-columns:1fr}}
+  
+  .extra-box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  .extra-title { font-size: 13px; color: var(--muted); margin-bottom: 10px; text-align: center; letter-spacing: 1px; }
+  
+  .tg-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tg-card { background: #0e1626; border: 1px solid var(--line); border-radius: 10px; padding: 10px; text-align: center; }
+  .tg-card.one { border-color: rgba(77,163,255,.55); background: #15233a; }
+  .tg-card .tag { font-size: 10px; color: var(--muted); }
+  .tg-card .val { font-size: 20px; font-weight: 800; color: var(--accent2); margin: 4px 0; }
+  .tg-card.one .val { color: var(--accent); }
+  .tg-card .pct { font-size: 11px; }
+
+  .lam{display:flex;justify-content:center;gap:22px;font-size:12px;color:var(--muted);margin-top:14px}
+  .lam b{color:var(--txt)}
+  
+  .panel{margin-top:18px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+  .panel h3{margin:0 0 12px;font-size:13px;color:var(--muted);font-weight:600;letter-spacing:1px}
+  
+  .bar{display:flex;align-items:center;gap:10px;margin:9px 0;font-size:13px}
+  .bar .nm{width:96px;flex:none;color:var(--muted)}
+  .bar .tr{flex:1;height:8px;background:#0e1626;border-radius:99px;overflow:hidden}
+  .bar .fl{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#3ddc97,#4da3ff);transition:width .5s ease}
+  .bar .vl{width:56px;text-align:right;font-variant-numeric:tabular-nums}
+
+  .advice-box { margin-top: 16px; padding: 12px; border-radius: 10px; background: rgba(61, 220, 151, 0.1); border: 1px solid rgba(61, 220, 151, 0.3); font-size: 14px; line-height: 1.6; text-align: center; font-weight: bold; }
+  .advice-box .dist { display:flex; justify-content:space-around; align-items:center; gap:10px; flex-wrap:wrap; }
+  .advice-box .dist b { font-size: 17px; font-variant-numeric: tabular-nums; }
+  
+  .table-container { max-height: 400px; overflow-y: auto; border-radius: 8px; border: 1px solid var(--line); }
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:500;font-size:12px;background:var(--card);position:sticky;top:0;z-index:1;box-shadow:0 1px 0 var(--line)}
+  th:last-child,td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:0}
+  tr:hover td { background: rgba(255,255,255,0.02); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>專屬預測器 (自訂比例)</h1>
+  <p class="sub">使用「2.5 / 賠率」與「3.5 / 賠率」直接縮放比分矩陣。顯示所有機率 ≥ 10% 的比分（若不足則顯示前兩名）。</p>
+
+  <div class="grid">
+    <div class="team">
+      <h2>🏠 主隊 (主場數據)</h2>
+      <div class="row">
+        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="hGF" placeholder="例如 1.10"></div>
+        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="hGA" placeholder="例如 0.90"></div>
+      </div>
+    </div>
+    <div class="team away">
+      <h2>✈️ 客隊 (客場數據)</h2>
+      <div class="row">
+        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="aGF" placeholder="例如 1.00"></div>
+        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="aGA" placeholder="例如 1.20"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="odds-panel">
+    <div class="panel-title">市場 1X2 賠率 <span>主 - 和 - 客，留空則純看數據</span></div>
+    <div class="odds-inputs">
+      <input type="text" inputmode="decimal" class="num-input" id="oddH" placeholder="主勝賠率">
+      <input type="text" inputmode="decimal" class="num-input" id="oddD" placeholder="和局賠率">
+      <input type="text" inputmode="decimal" class="num-input" id="oddA" placeholder="客勝賠率">
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="go">開始預測</button>
+    <button id="clear" class="ghost">清除</button>
+  </div>
+
+  <div id="result">
+    <!-- 比分卡片區塊 -->
+    <div class="scores" id="scores"></div>
+    
+    <div class="extra-sections">
+      <div class="extra-box">
+        <div class="extra-title">雙選總入球數</div>
+        <div class="tg-cards" id="totalGoals"></div>
+      </div>
+      <div class="extra-box">
+        <div class="extra-title">雙選球隊入球數</div>
+        <div class="tg-cards" id="teamGoals" style="grid-template-columns: 1fr 1fr 1fr 1fr;"></div>
+      </div>
+    </div>
+    
+    <div class="lam" id="lam"></div>
+
+    <div class="panel">
+      <h3>最終賽果機率</h3>
+      <div id="bars"></div>
+      <div id="advice" class="advice-box"></div>
+    </div>
+
+    <div class="panel">
+      <h3>完整比分機率分佈 (大於 1%)</h3>
+      <div class="table-container" id="topList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const MAXG = 10;
+
+const fact = n => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; };
+const poisson = (k, l) => Math.exp(-l) * Math.pow(l, k) / fact(k);
+const pct = p => (p * 100).toFixed(1) + '%';
+
+// 把三個機率換成一位小數百分比，並校正使總和剛好 100.0
+function normalizeTo100(a, b, c){
+  const r = x => Math.round(x * 1000) / 10;
+  let x = r(a), y = r(b), z = r(c);
+  let diff = Math.round((100 - (x + y + z)) * 10) / 10;
+  if (diff !== 0) {
+    if (x >= y && x >= z) x += diff;
+    else if (y >= z) y += diff;
+    else z += diff;
+  }
+  return [x.toFixed(1), y.toFixed(1), z.toFixed(1)];
+}
+
+function restrictInput(el) {
+  const originalValue = el.value;
+  const start = el.selectionStart;
+  let val = originalValue.replace(/[^0-9.]/g, '');
+  const parts = val.split('.');
+  if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+  if (val.startsWith('.')) val = '0' + val;
+
+  if (val !== originalValue) {
+    el.value = val;
+    let newPos = originalValue.slice(0, start).replace(/[^0-9.]/g, '').length;
+    if (originalValue.startsWith('.') && val.startsWith('0.')) newPos++;
+    if (newPos > val.length) newPos = val.length;
+    el.setSelectionRange(newPos, newPos);
+  }
+}
+
+function normalizeInput(el){
+  let v = el.value.trim();
+  if (v === '') return;
+  let originalValue = v;
+  if (/^0\d+$/.test(v)) { v = (parseInt(v, 10) / 100).toFixed(2); } 
+  else if (/^\d+$/.test(v)){ const n = parseInt(v, 10); if (n >= 100) v = (n / 100).toFixed(2); } 
+  else if (/^\d*\.\d+$/.test(v) || /^\d+\.$/.test(v)){ const n = parseFloat(v); if (isFinite(n)) v = n.toFixed(2); }
+  if (v !== originalValue) el.value = v;
+}
+
+document.querySelectorAll('input').forEach(el => {
+  el.addEventListener('input', () => restrictInput(el));
+  el.addEventListener('keydown', (e) => { 
+    if (e.key === 'Enter') { normalizeInput(el); predict(); }
+  });
+  if (el.classList.contains('num-input')) el.addEventListener('blur', () => normalizeInput(el));
+});
+
+$('clear').addEventListener('click', () => {
+  document.querySelectorAll('input[type=text]').forEach(el => el.value = '');
+  $('result').classList.remove('show');
+});
+
+$('go').addEventListener('click', predict);
+
+function predict(){
+  document.querySelectorAll('.num-input').forEach(normalizeInput);
+
+  const hGF = parseFloat($('hGF').value), hGA = parseFloat($('hGA').value);
+  const aGF = parseFloat($('aGF').value), aGA = parseFloat($('aGA').value);
+
+  if ([hGF, hGA, aGF, aGA].some(v => !isFinite(v) || v < 0)) {
+    alert('請輸入完整的場均得分與失球。');
+    return;
+  }
+
+  // 1. 基礎期望入球 (λ)
+  let lH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
+  let lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
+
+  // 2. 讀取賠率 (輸入框順序：主、和、客)
+  const oddH = parseFloat($('oddH').value);
+  const oddD = parseFloat($('oddD').value);
+  const oddA = parseFloat($('oddA').value);
+  const hasOdds = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
+
+  let isHomeFav = false;
+  let finalTotal = 0;
+  
+  const m = [];
+  for (let i = 0; i <= MAXG; i++){
+    m[i] = [];
+  }
+
+  if (hasOdds) {
+    isHomeFav = oddH < oddA;
+    const ratioH = 2.5 / oddH;
+    const ratioA = 2.5 / oddA;
+    const ratioD = 3.5 / oddD;
+
+    for (let i = 0; i <= MAXG; i++){
+      for (let j = 0; j <= MAXG; j++){
+        let p = poisson(i, lH) * poisson(j, lA);
+        if (i > j) m[i][j] = p * ratioH;
+        else if (i === j) m[i][j] = p * ratioD;
+        else m[i][j] = p * ratioA;
+        finalTotal += m[i][j];
+      }
+    }
+  } else {
+    isHomeFav = lH > lA;
+    for (let i = 0; i <= MAXG; i++){
+      for (let j = 0; j <= MAXG; j++){
+        let p = poisson(i, lH) * poisson(j, lA);
+        m[i][j] = p;
+        finalTotal += p;
+      }
+    }
+  }
+
+  // 3. 統計最終數據
+  let homeWin = 0, draw = 0, awayWin = 0, over25 = 0, btts = 0;
+  let final_lH = 0, final_lA = 0;
+  const list = [];
+  const goalProbs = Array(2 * MAXG + 1).fill(0);
+  const hGoalProbs = Array(MAXG + 1).fill(0);
+  const aGoalProbs = Array(MAXG + 1).fill(0);
+
+  for (let i = 0; i <= MAXG; i++){
+    for (let j = 0; j <= MAXG; j++){
+      const p = m[i][j] / finalTotal;
+      if (i > j) homeWin += p;
+      else if (i === j) draw += p;
+      else awayWin += p;
+      if (i + j > 2.5) over25 += p;
+      if (i > 0 && j > 0) btts += p;
+      
+      final_lH += i * p;
+      final_lA += j * p;
+
+      goalProbs[i + j] += p;
+      hGoalProbs[i] += p;
+      aGoalProbs[j] += p;
+      
+      list.push({ h: i, a: j, p });
+    }
+  }
+
+  // 嚴格排序
+  list.sort((x, y) => {
+    if (Math.abs(x.p - y.p) > 1e-6) return y.p - x.p;
+    if (isHomeFav) {
+      if (x.h > x.a && y.h <= y.a) return -1;
+      if (y.h > y.a && x.h <= x.a) return 1;
+    } else {
+      if (x.a > x.h && y.a <= y.h) return -1;
+      if (y.a > y.h && x.a <= x.h) return 1;
+    }
+    return 0;
+  });
+
+  // ⚡ 抓取大於等於 10% 的比分，如果少於 2 個，則補齊至 2 個
+  let topScores = list.filter(s => s.p >= 0.10);
+  if (topScores.length < 2) {
+    topScores = list.slice(0, 2);
+  }
+
+  const getTop2 = arr => arr.map((p, val) => ({ val, p })).sort((a, b) => b.p - a.p).slice(0, 2);
+  const top2Total = getTop2(goalProbs);
+  const top2H = getTop2(hGoalProbs);
+  const top2A = getTop2(aGoalProbs);
+
+  // 渲染動態比分卡片
+  $('scores').innerHTML = topScores.map((s, idx) => {
+    let label = idx === 0 ? '首選比分' : (idx === 1 ? '次選比分' : `第 ${idx+1} 順位`);
+    return `
+    <div class="score ${idx === 0 ? 'one' : ''}">
+      <div class="tag">${label}</div>
+      <div class="big">${s.h} - ${s.a}</div>
+      <div class="pct">機率 <b>${pct(s.p)}</b></div>
+    </div>
+  `}).join('');
+
+  $('totalGoals').innerHTML = top2Total.map((g, idx) => `
+    <div class="tg-card ${idx === 0 ? 'one' : ''}">
+      <div class="tag">${idx === 0 ? '首選' : '次選'}</div>
+      <div class="val">${g.val} 球</div>
+      <div class="pct">${pct(g.p)}</div>
+    </div>
+  `).join('');
+
+  $('teamGoals').innerHTML = `
+    <div class="tg-card ${top2H[0].val >= top2H[1].val ? 'one' : ''}">
+      <div class="tag">主首選</div><div class="val">${top2H[0].val}</div><div class="pct">${pct(top2H[0].p)}</div>
+    </div>
+    <div class="tg-card">
+      <div class="tag">主次選</div><div class="val">${top2H[1].val}</div><div class="pct">${pct(top2H[1].p)}</div>
+    </div>
+    <div class="tg-card ${top2A[0].val >= top2A[1].val ? 'one' : ''}">
+      <div class="tag">客首選</div><div class="val">${top2A[0].val}</div><div class="pct">${pct(top2A[0].p)}</div>
+    </div>
+    <div class="tg-card">
+      <div class="tag">客次選</div><div class="val">${top2A[1].val}</div><div class="pct">${pct(top2A[1].p)}</div>
+    </div>
+  `;
+
+  $('lam').innerHTML = `
+    <div>最終主期望入球 <b>${final_lH.toFixed(2)}</b></div>
+    <div>最終客期望入球 <b>${final_lA.toFixed(2)}</b></div>
+  `;
+
+  const bars = [
+    ['主勝', homeWin], ['和局', draw], ['客勝', awayWin],
+    ['大 2.5 球', over25], ['細 2.5 球', 1 - over25], ['兩隊入球', btts]
+  ];
+  $('bars').innerHTML = bars.map(([nm, v]) => `
+    <div class="bar">
+      <div class="nm">${nm}</div>
+      <div class="tr"><div class="fl" style="width: ${(v * 100).toFixed(1)}%;"></div></div>
+      <div class="vl">${pct(v)}</div>
+    </div>
+  `).join('');
+
+  // 顯示主 / 和 / 客三項機率，總和固定 100.0%
+  const [hStr, dStr, aStr] = normalizeTo100(homeWin, draw, awayWin);
+  $('advice').innerHTML = `
+    <div class="dist">
+      <div>主勝 <b style="color:var(--accent2);">${hStr}%</b></div>
+      <div>和局 <b style="color:var(--warn);">${dStr}%</b></div>
+      <div>客勝 <b style="color:var(--accent);">${aStr}%</b></div>
+    </div>
+  `;
+
+  // 列表只過濾 1% 以上的比分
+  const filteredList = list.filter(s => s.p >= 0.01);
+  
+  $('topList').innerHTML = `
+    <table>
+      <thead><tr><th>#</th><th>比分（主 - 客）</th><th>機率</th></tr></thead>
+      <tbody>
+        ${filteredList.map((s, i) => `<tr><td>${i + 1}</td><td>${s.h} - ${s.a}</td><td>${pct(s.p)}</td></tr>`).join('')}
+      </tbody>
+    </table>
+  `;
+
+  $('result').classList.add('show');
+}
+</script>
+</body>
+</html>
