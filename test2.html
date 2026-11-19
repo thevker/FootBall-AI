@@ -39,6 +39,21 @@
   .odds-panel { margin-top: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
   .panel-title { font-size: 14px; color: var(--accent); margin-bottom: 12px; font-weight: 700; display: flex; justify-content: space-between; }
   .panel-title span { font-size: 11px; color: var(--muted); font-weight: normal; }
+
+  /* 計算模式選擇 */
+  .mode-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+  .mode-row label { margin:0; font-size:12px; color:var(--muted); }
+  .mode-row select {
+    font-size:16px; padding:8px 10px; border-radius:8px;
+    border:1px solid var(--line); background:#0e1626; color:var(--txt);
+    -webkit-appearance:none; appearance:none; outline:none; cursor:pointer;
+    background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+    background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;
+    background-size:5px 5px,5px 5px; background-repeat:no-repeat;
+    padding-right:30px;
+  }
+  .mode-row select:focus { border-color:var(--accent2); }
+
   .odds-inputs { display: flex; gap: 8px; }
   .odds-inputs input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: #0e1626; color: var(--txt); text-align: center; }
   .odds-inputs input:focus { border-color: var(--accent); }
@@ -113,7 +128,7 @@
 <body>
 <div class="wrap">
   <h1>專屬預測器 (自訂比例)</h1>
-  <p class="sub">使用「2.5 / 賠率」與「3.5 / 賠率」直接縮放比分矩陣。固定顯示前四個最可能比分；大/細 2.5 或 BTTS ≥ 60% 時於相關比分標示星號（銀＝單一市場、金＝大小與 BTTS 同時命中）。</p>
+  <p class="sub">固定顯示前四個最可能比分；大/細 2.5 或 BTTS ≥ 60% 時於相關比分標示星號（銀＝單一市場、金＝大小與 BTTS 同時命中）。賠率縮放可選舊模式（2.5 / 3.5）或新模式（以和局賠率為基準）。</p>
 
   <div class="grid">
     <div class="team">
@@ -134,6 +149,13 @@
 
   <div class="odds-panel">
     <div class="panel-title">市場 1X2 賠率 <span>主 - 和 - 客，留空則純看數據</span></div>
+    <div class="mode-row">
+      <label for="mode">計算模式</label>
+      <select id="mode">
+        <option value="old" selected>舊模式（2.5 / 3.5）</option>
+        <option value="new">新模式（和局賠率基準）</option>
+      </select>
+    </div>
     <div class="odds-inputs">
       <input type="text" inputmode="decimal" class="num-input" id="oddH" placeholder="主勝賠率">
       <input type="text" inputmode="decimal" class="num-input" id="oddD" placeholder="和局賠率">
@@ -253,7 +275,8 @@ function predict(){
   let lH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
   let lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
 
-  // 2. 讀取賠率 (輸入框順序：主、和、客)
+  // 2. 讀取賠率與模式 (輸入框順序：主、和、客)
+  const mode = $('mode').value;
   const oddH = parseFloat($('oddH').value);
   const oddD = parseFloat($('oddD').value);
   const oddA = parseFloat($('oddA').value);
@@ -269,9 +292,19 @@ function predict(){
 
   if (hasOdds) {
     isHomeFav = oddH < oddA;
-    const ratioH = 2.5 / oddH;
-    const ratioA = 2.5 / oddA;
-    const ratioD = 3.5 / oddD;
+
+    let ratioH, ratioA, ratioD;
+    if (mode === 'new') {
+      // 新模式：以和局賠率為基準
+      ratioH = oddD / oddH;
+      ratioA = oddD / oddA;
+      ratioD = 1;            // 和局比分不縮放
+    } else {
+      // 舊模式：2.5 / 3.5
+      ratioH = 2.5 / oddH;
+      ratioA = 2.5 / oddA;
+      ratioD = 3.5 / oddD;
+    }
 
     for (let i = 0; i <= MAXG; i++){
       for (let j = 0; j <= MAXG; j++){
