@@ -57,13 +57,18 @@
   .scores{display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:14px;margin-bottom: 16px;}
   @media(max-width:620px){.scores{grid-template-columns:1fr 1fr}}
   
-  .score{background:linear-gradient(160deg,#173049,#101b2c);border:1px solid var(--line);border-radius:18px;padding:16px;text-align:center}
+  .score{position:relative;background:linear-gradient(160deg,#173049,#101b2c);border:1px solid var(--line);border-radius:18px;padding:16px;text-align:center}
   .score.one{border-color:rgba(61,220,151,.55);box-shadow:0 0 0 1px rgba(61,220,151,.15) inset,0 12px 30px -18px #3ddc97}
   .tag{font-size:11px;letter-spacing:1px;color:var(--muted); margin-bottom: 6px;}
   .big{font-size:36px;font-weight:800;margin:4px 0;font-variant-numeric:tabular-nums;letter-spacing:1px}
   .one .big{color:var(--accent)}
   .pct{font-size:13px;color:var(--muted)}
   .pct b{color:var(--txt)}
+
+  /* 星號標記 */
+  .star{position:absolute;top:8px;right:10px;font-size:16px;line-height:1;}
+  .star.silver{color:#c9d4e6;text-shadow:0 0 6px rgba(200,210,230,.65);}
+  .star.gold{color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,.75);}
   
   .extra-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media(max-width:620px){.extra-sections{grid-template-columns:1fr}}
@@ -90,10 +95,6 @@
   .bar .tr{flex:1;height:8px;background:#0e1626;border-radius:99px;overflow:hidden}
   .bar .fl{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#3ddc97,#4da3ff);transition:width .5s ease}
   .bar .vl{width:56px;text-align:right;font-variant-numeric:tabular-nums}
-
-  .advice-box { margin-top: 16px; padding: 12px; border-radius: 10px; background: rgba(61, 220, 151, 0.1); border: 1px solid rgba(61, 220, 151, 0.3); font-size: 14px; line-height: 1.6; text-align: center; font-weight: bold; }
-  .advice-box .dist { display:flex; justify-content:space-around; align-items:center; gap:10px; flex-wrap:wrap; }
-  .advice-box .dist b { font-size: 17px; font-variant-numeric: tabular-nums; }
   
   .table-container { max-height: 400px; overflow-y: auto; border-radius: 8px; border: 1px solid var(--line); }
   table{width:100%;border-collapse:collapse;font-size:13px}
@@ -107,7 +108,7 @@
 <body>
 <div class="wrap">
   <h1>專屬預測器 (自訂比例)</h1>
-  <p class="sub">使用「2.5 / 賠率」與「3.5 / 賠率」直接縮放比分矩陣。顯示所有機率 ≥ 10% 的比分（若不足則顯示前兩名）。</p>
+  <p class="sub">使用「2.5 / 賠率」與「3.5 / 賠率」直接縮放比分矩陣。固定顯示前四個最可能比分；大/細 2.5 或 BTTS ≥ 60% 時於相關比分標示星號（銀＝單一市場、金＝大小與 BTTS 同時命中）。</p>
 
   <div class="grid">
     <div class="team">
@@ -160,7 +161,6 @@
     <div class="panel">
       <h3>最終賽果機率</h3>
       <div id="bars"></div>
-      <div id="advice" class="advice-box"></div>
     </div>
 
     <div class="panel">
@@ -329,10 +329,18 @@ function predict(){
     return 0;
   });
 
-  // ⚡ 抓取大於等於 10% 的比分，如果少於 2 個，則補齊至 2 個
-  let topScores = list.filter(s => s.p >= 0.10);
-  if (topScores.length < 2) {
-    topScores = list.slice(0, 2);
+  // 固定取前四名
+  const topScores = list.slice(0, 4);
+
+  // 星號判定：大/細 2.5、BTTS 各自 ≥ 60% 時，相關比分標星
+  const big25 = over25 >= 0.60;
+  const small25 = (1 - over25) >= 0.60;
+  const bttsHot = btts >= 0.60;
+  function getStar(s){
+    const meetsSize = (big25 && (s.h + s.a) >= 3) || (small25 && (s.h + s.a) <= 2);
+    const meetsBTTS = bttsHot && s.h > 0 && s.a > 0;
+    if (!meetsSize && !meetsBTTS) return null;
+    return (meetsSize && meetsBTTS) ? 'gold' : 'silver';
   }
 
   const getTop2 = arr => arr.map((p, val) => ({ val, p })).sort((a, b) => b.p - a.p).slice(0, 2);
@@ -340,12 +348,14 @@ function predict(){
   const top2H = getTop2(hGoalProbs);
   const top2A = getTop2(aGoalProbs);
 
-  // 渲染動態比分卡片
+  // 渲染前四比分卡片
+  const labels = ['首選比分','次選比分','三選比分','四選比分'];
   $('scores').innerHTML = topScores.map((s, idx) => {
-    let label = idx === 0 ? '首選比分' : (idx === 1 ? '次選比分' : `第 ${idx+1} 順位`);
+    const st = getStar(s);
     return `
     <div class="score ${idx === 0 ? 'one' : ''}">
-      <div class="tag">${label}</div>
+      ${st ? `<div class="star ${st}">★</div>` : ''}
+      <div class="tag">${labels[idx]}</div>
       <div class="big">${s.h} - ${s.a}</div>
       <div class="pct">機率 <b>${pct(s.p)}</b></div>
     </div>
@@ -379,27 +389,23 @@ function predict(){
     <div>最終客期望入球 <b>${final_lA.toFixed(2)}</b></div>
   `;
 
+  // 主/和/客三項用 normalizeTo100 確保顯示總和 100.0%
+  const [hStr, dStr, aStr] = normalizeTo100(homeWin, draw, awayWin);
   const bars = [
-    ['主勝', homeWin], ['和局', draw], ['客勝', awayWin],
-    ['大 2.5 球', over25], ['細 2.5 球', 1 - over25], ['兩隊入球', btts]
+    ['主勝', homeWin, hStr + '%'],
+    ['和局', draw, dStr + '%'],
+    ['客勝', awayWin, aStr + '%'],
+    ['大 2.5 球', over25, pct(over25)],
+    ['細 2.5 球', 1 - over25, pct(1 - over25)],
+    ['兩隊入球', btts, pct(btts)]
   ];
-  $('bars').innerHTML = bars.map(([nm, v]) => `
+  $('bars').innerHTML = bars.map(([nm, v, str]) => `
     <div class="bar">
       <div class="nm">${nm}</div>
       <div class="tr"><div class="fl" style="width: ${(v * 100).toFixed(1)}%;"></div></div>
-      <div class="vl">${pct(v)}</div>
+      <div class="vl">${str}</div>
     </div>
   `).join('');
-
-  // 顯示主 / 和 / 客三項機率，總和固定 100.0%
-  const [hStr, dStr, aStr] = normalizeTo100(homeWin, draw, awayWin);
-  $('advice').innerHTML = `
-    <div class="dist">
-      <div>主勝 <b style="color:var(--accent2);">${hStr}%</b></div>
-      <div>和局 <b style="color:var(--warn);">${dStr}%</b></div>
-      <div>客勝 <b style="color:var(--accent);">${aStr}%</b></div>
-    </div>
-  `;
 
   // 列表只過濾 1% 以上的比分
   const filteredList = list.filter(s => s.p >= 0.01);
