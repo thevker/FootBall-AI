@@ -128,7 +128,7 @@
 <body>
 <div class="wrap">
   <h1>專屬預測器 (雙模式)</h1>
-  <p class="sub">模式 1：固定 2.5 / 3.5 縮放；模式 2：用賠率反推 λ（需完整賠率）。固定顯示前四比分；大/細 2.5 或 BTTS ≥ 60% 時標示星號（銀＝單一市場、金＝大小與 BTTS 同時命中）。</p>
+  <p class="sub">模式 1：固定 2.5 / 3.5 縮放；模式 2：用賠率比例強行放大 λ（需完整賠率）。固定顯示前四比分；大/細 2.5 或 BTTS ≥ 60% 時標示星號（銀＝單一市場、金＝大小與 BTTS 同時命中）。</p>
 
   <div class="grid">
     <div class="team">
@@ -153,7 +153,7 @@
       <label for="mode">計算模式</label>
       <select id="mode">
         <option value="mode1" selected>模式 1（舊模式 2.5 / 3.5）</option>
-        <option value="mode2">模式 2（賠率反推 λ）</option>
+        <option value="mode2">模式 2（賠率放大 λ）</option>
       </select>
     </div>
     <div class="odds-inputs">
@@ -218,42 +218,6 @@ function normalizeTo100(a, b, c){
   return [x.toFixed(1), y.toFixed(1), z.toFixed(1)];
 }
 
-// 模式 2 專用：用去水後機率反推 λH, λA
-function solveLambdasFromOdds(pH, pA) {
-  const MAX = 6;
-  const calc = (lH, lA) => {
-    let home = 0, away = 0;
-    for (let i = 0; i <= MAXG; i++) {
-      const pi = poisson(i, lH);
-      for (let j = 0; j <= MAXG; j++) {
-        const p = pi * poisson(j, lA);
-        if (i > j) home += p;
-        else if (i < j) away += p;
-      }
-    }
-    return { home, away };
-  };
-
-  const solveLA = (lH, targetAway) => {
-    let lo = 0.05, hi = MAX;
-    for (let k = 0; k < 50; k++) {
-      const mid = (lo + hi) / 2;
-      if (calc(lH, mid).away < targetAway) lo = mid; else hi = mid;
-    }
-    return (lo + hi) / 2;
-  };
-
-  let lo = 0.05, hi = MAX;
-  for (let k = 0; k < 50; k++) {
-    const mid = (lo + hi) / 2;
-    const lA = solveLA(mid, pA);
-    if (calc(mid, lA).home < pH) lo = mid; else hi = mid;
-  }
-  const lH = (lo + hi) / 2;
-  const lA = solveLA(lH, pA);
-  return { lH, lA };
-}
-
 function restrictInput(el) {
   const originalValue = el.value;
   const start = el.selectionStart;
@@ -308,8 +272,10 @@ function predict(){
   }
 
   // 1. 基礎期望入球 (λ)
-  let lH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
-  let lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
+  let baseLH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
+  let baseLA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
+  let lH = baseLH;
+  let lA = baseLA;
 
   // 2. 讀取模式與賠率 (輸入框順序：主、和、客)
   const mode = $('mode').value;
@@ -335,15 +301,14 @@ function predict(){
     isHomeFav = oddH < oddA;
 
     if (mode === 'mode2') {
-      // 模式 2：反推 λ
-      const invH = 1 / oddH, invD = 1 / oddD, invA = 1 / oddA;
-      const sum = invH + invD + invA;
-      const pH = invH / sum, pA = invA / sum;
-      const res = solveLambdasFromOdds(pH, pA);
+      // 模式 2：用賠率比例直接放大 λ (根號平滑)
+      const ratioH = Math.sqrt(oddD / oddH);
+      const ratioA = Math.sqrt(oddD / oddA);
       
-      lH = res.lH;
-      lA = res.lA;
+      lH = Math.min(Math.max(baseLH * ratioH, 0.05), 6);
+      lA = Math.min(Math.max(baseLA * ratioA, 0.05), 6);
 
+      // 單純使用調整後的 Poisson，不再對格子做二次縮放
       for (let i = 0; i <= MAXG; i++){
         for (let j = 0; j <= MAXG; j++){
           let p = poisson(i, lH) * poisson(j, lA);
@@ -368,7 +333,7 @@ function predict(){
       }
     }
   } else {
-    // 無賠率時走純數據（僅模式 1 會到這裡，因為模式 2 已被擋下）
+    // 無賠率時走純數據
     isHomeFav = lH > lA;
     for (let i = 0; i <= MAXG; i++){
       for (let j = 0; j <= MAXG; j++){
