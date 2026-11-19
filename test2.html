@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>專屬預測器 (三模式)</title>
+<title>專屬預測器 (三模式 + 自訂盤口)</title>
 <style>
   :root{
     --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
@@ -40,7 +40,7 @@
   .panel-title { font-size: 14px; color: var(--accent); margin-bottom: 12px; font-weight: 700; display: flex; justify-content: space-between; }
   .panel-title span { font-size: 11px; color: var(--muted); font-weight: normal; }
 
-  /* 計算模式選擇 */
+  /* 選擇器共用樣式 */
   .mode-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
   .mode-row label { margin:0; font-size:12px; color:var(--muted); }
   .mode-row select {
@@ -128,7 +128,7 @@
 <body>
 <div class="wrap">
   <h1>專屬預測器 (三模式)</h1>
-  <p class="sub">模式 1：2.5 / 3.5 縮放；模式 2：1X2 賠率放大 λ；模式 3：1X2 + 大小球聯合反推 λ。固定顯示前四比分；大/細 2.5 或 BTTS ≥ 60% 時標示星號。</p>
+  <p class="sub">模式 1：2.5 / 3.5 縮放；模式 2：1X2 賠率放大 λ；模式 3：1X2 + 大小球聯合反推 λ。固定顯示前四比分；大/細 (所選盤口) 或 BTTS ≥ 60% 時標示星號。</p>
 
   <div class="grid">
     <div class="team">
@@ -166,9 +166,20 @@
 
   <div class="odds-panel" style="margin-top: 10px;">
     <div class="panel-title">市場大小球賠率 <span>模式 3 必填</span></div>
+    <div class="mode-row" style="margin-bottom: 12px;">
+      <label for="ouLine">大小球盤口</label>
+      <select id="ouLine">
+        <option value="0.5">0.5 球</option>
+        <option value="1.5">1.5 球</option>
+        <option value="2.5" selected>2.5 球</option>
+        <option value="3.5">3.5 球</option>
+        <option value="4.5">4.5 球</option>
+        <option value="5.5">5.5 球</option>
+      </select>
+    </div>
     <div class="odds-inputs">
-      <input type="text" inputmode="decimal" class="num-input" id="oddOver" placeholder="大 2.5 賠率">
-      <input type="text" inputmode="decimal" class="num-input" id="oddUnder" placeholder="細 2.5 賠率">
+      <input type="text" inputmode="decimal" class="num-input" id="oddOver" placeholder="大球賠率">
+      <input type="text" inputmode="decimal" class="num-input" id="oddUnder" placeholder="細球賠率">
     </div>
   </div>
 
@@ -227,7 +238,7 @@ function normalizeTo100(a, b, c){
 }
 
 // 模式 3 核心：利用 1X2 與大小球賠率，網格搜尋最符合的 λH, λA
-function solveLambdasAll(pH, pA, pOver) {
+function solveLambdasAll(pH, pA, pOver, line) {
   const getProbs = (lH, lA) => {
     let home = 0, away = 0, over = 0;
     for(let i=0; i<=8; i++) {
@@ -236,7 +247,7 @@ function solveLambdasAll(pH, pA, pOver) {
         const p = pi * poisson(j, lA);
         if(i > j) home += p;
         else if(i < j) away += p;
-        if(i + j > 2.5) over += p;
+        if(i + j > line) over += p;
       }
     }
     return { home, away, over };
@@ -338,6 +349,7 @@ function predict(){
   const oddA = parseFloat($('oddA').value);
   const oddOver = parseFloat($('oddOver').value);
   const oddUnder = parseFloat($('oddUnder').value);
+  const ouLine = parseFloat($('ouLine').value);
   
   const has1x2 = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
   const hasOU = [oddOver, oddUnder].every(v => isFinite(v) && v > 1);
@@ -347,7 +359,7 @@ function predict(){
     return;
   }
   if (mode === 'mode3' && !hasOU) {
-    alert('模式 3 需要完整的大小球賠率（大 2.5 / 細 2.5）。');
+    alert('模式 3 需要完整的大小球賠率（大 / 細）。');
     return;
   }
 
@@ -370,7 +382,7 @@ function predict(){
     const sumOU = invOver + invUnder;
     const pOver = invOver / sumOU;
 
-    const res = solveLambdasAll(pH, pA, pOver);
+    const res = solveLambdasAll(pH, pA, pOver, ouLine);
     lH = res.lH;
     lA = res.lA;
 
@@ -426,7 +438,7 @@ function predict(){
   }
 
   // 3. 統計最終數據
-  let homeWin = 0, draw = 0, awayWin = 0, over25 = 0, btts = 0;
+  let homeWin = 0, draw = 0, awayWin = 0, overLine = 0, btts = 0;
   let final_lH = 0, final_lA = 0;
   const list = [];
   const goalProbs = Array(2 * MAXG + 1).fill(0);
@@ -439,7 +451,8 @@ function predict(){
       if (i > j) homeWin += p;
       else if (i === j) draw += p;
       else awayWin += p;
-      if (i + j > 2.5) over25 += p;
+      
+      if (i + j > ouLine) overLine += p;
       if (i > 0 && j > 0) btts += p;
       
       final_lH += i * p;
@@ -468,12 +481,12 @@ function predict(){
 
   const topScores = list.slice(0, 4);
 
-  // 星號判定：大/細 2.5、BTTS 各自 ≥ 60% 時
-  const big25 = over25 >= 0.60;
-  const small25 = (1 - over25) >= 0.60;
+  // 星號判定：大/細 所選盤口、BTTS 各自 ≥ 60% 時
+  const bigLine = overLine >= 0.60;
+  const smallLine = (1 - overLine) >= 0.60;
   const bttsHot = btts >= 0.60;
   function getStar(s){
-    const meetsSize = (big25 && (s.h + s.a) >= 3) || (small25 && (s.h + s.a) <= 2);
+    const meetsSize = (bigLine && (s.h + s.a) > ouLine) || (smallLine && (s.h + s.a) < ouLine);
     const meetsBTTS = bttsHot && s.h > 0 && s.a > 0;
     if (!meetsSize && !meetsBTTS) return null;
     return (meetsSize && meetsBTTS) ? 'gold' : 'silver';
@@ -531,8 +544,8 @@ function predict(){
     ['主勝', homeWin, hStr + '%'],
     ['和局', draw, dStr + '%'],
     ['客勝', awayWin, aStr + '%'],
-    ['大 2.5 球', over25, pct(over25)],
-    ['細 2.5 球', 1 - over25, pct(1 - over25)],
+    ['大 ' + ouLine + ' 球', overLine, pct(overLine)],
+    ['細 ' + ouLine + ' 球', 1 - overLine, pct(1 - overLine)],
     ['兩隊入球', btts, pct(btts)]
   ];
   $('bars').innerHTML = bars.map(([nm, v, str]) => `
