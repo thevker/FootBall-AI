@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>專屬預測器 (雙模式)</title>
+<title>專屬預測器 (三模式)</title>
 <style>
   :root{
     --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
@@ -127,8 +127,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>專屬預測器 (雙模式)</h1>
-  <p class="sub">模式 1：固定 2.5 / 3.5 縮放；模式 2：用賠率比例強行放大 λ（需完整賠率）。固定顯示前四比分；大/細 2.5 或 BTTS ≥ 60% 時標示星號（銀＝單一市場、金＝大小與 BTTS 同時命中）。</p>
+  <h1>專屬預測器 (三模式)</h1>
+  <p class="sub">模式 1：2.5 / 3.5 縮放；模式 2：1X2 賠率放大 λ；模式 3：1X2 + 大小球聯合反推 λ。固定顯示前四比分；大/細 2.5 或 BTTS ≥ 60% 時標示星號。</p>
 
   <div class="grid">
     <div class="team">
@@ -148,12 +148,13 @@
   </div>
 
   <div class="odds-panel">
-    <div class="panel-title">市場 1X2 賠率 <span>主 - 和 - 客，留空則純看數據</span></div>
+    <div class="panel-title">市場 1X2 賠率 <span>主 - 和 - 客</span></div>
     <div class="mode-row">
       <label for="mode">計算模式</label>
       <select id="mode">
         <option value="mode1">模式 1（舊模式 2.5 / 3.5）</option>
-        <option value="mode2" selected>模式 2（賠率放大 λ）</option>
+        <option value="mode2">模式 2（1X2 放大 λ）</option>
+        <option value="mode3" selected>模式 3（1X2 + 大小球反推）</option>
       </select>
     </div>
     <div class="odds-inputs">
@@ -163,13 +164,20 @@
     </div>
   </div>
 
+  <div class="odds-panel" style="margin-top: 10px;">
+    <div class="panel-title">市場大小球賠率 <span>模式 3 必填</span></div>
+    <div class="odds-inputs">
+      <input type="text" inputmode="decimal" class="num-input" id="oddOver" placeholder="大 2.5 賠率">
+      <input type="text" inputmode="decimal" class="num-input" id="oddUnder" placeholder="細 2.5 賠率">
+    </div>
+  </div>
+
   <div class="actions">
     <button id="go">開始預測</button>
     <button id="clear" class="ghost">清除</button>
   </div>
 
   <div id="result">
-    <!-- 比分卡片區塊 -->
     <div class="scores" id="scores"></div>
     
     <div class="extra-sections">
@@ -216,6 +224,52 @@ function normalizeTo100(a, b, c){
     else z += diff;
   }
   return [x.toFixed(1), y.toFixed(1), z.toFixed(1)];
+}
+
+// 模式 3 核心：利用 1X2 與大小球賠率，網格搜尋最符合的 λH, λA
+function solveLambdasAll(pH, pA, pOver) {
+  const getProbs = (lH, lA) => {
+    let home = 0, away = 0, over = 0;
+    for(let i=0; i<=8; i++) {
+      const pi = poisson(i, lH);
+      for(let j=0; j<=8; j++) {
+        const p = pi * poisson(j, lA);
+        if(i > j) home += p;
+        else if(i < j) away += p;
+        if(i + j > 2.5) over += p;
+      }
+    }
+    return { home, away, over };
+  };
+
+  let bestLH = 1.5, bestLA = 1.0;
+  let minError = Infinity;
+  
+  // 第一輪：粗搜 (步長 0.1)
+  for(let lh = 0.1; lh <= 4.5; lh += 0.1) {
+    for(let la = 0.1; la <= 4.5; la += 0.1) {
+      const probs = getProbs(lh, la);
+      const err = Math.pow(probs.home - pH, 2) + Math.pow(probs.away - pA, 2) + Math.pow(probs.over - pOver, 2);
+      if(err < minError) {
+        minError = err; bestLH = lh; bestLA = la;
+      }
+    }
+  }
+  
+  // 第二輪：細搜 (在最佳解附近步長 0.02)
+  let fineLH = bestLH, fineLA = bestLA;
+  let fineMinError = minError;
+  for(let lh = Math.max(0.05, bestLH - 0.15); lh <= bestLH + 0.15; lh += 0.02) {
+    for(let la = Math.max(0.05, bestLA - 0.15); la <= bestLA + 0.15; la += 0.02) {
+      const probs = getProbs(lh, la);
+      const err = Math.pow(probs.home - pH, 2) + Math.pow(probs.away - pA, 2) + Math.pow(probs.over - pOver, 2);
+      if(err < fineMinError) {
+        fineMinError = err; fineLH = lh; fineLA = la;
+      }
+    }
+  }
+  
+  return { lH: fineLH, lA: fineLA };
 }
 
 function restrictInput(el) {
@@ -277,15 +331,23 @@ function predict(){
   let lH = baseLH;
   let lA = baseLA;
 
-  // 2. 讀取模式與賠率 (輸入框順序：主、和、客)
+  // 2. 讀取數據
   const mode = $('mode').value;
   const oddH = parseFloat($('oddH').value);
   const oddD = parseFloat($('oddD').value);
   const oddA = parseFloat($('oddA').value);
-  const hasOdds = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
+  const oddOver = parseFloat($('oddOver').value);
+  const oddUnder = parseFloat($('oddUnder').value);
+  
+  const has1x2 = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
+  const hasOU = [oddOver, oddUnder].every(v => isFinite(v) && v > 1);
 
-  if (mode === 'mode2' && !hasOdds) {
-    alert('模式 2 需要完整的 1X2 賠率（主／和／客）。');
+  if ((mode === 'mode2' || mode === 'mode3') && !has1x2) {
+    alert('此模式需要完整的 1X2 賠率（主／和／客）。');
+    return;
+  }
+  if (mode === 'mode3' && !hasOU) {
+    alert('模式 3 需要完整的大小球賠率（大 2.5 / 細 2.5）。');
     return;
   }
 
@@ -297,43 +359,62 @@ function predict(){
     m[i] = [];
   }
 
-  if (hasOdds) {
+  if (mode === 'mode3') {
+    // 模式 3：全能反推 (1X2 + 大小球)
     isHomeFav = oddH < oddA;
+    const invH = 1 / oddH, invD = 1 / oddD, invA = 1 / oddA;
+    const sum1x2 = invH + invD + invA;
+    const pH = invH / sum1x2, pA = invA / sum1x2;
 
-    if (mode === 'mode2') {
-      // 模式 2：用賠率比例直接放大 λ (根號平滑)
-      const ratioH = Math.sqrt(oddD / oddH);
-      const ratioA = Math.sqrt(oddD / oddA);
-      
-      lH = Math.min(Math.max(baseLH * ratioH, 0.05), 6);
-      lA = Math.min(Math.max(baseLA * ratioA, 0.05), 6);
+    const invOver = 1 / oddOver, invUnder = 1 / oddUnder;
+    const sumOU = invOver + invUnder;
+    const pOver = invOver / sumOU;
 
-      // 單純使用調整後的 Poisson，不再對格子做二次縮放
-      for (let i = 0; i <= MAXG; i++){
-        for (let j = 0; j <= MAXG; j++){
-          let p = poisson(i, lH) * poisson(j, lA);
-          m[i][j] = p;
-          finalTotal += p;
-        }
+    const res = solveLambdasAll(pH, pA, pOver);
+    lH = res.lH;
+    lA = res.lA;
+
+    for (let i = 0; i <= MAXG; i++){
+      for (let j = 0; j <= MAXG; j++){
+        let p = poisson(i, lH) * poisson(j, lA);
+        m[i][j] = p;
+        finalTotal += p;
       }
-    } else {
-      // 模式 1：舊模式 2.5 / 3.5 縮放
-      const ratioH = 2.5 / oddH;
-      const ratioA = 2.5 / oddA;
-      const ratioD = 3.5 / oddD;
+    }
+  } else if (mode === 'mode2' && has1x2) {
+    // 模式 2：用 1X2 賠率放大 λ
+    isHomeFav = oddH < oddA;
+    const ratioH = Math.sqrt(oddD / oddH);
+    const ratioA = Math.sqrt(oddD / oddA);
+    
+    lH = Math.min(Math.max(baseLH * ratioH, 0.05), 6);
+    lA = Math.min(Math.max(baseLA * ratioA, 0.05), 6);
 
-      for (let i = 0; i <= MAXG; i++){
-        for (let j = 0; j <= MAXG; j++){
-          let p = poisson(i, lH) * poisson(j, lA);
-          if (i > j) m[i][j] = p * ratioH;
-          else if (i === j) m[i][j] = p * ratioD;
-          else m[i][j] = p * ratioA;
-          finalTotal += m[i][j];
-        }
+    for (let i = 0; i <= MAXG; i++){
+      for (let j = 0; j <= MAXG; j++){
+        let p = poisson(i, lH) * poisson(j, lA);
+        m[i][j] = p;
+        finalTotal += p;
+      }
+    }
+  } else if (mode === 'mode1' && has1x2) {
+    // 模式 1：舊模式 2.5 / 3.5 縮放
+    isHomeFav = oddH < oddA;
+    const ratioH = 2.5 / oddH;
+    const ratioA = 2.5 / oddA;
+    const ratioD = 3.5 / oddD;
+
+    for (let i = 0; i <= MAXG; i++){
+      for (let j = 0; j <= MAXG; j++){
+        let p = poisson(i, lH) * poisson(j, lA);
+        if (i > j) m[i][j] = p * ratioH;
+        else if (i === j) m[i][j] = p * ratioD;
+        else m[i][j] = p * ratioA;
+        finalTotal += m[i][j];
       }
     }
   } else {
-    // 無賠率時走純數據
+    // 無賠率或條件不足時走純數據
     isHomeFav = lH > lA;
     for (let i = 0; i <= MAXG; i++){
       for (let j = 0; j <= MAXG; j++){
@@ -385,10 +466,9 @@ function predict(){
     return 0;
   });
 
-  // 固定取前四名
   const topScores = list.slice(0, 4);
 
-  // 星號判定：大/細 2.5、BTTS 各自 ≥ 60% 時，相關比分標星
+  // 星號判定：大/細 2.5、BTTS 各自 ≥ 60% 時
   const big25 = over25 >= 0.60;
   const small25 = (1 - over25) >= 0.60;
   const bttsHot = btts >= 0.60;
@@ -463,7 +543,7 @@ function predict(){
     </div>
   `).join('');
 
-  // 列表只過濾 1% 以上的比分，並為每個比分加上星號
+  // 列表只過濾 1% 以上的比分
   const filteredList = list.filter(s => s.p >= 0.01);
   
   $('topList').innerHTML = `
