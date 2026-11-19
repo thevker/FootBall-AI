@@ -65,10 +65,15 @@
   .pct{font-size:13px;color:var(--muted)}
   .pct b{color:var(--txt)}
 
-  /* 星號標記 */
+  /* 星號標記（卡片用） */
   .star{position:absolute;top:8px;right:10px;font-size:16px;line-height:1;}
   .star.silver{color:#c9d4e6;text-shadow:0 0 6px rgba(200,210,230,.65);}
   .star.gold{color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,.75);}
+
+  /* 星號標記（表格用） */
+  .t-star{font-size:14px;margin-left:6px;line-height:1;}
+  .t-star.silver{color:#c9d4e6;text-shadow:0 0 6px rgba(200,210,230,.65);}
+  .t-star.gold{color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,.75);}
   
   .extra-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media(max-width:620px){.extra-sections{grid-template-columns:1fr}}
@@ -407,14 +412,18 @@ function predict(){
     </div>
   `).join('');
 
-  // 列表只過濾 1% 以上的比分
+  // 列表只過濾 1% 以上的比分，並為每個比分加上星號
   const filteredList = list.filter(s => s.p >= 0.01);
   
   $('topList').innerHTML = `
     <table>
       <thead><tr><th>#</th><th>比分（主 - 客）</th><th>機率</th></tr></thead>
       <tbody>
-        ${filteredList.map((s, i) => `<tr><td>${i + 1}</td><td>${s.h} - ${s.a}</td><td>${pct(s.p)}</td></tr>`).join('')}
+        ${filteredList.map((s, i) => {
+          const st = getStar(s);
+          const starHtml = st ? `<span class="t-star ${st}">★</span>` : '';
+          return `<tr><td>${i + 1}</td><td>${s.h} - ${s.a}${starHtml}</td><td>${pct(s.p)}</td></tr>`;
+        }).join('')}
       </tbody>
     </table>
   `;
