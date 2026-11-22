@@ -67,6 +67,40 @@
   #result.show{display:block;animation:fade .3s ease}
   @keyframes fade{from{opacity:0}to{opacity:1}}
 
+  /* 深度走勢評語卡片 */
+  .commentary-box {
+    background: linear-gradient(135deg, rgba(61,220,151,0.1), rgba(77,163,255,0.05));
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 24px;
+    line-height: 1.7;
+    font-size: 14px;
+    box-shadow: 0 8px 32px -12px rgba(61,220,151,0.2);
+  }
+  .commentary-box h3 {
+    margin: 0 0 12px;
+    font-size: 16px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .commentary-box p { margin: 0 0 12px; }
+  .commentary-box p:last-child { margin-bottom: 0; }
+  .commentary-box b { color: var(--txt); }
+  .tag-phase {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 800;
+    margin-right: 6px;
+  }
+  .phase-early { background: rgba(77,163,255,.2); color: #7fc1ff; }
+  .phase-mid { background: rgba(255,179,71,.2); color: #ffcd80; }
+  .phase-late { background: rgba(61,220,151,.2); color: #77eeb1; }
+
   /* 頁籤切換器 */
   .tabs {
     display: flex;
@@ -157,7 +191,7 @@
 <body>
 <div class="wrap">
   <h1>專屬預測器 (全場/半場)</h1>
-  <p class="sub">全場採大/細 2.5；半場固定採大/細 1.5。請至少完整填寫全場或半場其中一組數據。固定顯示前四比分；任一市場 ≥ 60% 時標示星號（銀＝單一條件、金＝條件全中）。</p>
+  <p class="sub">全場採大/細 2.5；半場固定採大/細 1.5。請至少完整填寫全場或半場其中一組數據。固定顯示前四比分；任一市場 ≥ 60% 時標示星號。</p>
 
   <div class="grid">
     <div class="team">
@@ -206,6 +240,8 @@
   </div>
 
   <div id="result">
+    <div id="commentary-container"></div>
+
     <div class="tabs" id="tabs">
       <button id="tab-full" class="tab-btn" onclick="switchTab('full')">全場預測 (2.5球)</button>
       <button id="tab-ht" class="tab-btn ht" onclick="switchTab('ht')">半場預測 (1.5球)</button>
@@ -220,6 +256,7 @@ const MAXG = 10;
 
 let fullHtml = '';
 let htHtml = '';
+let commentaryHtml = '';
 let isFullValid = false;
 let isHtValid = false;
 
@@ -227,7 +264,6 @@ const fact = n => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; };
 const poisson = (k, l) => Math.exp(-l) * Math.pow(l, k) / fact(k);
 const pct = p => (p * 100).toFixed(1) + '%';
 
-// 把三個機率換成一位小數百分比，並校正使總和剛好 100.0
 function normalizeTo100(a, b, c){
   const r = x => Math.round(x * 1000) / 10;
   let x = r(a), y = r(b), z = r(c);
@@ -278,16 +314,14 @@ document.querySelectorAll('input').forEach(el => {
 $('clear').addEventListener('click', () => {
   document.querySelectorAll('input[type=text]').forEach(el => el.value = '');
   $('result').classList.remove('show');
-  fullHtml = '';
-  htHtml = '';
-  isFullValid = false;
-  isHtValid = false;
+  fullHtml = ''; htHtml = ''; commentaryHtml = '';
+  isFullValid = false; isHtValid = false;
   $('result-content').innerHTML = '';
+  $('commentary-container').innerHTML = '';
 });
 
 $('go').addEventListener('click', predict);
 
-// 頁籤切換邏輯
 function switchTab(tab) {
   if (tab === 'full') {
     if (!isFullValid) { alert('全場數據不完整'); return; }
@@ -302,7 +336,81 @@ function switchTab(tab) {
   }
 }
 
-// 產出單一場景的 HTML 區塊
+// 生成豐富的深度評語
+function generateCommentary(fullStats, htStats) {
+  const f = fullStats;
+  const h = htStats;
+  
+  let text = `<div class="commentary-box"><h3>🔮 賽事深度走勢分析</h3>`;
+
+  // 1. 整體格局
+  let matchType = "";
+  if (f.homeWin > 0.60) matchType = "<b>主隊強勢碾壓</b>，客隊恐難招架。";
+  else if (f.awayWin > 0.60) matchType = "<b>客隊反客為主</b>，主隊防線將面臨巨大考驗。";
+  else if (Math.abs(f.homeWin - f.awayWin) < 0.15) matchType = "雙方實力接近，是一場<b>勢均力敵的拉鋸戰</b>。";
+  else matchType = "主隊略佔上風，但比賽懸念仍在。";
+  text += `<p>📊 <b>整體格局：</b>${matchType}</p>`;
+
+  // 2. 前期（上半場）
+  let earlyText = "";
+  const hOver = h.over; // 半場大 1.5 機率
+  if (hOver > 0.60) earlyText += "預計開局階段節奏極快，雙方防線早早將面臨考驗，極有可能在前45分鐘內就出現2個或以上的進球。";
+  else if (hOver < 0.40) earlyText += "開局階段雙方大概率會以試探為主，中場的絞殺會非常激烈，上半場極有可能是一球定音，甚至半場互交白卷。";
+  else earlyText += "上半場的節奏相對適中，雙方會在試探中尋找機會，半場結束前可能會有進球產生。";
+
+  if (h.homeWin > h.awayWin + 0.15) earlyText += " 主隊一開場就會借助主場之利大舉壓上，試圖搶佔先機。";
+  else if (h.awayWin > h.homeWin + 0.15) earlyText += " 客隊反客為主，上半場就會展現出強烈的進攻慾望。";
+  else earlyText += " 雙方在上半場的控球率預計會非常接近，場面陷入膠著。";
+  text += `<p><span class="tag-phase phase-early">前期 (0-45')</span>${earlyText}</p>`;
+
+  // 3. 中期（下半場前中段 45'-75'）
+  let midText = "";
+  // 比較半場與全場的進球期望（全場 - 半場 = 下半場的大致期望）
+  const secondHalfLH = f.final_lH - h.final_lH;
+  const secondHalfLA = f.final_lA - h.final_lA;
+  
+  if (secondHalfLH > h.final_lH && secondHalfLA > h.final_lA) {
+    midText += "易邊再戰後，比賽的畫風將發生劇變！雙方教練大概率會進行戰術調整，<b>下半場的進球效率將大幅提升</b>，這是一場「下半場惹不起」的比賽。";
+  } else if (f.over > 0.65 && hOver < 0.4) {
+    midText += "中場休息的調整將成為比賽轉折點。上半場的沉悶將被打破，<b>下半場極可能演變為對攻大戰</b>，進球將集中在下半場爆發。";
+  } else {
+    midText += "下半場中段將進入白熱化的拉鋸戰，中場的控制權爭奪將決定比賽的走向，雙方都會在攻防轉換中尋找致命一擊。";
+  }
+  
+  if (f.btts > 0.60) {
+    midText += " 由於雙方防線都存在漏洞，這段時間大概率會演變成「互捅局」，雙方都有進球入帳。";
+  }
+  text += `<p><span class="tag-phase phase-mid">中期 (45-75')</span>${midText}</p>`;
+
+  // 4. 後期（75'-90'+）
+  let lateText = "";
+  if (f.over > 0.60) {
+    lateText += "比賽進入最後20分鐘，隨著體能的下降，防守端的漏洞會被進一步放大，這不僅是一場技戰術的比拼，<b>更可能上演絕殺與反絕殺的劇本</b>。";
+  } else if (1 - f.over > 0.60) {
+    lateText += "比賽進入尾聲，領先的一方大概率會通過控球和戰術犯規來消耗時間，比賽節奏會明顯放緩，變成半場攻防演練，很難再有比分的改變。";
+  } else {
+    lateText += "尾段雙方可能會因為急於求成而暴露出空檔，比賽的勝負很可能在最後時刻才見分曉。";
+  }
+  
+  if (f.draw > 0.30) {
+    lateText += " 且由於和局機率極高，若此時比分膠著，雙方可能會默契地接受各取一分的結果，保守收場。";
+  }
+  text += `<p><span class="tag-phase phase-late">後期 (75-90')</span>${lateText}</p>`;
+
+  // 5. 總結劇本
+  text += `<p style="margin-top:16px; padding-top:12px; border-top:1px dashed rgba(255,255,255,0.1); color:var(--muted); font-size:13px;">💡 <b>劇本預測：</b>`;
+  if (f.btts > 0.60) {
+    text += "強烈看好雙方都能破門，這是一場防守無法主導的比賽。";
+  } else if (1 - f.btts > 0.60) {
+    text += "大概率有一方會被零封，防守更穩固的一方將笑到最後。";
+  } else {
+    text += "勝負難料，進球數可能不會太多。";
+  }
+  text += `</p></div>`;
+  
+  return text;
+}
+
 function renderBlock(stats, isHalf) {
   const { homeWin, draw, awayWin, over, btts, final_lH, final_lA, list, goalProbs, hGoalProbs, aGoalProbs, ouLine, isHomeFav } = stats;
   
@@ -320,7 +428,6 @@ function renderBlock(stats, isHalf) {
   
   const topScores = sorted.slice(0, 4);
 
-  // 星號判定
   const big = over >= 0.60;
   const small = (1 - over) >= 0.60;
   const bttsHot = btts >= 0.60;
@@ -432,7 +539,6 @@ function renderBlock(stats, isHalf) {
   `;
 }
 
-// 計算並回傳單一場景的統計結果
 function analyzeData(lH, lA, ratioH, ratioA, ratioD, ouLine, isHomeFav) {
   const m = [];
   let finalTotal = 0;
@@ -483,11 +589,9 @@ function analyzeData(lH, lA, ratioH, ratioA, ratioD, ouLine, isHomeFav) {
 function predict(){
   document.querySelectorAll('.num-input').forEach(normalizeInput);
 
-  // 讀取全場數據
   const hGF = parseFloat($('hGF').value), hGA = parseFloat($('hGA').value);
   const aGF = parseFloat($('aGF').value), aGA = parseFloat($('aGA').value);
 
-  // 讀取半場數據
   const hGF_ht = parseFloat($('hGF_ht').value), hGA_ht = parseFloat($('hGA_ht').value);
   const aGF_ht = parseFloat($('aGF_ht').value), aGA_ht = parseFloat($('aGA_ht').value);
 
@@ -499,7 +603,6 @@ function predict(){
     return;
   }
 
-  // 讀取賠率與模式
   const mode = $('mode').value;
   const oddH = parseFloat($('oddH').value);
   const oddD = parseFloat($('oddD').value);
@@ -526,6 +629,10 @@ function predict(){
 
   fullHtml = '';
   htHtml = '';
+  commentaryHtml = '';
+
+  let fullStats = null;
+  let htStats = null;
 
   // 1. 計算全場
   if (isFullValid) {
@@ -536,8 +643,8 @@ function predict(){
       lA = Math.min(Math.max(lA * rA, 0.05), 6);
     }
     const fav = hasOdds ? (oddH < oddA) : (lH > lA);
-    const stats = analyzeData(lH, lA, ratioH, ratioA, ratioD, 2.5, fav);
-    fullHtml = renderBlock(stats, false);
+    fullStats = analyzeData(lH, lA, ratioH, ratioA, ratioD, 2.5, fav);
+    fullHtml = renderBlock(fullStats, false);
   }
 
   // 2. 計算半場 (固定 1.5 盤口)
@@ -549,13 +656,18 @@ function predict(){
       lA = Math.min(Math.max(lA * rA, 0.05), 6);
     }
     const fav = hasOdds ? (oddH < oddA) : (lH > lA);
-    const stats = analyzeData(lH, lA, ratioH, ratioA, ratioD, 1.5, fav);
-    htHtml = renderBlock(stats, true);
+    htStats = analyzeData(lH, lA, ratioH, ratioA, ratioD, 1.5, fav);
+    htHtml = renderBlock(htStats, true);
   }
 
+  // 3. 只有當全場與半場都完整時，才生成深度評語
+  if (isFullValid && isHtValid) {
+    commentaryHtml = generateCommentary(fullStats, htStats);
+  }
+
+  $('commentary-container').innerHTML = commentaryHtml;
   $('result').classList.add('show');
   
-  // 預設顯示
   if (isFullValid) {
     switchTab('full');
   } else {
