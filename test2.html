@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>專屬預測器 (全場/半場 雙模式)</title>
+<title>專屬預測器 (全場/半場)</title>
 <style>
   :root{
     --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
@@ -67,27 +67,35 @@
   #result.show{display:block;animation:fade .3s ease}
   @keyframes fade{from{opacity:0}to{opacity:1}}
 
-  /* 區塊標題 */
-  .section-title {
-    font-size: 18px;
-    font-weight: 800;
-    color: var(--accent);
-    margin: 30px 0 16px;
-    padding-bottom: 8px;
-    border-bottom: 1px dashed var(--line);
+  /* 頁籤切換器 */
+  .tabs {
     display: flex;
-    align-items: center;
     gap: 10px;
+    margin-bottom: 20px;
   }
-  .section-title:first-child { margin-top: 0; }
-  .section-title .badge {
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    background: rgba(61,220,151,.15);
+  .tab-btn {
+    flex: 1;
+    padding: 12px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
   }
-  .section-title.ht { color: var(--accent2); }
-  .section-title.ht .badge { background: rgba(77,163,255,.15); }
+  .tab-btn.active {
+    background: linear-gradient(135deg, rgba(61,220,151,0.15), rgba(77,163,255,0.15));
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .tab-btn.ht.active {
+    background: linear-gradient(135deg, rgba(77,163,255,0.15), rgba(255,179,71,0.15));
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
 
   /* 支援多卡片動態佈局 */
   .scores{display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:14px;margin-bottom: 16px;}
@@ -101,11 +109,12 @@
   .pct{font-size:13px;color:var(--muted)}
   .pct b{color:var(--txt)}
 
-  /* 星號標記 */
+  /* 星號標記（卡片用） */
   .star{position:absolute;top:8px;right:10px;font-size:16px;line-height:1;}
   .star.silver{color:#c9d4e6;text-shadow:0 0 6px rgba(200,210,230,.65);}
   .star.gold{color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,.75);}
 
+  /* 星號標記（表格用） */
   .t-star{font-size:14px;margin-left:6px;line-height:1;}
   .t-star.silver{color:#c9d4e6;text-shadow:0 0 6px rgba(200,210,230,.65);}
   .t-star.gold{color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,.75);}
@@ -148,29 +157,29 @@
 <body>
 <div class="wrap">
   <h1>專屬預測器 (全場/半場)</h1>
-  <p class="sub">全場採大/細 2.5；半場固定採大/細 1.5。固定顯示前四比分；任一市場 ≥ 60% 時標示星號（銀＝單一條件、金＝條件全中）。</p>
+  <p class="sub">全場採大/細 2.5；半場固定採大/細 1.5。請至少完整填寫全場或半場其中一組數據。固定顯示前四比分；任一市場 ≥ 60% 時標示星號（銀＝單一條件、金＝條件全中）。</p>
 
   <div class="grid">
     <div class="team">
       <h2>🏠 主隊數據</h2>
       <div class="row">
-        <div><label>全場場均得分</label><input type="text" inputmode="decimal" class="num-input" id="hGF" placeholder="例如 2.22"></div>
-        <div><label>全場場均失球</label><input type="text" inputmode="decimal" class="num-input" id="hGA" placeholder="例如 0.89"></div>
+        <div><label>全場場均得分 (選填)</label><input type="text" inputmode="decimal" class="num-input" id="hGF" placeholder="例如 2.22"></div>
+        <div><label>全場場均失球 (選填)</label><input type="text" inputmode="decimal" class="num-input" id="hGA" placeholder="例如 0.89"></div>
       </div>
       <div class="row" style="margin-top:10px;">
-        <div><label>半場場均得分</label><input type="text" inputmode="decimal" class="num-input" id="hGF_ht" placeholder="例如 1.05"></div>
-        <div><label>半場場均失球</label><input type="text" inputmode="decimal" class="num-input" id="hGA_ht" placeholder="例如 0.45"></div>
+        <div><label>半場場均得分 (選填)</label><input type="text" inputmode="decimal" class="num-input" id="hGF_ht" placeholder="例如 1.05"></div>
+        <div><label>半場場均失球 (選填)</label><input type="text" inputmode="decimal" class="num-input" id="hGA_ht" placeholder="例如 0.45"></div>
       </div>
     </div>
     <div class="team away">
       <h2>✈️ 客隊數據</h2>
       <div class="row">
-        <div><label>全場場均得分</label><input type="text" inputmode="decimal" class="num-input" id="aGF" placeholder="例如 0.50"></div>
-        <div><label>全場場均失球</label><input type="text" inputmode="decimal" class="num-input" id="aGA" placeholder="例如 1.63"></div>
+        <div><label>全場場均得分 (選填)</label><input type="text" inputmode="decimal" class="num-input" id="aGF" placeholder="例如 0.50"></div>
+        <div><label>全場場均失球 (選填)</label><input type="text" inputmode="decimal" class="num-input" id="aGA" placeholder="例如 1.63"></div>
       </div>
       <div class="row" style="margin-top:10px;">
-        <div><label>半場場均得分</label><input type="text" inputmode="decimal" class="num-input" id="aGF_ht" placeholder="例如 0.25"></div>
-        <div><label>半場場均失球</label><input type="text" inputmode="decimal" class="num-input" id="aGA_ht" placeholder="例如 0.80"></div>
+        <div><label>半場場均得分 (選填)</label><input type="text" inputmode="decimal" class="num-input" id="aGF_ht" placeholder="例如 0.25"></div>
+        <div><label>半場場均失球 (選填)</label><input type="text" inputmode="decimal" class="num-input" id="aGA_ht" placeholder="例如 0.80"></div>
       </div>
     </div>
   </div>
@@ -196,17 +205,29 @@
     <button id="clear" class="ghost">清除</button>
   </div>
 
-  <div id="result"></div>
+  <div id="result">
+    <div class="tabs" id="tabs">
+      <button id="tab-full" class="tab-btn" onclick="switchTab('full')">全場預測 (2.5球)</button>
+      <button id="tab-ht" class="tab-btn ht" onclick="switchTab('ht')">半場預測 (1.5球)</button>
+    </div>
+    <div id="result-content"></div>
+  </div>
 </div>
 
 <script>
 const $ = id => document.getElementById(id);
 const MAXG = 10;
 
+let fullHtml = '';
+let htHtml = '';
+let isFullValid = false;
+let isHtValid = false;
+
 const fact = n => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; };
 const poisson = (k, l) => Math.exp(-l) * Math.pow(l, k) / fact(k);
 const pct = p => (p * 100).toFixed(1) + '%';
 
+// 把三個機率換成一位小數百分比，並校正使總和剛好 100.0
 function normalizeTo100(a, b, c){
   const r = x => Math.round(x * 1000) / 10;
   let x = r(a), y = r(b), z = r(c);
@@ -257,12 +278,32 @@ document.querySelectorAll('input').forEach(el => {
 $('clear').addEventListener('click', () => {
   document.querySelectorAll('input[type=text]').forEach(el => el.value = '');
   $('result').classList.remove('show');
+  fullHtml = '';
+  htHtml = '';
+  isFullValid = false;
+  isHtValid = false;
+  $('result-content').innerHTML = '';
 });
 
 $('go').addEventListener('click', predict);
 
-// 產出單一場景（全場或半場）的 HTML 區塊
-function renderBlock(title, prefix, stats, isHalf) {
+// 頁籤切換邏輯
+function switchTab(tab) {
+  if (tab === 'full') {
+    if (!isFullValid) { alert('全場數據不完整'); return; }
+    $('tab-full').classList.add('active');
+    $('tab-ht').classList.remove('active');
+    $('result-content').innerHTML = fullHtml;
+  } else {
+    if (!isHtValid) { alert('半場數據不完整'); return; }
+    $('tab-ht').classList.add('active');
+    $('tab-full').classList.remove('active');
+    $('result-content').innerHTML = htHtml;
+  }
+}
+
+// 產出單一場景的 HTML 區塊
+function renderBlock(stats, isHalf) {
   const { homeWin, draw, awayWin, over, btts, final_lH, final_lA, list, goalProbs, hGoalProbs, aGoalProbs, ouLine, isHomeFav } = stats;
   
   const sorted = [...list].sort((x, y) => {
@@ -279,7 +320,7 @@ function renderBlock(title, prefix, stats, isHalf) {
   
   const topScores = sorted.slice(0, 4);
 
-  // 星號判定（全場看 2.5，半場看 1.5）
+  // 星號判定
   const big = over >= 0.60;
   const small = (1 - over) >= 0.60;
   const bttsHot = btts >= 0.60;
@@ -308,15 +349,8 @@ function renderBlock(title, prefix, stats, isHalf) {
 
   const labels = ['首選比分','次選比分','三選比分','四選比分'];
   const filteredList = sorted.filter(s => s.p >= 0.01);
-  
-  const blockClass = isHalf ? 'section-title ht' : 'section-title';
-  const badge = isHalf ? '半場 (1.5球)' : '全場 (2.5球)';
 
   return `
-    <div class="${blockClass}">
-      <span class="badge">${badge}</span>${title}
-    </div>
-
     <div class="scores">
       ${topScores.map((s, idx) => {
         const st = getStar(s);
@@ -453,79 +487,80 @@ function predict(){
   const hGF = parseFloat($('hGF').value), hGA = parseFloat($('hGA').value);
   const aGF = parseFloat($('aGF').value), aGA = parseFloat($('aGA').value);
 
-  if ([hGF, hGA, aGF, aGA].some(v => !isFinite(v) || v < 0)) {
-    alert('請輸入完整的全場場均得分與失球。');
+  // 讀取半場數據
+  const hGF_ht = parseFloat($('hGF_ht').value), hGA_ht = parseFloat($('hGA_ht').value);
+  const aGF_ht = parseFloat($('aGF_ht').value), aGA_ht = parseFloat($('aGA_ht').value);
+
+  isFullValid = [hGF, hGA, aGF, aGA].every(v => isFinite(v) && v >= 0);
+  isHtValid = [hGF_ht, hGA_ht, aGF_ht, aGA_ht].every(v => isFinite(v) && v >= 0);
+
+  if (!isFullValid && !isHtValid) {
+    alert('請至少完整填寫一組全場或半場數據。');
     return;
   }
 
-  // 讀取半場數據，若留空則預設為全場數值的一半
-  let hGF_ht = parseFloat($('hGF_ht').value);
-  let hGA_ht = parseFloat($('hGA_ht').value);
-  let aGF_ht = parseFloat($('aGF_ht').value);
-  let aGA_ht = parseFloat($('aGA_ht').value);
-  
-  if (!isFinite(hGF_ht)) hGF_ht = hGF / 2;
-  if (!isFinite(hGA_ht)) hGA_ht = hGA / 2;
-  if (!isFinite(aGF_ht)) aGF_ht = aGF / 2;
-  if (!isFinite(aGA_ht)) aGA_ht = aGA / 2;
-
+  // 讀取賠率與模式
   const mode = $('mode').value;
   const oddH = parseFloat($('oddH').value);
   const oddD = parseFloat($('oddD').value);
   const oddA = parseFloat($('oddA').value);
-  const hasOdds = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
+  const hasOdds = [oddH, oddD, oddA].every(v => isFinite(v) && v > 1);
 
   if (mode === 'mode2' && !hasOdds) {
     alert('模式 2 需要完整的 1X2 賠率（主／和／客）。');
     return;
   }
 
-  // 1. 全場計算
-  let lH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
-  let lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
   let ratioH, ratioA, ratioD;
-  let isHomeFav = false;
-
+  let rH, rA;
   if (hasOdds) {
-    isHomeFav = oddH < oddA;
     if (mode === 'mode2') {
-      const rH = Math.sqrt(oddD / oddH);
-      const rA = Math.sqrt(oddD / oddA);
-      lH = Math.min(Math.max(lH * rH, 0.05), 6);
-      lA = Math.min(Math.max(lA * rA, 0.05), 6);
+      rH = Math.sqrt(oddD / oddH);
+      rA = Math.sqrt(oddD / oddA);
     } else {
       ratioH = 2.5 / oddH;
       ratioA = 2.5 / oddA;
       ratioD = 3.5 / oddD;
     }
-  } else {
-    isHomeFav = lH > lA;
   }
-  
-  const fullStats = analyzeData(lH, lA, ratioH, ratioA, ratioD, 2.5, isHomeFav);
 
-  // 2. 半場計算 (固定大小球盤口 1.5)
-  let lH_ht = Math.min(Math.max((hGF_ht + aGA_ht) / 2, 0.05), 6);
-  let lA_ht = Math.min(Math.max((aGF_ht + hGA_ht) / 2, 0.05), 6);
-  
-  if (hasOdds) {
-    if (mode === 'mode2') {
-      // 假設半場與全場的強弱比例一致，套用相同的放大係數
-      const rH = Math.sqrt(oddD / oddH);
-      const rA = Math.sqrt(oddD / oddA);
-      lH_ht = Math.min(Math.max(lH_ht * rH, 0.05), 6);
-      lA_ht = Math.min(Math.max(lA_ht * rA, 0.05), 6);
+  fullHtml = '';
+  htHtml = '';
+
+  // 1. 計算全場
+  if (isFullValid) {
+    let lH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
+    let lA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
+    if (hasOdds && mode === 'mode2') {
+      lH = Math.min(Math.max(lH * rH, 0.05), 6);
+      lA = Math.min(Math.max(lA * rA, 0.05), 6);
     }
+    const fav = hasOdds ? (oddH < oddA) : (lH > lA);
+    const stats = analyzeData(lH, lA, ratioH, ratioA, ratioD, 2.5, fav);
+    fullHtml = renderBlock(stats, false);
   }
 
-  const htStats = analyzeData(lH_ht, lA_ht, ratioH, ratioA, ratioD, 1.5, isHomeFav);
+  // 2. 計算半場 (固定 1.5 盤口)
+  if (isHtValid) {
+    let lH = Math.min(Math.max((hGF_ht + aGA_ht) / 2, 0.05), 6);
+    let lA = Math.min(Math.max((aGF_ht + hGA_ht) / 2, 0.05), 6);
+    if (hasOdds && mode === 'mode2') {
+      lH = Math.min(Math.max(lH * rH, 0.05), 6);
+      lA = Math.min(Math.max(lA * rA, 0.05), 6);
+    }
+    const fav = hasOdds ? (oddH < oddA) : (lH > lA);
+    const stats = analyzeData(lH, lA, ratioH, ratioA, ratioD, 1.5, fav);
+    htHtml = renderBlock(stats, true);
+  }
 
-  // 3. 渲染結果
-  const fullHtml = renderBlock('全場預測', 'full', fullStats, false);
-  const htHtml = renderBlock('半場預測', 'ht', htStats, true);
-
-  $('result').innerHTML = fullHtml + '<div style="margin-top: 50px;"></div>' + htHtml;
   $('result').classList.add('show');
+  
+  // 預設顯示
+  if (isFullValid) {
+    switchTab('full');
+  } else {
+    switchTab('ht');
+  }
 }
 </script>
 </body>
