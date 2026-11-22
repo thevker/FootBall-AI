@@ -336,57 +336,67 @@ function switchTab(tab) {
   }
 }
 
-// 生成豐富的深度評語
+// 生成豐富的深度評語 (已修復大比分矛盾問題)
 function generateCommentary(fullStats, htStats) {
   const f = fullStats;
   const h = htStats;
+  const expTotal = f.final_lH + f.final_lA; // 全場總進球期望值
   
   let text = `<div class="commentary-box"><h3>🔮 賽事深度走勢分析</h3>`;
 
   // 1. 整體格局
   let matchType = "";
-  if (f.homeWin > 0.60) matchType = "<b>主隊強勢碾壓</b>，客隊恐難招架。";
-  else if (f.awayWin > 0.60) matchType = "<b>客隊反客為主</b>，主隊防線將面臨巨大考驗。";
-  else if (Math.abs(f.homeWin - f.awayWin) < 0.15) matchType = "雙方實力接近，是一場<b>勢均力敵的拉鋸戰</b>。";
-  else matchType = "主隊略佔上風，但比賽懸念仍在。";
+  if (f.homeWin > 0.65) matchType = `<b>主隊具備壓倒性優勢</b>，客隊防線恐將面臨災難級考驗。`;
+  else if (f.awayWin > 0.65) matchType = `<b>客隊展現出極強的碾壓實力</b>，主隊主場恐難招架。`;
+  else if (Math.abs(f.homeWin - f.awayWin) < 0.10) matchType = "雙方實力非常接近，這是一場<b>勢均力敵的拉鋸戰</b>。";
+  else matchType = "一方略佔上風，但比賽依然保有懸念。";
   text += `<p>📊 <b>整體格局：</b>${matchType}</p>`;
 
-  // 2. 前期（上半場）
+  // 2. 進球期望與基調
+  let goalTone = "";
+  if (expTotal >= 3.8) goalTone = `本場比賽預期總進球高達 <b>${expTotal.toFixed(1)}</b> 球，這預示著一場<b>進球大戰或單方面屠殺</b>即將上演。`;
+  else if (expTotal >= 2.7) goalTone = `預期總進球約 <b>${expTotal.toFixed(1)}</b> 球，比賽場面預計相對開放，進球數不會少。`;
+  else if (expTotal <= 1.8) goalTone = `預期總進球僅 <b>${expTotal.toFixed(1)}</b> 球，這大概率是一場戰術嚴密、節奏沉悶的防守大戰。`;
+  else goalTone = `預期總進球約 <b>${expTotal.toFixed(1)}</b> 球，進球數屬於正常聯賽水平。`;
+  text += `<p>⚽ <b>進球基調：</b>${goalTone}</p>`;
+
+  // 3. 前期（上半場）
   let earlyText = "";
-  const hOver = h.over; // 半場大 1.5 機率
+  const hOver = h.over; 
   if (hOver > 0.60) earlyText += "預計開局階段節奏極快，雙方防線早早將面臨考驗，極有可能在前45分鐘內就出現2個或以上的進球。";
-  else if (hOver < 0.40) earlyText += "開局階段雙方大概率會以試探為主，中場的絞殺會非常激烈，上半場極有可能是一球定音，甚至半場互交白卷。";
+  else if (hOver < 0.35) earlyText += "開局階段雙方大概率會以試探為主，中場的絞殺會非常激烈，上半場極有可能是一球定音，甚至半場互交白卷。";
   else earlyText += "上半場的節奏相對適中，雙方會在試探中尋找機會，半場結束前可能會有進球產生。";
 
-  if (h.homeWin > h.awayWin + 0.15) earlyText += " 主隊一開場就會借助主場之利大舉壓上，試圖搶佔先機。";
-  else if (h.awayWin > h.homeWin + 0.15) earlyText += " 客隊反客為主，上半場就會展現出強烈的進攻慾望。";
+  if (h.homeWin > h.awayWin + 0.20) earlyText += " 主隊一開場就會借助主場之利大舉壓上，試圖搶佔先機。";
+  else if (h.awayWin > h.homeWin + 0.20) earlyText += " 客隊反客為主，上半場就會展現出強烈的進攻慾望。";
   else earlyText += " 雙方在上半場的控球率預計會非常接近，場面陷入膠著。";
   text += `<p><span class="tag-phase phase-early">前期 (0-45')</span>${earlyText}</p>`;
 
-  // 3. 中期（下半場前中段 45'-75'）
+  // 4. 中期（下半場前中段 45'-75'）
   let midText = "";
-  // 比較半場與全場的進球期望（全場 - 半場 = 下半場的大致期望）
   const secondHalfLH = f.final_lH - h.final_lH;
   const secondHalfLA = f.final_lA - h.final_lA;
   
-  if (secondHalfLH > h.final_lH && secondHalfLA > h.final_lA) {
+  if (secondHalfLH + secondHalfLA > h.final_lH + h.final_lA) {
     midText += "易邊再戰後，比賽的畫風將發生劇變！雙方教練大概率會進行戰術調整，<b>下半場的進球效率將大幅提升</b>，這是一場「下半場惹不起」的比賽。";
-  } else if (f.over > 0.65 && hOver < 0.4) {
-    midText += "中場休息的調整將成為比賽轉折點。上半場的沉悶將被打破，<b>下半場極可能演變為對攻大戰</b>，進球將集中在下半場爆發。";
+  } else if (expTotal > 3.0 && hOver < 0.4) {
+    midText += "中場休息的調整將成為比賽轉折點。上半場的沉悶將被打破，<b>下半場極可能演變為單方面的攻防演練或對攻大戰</b>，進球將集中在下半場爆發。";
   } else {
     midText += "下半場中段將進入白熱化的拉鋸戰，中場的控制權爭奪將決定比賽的走向，雙方都會在攻防轉換中尋找致命一擊。";
   }
   
   if (f.btts > 0.60) {
     midText += " 由於雙方防線都存在漏洞，這段時間大概率會演變成「互捅局」，雙方都有進球入帳。";
+  } else if (1 - f.btts > 0.60) {
+    midText += " 弱勢一方的進攻可能會徹底啞火，只能被迫退守半場承受巨大壓力。";
   }
   text += `<p><span class="tag-phase phase-mid">中期 (45-75')</span>${midText}</p>`;
 
-  // 4. 後期（75'-90'+）
+  // 5. 後期（75'-90'+）
   let lateText = "";
-  if (f.over > 0.60) {
-    lateText += "比賽進入最後20分鐘，隨著體能的下降，防守端的漏洞會被進一步放大，這不僅是一場技戰術的比拼，<b>更可能上演絕殺與反絕殺的劇本</b>。";
-  } else if (1 - f.over > 0.60) {
+  if (expTotal > 3.0) {
+    lateText += "比賽進入最後20分鐘，隨著體能的下降，防守端的漏洞會被進一步放大，這不僅是一場技戰術的比拼，<b>更可能上演大比分的屠殺或絕殺劇本</b>。";
+  } else if (expTotal <= 1.8) {
     lateText += "比賽進入尾聲，領先的一方大概率會通過控球和戰術犯規來消耗時間，比賽節奏會明顯放緩，變成半場攻防演練，很難再有比分的改變。";
   } else {
     lateText += "尾段雙方可能會因為急於求成而暴露出空檔，比賽的勝負很可能在最後時刻才見分曉。";
@@ -397,14 +407,23 @@ function generateCommentary(fullStats, htStats) {
   }
   text += `<p><span class="tag-phase phase-late">後期 (75-90')</span>${lateText}</p>`;
 
-  // 5. 總結劇本
+  // 6. 總結劇本 (依賴總進球期望與 BTTS)
   text += `<p style="margin-top:16px; padding-top:12px; border-top:1px dashed rgba(255,255,255,0.1); color:var(--muted); font-size:13px;">💡 <b>劇本預測：</b>`;
-  if (f.btts > 0.60) {
-    text += "強烈看好雙方都能破門，這是一場防守無法主導的比賽。";
-  } else if (1 - f.btts > 0.60) {
-    text += "大概率有一方會被零封，防守更穩固的一方將笑到最後。";
+  
+  if (expTotal >= 4.0) {
+    text += "這將是一場極度暴力的比賽，強隊將徹底撕裂對手防線，極大概率打出大比分賽果。";
+  } else if (expTotal >= 3.0) {
+    text += "進球大戰一觸即發，雙方都不會保守，這是一場精彩紛呈的對攻好戲。";
+  } else if (expTotal <= 1.5) {
+    text += "極度沉悶的防守大戰，誰先犯錯誰就輸，0-0 或 1-0 是最大概率的走向。";
   } else {
-    text += "勝負難料，進球數可能不會太多。";
+    if (f.btts > 0.60) {
+      text += "強烈看好雙方都能破門，這是一場防守無法主導的比賽。";
+    } else if (1 - f.btts > 0.60) {
+      text += "大概率有一方會被零封，防守更穩固的一方將憑藉微弱優勢笑到最後。";
+    } else {
+      text += "勝負難料，進球數可能會控制在常規範圍內，勝負就在一線之間。";
+    }
   }
   text += `</p></div>`;
   
