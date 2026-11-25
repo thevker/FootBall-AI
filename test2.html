@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>專屬預測器 (修復版)</title>
+<title>專屬預測器 (標籤與星級版)</title>
 <style>
   :root{
     --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
@@ -77,7 +77,7 @@
   .scores{display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:14px;margin-bottom: 16px;}
   @media(max-width:620px){.scores{grid-template-columns:1fr 1fr}}
   
-  .score{position:relative;background:linear-gradient(160deg,#173049,#101b2c);border:1px solid var(--line);border-radius:18px;padding:16px;text-align:center}
+  .score{position:relative;background:linear-gradient(160deg,#173049,#101b2c);border:1px solid var(--line);border-radius:18px;padding:20px 16px 16px;text-align:center}
   .score.one{border-color:rgba(61,220,151,.55);box-shadow:0 0 0 1px rgba(61,220,151,.15) inset,0 12px 30px -18px #3ddc97}
   .tag{font-size:11px;letter-spacing:1px;color:var(--muted); margin-bottom: 6px;}
   .big{font-size:36px;font-weight:800;margin:4px 0;font-variant-numeric:tabular-nums;letter-spacing:1px}
@@ -85,14 +85,44 @@
   .pct{font-size:13px;color:var(--muted)}
   .pct b{color:var(--txt)}
 
-  /* 星號標記 */
-  .star{position:absolute;top:8px;right:10px;font-size:16px;line-height:1;}
-  .star.silver{color:#c9d4e6;text-shadow:0 0 6px rgba(200,210,230,.65);}
-  .star.gold{color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,.75);}
+  /* 左側標籤 */
+  .tag-group {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.5px;
+  }
+  .badge.over { background: rgba(255, 77, 77, 0.2); color: #ff6b6b; border: 1px solid rgba(255, 77, 77, 0.3); }
+  .badge.under { background: rgba(77, 163, 255, 0.2); color: #7fc1ff; border: 1px solid rgba(77, 163, 255, 0.3); }
+  .badge.btts { background: rgba(61, 220, 151, 0.2); color: #3ddc97; border: 1px solid rgba(61, 220, 151, 0.3); }
 
-  .t-star{font-size:14px;margin-left:6px;line-height:1;}
-  .t-star.silver{color:#c9d4e6;text-shadow:0 0 6px rgba(200,210,230,.65);}
-  .t-star.gold{color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,.75);}
+  /* 右側機率星號 */
+  .star { position: absolute; top: 8px; right: 10px; font-size: 16px; line-height: 1; }
+  .star.bronze { color: #cd7f32; text-shadow: 0 0 6px rgba(205, 127, 50, 0.6); }
+  .star.silver { color: #c0c0c0; text-shadow: 0 0 6px rgba(192, 192, 192, 0.6); }
+  .star.gold { color: #ffd700; text-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
+
+  /* 表格內標籤與星號 */
+  .t-badges { display: inline-flex; gap: 4px; margin-right: 8px; vertical-align: middle; }
+  .t-badge { font-size: 9px; padding: 1px 4px; border-radius: 3px; font-weight: 800; }
+  .t-badge.over { background: rgba(255, 77, 77, 0.2); color: #ff6b6b; }
+  .t-badge.under { background: rgba(77, 163, 255, 0.2); color: #7fc1ff; }
+  .t-badge.btts { background: rgba(61, 220, 151, 0.2); color: #3ddc97; }
+  
+  .t-star { font-size: 12px; margin-left: 6px; line-height: 1; vertical-align: middle; }
+  .t-star.bronze { color: #cd7f32; }
+  .t-star.silver { color: #c0c0c0; }
+  .t-star.gold { color: #ffd700; }
   
   .extra-sections { display: grid; grid-template-columns: 1fr; gap: 14px; }
   .extra-box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
@@ -122,7 +152,7 @@
   
   .table-container { max-height: 400px; overflow-y: auto; border-radius: 8px; border: 1px solid var(--line); }
   table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}
+  th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
   th{color:var(--muted);font-weight:500;font-size:12px;background:var(--card);position:sticky;top:0;z-index:1;box-shadow:0 1px 0 var(--line)}
   th:last-child,td:last-child{text-align:right;font-variant-numeric:tabular-nums}
   tr:last-child td{border-bottom:0}
@@ -132,7 +162,7 @@
 <body>
 <div class="wrap">
   <h1>專屬預測器</h1>
-  <p class="sub">全場大/細 2.5 及 BTTS ≥ 70% 時標示星號。固定顯示前四比分（使用模式 2：賠率放大 λ）。</p>
+  <p class="sub">大/細 2.5 及 BTTS ≥ 70% 時於左上角顯示標籤。比分機率 ≥ 30% 金星、≥ 20% 銀星、≥ 10% 銅星。固定顯示前四比分（使用模式 2：賠率放大 λ）。</p>
 
   <div class="grid">
     <div class="team">
@@ -194,12 +224,10 @@
 const $ = id => document.getElementById(id);
 const MAXG = 10;
 
-// 基礎數學函數
 const fact = n => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; };
 const poisson = (k, l) => Math.exp(-l) * Math.pow(l, k) / fact(k);
 const pct = p => (p * 100).toFixed(1) + '%';
 
-// 將三個機率校正使總和剛好 100.0%
 function normalizeTo100(a, b, c) {
   const r = x => Math.round(x * 1000) / 10;
   let x = r(a), y = r(b), z = r(c);
@@ -212,7 +240,6 @@ function normalizeTo100(a, b, c) {
   return [x.toFixed(1), y.toFixed(1), z.toFixed(1)];
 }
 
-// 輸入限制：只允許數字和小數點
 function restrictInput(el) {
   const originalValue = el.value;
   const start = el.selectionStart;
@@ -230,7 +257,6 @@ function restrictInput(el) {
   }
 }
 
-// 輸入正規化：處理 100 -> 1.00, .5 -> 0.50
 function normalizeInput(el) {
   let v = el.value.trim();
   if (v === '') return;
@@ -241,7 +267,6 @@ function normalizeInput(el) {
   if (v !== originalValue) el.value = v;
 }
 
-// 綁定事件
 document.querySelectorAll('input').forEach(el => {
   el.addEventListener('input', () => restrictInput(el));
   el.addEventListener('keydown', (e) => { 
@@ -269,7 +294,6 @@ function predict() {
   const hGF = parseFloat($('hGF').value), hGA = parseFloat($('hGA').value);
   const aGF = parseFloat($('aGF').value), aGA = parseFloat($('aGA').value);
 
-  // 數據完整性檢查
   let missing = [];
   if (!isFinite(hGF) || hGF < 0) missing.push($('hGF'));
   if (!isFinite(hGA) || hGA < 0) missing.push($('hGA'));
@@ -285,17 +309,14 @@ function predict() {
     return;
   }
 
-  // 1. 基礎期望入球 (λ)
   let baseLH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
   let baseLA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
   let lH = baseLH;
   let lA = baseLA;
 
-  // 2. 讀取賠率
   const oddH = parseFloat($('oddH').value);
   const oddD = parseFloat($('oddD').value);
   const oddA = parseFloat($('oddA').value);
-  // 防呆：確保賠率大於 1，避免除以 0
   const hasOdds = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
 
   let isHomeFav = false;
@@ -304,8 +325,6 @@ function predict() {
 
   if (hasOdds) {
     isHomeFav = oddH < oddA;
-    // 模式 2：用賠率比例直接放大 λ (根號平滑)
-    // 加載微小的防呆：防止極端小數造成 NaN
     const safeOddH = Math.max(oddH, 1.01);
     const safeOddA = Math.max(oddA, 1.01);
     const safeOddD = Math.max(oddD, 1.01);
@@ -322,7 +341,6 @@ function predict() {
     $('modeStatus').innerHTML = `<span class="mode-badge pure">ℹ️ 未輸入完整賠率，使用純數據模式 (主 λ: ${lH.toFixed(2)}, 客 λ: ${lA.toFixed(2)})</span>`;
   }
 
-  // 3. 生成比分矩陣並歸一化
   let finalTotal = 0;
   for (let i = 0; i <= MAXG; i++) {
     for (let j = 0; j <= MAXG; j++) {
@@ -332,14 +350,12 @@ function predict() {
     }
   }
   
-  // 統計變數
   let homeWin = 0, draw = 0, awayWin = 0, over25 = 0, btts = 0;
   let final_lH = 0, final_lA = 0;
   const list = [];
   const hGoalProbs = Array(MAXG + 1).fill(0);
   const aGoalProbs = Array(MAXG + 1).fill(0);
 
-  // 先將矩陣全部除以總和，提升後續計算效能與精度
   for (let i = 0; i <= MAXG; i++) {
     for (let j = 0; j <= MAXG; j++) {
       m[i][j] /= finalTotal;
@@ -349,7 +365,7 @@ function predict() {
       else if (i === j) draw += p;
       else awayWin += p;
       
-      if (i + j >= 3) over25 += p; // 大 2.5 球
+      if (i + j >= 3) over25 += p; 
       if (i > 0 && j > 0) btts += p;
       
       final_lH += i * p;
@@ -362,7 +378,6 @@ function predict() {
     }
   }
 
-  // 嚴格排序：先比機率，再比主客強弱
   list.sort((x, y) => {
     if (Math.abs(x.p - y.p) > 1e-6) return y.p - x.p;
     if (isHomeFav) {
@@ -377,31 +392,61 @@ function predict() {
 
   const topScores = list.slice(0, 4);
 
-  // 4. 星號判定 (門檻：70%)
+  // 市場狀態 (70% 門檻)
   const big25 = over25 >= 0.70;
   const small25 = (1 - over25) >= 0.70;
   const bttsHot = btts >= 0.70;
   
-  function getStar(s) {
-    // 嚴格判斷：大球 >= 3 球，小球 <= 2 球
-    const meetsSize = (big25 && (s.h + s.a) >= 3) || (small25 && (s.h + s.a) <= 2);
-    const meetsBTTS = bttsHot && s.h > 0 && s.a > 0;
+  // 產生左上角標籤 HTML
+  function getTags(s) {
+    let tags = [];
+    if (big25 && (s.h + s.a) >= 3) tags.push('<span class="badge over">入球大</span>');
+    if (small25 && (s.h + s.a) <= 2) tags.push('<span class="badge under">入球小</span>');
+    if (bttsHot && s.h > 0 && s.a > 0) tags.push('<span class="badge btts">BTTS</span>');
     
-    if (!meetsSize && !meetsBTTS) return null;
-    return (meetsSize && meetsBTTS) ? 'gold' : 'silver';
+    if (tags.length === 0) return '';
+    return `<div class="tag-group">${tags.join('')}</div>`;
+  }
+
+  // 產生表格內標籤 HTML (縮小版)
+  function getTableTags(s) {
+    let tags = [];
+    if (big25 && (s.h + s.a) >= 3) tags.push('<span class="t-badge over">大</span>');
+    if (small25 && (s.h + s.a) <= 2) tags.push('<span class="t-badge under">小</span>');
+    if (bttsHot && s.h > 0 && s.a > 0) tags.push('<span class="t-badge btts">BTTS</span>');
+    
+    if (tags.length === 0) return '';
+    return `<span class="t-badges">${tags.join('')}</span>`;
+  }
+
+  // 產生右上角星號 HTML (10%, 20%, 30% 門檻)
+  function getStar(s) {
+    if (s.p >= 0.30) return `<div class="star gold">★</div>`;
+    if (s.p >= 0.20) return `<div class="star silver">★</div>`;
+    if (s.p >= 0.10) return `<div class="star bronze">★</div>`;
+    return '';
+  }
+
+  // 產生表格內星號 HTML
+  function getTableStar(s) {
+    if (s.p >= 0.30) return `<span class="t-star gold">★</span>`;
+    if (s.p >= 0.20) return `<span class="t-star silver">★</span>`;
+    if (s.p >= 0.10) return `<span class="t-star bronze">★</span>`;
+    return '';
   }
 
   const getTop2 = arr => arr.map((p, val) => ({ val, p })).sort((a, b) => b.p - a.p).slice(0, 2);
   const top2H = getTop2(hGoalProbs);
   const top2A = getTop2(aGoalProbs);
 
-  // 5. 渲染畫面
   const labels = ['首選比分','次選比分','三選比分','四選比分'];
+  
+  // 渲染比分卡片
   $('scores').innerHTML = topScores.map((s, idx) => {
-    const st = getStar(s);
     return `
     <div class="score ${idx === 0 ? 'one' : ''}">
-      ${st ? `<div class="star ${st}">★</div>` : ''}
+      ${getTags(s)}
+      ${getStar(s)}
       <div class="tag">${labels[idx]}</div>
       <div class="big">${s.h} - ${s.a}</div>
       <div class="pct">機率 <b>${pct(s.p)}</b></div>
@@ -452,9 +497,11 @@ function predict() {
       <thead><tr><th>#</th><th>比分（主 - 客）</th><th>機率</th></tr></thead>
       <tbody>
         ${filteredList.map((s, i) => {
-          const st = getStar(s);
-          const starHtml = st ? `<span class="t-star ${st}">★</span>` : '';
-          return `<tr><td>${i + 1}</td><td>${s.h} - ${s.a}${starHtml}</td><td>${pct(s.p)}</td></tr>`;
+          return `<tr>
+            <td>${i + 1}</td>
+            <td>${getTableTags(s)}${s.h} - ${s.a}${getTableStar(s)}</td>
+            <td>${pct(s.p)}</td>
+          </tr>`;
         }).join('')}
       </tbody>
     </table>
