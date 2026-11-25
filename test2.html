@@ -85,7 +85,7 @@
   .pct{font-size:13px;color:var(--muted)}
   .pct b{color:var(--txt)}
 
-  /* 左側標籤 (垂直向下) */
+  /* 卡片左側標籤 (垂直向下) */
   .tag-group {
     position: absolute;
     top: 8px;
@@ -107,14 +107,14 @@
   .badge.under { background: rgba(77, 163, 255, 0.2); color: #7fc1ff; border: 1px solid rgba(77, 163, 255, 0.3); }
   .badge.btts { background: rgba(61, 220, 151, 0.2); color: #3ddc97; border: 1px solid rgba(61, 220, 151, 0.3); }
 
-  /* 右側機率星號 */
+  /* 卡片右側機率星號 */
   .star { position: absolute; top: 8px; right: 10px; font-size: 16px; line-height: 1; }
   .star.bronze { color: #cd7f32; text-shadow: 0 0 6px rgba(205, 127, 50, 0.6); }
   .star.silver { color: #c0c0c0; text-shadow: 0 0 6px rgba(192, 192, 192, 0.6); }
   .star.gold { color: #ffd700; text-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
 
-  /* 表格內標籤與星號 */
-  .t-badges { display: inline-flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+  /* 表格內標籤與星號 (標籤改為水平向右) */
+  .t-badges { display: inline-flex; flex-direction: row; gap: 4px; vertical-align: middle; }
   .t-badge { font-size: 9px; padding: 1px 4px; border-radius: 3px; font-weight: 800; text-align: center; }
   .t-badge.over { background: rgba(255, 77, 77, 0.2); color: #ff6b6b; }
   .t-badge.under { background: rgba(77, 163, 255, 0.2); color: #7fc1ff; }
@@ -166,7 +166,7 @@
 <body>
 <div class="wrap">
   <h1>專屬預測器</h1>
-  <p class="sub">大/細 2.5 及 BTTS ≥ 70% 時於左上角顯示標籤。比分機率 ≥ 30% 金星、≥ 20% 銀星、≥ 10% 銅星。固定顯示前四比分（使用模式 2：賠率放大 λ）。</p>
+  <p class="sub">大/細 2.5 及 BTTS ≥ 70% 時於左上角顯示標籤。比分機率 ≥ 20% 金星、≥ 15% 銀星、≥ 10% 銅星。固定顯示前四比分（使用模式 2：賠率放大 λ）。</p>
 
   <div class="grid">
     <div class="team">
@@ -421,15 +421,15 @@ function predict() {
   }
 
   function getStar(s) {
-    if (s.p >= 0.30) return `<div class="star gold">★</div>`;
-    if (s.p >= 0.20) return `<div class="star silver">★</div>`;
+    if (s.p >= 0.20) return `<div class="star gold">★</div>`;
+    if (s.p >= 0.15) return `<div class="star silver">★</div>`;
     if (s.p >= 0.10) return `<div class="star bronze">★</div>`;
     return '';
   }
 
   function getTableStar(s) {
-    if (s.p >= 0.30) return `<span class="t-star gold">★</span>`;
-    if (s.p >= 0.20) return `<span class="t-star silver">★</span>`;
+    if (s.p >= 0.20) return `<span class="t-star gold">★</span>`;
+    if (s.p >= 0.15) return `<span class="t-star silver">★</span>`;
     if (s.p >= 0.10) return `<span class="t-star bronze">★</span>`;
     return '';
   }
