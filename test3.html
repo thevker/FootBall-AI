@@ -330,7 +330,7 @@ svg { width: 140px; height: 140px; }
 <body>
 <div class="wrap">
   <h1>專屬預測器</h1>
-  <p class="sub">場均得失為必填；賠率、狀態、排名皆為選填。有賠率則自動放大 λ，並同步放大/縮小進攻與防守能力值。大細完全由 Poisson 矩陣機率判定（門檻 70%）。</p>
+  <p class="sub">場均得失為必填；賠率、狀態、排名皆為選填。有賠率則自動放大 λ，並同步放大進攻與防守能力值；有填狀態／排名／賠率才顯示能力值。大細完全由 Poisson 矩陣機率判定（門檻 70%）。</p>
 
   <!-- 輸入區 -->
   <div class="grid">
@@ -652,6 +652,7 @@ function drawRadar(svgId, data, labels, color, fillColor) {
   svg.appendChild(dataPolygon);
 }
 
+/* ===== 能力值 UI（方案 C：溫和版全乘法） ===== */
 function updateTeamUI(prefix, gf, ga, status, rankPct, oddsPct, hasRank, hasStatus, hasOdds, lambdaRatio) {
   const ratio = isFinite(lambdaRatio) && lambdaRatio > 0 ? lambdaRatio : 1;
 
@@ -659,8 +660,9 @@ function updateTeamUI(prefix, gf, ga, status, rankPct, oddsPct, hasRank, hasStat
   let defPct = Math.min(Math.max(((3 - ga) / 3) * 100, 0), 100);
 
   if (hasOdds) {
-    attPct = Math.min(Math.max(attPct * ratio, 0), 100);
-    defPct = Math.min(Math.max(defPct / ratio, 0), 100);
+    const soften = 0.5 + 0.5 * ratio;   // ratio=1 → 1；ratio=2 → 1.5；ratio=0.5 → 0.75
+    attPct = Math.min(Math.max(attPct * soften, 0), 100);
+    defPct = Math.min(Math.max(defPct * soften, 0), 100);
   }
 
   let statPct = hasStatus ? Math.min(Math.max((status / 3.0) * 100, 0), 100) : 0;
@@ -792,7 +794,7 @@ function predict() {
     lA = Math.min(Math.max(baseLA * ratioA, 0.05), 6);
     hLambdaRatio = lH / baseLH;
     aLambdaRatio = lA / baseLA;
-    $('modeStatus').innerHTML = `<span class="mode-badge">⚡ 賠率放大 λ (主: ${lH.toFixed(2)} / 客: ${lA.toFixed(2)})｜攻防同步 ×${hLambdaRatio.toFixed(2)} / ×${aLambdaRatio.toFixed(2)}</span>`;
+    $('modeStatus').innerHTML = `<span class="mode-badge">⚡ 賠率放大 λ (主: ${lH.toFixed(2)} / 客: ${lA.toFixed(2)})｜攻防同步 ×${(0.5+0.5*hLambdaRatio).toFixed(2)} / ×${(0.5+0.5*aLambdaRatio).toFixed(2)}</span>`;
   } else {
     $('modeStatus').innerHTML = `<span class="mode-badge pure">ℹ️ 純數據模式 (主 λ: ${lH.toFixed(2)} / 客 λ: ${lA.toFixed(2)})</span>`;
   }
@@ -1012,7 +1014,7 @@ function predict() {
     </table>
   `;
 
-  /* 14. 能力值（有填狀態／排名／賠率才顯示） */
+  /* 14. 能力值 */
   if (showRating) {
     const totalOdds = hasOdds ? oddH + oddA : 0;
     const hOddsPct = hasOdds && totalOdds > 0 ? (oddA / totalOdds) * 100 : 50;
