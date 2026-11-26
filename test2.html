@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>專屬預測器 (雙模型並列)</title>
+<title>專屬預測器</title>
 <style>
   :root{
     --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
@@ -73,28 +73,6 @@
     color: var(--muted);
   }
 
-  /* 區塊標題 */
-  .section-title {
-    font-size: 18px;
-    font-weight: 800;
-    color: var(--accent);
-    margin: 30px 0 16px;
-    padding-bottom: 8px;
-    border-bottom: 1px dashed var(--line);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .section-title:first-of-type { margin-top: 10px; }
-  .section-title .badge {
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    background: rgba(61,220,151,.15);
-  }
-  .section-title.dixon { color: var(--warn); }
-  .section-title.dixon .badge { background: rgba(255,179,71,.15); }
-
   /* 比分卡片 */
   .scores{display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:14px;margin-bottom: 16px;}
   @media(max-width:620px){.scores{grid-template-columns:1fr 1fr}}
@@ -117,10 +95,17 @@
     gap: 4px;
     align-items: flex-start;
   }
-  .badge-over { background: rgba(255, 77, 77, 0.2); color: #ff6b6b; border: 1px solid rgba(255, 77, 77, 0.3); }
-  .badge-under { background: rgba(77, 163, 255, 0.2); color: #7fc1ff; border: 1px solid rgba(77, 163, 255, 0.3); }
-  .badge-btts { background: rgba(61, 220, 151, 0.2); color: #3ddc97; border: 1px solid rgba(61, 220, 151, 0.3); }
-  .tag-group span { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 800; line-height: 1.2; letter-spacing: 0.5px; }
+  .badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.5px;
+  }
+  .badge.over { background: rgba(255, 77, 77, 0.2); color: #ff6b6b; border: 1px solid rgba(255, 77, 77, 0.3); }
+  .badge.under { background: rgba(77, 163, 255, 0.2); color: #7fc1ff; border: 1px solid rgba(77, 163, 255, 0.3); }
+  .badge.btts { background: rgba(61, 220, 151, 0.2); color: #3ddc97; border: 1px solid rgba(61, 220, 151, 0.3); }
 
   /* 卡片右側機率星號 */
   .star { position: absolute; top: 8px; right: 10px; font-size: 16px; line-height: 1; }
@@ -180,8 +165,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>專屬預測器 (雙模型並列)</h1>
-  <p class="sub">大/細 2.5 及 BTTS ≥ 70% 時於左上角顯示標籤。比分機率 ≥ 20% 金星、≥ 15% 銀星、≥ 10% 銅星。使用模式 2：賠率放大 λ。</p>
+  <h1>專屬預測器</h1>
+  <p class="sub">大/細 2.5 及 BTTS ≥ 70% 時於左上角顯示標籤。比分機率 ≥ 20% 金星、≥ 15% 銀星、≥ 10% 銅星。使用模式 2（λ 上限 4.5）。</p>
 
   <div class="grid">
     <div class="team">
@@ -216,7 +201,26 @@
 
   <div id="result">
     <div id="modeStatus"></div>
-    <div id="results-container"></div>
+    <div class="scores" id="scores"></div>
+    
+    <div class="extra-sections">
+      <div class="extra-box">
+        <div class="extra-title">雙選球隊入球數</div>
+        <div class="tg-cards" id="teamGoals"></div>
+      </div>
+    </div>
+    
+    <div class="lam" id="lam"></div>
+
+    <div class="panel">
+      <h3>最終賽果機率</h3>
+      <div id="bars"></div>
+    </div>
+
+    <div class="panel">
+      <h3>完整比分機率分佈 (大於 1%)</h3>
+      <div class="table-container" id="topList"></div>
+    </div>
   </div>
 </div>
 
@@ -281,14 +285,80 @@ $('clear').addEventListener('click', () => {
     el.classList.remove('invalid');
   });
   $('result').classList.remove('show');
-  $('results-container').innerHTML = '';
-  $('modeStatus').innerHTML = '';
 });
 
 $('go').addEventListener('click', predict);
 
-// 產生單一模型結果的 HTML
-function renderModelResult(m, finalTotal, lH, lA, isHomeFav, title, isDixon) {
+function predict() {
+  document.querySelectorAll('.num-input').forEach(el => {
+    normalizeInput(el);
+    el.classList.remove('invalid');
+  });
+
+  const hGF = parseFloat($('hGF').value), hGA = parseFloat($('hGA').value);
+  const aGF = parseFloat($('aGF').value), aGA = parseFloat($('aGA').value);
+
+  let missing = [];
+  if (!isFinite(hGF) || hGF < 0) missing.push($('hGF'));
+  if (!isFinite(hGA) || hGA < 0) missing.push($('hGA'));
+  if (!isFinite(aGF) || aGF < 0) missing.push($('aGF'));
+  if (!isFinite(aGA) || aGA < 0) missing.push($('aGA'));
+
+  if (missing.length > 0) {
+    missing.forEach(el => {
+      el.classList.add('invalid');
+      setTimeout(() => el.classList.remove('invalid'), 1500);
+    });
+    alert('請填寫完整的場均得分與失球數據。');
+    return;
+  }
+
+  // 下限 0.01, 基礎值
+  let baseLH = Math.max((hGF + aGA) / 2, 0.01);
+  let baseLA = Math.max((aGF + hGA) / 2, 0.01);
+  let lH = baseLH;
+  let lA = baseLA;
+
+  const oddH = parseFloat($('oddH').value);
+  const oddD = parseFloat($('oddD').value);
+  const oddA = parseFloat($('oddA').value);
+  const hasOdds = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
+
+  let isHomeFav = false;
+  const m = [];
+  for (let i = 0; i <= MAXG; i++) m[i] = [];
+
+  if (hasOdds) {
+    isHomeFav = oddH < oddA;
+    const safeOddH = Math.max(oddH, 1.01);
+    const safeOddA = Math.max(oddA, 1.01);
+    const safeOddD = Math.max(oddD, 1.01);
+    
+    const ratioH = Math.sqrt(safeOddD / safeOddH);
+    const ratioA = Math.sqrt(safeOddD / safeOddA);
+    
+    // 下限 0.01, 上限 4.5 (最佳平衡點)
+    lH = Math.min(Math.max(baseLH * ratioH, 0.01), 4.5);
+    lA = Math.min(Math.max(baseLA * ratioA, 0.01), 4.5);
+
+    $('modeStatus').innerHTML = `<span class="mode-badge">⚡ 模式 2：賠率放大 λ 已啟用 (主 λ: ${lH.toFixed(2)}, 客 λ: ${lA.toFixed(2)})</span>`;
+  } else {
+    isHomeFav = baseLH > baseLA;
+    // 即使無賠率，也套用 4.5 上限 (但通常基礎數據很難超過)
+    lH = Math.min(lH, 4.5);
+    lA = Math.min(lA, 4.5);
+    $('modeStatus').innerHTML = `<span class="mode-badge pure">ℹ️ 未輸入完整賠率，使用純數據模式 (主 λ: ${lH.toFixed(2)}, 客 λ: ${lA.toFixed(2)})</span>`;
+  }
+
+  let finalTotal = 0;
+  for (let i = 0; i <= MAXG; i++) {
+    for (let j = 0; j <= MAXG; j++) {
+      let p = poisson(i, lH) * poisson(j, lA);
+      m[i][j] = p;
+      finalTotal += p;
+    }
+  }
+  
   let homeWin = 0, draw = 0, awayWin = 0, over25 = 0, btts = 0;
   let final_lH = 0, final_lA = 0;
   const list = [];
@@ -337,9 +407,9 @@ function renderModelResult(m, finalTotal, lH, lA, isHomeFav, title, isDixon) {
   
   function getTags(s) {
     let tags = [];
-    if (big25 && (s.h + s.a) >= 3) tags.push('<span class="badge-over">入球大</span>');
-    if (small25 && (s.h + s.a) <= 2) tags.push('<span class="badge-under">入球小</span>');
-    if (bttsHot && s.h > 0 && s.a > 0) tags.push('<span class="badge-btts">BTTS</span>');
+    if (big25 && (s.h + s.a) >= 3) tags.push('<span class="badge over">入球大</span>');
+    if (small25 && (s.h + s.a) <= 2) tags.push('<span class="badge under">入球小</span>');
+    if (bttsHot && s.h > 0 && s.a > 0) tags.push('<span class="badge btts">BTTS</span>');
     
     if (tags.length === 0) return '';
     return `<div class="tag-group">${tags.join('')}</div>`;
@@ -375,7 +445,7 @@ function renderModelResult(m, finalTotal, lH, lA, isHomeFav, title, isDixon) {
 
   const labels = ['首選比分','次選比分','三選比分','四選比分'];
   
-  const scoresHtml = topScores.map((s, idx) => {
+  $('scores').innerHTML = topScores.map((s, idx) => {
     return `
     <div class="score ${idx === 0 ? 'one' : ''}">
       ${getTags(s)}
@@ -386,7 +456,7 @@ function renderModelResult(m, finalTotal, lH, lA, isHomeFav, title, isDixon) {
     </div>
   `}).join('');
 
-  const teamGoalsHtml = `
+  $('teamGoals').innerHTML = `
     <div class="tg-card ${top2H[0].val >= top2H[1].val ? 'one' : ''}">
       <div class="tag">主首選</div><div class="val">${top2H[0].val}</div><div class="pct">${pct(top2H[0].p)}</div>
     </div>
@@ -401,7 +471,7 @@ function renderModelResult(m, finalTotal, lH, lA, isHomeFav, title, isDixon) {
     </div>
   `;
 
-  const lamHtml = `
+  $('lam').innerHTML = `
     <div>最終主期望入球 <b>${final_lH.toFixed(2)}</b></div>
     <div>最終客期望入球 <b>${final_lA.toFixed(2)}</b></div>
   `;
@@ -416,7 +486,7 @@ function renderModelResult(m, finalTotal, lH, lA, isHomeFav, title, isDixon) {
     ['兩隊入球', btts, pct(btts)]
   ];
   
-  const barsHtml = bars.map(([nm, v, str]) => `
+  $('bars').innerHTML = bars.map(([nm, v, str]) => `
     <div class="bar">
       <div class="nm">${nm}</div>
       <div class="tr"><div class="fl" style="width: ${(v * 100).toFixed(1)}%;"></div></div>
@@ -425,7 +495,7 @@ function renderModelResult(m, finalTotal, lH, lA, isHomeFav, title, isDixon) {
   `).join('');
 
   const filteredList = list.filter(s => s.p >= 0.01);
-  const tableHtml = `
+  $('topList').innerHTML = `
     <table>
       <thead>
         <tr>
@@ -448,126 +518,6 @@ function renderModelResult(m, finalTotal, lH, lA, isHomeFav, title, isDixon) {
     </table>
   `;
 
-  return `
-    <div class="section-title ${isDixon ? 'dixon' : ''}">
-      <span class="badge">${isDixon ? 'Dixon-Coles 修正' : '標準 Poisson'}</span>${title}
-    </div>
-    
-    <div class="scores">${scoresHtml}</div>
-    
-    <div class="extra-sections">
-      <div class="extra-box">
-        <div class="extra-title">雙選球隊入球數</div>
-        <div class="tg-cards">${teamGoalsHtml}</div>
-      </div>
-    </div>
-    
-    <div class="lam">${lamHtml}</div>
-
-    <div class="panel">
-      <h3>最終賽果機率</h3>
-      <div>${barsHtml}</div>
-    </div>
-
-    <div class="panel">
-      <h3>完整比分機率分佈 (大於 1%)</h3>
-      <div class="table-container">${tableHtml}</div>
-    </div>
-  `;
-}
-
-function predict() {
-  document.querySelectorAll('.num-input').forEach(el => {
-    normalizeInput(el);
-    el.classList.remove('invalid');
-  });
-
-  const hGF = parseFloat($('hGF').value), hGA = parseFloat($('hGA').value);
-  const aGF = parseFloat($('aGF').value), aGA = parseFloat($('aGA').value);
-
-  let missing = [];
-  if (!isFinite(hGF) || hGF < 0) missing.push($('hGF'));
-  if (!isFinite(hGA) || hGA < 0) missing.push($('hGA'));
-  if (!isFinite(aGF) || aGF < 0) missing.push($('aGF'));
-  if (!isFinite(aGA) || aGA < 0) missing.push($('aGA'));
-
-  if (missing.length > 0) {
-    missing.forEach(el => {
-      el.classList.add('invalid');
-      setTimeout(() => el.classList.remove('invalid'), 1500);
-    });
-    alert('請填寫完整的場均得分與失球數據。');
-    return;
-  }
-
-  let baseLH = Math.max((hGF + aGA) / 2, 0.01);
-  let baseLA = Math.max((aGF + hGA) / 2, 0.01);
-  let lH = baseLH;
-  let lA = baseLA;
-
-  const oddH = parseFloat($('oddH').value);
-  const oddD = parseFloat($('oddD').value);
-  const oddA = parseFloat($('oddA').value);
-  const hasOdds = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
-
-  let isHomeFav = false;
-
-  if (hasOdds) {
-    isHomeFav = oddH < oddA;
-    const safeOddH = Math.max(oddH, 1.01);
-    const safeOddA = Math.max(oddA, 1.01);
-    const safeOddD = Math.max(oddD, 1.01);
-    
-    const ratioH = Math.sqrt(safeOddD / safeOddH);
-    const ratioA = Math.sqrt(safeOddD / safeOddA);
-    
-    lH = Math.max(baseLH * ratioH, 0.01);
-    lA = Math.max(baseLA * ratioA, 0.01);
-
-    $('modeStatus').innerHTML = `<span class="mode-badge">⚡ 模式 2：賠率放大 λ 已啟用 (主 λ: ${lH.toFixed(2)}, 客 λ: ${lA.toFixed(2)})</span>`;
-  } else {
-    isHomeFav = baseLH > baseLA;
-    $('modeStatus').innerHTML = `<span class="mode-badge pure">ℹ️ 未輸入完整賠率，使用純數據模式 (主 λ: ${lH.toFixed(2)}, 客 λ: ${lA.toFixed(2)})</span>`;
-  }
-
-  const rho = -0.12;
-
-  // 構建標準 Poisson 矩陣
-  const mStandard = [];
-  let totalStandard = 0;
-  for (let i = 0; i <= MAXG; i++) {
-    mStandard[i] = [];
-    for (let j = 0; j <= MAXG; j++) {
-      let p = poisson(i, lH) * poisson(j, lA);
-      mStandard[i][j] = p;
-      totalStandard += p;
-    }
-  }
-
-  // 構建 Dixon-Coles 矩陣
-  const mDixon = [];
-  let totalDixon = 0;
-  for (let i = 0; i <= MAXG; i++) {
-    mDixon[i] = [];
-    for (let j = 0; j <= MAXG; j++) {
-      let p = poisson(i, lH) * poisson(j, lA);
-      let tau = 1.0;
-      if (i === 0 && j === 0) tau = 1 - lH * lA * rho;
-      else if (i === 0 && j === 1) tau = 1 + lH * rho;
-      else if (i === 1 && j === 0) tau = 1 + lA * rho;
-      else if (i === 1 && j === 1) tau = 1 - rho;
-      
-      p *= Math.max(tau, 0.01);
-      mDixon[i][j] = p;
-      totalDixon += p;
-    }
-  }
-
-  // 渲染兩份結果
-  const htmlStandard = renderModelResult(mStandard, totalStandard, lH, lA, isHomeFav, '基礎比分預測', false);
-  const htmlDixon = renderModelResult(mDixon, totalDixon, lH, lA, isHomeFav, '低比分加權預測', true);
-
-  $('results-container').innerHTML = htmlStandard + '<div style="margin-top: 40px; border-top: 2px dashed var(--line);"></div>' + htmlDixon;
   $('result').classList.add('show');
 }
 </script>
