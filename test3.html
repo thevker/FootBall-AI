@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>專屬預測器 (Poisson + 能力值)</title>
+<style>
+:root{
+  --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
+  --txt:#e8eefc; --muted:#8fa3c4;
+  --accent:#3ddc97; --accent2:#4da3ff; --warn:#ffb347;
+  --error:#ff4d4d;
+}
+*{box-sizing:border-box}
+html { -webkit-text-size-adjust: 100%; overflow-anchor: none; }
+body{
+  margin:0;min-height:100vh;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans TC",sans-serif;
+  background:radial-gradient(1200px 600px at 20% -10%,#1a2c4d 0%,transparent 60%),var(--bg);
+  color:var(--txt);padding:24px 16px 60px;display:flex;justify-content:center;
+  -webkit-overflow-scrolling: touch;
+}
+.wrap{width:100%;max-width:880px}
+h1{font-size:22px;margin:0 0 4px;letter-spacing:.5px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 20px;line-height:1.6}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:620px){.grid{grid-template-columns:1fr}}
+.team{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:16px;padding:16px}
+.team h2{font-size:15px;margin:0 0 10px;color:var(--accent2);display:flex;align-items:center;gap:8px}
+.team.away h2{color:var(--warn)}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+
+input { font-size: 16px !important; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
+
+.num-input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0e1626;color:var(--txt);font-variant-numeric:tabular-nums}
+.num-input:focus{border-color:var(--accent2)}
+.num-input.invalid { border-color: var(--error); animation: shake 0.3s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+
+.row{display:flex;gap:10px}
+.row>div{flex:1}
+
+.odds-panel { margin-top: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+.panel-title { font-size: 14px; color: var(--accent); margin-bottom: 12px; font-weight: 700; display: flex; justify-content: space-between; }
+.panel-title span { font-size: 11px; color: var(--muted); font-weight: normal; }
+
+.odds-inputs { display: flex; gap: 8px; }
+.odds-inputs input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: #0e1626; color: var(--txt); text-align: center; }
+.odds-inputs input:focus { border-color: var(--accent); }
+
+.actions{display:flex;gap:12px;margin-top:20px}
+button{padding:14px;border:0;border-radius:14px;cursor:pointer;font-size:16px;font-weight:800;color:#06231a;background:linear-gradient(135deg,#3ddc97,#4da3ff);flex:1; -webkit-tap-highlight-color: transparent;}
+button:active{transform:translateY(1px)}
+button.ghost{flex:0 0 auto;background:transparent;border:1px solid var(--line);color:var(--muted);font-weight:600;padding:14px 20px}
+button.ghost:active{color:var(--txt);border-color:var(--accent2);background:rgba(77,163,255,.08)}
+
+#result{display:none;margin-top:26px}
+#result.show{display:block;animation:fade .3s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+
+.mode-badge {
+  display: inline-block;
+  background: rgba(77,163,255,.15);
+  color: var(--accent2);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+.scores{display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:14px;margin-bottom: 16px;}
+@media(max-width:620px){.scores{grid-template-columns:1fr 1fr}}
+
+.score{position:relative;background:linear-gradient(160deg,#173049,#101b2c);border:1px solid var(--line);border-radius:18px;padding:24px 16px 16px;text-align:center}
+.score.one{border-color:rgba(61,220,151,.55);box-shadow:0 0 0 1px rgba(61,220,151,.15) inset,0 12px 30px -18px #3ddc97}
+.tag{font-size:11px;letter-spacing:1px;color:var(--muted); margin-bottom: 6px;}
+.big{font-size:36px;font-weight:800;margin:4px 0;font-variant-numeric:tabular-nums;letter-spacing:1px}
+.one .big{color:var(--accent)}
+.pct{font-size:13px;color:var(--muted)}
+.pct b{color:var(--txt)}
+
+.tag-group {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+.badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
+}
+.badge.over { background: rgba(255, 77, 77, 0.2); color: #ff6b6b; border: 1px solid rgba(255, 77, 77, 0.3); }
+.badge.under { background: rgba(77, 163, 255, 0.2); color: #7fc1ff; border: 1px solid rgba(77, 163, 255, 0.3); }
+.badge.btts { background: rgba(61, 220, 151, 0.2); color: #3ddc97; border: 1px solid rgba(61, 220, 151, 0.3); }
+
+.star { position: absolute; top: 8px; right: 10px; font-size: 16px; line-height: 1; }
+.star.bronze { color: #cd7f32; text-shadow: 0 0 6px rgba(205, 127, 50, 0.6); }
+.star.silver { color: #c0c0c0; text-shadow: 0 0 6px rgba(192, 192, 192, 0.6); }
+.star.gold { color: #ffd700; text-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
+
+.t-badges { display: inline-flex; flex-direction: row; gap: 4px; vertical-align: middle; }
+.t-badge { font-size: 9px; padding: 1px 4px; border-radius: 3px; font-weight: 800; text-align: center; }
+.t-badge.over { background: rgba(255, 77, 77, 0.2); color: #ff6b6b; }
+.t-badge.under { background: rgba(77, 163, 255, 0.2); color: #7fc1ff; }
+.t-badge.btts { background: rgba(61, 220, 151, 0.2); color: #3ddc97; }
+
+.t-star { font-size: 14px; margin-left: 6px; line-height: 1; vertical-align: middle; }
+.t-star.bronze { color: #cd7f32; }
+.t-star.silver { color: #c0c0c0; }
+.t-star.gold { color: #ffd700; }
+
+.extra-sections { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.extra-box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.extra-title { font-size: 13px; color: var(--muted); margin-bottom: 10px; text-align: center; letter-spacing: 1px; }
+
+.tg-cards { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+@media(max-width:620px){.tg-cards{grid-template-columns:1fr 1fr}}
+
+.tg-card { background: #0e1626; border: 1px solid var(--line); border-radius: 10px; padding: 10px; text-align: center; }
+.tg-card.one { border-color: rgba(77,163,255,.55); background: #15233a; }
+.tg-card .tag { font-size: 10px; color: var(--muted); }
+.tg-card .val { font-size: 20px; font-weight: 800; color: var(--accent2); margin: 4px 0; }
+.tg-card.one .val { color: var(--accent); }
+.tg-card .pct { font-size: 11px; }
+
+.lam{display:flex;justify-content:center;gap:22px;font-size:12px;color:var(--muted);margin-top:14px}
+.lam b{color:var(--txt)}
+
+.panel{margin-top:18px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.panel h3{margin:0 0 12px;font-size:13px;color:var(--muted);font-weight:600;letter-spacing:1px}
+
+.bar{display:flex;align-items:center;gap:10px;margin:9px 0;font-size:13px}
+.bar .nm{width:96px;flex:none;color:var(--muted)}
+.bar .tr{flex:1;height:8px;background:#0e1626;border-radius:99px;overflow:hidden}
+.bar .fl{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#3ddc97,#4da3ff);transition:width .5s ease}
+.bar .vl{width:56px;text-align:right;font-variant-numeric:tabular-nums}
+
+.table-container { max-height: 400px; overflow-y: auto; border-radius: 8px; border: 1px solid var(--line); }
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{color:var(--muted);font-weight:500;font-size:12px;background:var(--card);position:sticky;top:0;z-index:1;box-shadow:0 1px 0 var(--line)}
+th:last-child,td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+tr:hover td { background: rgba(255,255,255,0.02); }
+
+.td-score { font-weight: 800; font-size: 14px; color: var(--txt); letter-spacing: 0.5px; }
+
+/* ===== 能力值區 ===== */
+.radar-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px 15px; background: #0e1626; border-radius: 16px; border: 1px solid var(--line); }
+.vertical-text { width: 30px; font-size: 14px; font-weight: bold; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.2; }
+.vertical-text.home { color: var(--warn); }
+.vertical-text.away { color: var(--accent2); }
+.radar-svg-box { flex: 1; display: flex; justify-content: space-around; align-items: center; }
+svg { width: 140px; height: 140px; }
+
+.team-rating-block { margin-bottom: 20px; }
+.team-rating-block:last-child { margin-bottom: 0; }
+.team-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; min-height: 24px; white-space: nowrap; }
+.left-area { flex: 1; display: flex; align-items: center; gap: 6px; }
+.right-area { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 4px; }
+.team-title { font-size: 15px; font-weight: bold; }
+.badge-r { font-size: 11px; padding: 3px 6px; border-radius: 10px; font-weight: bold; white-space: nowrap; }
+.overall-badge { font-size: 12px; padding: 4px 8px; border-radius: 8px; background-color: #333; border: 1px solid #555; white-space: nowrap; font-style: italic; font-weight: 900; }
+
+@keyframes glow-green { 0% { box-shadow: 0 0 2px #4ade80; } 50% { box-shadow: 0 0 8px #4ade80; } 100% { box-shadow: 0 0 2px #4ade80; } }
+@keyframes glow-cyan { 0% { box-shadow: 0 0 2px #0adeff; } 50% { box-shadow: 0 0 8px #0adeff; } 100% { box-shadow: 0 0 2px #0adeff; } }
+.status-glow-green { color: #4ade80 !important; background-color: #1c3b24 !important; animation: glow-green 1.5s infinite alternate; }
+.status-glow-cyan { color: #0adeff !important; background-color: #0e2e36 !important; animation: glow-cyan 1.5s infinite alternate; }
+@keyframes glow-gold { 0% { box-shadow: 0 0 2px #FFD700; } 50% { box-shadow: 0 0 8px #FFD700; } 100% { box-shadow: 0 0 2px #FFD700; } }
+@keyframes glow-silver { 0% { box-shadow: 0 0 2px #f4f4f4; } 50% { box-shadow: 0 0 8px #f4f4f4; } 100% { box-shadow: 0 0 2px #f4f4f4; } }
+@keyframes glow-bronze { 0% { box-shadow: 0 0 2px #cd7f32; } 50% { box-shadow: 0 0 8px #cd7f32; } 100% { box-shadow: 0 0 2px #cd7f32; } }
+.rank-glow-gold { color: #FFD700 !important; background-color: #3b331c !important; animation: glow-gold 1.5s infinite alternate; }
+.rank-glow-silver { color: #f4f4f4 !important; background-color: #666 !important; animation: glow-silver 1.5s infinite alternate; }
+.rank-glow-bronze { color: #cd7f32 !important; background-color: #3b1c1c !important; animation: glow-bronze 1.5s infinite alternate; }
+
+.rating-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 12px; }
+.rating-label { width: 45px; font-weight: bold; color: #aaa; text-align: right; padding-right: 6px; white-space: nowrap; }
+.rating-display { width: 70px; text-align: left; font-weight: bold; font-size: 12px; padding-left: 8px; white-space: nowrap; }
+.rating-bar-bg { flex: 1; background: #0e1626; height: 20px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
+.rating-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+.bar-attack { background: #ff6b6b; }
+.bar-defense { background: #4da3ff; }
+.bar-status { background: #fbc02d; }
+.bar-odds { background: #4caf50; }
+.bar-conv { background: #00e5ff; }
+.bar-rank { background: #888; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>專屬預測器</h1>
+  <p class="sub">Poisson 比分模型 + xG 能力值雷達。1X2 賠率必填（模式 2：賠率放大 λ）。</p>
+
+  <!-- 輸入區 -->
+  <div class="grid">
+    <div class="team">
+      <h2>🏠 主隊數據</h2>
+      <div class="row">
+        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="hGF" placeholder="例如 2.22"></div>
+        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="hGA" placeholder="例如 0.89"></div>
+      </div>
+      <div class="row">
+        <div><label>主隊 xG</label><input type="text" inputmode="decimal" class="num-input" id="hXg" placeholder="例如 1.50"></div>
+        <div><label>主隊 xGA</label><input type="text" inputmode="decimal" class="num-input" id="hXga" placeholder="例如 1.00"></div>
+      </div>
+      <div class="row">
+        <div><label>狀態 (0-3)</label><input type="text" inputmode="decimal" class="num-input" id="hStatus" placeholder="例如 1.50"></div>
+        <div><label>排名 (選填)</label><input type="text" inputmode="numeric" class="num-input" id="hRank" placeholder="例如 1"></div>
+      </div>
+    </div>
+
+    <div class="team away">
+      <h2>✈️ 客隊數據</h2>
+      <div class="row">
+        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="aGF" placeholder="例如 0.50"></div>
+        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="aGA" placeholder="例如 1.63"></div>
+      </div>
+      <div class="row">
+        <div><label>客隊 xG</label><input type="text" inputmode="decimal" class="num-input" id="aXg" placeholder="例如 1.00"></div>
+        <div><label>客隊 xGA</label><input type="text" inputmode="decimal" class="num-input" id="aXga" placeholder="例如 1.20"></div>
+      </div>
+      <div class="row">
+        <div><label>狀態 (0-3)</label><input type="text" inputmode="decimal" class="num-input" id="aStatus" placeholder="例如 1.00"></div>
+        <div><label>排名 (選填)</label><input type="text" inputmode="numeric" class="num-input" id="aRank" placeholder="例如 2"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="odds-panel">
+    <div class="panel-title">市場 1X2 賠率 <span>必填，模式 2：賠率放大 λ</span></div>
+    <div class="odds-inputs">
+      <input type="text" inputmode="decimal" class="num-input" id="oddH" placeholder="主勝賠率">
+      <input type="text" inputmode="decimal" class="num-input" id="oddD" placeholder="和局賠率">
+      <input type="text" inputmode="decimal" class="num-input" id="oddA" placeholder="客勝賠率">
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="go">開始預測</button>
+    <button id="clear" class="ghost">清除</button>
+  </div>
+
+  <!-- 結果區 -->
+  <div id="result">
+    <div id="modeStatus"></div>
+
+    <div class="scores" id="scores"></div>
+
+    <div class="extra-sections">
+      <div class="extra-box">
+        <div class="extra-title">雙選球隊入球數</div>
+        <div class="tg-cards" id="teamGoals"></div>
+      </div>
+    </div>
+
+    <div class="lam" id="lam"></div>
+
+    <div class="panel">
+      <h3>最終賽果機率</h3>
+      <div id="bars"></div>
+    </div>
+
+    <div class="panel">
+      <h3>完整比分機率分佈 (大於 1%)</h3>
+      <div class="table-container" id="topList"></div>
+    </div>
+
+    <!-- 能力值 -->
+    <div class="panel">
+      <h3>能力值雷達</h3>
+      <div class="radar-container">
+        <div class="vertical-text home">主<br>隊</div>
+        <div class="radar-svg-box"><svg id="radar-home" viewBox="0 0 200 200"></svg><svg id="radar-away" viewBox="0 0 200 200"></svg></div>
+        <div class="vertical-text away">客<br>隊</div>
+      </div>
+
+      <div class="team-rating-block">
+        <div class="team-header">
+          <div class="left-area"><span class="team-title" style="color:#ffb347;">🏠 主隊</span><span class="overall-badge" id="hOverall">-</span></div>
+          <div class="right-area"><span class="badge-r" id="hStyle">-</span><span class="badge-r" id="hStatusBadge">-</span><span class="badge-r" id="hOddsBadge">-</span><span class="badge-r" id="hRankBadge" style="display:none;">-</span></div>
+        </div>
+        <div class="rating-row"><div class="rating-label">進攻</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="hAttBar"></div></div><div class="rating-display" id="hAttDisplay">-</div></div>
+        <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="hDefBar"></div></div><div class="rating-display" id="hDefDisplay">-</div></div>
+        <div class="rating-row"><div class="rating-label">狀態</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="hStatBar"></div></div><div class="rating-display" id="hStatDisplay">-</div></div>
+        <div class="rating-row"><div class="rating-label">賠率</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="hOddsBar"></div></div><div class="rating-display" id="hOddsDisplay">-</div></div>
+        <div class="rating-row"><div class="rating-label">轉換</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-conv" id="hConvBar"></div></div><div class="rating-display" id="hConvDisplay">-</div></div>
+        <div class="rating-row" id="hRankRow" style="display:none;"><div class="rating-label">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="hRankBar"></div></div><div class="rating-display" id="hRankDisplay">-</div></div>
+      </div>
+
+      <div class="team-rating-block">
+        <div class="team-header">
+          <div class="left-area"><span class="team-title" style="color:#4da3ff;">✈️ 客隊</span><span class="overall-badge" id="aOverall">-</span></div>
+          <div class="right-area"><span class="badge-r" id="aStyle">-</span><span class="badge-r" id="aStatusBadge">-</span><span class="badge-r" id="aOddsBadge">-</span><span class="badge-r" id="aRankBadge" style="display:none;">-</span></div>
+        </div>
+        <div class="rating-row"><div class="rating-label">進攻</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="aAttBar"></div></div><div class="rating-display" id="aAttDisplay">-</div></div>
+        <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="aDefBar"></div></div><div class="rating-display" id="aDefDisplay">-</div></div>
+        <div class="rating-row"><div class="rating-label">狀態</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="aStatBar"></div></div><div class="rating-display" id="aStatDisplay">-</div></div>
+        <div class="rating-row"><div class="rating-label">賠率</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="aOddsBar"></div></div><div class="rating-display" id="aOddsDisplay">-</div></div>
+        <div class="rating-row"><div class="rating-label">轉換</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-conv" id="aConvBar"></div></div><div class="rating-display" id="aConvDisplay">-</div></div>
+        <div class="rating-row" id="aRankRow" style="display:none;"><div class="rating-label">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="aRankBar"></div></div><div class="rating-display" id="aRankDisplay">-</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const MAXG = 10;
+
+/* ===== 共用工具 ===== */
+const fact = n => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; };
+const poisson = (k, l) => Math.exp(-l) * Math.pow(l, k) / fact(k);
+const pct = p => (p * 100).toFixed(1) + '%';
+
+function normalizeTo100(a, b, c) {
+  const r = x => Math.round(x * 1000) / 10;
+  let x = r(a), y = r(b), z = r(c);
+  let diff = Math.round((100 - (x + y + z)) * 10) / 10;
+  if (diff !== 0) {
+    if (x >= y && x >= z) x += diff;
+    else if (y >= z) y += diff;
+    else z += diff;
+  }
+  return [x.toFixed(1), y.toFixed(1), z.toFixed(1)];
+}
+
+function restrictInput(el) {
+  const originalValue = el.value;
+  const start = el.selectionStart;
+  let val = originalValue.replace(/[^0-9.]/g, '');
+  const parts = val.split('.');
+  if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+  if (val.startsWith('.')) val = '0' + val;
+
+  if (val !== originalValue) {
+    el.value = val;
+    let newPos = originalValue.slice(0, start).replace(/[^0-9.]/g, '').length;
+    if (originalValue.startsWith('.') && val.startsWith('0.')) newPos++;
+    if (newPos > val.length) newPos = val.length;
+    el.setSelectionRange(newPos, newPos);
+  }
+}
+
+function normalizeInput(el) {
+  let v = el.value.trim();
+  if (v === '') return;
+  let originalValue = v;
+  if (/^0\d+$/.test(v)) { v = (parseInt(v, 10) / 100).toFixed(2); }
+  else if (/^\d+$/.test(v)){ const n = parseInt(v, 10); if (n >= 100) v = (n / 100).toFixed(2); }
+  else if (/^\d*\.\d+$/.test(v) || /^\d+\.$/.test(v)){ const n = parseFloat(v); if (isFinite(n)) v = n.toFixed(2); }
+  if (v !== originalValue) el.value = v;
+}
+
+document.querySelectorAll('input').forEach(el => {
+  el.addEventListener('input', () => restrictInput(el));
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { normalizeInput(el); predict(); }
+  });
+  if (el.classList.contains('num-input')) el.addEventListener('blur', () => normalizeInput(el));
+});
+
+$('clear').addEventListener('click', () => {
+  document.querySelectorAll('input[type=text]').forEach(el => {
+    el.value = '';
+    el.classList.remove('invalid');
+  });
+  $('result').classList.remove('show');
+});
+
+$('go').addEventListener('click', predict);
+
+/* ===== 評級 / 雷達 / 能力值 ===== */
+function getGradeByPercent(p) {
+  if (p < 20) return { grade: 'E', color: '#c0c0c0' };
+  if (p < 40) return { grade: 'D', color: '#cd7f32' };
+  if (p < 60) return { grade: 'C', color: '#ff4d4d' };
+  if (p < 75) return { grade: 'B', color: '#4ade80' };
+  if (p < 85) return { grade: 'A', color: '#4da6ff' };
+  if (p < 95) return { grade: 'S', color: '#FFD700' };
+  return { grade: 'X', color: '#9b59b6' };
+}
+
+function drawRadar(svgId, data, labels, color, fillColor) {
+  const svg = $(svgId);
+  svg.innerHTML = '';
+  const cx = 100, cy = 100, maxR = 65, numAxes = data.length;
+  const angleStep = (Math.PI * 2) / numAxes;
+  const startAngle = -Math.PI / 2;
+
+  for (let l = 1; l <= 4; l++) {
+    const r = (maxR / 4) * l;
+    let points = [];
+    for (let i = 0; i < numAxes; i++) {
+      const angle = startAngle + i * angleStep;
+      points.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
+    }
+    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    polygon.setAttribute('points', points.join(' '));
+    polygon.setAttribute('fill', 'none');
+    polygon.setAttribute('stroke', '#2a3a55');
+    polygon.setAttribute('stroke-width', '1');
+    svg.appendChild(polygon);
+  }
+
+  for (let i = 0; i < numAxes; i++) {
+    const angle = startAngle + i * angleStep;
+    const x = cx + maxR * Math.cos(angle), y = cy + maxR * Math.sin(angle);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+    line.setAttribute('x2', x); line.setAttribute('y2', y);
+    line.setAttribute('stroke', '#2a3a55'); line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', cx + (maxR + 15) * Math.cos(angle));
+    text.setAttribute('y', cy + (maxR + 15) * Math.sin(angle));
+    text.setAttribute('fill', '#8fa3c4');
+    text.setAttribute('font-size', '9');
+    text.setAttribute('font-weight', 'bold');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'middle');
+    text.textContent = labels[i];
+    svg.appendChild(text);
+  }
+
+  let dataPoints = [];
+  for (let i = 0; i < numAxes; i++) {
+    let p = Math.min(Math.max(data[i], 5), 100) / 100;
+    const r = maxR * p, angle = startAngle + i * angleStep;
+    dataPoints.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
+  }
+  const dataPolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  dataPolygon.setAttribute('points', dataPoints.join(' '));
+  dataPolygon.setAttribute('fill', fillColor);
+  dataPolygon.setAttribute('stroke', color);
+  dataPolygon.setAttribute('stroke-width', '2');
+  svg.appendChild(dataPolygon);
+}
+
+/* 能力值：完全使用 xG 分析器原本的比例 */
+function updateTeamUI(prefix, xg, xga, status, convPct, rankPct, oddsPct, hasRank) {
+  let attPct = Math.min(Math.max(((xg - 0.5) / 2.0) * 100, 0), 100);
+  let defPct = Math.min(Math.max(((3.0 - xga - 0.5) / 2.0) * 100, 0), 100);
+  let statPct = Math.min(Math.max((status / 3.0) * 100, 0), 100);
+
+  $(prefix + 'AttBar').style.width = Math.max(attPct, 1) + '%';
+  $(prefix + 'DefBar').style.width = Math.max(defPct, 1) + '%';
+  $(prefix + 'StatBar').style.width = Math.max(statPct, 1) + '%';
+  $(prefix + 'OddsBar').style.width = Math.max(oddsPct, 1) + '%';
+  $(prefix + 'ConvBar').style.width = Math.max(convPct, 1) + '%';
+
+  const attData = getGradeByPercent(attPct), defData = getGradeByPercent(defPct);
+  const statData = getGradeByPercent(statPct), oddsData = getGradeByPercent(oddsPct), convData = getGradeByPercent(convPct);
+
+  $(prefix + 'AttDisplay').innerText = `${attData.grade} (${attPct.toFixed(1)})`;
+  $(prefix + 'AttDisplay').style.color = attData.color;
+  $(prefix + 'DefDisplay').innerText = `${defData.grade} (${defPct.toFixed(1)})`;
+  $(prefix + 'DefDisplay').style.color = defData.color;
+  $(prefix + 'StatDisplay').innerText = `${statData.grade} (${statPct.toFixed(1)})`;
+  $(prefix + 'StatDisplay').style.color = statData.color;
+  $(prefix + 'OddsDisplay').innerText = `${oddsData.grade} (${oddsPct.toFixed(1)})`;
+  $(prefix + 'OddsDisplay').style.color = oddsData.color;
+  $(prefix + 'ConvDisplay').innerText = `${convData.grade} (${convPct.toFixed(1)})`;
+  $(prefix + 'ConvDisplay').style.color = convData.color;
+
+  let radarData = [], labels = [], overallPct = 0;
+  if (hasRank) {
+    $(prefix + 'RankRow').style.display = 'flex';
+    $(prefix + 'RankBar').style.width = Math.max(rankPct, 1) + '%';
+    const rankData = getGradeByPercent(rankPct);
+    $(prefix + 'RankDisplay').innerText = `${rankData.grade} (${rankPct.toFixed(1)})`;
+    $(prefix + 'RankDisplay').style.color = rankData.color;
+    radarData = [attPct, defPct, statPct, oddsPct, convPct, rankPct];
+    labels = ['ATK', 'DEF', 'STA', 'ODD', 'COV', 'RNK'];
+    overallPct = (attPct + defPct + statPct + oddsPct + convPct + rankPct) / 6;
+  } else {
+    $(prefix + 'RankRow').style.display = 'none';
+    radarData = [attPct, defPct, statPct, oddsPct, convPct];
+    labels = ['ATK', 'DEF', 'STA', 'ODD', 'COV'];
+    overallPct = (attPct + defPct + statPct + oddsPct + convPct) / 5;
+  }
+
+  const overallData = getGradeByPercent(overallPct);
+  const overallEl = $(prefix + 'Overall');
+  overallEl.innerText = `戰力: ${overallData.grade} (${overallPct.toFixed(1)})`;
+  overallEl.style.color = overallData.color;
+  overallEl.style.borderColor = overallData.color;
+
+  drawRadar(prefix === 'h' ? 'radar-home' : 'radar-away', radarData, labels,
+            prefix === 'h' ? '#ffb347' : '#4da3ff',
+            prefix === 'h' ? 'rgba(255,179,71,0.3)' : 'rgba(77,163,255,0.3)');
+
+  const styleEl = $(prefix + 'Style');
+  const pctDiff = Math.round((attPct - defPct) * 10) / 10;
+  if (pctDiff >= 25.0) { styleEl.innerText = "進攻型"; styleEl.style.color = "#ff8c8c"; styleEl.style.backgroundColor = "#3b1c1c"; }
+  else if (pctDiff <= -25.0) { styleEl.innerText = "防守型"; styleEl.style.color = "#8cb8ff"; styleEl.style.backgroundColor = "#1a2633"; }
+  else { styleEl.innerText = "平衡型"; styleEl.style.color = "#ccc"; styleEl.style.backgroundColor = "#333"; }
+
+  const statusBadge = $(prefix + 'StatusBadge');
+  statusBadge.className = 'badge-r'; statusBadge.style.color = ''; statusBadge.style.backgroundColor = '';
+  if (status <= 0.5) { statusBadge.innerText = "狀態極差"; statusBadge.style.color = "#ff3333"; statusBadge.style.backgroundColor = "#550000"; }
+  else if (status <= 1.0) { statusBadge.innerText = "狀態欠佳"; statusBadge.style.color = "#ff6b6b"; statusBadge.style.backgroundColor = "#3b1c1c"; }
+  else if (status <= 1.5) { statusBadge.innerText = "狀態一般"; statusBadge.style.color = "#ffd700"; statusBadge.style.backgroundColor = "#3b331c"; }
+  else if (status <= 2.0) { statusBadge.innerText = "狀態微優"; statusBadge.style.color = "#a3e635"; statusBadge.style.backgroundColor = "#263b1c"; }
+  else if (status <= 2.5) { statusBadge.innerText = "狀態良好"; statusBadge.classList.add('status-glow-green'); }
+  else { statusBadge.innerText = "狀態極好"; statusBadge.classList.add('status-glow-cyan'); }
+
+  return overallPct;
+}
+
+/* ===== 主流程 ===== */
+function predict() {
+  /* 1. 輸入驗證 */
+  const fields = ['hGF','hGA','aGF','aGA','hXg','hXga','hStatus','aXg','aXga','aStatus','oddH','oddD','oddA'];
+  let missing = [];
+  fields.forEach(id => {
+    const el = $(id);
+    normalizeInput(el);
+    const v = parseFloat(el.value);
+    if (!isFinite(v)) missing.push(el);
+    el.classList.remove('invalid');
+  });
+
+  // 賠率需大於 1
+  const oddH = parseFloat($('oddH').value);
+  const oddD = parseFloat($('oddD').value);
+  const oddA = parseFloat($('oddA').value);
+  const oddsValid = isFinite(oddH) && oddH > 1 && isFinite(oddD) && oddD > 1 && isFinite(oddA) && oddA > 1;
+
+  if (missing.length > 0 || !oddsValid) {
+    (missing.length > 0 ? missing : [$('oddH'),$('oddD'),$('oddA')]).forEach(el => {
+      el.classList.add('invalid');
+      setTimeout(() => el.classList.remove('invalid'), 1500);
+    });
+    alert('請填寫完整數據，1X2 賠率需大於 1（主勝、和局、客勝）。');
+    return;
+  }
+
+  /* 2. 解析數值 */
+  const hGF = parseFloat($('hGF').value);
+  const hGA = parseFloat($('hGA').value);
+  const aGF = parseFloat($('aGF').value);
+  const aGA = parseFloat($('aGA').value);
+  const hXg = parseFloat($('hXg').value);
+  const hXga = parseFloat($('hXga').value);
+  const aXg = parseFloat($('aXg').value);
+  const aXga = parseFloat($('aXga').value);
+  const hStatus = parseFloat($('hStatus').value);
+  const aStatus = parseFloat($('aStatus').value);
+  const hRankStr = $('hRank').value.trim();
+  const aRankStr = $('aRank').value.trim();
+  const hasRank = hRankStr !== '' && aRankStr !== '';
+  const hRank = hasRank ? parseInt(hRankStr) : 0;
+  const aRank = hasRank ? parseInt(aRankStr) : 0;
+
+  /* 3. 基礎 λ（test2 公式） */
+  let baseLH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
+  let baseLA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
+
+  /* 4. 模式 2：賠率放大 λ（test2 公式：√(oddD/oddH)） */
+  const ratioH = Math.sqrt(oddD / Math.max(oddH, 1.01));
+  const ratioA = Math.sqrt(oddD / Math.max(oddA, 1.01));
+  let lH = Math.min(Math.max(baseLH * ratioH, 0.05), 6);
+  let lA = Math.min(Math.max(baseLA * ratioA, 0.05), 6);
+
+  $('modeStatus').innerHTML = `<span class="mode-badge">⚡ 模式 2：賠率放大 λ 已啟用 (主 λ: ${lH.toFixed(2)}, 客 λ: ${lA.toFixed(2)})</span>`;
+
+  /* 5. Poisson 矩陣 */
+  const m = [];
+  let finalTotal = 0;
+  for (let i = 0; i <= MAXG; i++) {
+    m[i] = [];
+    for (let j = 0; j <= MAXG; j++) {
+      const p = poisson(i, lH) * poisson(j, lA);
+      m[i][j] = p;
+      finalTotal += p;
+    }
+  }
+
+  let homeWin = 0, draw = 0, awayWin = 0, over25 = 0, btts = 0;
+  let final_lH = 0, final_lA = 0;
+  const list = [];
+  const hGoalProbs = Array(MAXG + 1).fill(0);
+  const aGoalProbs = Array(MAXG + 1).fill(0);
+
+  for (let i = 0; i <= MAXG; i++) {
+    for (let j = 0; j <= MAXG; j++) {
+      m[i][j] /= finalTotal;
+      const p = m[i][j];
+
+      if (i > j) homeWin += p;
+      else if (i === j) draw += p;
+      else awayWin += p;
+
+      if (i + j >= 3) over25 += p;
+      if (i > 0 && j > 0) btts += p;
+
+      final_lH += i * p;
+      final_lA += j * p;
+      hGoalProbs[i] += p;
+      aGoalProbs[j] += p;
+
+      list.push({ h: i, a: j, p });
+    }
+  }
+
+  /* 6. 排序（test2 規則） */
+  const isHomeFav = lH >= lA;
+  list.sort((x, y) => {
+    if (Math.abs(x.p - y.p) > 1e-6) return y.p - x.p;
+    if (isHomeFav) {
+      if (x.h > x.a && y.h <= y.a) return -1;
+      if (y.h > y.a && x.h <= x.a) return 1;
+    } else {
+      if (x.a > x.h && y.a <= y.h) return -1;
+      if (y.a > y.h && x.a <= x.h) return 1;
+    }
+    return 0;
+  });
+
+  const topScores = list.slice(0, 4);
+
+  /* 7. 標籤門檻 */
+  const big25 = over25 >= 0.70;
+  const small25 = (1 - over25) >= 0.70;
+  const bttsHot = btts >= 0.70;
+
+  /* 8. 比分卡片 */
+  const labels = ['首選比分','次選比分','三選比分','四選比分'];
+
+  function getTags(s) {
+    let tags = [];
+    if (big25 && (s.h + s.a) >= 3) tags.push('<span class="badge over">入球大</span>');
+    if (small25 && (s.h + s.a) <= 2) tags.push('<span class="badge under">入球小</span>');
+    if (bttsHot && s.h > 0 && s.a > 0) tags.push('<span class="badge btts">BTTS</span>');
+    if (tags.length === 0) return '';
+    return `<div class="tag-group">${tags.join('')}</div>`;
+  }
+
+  function getTableTags(s) {
+    let tags = [];
+    if (big25 && (s.h + s.a) >= 3) tags.push('<span class="t-badge over">大</span>');
+    if (small25 && (s.h + s.a) <= 2) tags.push('<span class="t-badge under">小</span>');
+    if (bttsHot && s.h > 0 && s.a > 0) tags.push('<span class="t-badge btts">BTTS</span>');
+    if (tags.length === 0) return '';
+    return `<span class="t-badges">${tags.join('')}</span>`;
+  }
+
+  function getStar(s) {
+    if (s.p >= 0.20) return `<div class="star gold">★</div>`;
+    if (s.p >= 0.15) return `<div class="star silver">★</div>`;
+    if (s.p >= 0.10) return `<div class="star bronze">★</div>`;
+    return '';
+  }
+
+  function getTableStar(s) {
+    if (s.p >= 0.20) return `<span class="t-star gold">★</span>`;
+    if (s.p >= 0.15) return `<span class="t-star silver">★</span>`;
+    if (s.p >= 0.10) return `<span class="t-star bronze">★</span>`;
+    return '';
+  }
+
+  $('scores').innerHTML = topScores.map((s, idx) => {
+    return `
+    <div class="score ${idx === 0 ? 'one' : ''}">
+      ${getTags(s)}
+      ${getStar(s)}
+      <div class="tag">${labels[idx]}</div>
+      <div class="big">${s.h} - ${s.a}</div>
+      <div class="pct">機率 <b>${pct(s.p)}</b></div>
+    </div>
+  `}).join('');
+
+  /* 9. 雙選球隊入球數 */
+  const getTop2 = arr => arr.map((p, val) => ({ val, p })).sort((a, b) => b.p - a.p).slice(0, 2);
+  const top2H = getTop2(hGoalProbs);
+  const top2A = getTop2(aGoalProbs);
+
+  $('teamGoals').innerHTML = `
+    <div class="tg-card ${top2H[0].val >= top2H[1].val ? 'one' : ''}">
+      <div class="tag">主首選</div><div class="val">${top2H[0].val}</div><div class="pct">${pct(top2H[0].p)}</div>
+    </div>
+    <div class="tg-card">
+      <div class="tag">主次選</div><div class="val">${top2H[1].val}</div><div class="pct">${pct(top2H[1].p)}</div>
+    </div>
+    <div class="tg-card ${top2A[0].val >= top2A[1].val ? 'one' : ''}">
+      <div class="tag">客首選</div><div class="val">${top2A[0].val}</div><div class="pct">${pct(top2A[0].p)}</div>
+    </div>
+    <div class="tg-card">
+      <div class="tag">客次選</div><div class="val">${top2A[1].val}</div><div class="pct">${pct(top2A[1].p)}</div>
+    </div>
+  `;
+
+  /* 10. λ 資訊 */
+  $('lam').innerHTML = `
+    <div>最終主期望入球 <b>${final_lH.toFixed(2)}</b></div>
+    <div>最終客期望入球 <b>${final_lA.toFixed(2)}</b></div>
+  `;
+
+  /* 11. 賽果機率條 */
+  const [hStr, dStr, aStr] = normalizeTo100(homeWin, draw, awayWin);
+  const bars = [
+    ['主勝', homeWin, hStr + '%'],
+    ['和局', draw, dStr + '%'],
+    ['客勝', awayWin, aStr + '%'],
+    ['大 2.5 球', over25, pct(over25)],
+    ['細 2.5 球', 1 - over25, pct(1 - over25)],
+    ['兩隊入球', btts, pct(btts)]
+  ];
+
+  $('bars').innerHTML = bars.map(([nm, v, str]) => `
+    <div class="bar">
+      <div class="nm">${nm}</div>
+      <div class="tr"><div class="fl" style="width: ${(v * 100).toFixed(1)}%;"></div></div>
+      <div class="vl">${str}</div>
+    </div>
+  `).join('');
+
+  /* 12. 完整比分表 */
+  const filteredList = list.filter(s => s.p >= 0.01);
+  $('topList').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 40px;">#</th>
+          <th>比分</th>
+          <th>標籤</th>
+          <th>機率</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filteredList.map((s, i) => {
+          return `<tr>
+            <td>${i + 1}</td>
+            <td class="td-score">${s.h} - ${s.a}${getTableStar(s)}</td>
+            <td>${getTableTags(s)}</td>
+            <td>${pct(s.p)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+
+  /* 13. 能力值（xG 分析器比例） */
+  const totalOdds = oddH + oddA;
+  const hOddsPct = totalOdds > 0 ? (oddA / totalOdds) * 100 : 50;
+  const aOddsPct = totalOdds > 0 ? (oddH / totalOdds) * 100 : 50;
+
+  const hConv = hGF + aGA;
+  const aConv = aGF + hGA;
+  const convTotal = hConv + aConv;
+  const hConvPct = convTotal > 0 ? (hConv / convTotal) * 100 : 50;
+  const aConvPct = convTotal > 0 ? (aConv / convTotal) * 100 : 50;
+
+  let hRankPct = 50, aRankPct = 50;
+  if (hasRank) {
+    const totalRank = hRank + aRank;
+    hRankPct = totalRank > 0 ? (aRank / totalRank) * 100 : 50;
+    aRankPct = totalRank > 0 ? (hRank / totalRank) * 100 : 50;
+  }
+
+  /* 賠率徽章 */
+  const hOddsBadge = $('hOddsBadge'), aOddsBadge = $('aOddsBadge');
+  if (oddH < oddA) {
+    hOddsBadge.innerText = "上盤"; hOddsBadge.style.color = "#bbf7d0"; hOddsBadge.style.backgroundColor = "#15803d";
+    aOddsBadge.innerText = "下盤"; aOddsBadge.style.color = "#ccc"; aOddsBadge.style.backgroundColor = "#333";
+  } else if (oddH > oddA) {
+    hOddsBadge.innerText = "下盤"; hOddsBadge.style.color = "#ccc"; hOddsBadge.style.backgroundColor = "#333";
+    aOddsBadge.innerText = "上盤"; aOddsBadge.style.color = "#bbf7d0"; aOddsBadge.style.backgroundColor = "#15803d";
+  } else {
+    hOddsBadge.style.display = 'none'; aOddsBadge.style.display = 'none';
+  }
+
+  /* 排名徽章 */
+  const hRankBadge = $('hRankBadge'), aRankBadge = $('aRankBadge');
+  if (hasRank) {
+    hRankBadge.style.display = 'inline-block'; hRankBadge.innerText = `第${hRank}名`; hRankBadge.className = 'badge-r';
+    if (hRank === 1) hRankBadge.classList.add('rank-glow-gold');
+    else if (hRank === 2) hRankBadge.classList.add('rank-glow-silver');
+    else if (hRank === 3) hRankBadge.classList.add('rank-glow-bronze');
+    else { hRankBadge.style.color = '#ccc'; hRankBadge.style.backgroundColor = '#333'; }
+
+    aRankBadge.style.display = 'inline-block'; aRankBadge.innerText = `第${aRank}名`; aRankBadge.className = 'badge-r';
+    if (aRank === 1) aRankBadge.classList.add('rank-glow-gold');
+    else if (aRank === 2) aRankBadge.classList.add('rank-glow-silver');
+    else if (aRank === 3) aRankBadge.classList.add('rank-glow-bronze');
+    else { aRankBadge.style.color = '#ccc'; aRankBadge.style.backgroundColor = '#333'; }
+  } else {
+    hRankBadge.style.display = 'none'; aRankBadge.style.display = 'none';
+  }
+
+  /* 更新能力值（原 xG 分析器比例） */
+  updateTeamUI('h', hXg, hXga, hStatus, hConvPct, hRankPct, hOddsPct, hasRank);
+  updateTeamUI('a', aXg, aXga, aStatus, aConvPct, aRankPct, aOddsPct, hasRank);
+
+  /* 14. 顯示結果 */
+  $('result').classList.add('show');
+}
+</script>
+</body>
+</html>
