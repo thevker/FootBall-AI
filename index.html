@@ -109,6 +109,14 @@ button.ghost:active{color:var(--txt);border-color:var(--accent2);background:rgba
 
 .score{position:relative;background:linear-gradient(160deg,#2e2e2e,#1e1e1e);border:1px solid var(--line);border-radius:18px;padding:24px 16px 16px;text-align:center}
 .score.one{border-color:rgba(61,220,151,.55);box-shadow:0 0 0 1px rgba(61,220,151,.15) inset,0 12px 30px -18px #3ddc97}
+
+/* ★ 截圖時移除首選綠框與光暈 */
+#capture1.capturing .score.one{
+  border-color: var(--line) !important;
+  box-shadow: none !important;
+}
+#capture1.capturing .one .big{ color: var(--txt) !important; }
+
 .tag{font-size:11px;letter-spacing:1px;color:var(--muted); margin-bottom: 6px;}
 .big{font-size:36px;font-weight:800;margin:4px 0;font-variant-numeric:tabular-nums;letter-spacing:1px}
 .one .big{color:var(--accent)}
@@ -527,6 +535,10 @@ function captureElement(targetId, btnElement) {
   const originalText = btnElement.innerHTML;
   btnElement.innerHTML = '⏳ 生成中...';
   btnElement.disabled = true;
+
+  /* ★ 截圖前加 capturing class，移除首選綠框特效 */
+  target.classList.add('capturing');
+
   setTimeout(() => {
     html2canvas(target, {
       backgroundColor: '#222222',
@@ -534,11 +546,13 @@ function captureElement(targetId, btnElement) {
       useCORS: true,
       logging: false
     }).then(canvas => {
+      target.classList.remove('capturing');   /* ★ 截圖後移除 */
       $('previewImg').src = canvas.toDataURL('image/png');
       $('imageModal').classList.add('show');
       btnElement.innerHTML = originalText;
       btnElement.disabled = false;
     }).catch(() => {
+      target.classList.remove('capturing');   /* ★ 失敗也移除 */
       alert('生成圖片失敗，請重試。');
       btnElement.innerHTML = originalText;
       btnElement.disabled = false;
@@ -778,7 +792,6 @@ function predict() {
   const aRank = hasRank ? parseInt(aRankStr) : 0;
   const hasOdds = isFinite(oddH) && oddH > 1 && isFinite(oddD) && oddD > 1 && isFinite(oddA) && oddA > 1;
 
-  /* ★ 改動：狀態、排名、賠率三者全部都有才顯示能力值 */
   const showRating = hasStatus && hasRank && hasOdds;
 
   /* 3. 基礎 λ */
