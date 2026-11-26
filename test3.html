@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>專屬預測器 (Poisson + 能力值)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root{
   --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
@@ -29,6 +30,7 @@ h1{font-size:22px;margin:0 0 4px;letter-spacing:.5px}
 .team h2{font-size:15px;margin:0 0 10px;color:var(--accent2);display:flex;align-items:center;gap:8px}
 .team.away h2{color:var(--warn)}
 label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+label .req{color:var(--error);font-weight:bold}
 
 input { font-size: 16px !important; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
 
@@ -57,6 +59,39 @@ button.ghost:active{color:var(--txt);border-color:var(--accent2);background:rgba
 #result{display:none;margin-top:26px}
 #result.show{display:block;animation:fade .3s ease}
 @keyframes fade{from{opacity:0}to{opacity:1}}
+
+/* ===== 操作按鈕 ===== */
+.action-buttons{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.action-buttons button{flex:1;min-width:110px;font-size:14px;padding:12px;color:#fff;border:none}
+.btn-return{background:transparent !important;color:var(--muted) !important;border:1px solid var(--line) !important}
+.btn-save-1{background:linear-gradient(135deg,#3ddc97,#4da3ff) !important;color:#06231a !important}
+.btn-save-2{background:linear-gradient(135deg,#ffb347,#ff6b6b) !important;color:#2a1200 !important}
+.btn-save-3{background:linear-gradient(135deg,#4da3ff,#a78bfa) !important;color:#fff !important}
+
+/* ===== 截圖區塊 ===== */
+.capture-block {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.capture-block .panel {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-top: 14px;
+}
+.capture-block .panel:first-child {
+  margin-top: 0;
+}
+.capture-block .panel h3 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 1px;
+}
 
 .mode-badge {
   display: inline-block;
@@ -118,7 +153,7 @@ button.ghost:active{color:var(--txt);border-color:var(--accent2);background:rgba
 .t-star.gold { color: #ffd700; }
 
 .extra-sections { display: grid; grid-template-columns: 1fr; gap: 14px; }
-.extra-box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.extra-box { background: #0e1626; border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
 .extra-title { font-size: 13px; color: var(--muted); margin-bottom: 10px; text-align: center; letter-spacing: 1px; }
 
 .tg-cards { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
@@ -133,9 +168,6 @@ button.ghost:active{color:var(--txt);border-color:var(--accent2);background:rgba
 
 .lam{display:flex;justify-content:center;gap:22px;font-size:12px;color:var(--muted);margin-top:14px}
 .lam b{color:var(--txt)}
-
-.panel{margin-top:18px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
-.panel h3{margin:0 0 12px;font-size:13px;color:var(--muted);font-weight:600;letter-spacing:1px}
 
 .bar{display:flex;align-items:center;gap:10px;margin:9px 0;font-size:13px}
 .bar .nm{width:96px;flex:none;color:var(--muted)}
@@ -192,27 +224,34 @@ svg { width: 140px; height: 140px; }
 .bar-odds { background: #4caf50; }
 .bar-conv { background: #00e5ff; }
 .bar-rank { background: #888; }
+
+/* ===== 截圖 Modal ===== */
+#imageModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.92); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
+#imageModal.show { display: flex; }
+#imageModal img { max-width: 100%; max-height: 80vh; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+.modal-hint { color: #fff; font-size: 14px; font-weight: bold; margin-top: 15px; text-align: center; }
+.modal-close { margin-top: 15px; padding: 12px 28px; background: linear-gradient(135deg,#3ddc97,#4da3ff); color: #06231a; border: none; border-radius: 10px; font-weight: 800; cursor: pointer; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>專屬預測器</h1>
-  <p class="sub">Poisson 比分模型 + xG 能力值雷達。1X2 賠率必填（模式 2：賠率放大 λ）。</p>
+  <p class="sub">Poisson 比分模型 + xG 能力值雷達。除排名外，所有欄位必填。1X2 賠率需大於 1。</p>
 
   <!-- 輸入區 -->
   <div class="grid">
     <div class="team">
       <h2>🏠 主隊數據</h2>
       <div class="row">
-        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="hGF" placeholder="例如 2.22"></div>
-        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="hGA" placeholder="例如 0.89"></div>
+        <div><label>場均得分 <span class="req">*</span></label><input type="text" inputmode="decimal" class="num-input" id="hGF" placeholder="例如 2.22"></div>
+        <div><label>場均失球 <span class="req">*</span></label><input type="text" inputmode="decimal" class="num-input" id="hGA" placeholder="例如 0.89"></div>
       </div>
       <div class="row">
-        <div><label>主隊 xG</label><input type="text" inputmode="decimal" class="num-input" id="hXg" placeholder="例如 1.50"></div>
-        <div><label>主隊 xGA</label><input type="text" inputmode="decimal" class="num-input" id="hXga" placeholder="例如 1.00"></div>
+        <div><label>主隊 xG <span class="req">*</span></label><input type="text" inputmode="decimal" class="num-input" id="hXg" placeholder="例如 1.50"></div>
+        <div><label>主隊 xGA <span class="req">*</span></label><input type="text" inputmode="decimal" class="num-input" id="hXga" placeholder="例如 1.00"></div>
       </div>
       <div class="row">
-        <div><label>狀態 (0-3)</label><input type="text" inputmode="decimal" class="num-input" id="hStatus" placeholder="例如 1.50"></div>
+        <div><label>狀態 (0-3) <span class="req">*</span></label><input type="text" inputmode="decimal" class="num-input" id="hStatus" placeholder="例如 1.50"></div>
         <div><label>排名 (選填)</label><input type="text" inputmode="numeric" class="num-input" id="hRank" placeholder="例如 1"></div>
       </div>
     </div>
@@ -220,22 +259,22 @@ svg { width: 140px; height: 140px; }
     <div class="team away">
       <h2>✈️ 客隊數據</h2>
       <div class="row">
-        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="aGF" placeholder="例如 0.50"></div>
-        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="aGA" placeholder="例如 1.63"></div>
+        <div><label>場均得分 <span class="req">*</span></label><input type="text" inputmode="decimal" class="num-input" id="aGF" placeholder="例如 0.50"></div>
+        <div><label>場均失球 <span class="req">*</span></label><input type="text" inputmode="decimal" class="num-input" id="aGA" placeholder="例如 1.63"></div>
       </div>
       <div class="row">
-        <div><label>客隊 xG</label><input type="text" inputmode="decimal" class="num-input" id="aXg" placeholder="例如 1.00"></div>
-        <div><label>客隊 xGA</label><input type="text" inputmode="decimal" class="num-input" id="aXga" placeholder="例如 1.20"></div>
+        <div><label>客隊 xG <span class="req">*</span></label><input type="text" inputmode="decimal" class="num-input" id="aXg" placeholder="例如 1.00"></div>
+        <div><label>客隊 xGA <span class="req">*</span></label><input type="text" inputmode="decimal" class="num-input" id="aXga" placeholder="例如 1.20"></div>
       </div>
       <div class="row">
-        <div><label>狀態 (0-3)</label><input type="text" inputmode="decimal" class="num-input" id="aStatus" placeholder="例如 1.00"></div>
+        <div><label>狀態 (0-3) <span class="req">*</span></label><input type="text" inputmode="decimal" class="num-input" id="aStatus" placeholder="例如 1.00"></div>
         <div><label>排名 (選填)</label><input type="text" inputmode="numeric" class="num-input" id="aRank" placeholder="例如 2"></div>
       </div>
     </div>
   </div>
 
   <div class="odds-panel">
-    <div class="panel-title">市場 1X2 賠率 <span>必填，模式 2：賠率放大 λ</span></div>
+    <div class="panel-title">市場 1X2 賠率 <span>必填，需大於 1</span></div>
     <div class="odds-inputs">
       <input type="text" inputmode="decimal" class="num-input" id="oddH" placeholder="主勝賠率">
       <input type="text" inputmode="decimal" class="num-input" id="oddD" placeholder="和局賠率">
@@ -250,32 +289,42 @@ svg { width: 140px; height: 140px; }
 
   <!-- 結果區 -->
   <div id="result">
-    <div id="modeStatus"></div>
+    <div class="action-buttons">
+      <button class="btn-return" onclick="backToInput()">⬅️ 返回</button>
+    </div>
+    <div class="action-buttons">
+      <button class="btn-save-1" id="btnSave1" onclick="savePart1()">📸 保存預測</button>
+      <button class="btn-save-2" id="btnSave2" onclick="savePart2()">📸 保存分佈</button>
+      <button class="btn-save-3" id="btnSave3" onclick="savePart3()">📸 保存分析</button>
+    </div>
 
-    <div class="scores" id="scores"></div>
+    <!-- 第 1 塊：比分 + 雙選入球 -->
+    <div id="capture1" class="capture-block">
+      <div id="modeStatus"></div>
+      <div class="scores" id="scores"></div>
+      <div class="extra-sections">
+        <div class="extra-box">
+          <div class="extra-title">雙選球隊入球數</div>
+          <div class="tg-cards" id="teamGoals"></div>
+        </div>
+      </div>
+      <div class="lam" id="lam"></div>
+    </div>
 
-    <div class="extra-sections">
-      <div class="extra-box">
-        <div class="extra-title">雙選球隊入球數</div>
-        <div class="tg-cards" id="teamGoals"></div>
+    <!-- 第 2 塊：賽果機率 + 分佈表 -->
+    <div id="capture2" class="capture-block">
+      <div class="panel">
+        <h3>最終賽果機率</h3>
+        <div id="bars"></div>
+      </div>
+      <div class="panel">
+        <h3>完整比分機率分佈 (大於 1%)</h3>
+        <div class="table-container" id="topList"></div>
       </div>
     </div>
 
-    <div class="lam" id="lam"></div>
-
-    <div class="panel">
-      <h3>最終賽果機率</h3>
-      <div id="bars"></div>
-    </div>
-
-    <div class="panel">
-      <h3>完整比分機率分佈 (大於 1%)</h3>
-      <div class="table-container" id="topList"></div>
-    </div>
-
-    <!-- 能力值 -->
-    <div class="panel">
-      <h3>能力值雷達</h3>
+    <!-- 第 3 塊：雷達圖 + 能力值 -->
+    <div id="capture3" class="capture-block">
       <div class="radar-container">
         <div class="vertical-text home">主<br>隊</div>
         <div class="radar-svg-box"><svg id="radar-home" viewBox="0 0 200 200"></svg><svg id="radar-away" viewBox="0 0 200 200"></svg></div>
@@ -309,6 +358,12 @@ svg { width: 140px; height: 140px; }
       </div>
     </div>
   </div>
+</div>
+
+<div id="imageModal">
+  <img id="previewImg" src="" alt="分析結果">
+  <div class="modal-hint">👇 請「長按」上方圖片，選擇「儲存到相片」</div>
+  <button class="modal-close" onclick="closeModal()">關閉</button>
 </div>
 
 <script>
@@ -377,6 +432,42 @@ $('clear').addEventListener('click', () => {
 
 $('go').addEventListener('click', predict);
 
+/* ===== 截圖 ===== */
+function closeModal() { $('imageModal').classList.remove('show'); }
+
+function captureElement(targetId, btnElement) {
+  const target = $(targetId);
+  const originalText = btnElement.innerHTML;
+  btnElement.innerHTML = '⏳ 生成中...';
+  btnElement.disabled = true;
+  setTimeout(() => {
+    html2canvas(target, {
+      backgroundColor: '#141d2f',
+      scale: 2,
+      useCORS: true,
+      logging: false
+    }).then(canvas => {
+      $('previewImg').src = canvas.toDataURL('image/png');
+      $('imageModal').classList.add('show');
+      btnElement.innerHTML = originalText;
+      btnElement.disabled = false;
+    }).catch(() => {
+      alert('生成圖片失敗，請重試。');
+      btnElement.innerHTML = originalText;
+      btnElement.disabled = false;
+    });
+  }, 120);
+}
+
+function savePart1() { captureElement('capture1', $('btnSave1')); }
+function savePart2() { captureElement('capture2', $('btnSave2')); }
+function savePart3() { captureElement('capture3', $('btnSave3')); }
+
+function backToInput() {
+  $('result').classList.remove('show');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 /* ===== 評級 / 雷達 / 能力值 ===== */
 function getGradeByPercent(p) {
   if (p < 20) return { grade: 'E', color: '#c0c0c0' };
@@ -444,7 +535,6 @@ function drawRadar(svgId, data, labels, color, fillColor) {
   svg.appendChild(dataPolygon);
 }
 
-/* 能力值：完全使用 xG 分析器原本的比例 */
 function updateTeamUI(prefix, xg, xga, status, convPct, rankPct, oddsPct, hasRank) {
   let attPct = Math.min(Math.max(((xg - 0.5) / 2.0) * 100, 0), 100);
   let defPct = Math.min(Math.max(((3.0 - xga - 0.5) / 2.0) * 100, 0), 100);
@@ -517,33 +607,38 @@ function updateTeamUI(prefix, xg, xga, status, convPct, rankPct, oddsPct, hasRan
 
 /* ===== 主流程 ===== */
 function predict() {
-  /* 1. 輸入驗證 */
-  const fields = ['hGF','hGA','aGF','aGA','hXg','hXga','hStatus','aXg','aXga','aStatus','oddH','oddD','oddA'];
+  /* 1. 驗證：除排名外全部必填 */
+  const requiredFields = ['hGF','hGA','hXg','hXga','hStatus','aGF','aGA','aXg','aXga','aStatus','oddH','oddD','oddA'];
   let missing = [];
-  fields.forEach(id => {
+
+  document.querySelectorAll('.num-input').forEach(el => el.classList.remove('invalid'));
+
+  requiredFields.forEach(id => {
     const el = $(id);
     normalizeInput(el);
-    const v = parseFloat(el.value);
-    if (!isFinite(v)) missing.push(el);
-    el.classList.remove('invalid');
+    const raw = el.value.trim();
+    const v = parseFloat(raw);
+    if (raw === '' || !isFinite(v)) missing.push(el);
   });
 
-  // 賠率需大於 1
   const oddH = parseFloat($('oddH').value);
   const oddD = parseFloat($('oddD').value);
   const oddA = parseFloat($('oddA').value);
   const oddsValid = isFinite(oddH) && oddH > 1 && isFinite(oddD) && oddD > 1 && isFinite(oddA) && oddA > 1;
 
   if (missing.length > 0 || !oddsValid) {
-    (missing.length > 0 ? missing : [$('oddH'),$('oddD'),$('oddA')]).forEach(el => {
+    const badEls = !oddsValid ? ['oddH','oddD','oddA'].map(id => $(id)) : missing;
+    badEls.forEach(el => {
       el.classList.add('invalid');
       setTimeout(() => el.classList.remove('invalid'), 1500);
     });
-    alert('請填寫完整數據，1X2 賠率需大於 1（主勝、和局、客勝）。');
+    alert(!oddsValid
+      ? '1X2 賠率（主勝 / 和局 / 客勝）必須填寫且大於 1。'
+      : '請填寫完整數據，除「排名」外所有欄位皆為必填。');
     return;
   }
 
-  /* 2. 解析數值 */
+  /* 2. 解析 */
   const hGF = parseFloat($('hGF').value);
   const hGA = parseFloat($('hGA').value);
   const aGF = parseFloat($('aGF').value);
@@ -560,17 +655,17 @@ function predict() {
   const hRank = hasRank ? parseInt(hRankStr) : 0;
   const aRank = hasRank ? parseInt(aRankStr) : 0;
 
-  /* 3. 基礎 λ（test2 公式） */
-  let baseLH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
-  let baseLA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
+  /* 3. 基礎 λ：四項平均 */
+  let baseLH = Math.min(Math.max((hGF + hXg + aGA + aXga) / 4, 0.05), 6);
+  let baseLA = Math.min(Math.max((aGF + aXg + hGA + hXga) / 4, 0.05), 6);
 
-  /* 4. 模式 2：賠率放大 λ（test2 公式：√(oddD/oddH)） */
+  /* 4. 賠率放大 */
   const ratioH = Math.sqrt(oddD / Math.max(oddH, 1.01));
   const ratioA = Math.sqrt(oddD / Math.max(oddA, 1.01));
   let lH = Math.min(Math.max(baseLH * ratioH, 0.05), 6);
   let lA = Math.min(Math.max(baseLA * ratioA, 0.05), 6);
 
-  $('modeStatus').innerHTML = `<span class="mode-badge">⚡ 模式 2：賠率放大 λ 已啟用 (主 λ: ${lH.toFixed(2)}, 客 λ: ${lA.toFixed(2)})</span>`;
+  $('modeStatus').innerHTML = `<span class="mode-badge">⚡ 賠率放大 λ (主: ${lH.toFixed(2)} / 客: ${lA.toFixed(2)})</span>`;
 
   /* 5. Poisson 矩陣 */
   const m = [];
@@ -594,24 +689,20 @@ function predict() {
     for (let j = 0; j <= MAXG; j++) {
       m[i][j] /= finalTotal;
       const p = m[i][j];
-
       if (i > j) homeWin += p;
       else if (i === j) draw += p;
       else awayWin += p;
-
       if (i + j >= 3) over25 += p;
       if (i > 0 && j > 0) btts += p;
-
       final_lH += i * p;
       final_lA += j * p;
       hGoalProbs[i] += p;
       aGoalProbs[j] += p;
-
       list.push({ h: i, a: j, p });
     }
   }
 
-  /* 6. 排序（test2 規則） */
+  /* 6. 排序 */
   const isHomeFav = lH >= lA;
   list.sort((x, y) => {
     if (Math.abs(x.p - y.p) > 1e-6) return y.p - x.p;
@@ -748,7 +839,7 @@ function predict() {
     </table>
   `;
 
-  /* 13. 能力值（xG 分析器比例） */
+  /* 13. 能力值 */
   const totalOdds = oddH + oddA;
   const hOddsPct = totalOdds > 0 ? (oddA / totalOdds) * 100 : 50;
   const aOddsPct = totalOdds > 0 ? (oddH / totalOdds) * 100 : 50;
@@ -766,19 +857,21 @@ function predict() {
     aRankPct = totalRank > 0 ? (hRank / totalRank) * 100 : 50;
   }
 
-  /* 賠率徽章 */
   const hOddsBadge = $('hOddsBadge'), aOddsBadge = $('aOddsBadge');
   if (oddH < oddA) {
+    hOddsBadge.style.display = 'inline-block';
+    aOddsBadge.style.display = 'inline-block';
     hOddsBadge.innerText = "上盤"; hOddsBadge.style.color = "#bbf7d0"; hOddsBadge.style.backgroundColor = "#15803d";
     aOddsBadge.innerText = "下盤"; aOddsBadge.style.color = "#ccc"; aOddsBadge.style.backgroundColor = "#333";
   } else if (oddH > oddA) {
+    hOddsBadge.style.display = 'inline-block';
+    aOddsBadge.style.display = 'inline-block';
     hOddsBadge.innerText = "下盤"; hOddsBadge.style.color = "#ccc"; hOddsBadge.style.backgroundColor = "#333";
     aOddsBadge.innerText = "上盤"; aOddsBadge.style.color = "#bbf7d0"; aOddsBadge.style.backgroundColor = "#15803d";
   } else {
     hOddsBadge.style.display = 'none'; aOddsBadge.style.display = 'none';
   }
 
-  /* 排名徽章 */
   const hRankBadge = $('hRankBadge'), aRankBadge = $('aRankBadge');
   if (hasRank) {
     hRankBadge.style.display = 'inline-block'; hRankBadge.innerText = `第${hRank}名`; hRankBadge.className = 'badge-r';
@@ -796,12 +889,12 @@ function predict() {
     hRankBadge.style.display = 'none'; aRankBadge.style.display = 'none';
   }
 
-  /* 更新能力值（原 xG 分析器比例） */
   updateTeamUI('h', hXg, hXga, hStatus, hConvPct, hRankPct, hOddsPct, hasRank);
   updateTeamUI('a', aXg, aXga, aStatus, aConvPct, aRankPct, aOddsPct, hasRank);
 
-  /* 14. 顯示結果 */
+  /* 14. 顯示 */
   $('result').classList.add('show');
+  $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 </script>
 </body>
