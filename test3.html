@@ -266,7 +266,7 @@ svg { width: 140px; height: 140px; }
 <body>
 <div class="wrap">
   <h1>專屬預測器</h1>
-  <p class="sub">場均得失為必填；賠率、xG、狀態、排名皆為選填。有賠率則自動放大 λ；有 xG 才顯示能力值。大細完全由 Poisson 矩陣機率判定（門檻 70%）。</p>
+  <p class="sub">場均得失為必填；賠率、xG、狀態、排名皆為選填。有賠率則自動放大 λ，並同步放大/縮小進攻與防守能力值；有 xG 才顯示能力值。大細完全由 Poisson 矩陣機率判定（門檻 70%）。</p>
 
   <!-- 輸入區 -->
   <div class="grid">
@@ -304,7 +304,7 @@ svg { width: 140px; height: 140px; }
   </div>
 
   <div class="odds-panel">
-    <div class="panel-title">市場 1X2 賠率 <span>選填；有填則賠率放大，未填則純數據</span></div>
+    <div class="panel-title">市場 1X2 賠率 <span>選填；有填則賠率放大 λ 與攻防能力值，未填則純數據</span></div>
     <div class="odds-inputs">
       <input type="text" inputmode="decimal" class="num-input" id="oddH">
       <input type="text" inputmode="decimal" class="num-input" id="oddD">
@@ -599,9 +599,24 @@ function drawRadar(svgId, data, labels, color, fillColor) {
   svg.appendChild(dataPolygon);
 }
 
-function updateTeamUI(prefix, xg, xga, status, convPct, rankPct, oddsPct, hasRank, hasStatus, hasOdds) {
+/*
+ * 新增參數 hLambdaRatio / aLambdaRatio：
+ * 有賠率時為 lH/baseLH、lA/baseLA（λ 放大倍數），
+ * 用來同步放大/縮小進攻與防守百分比。
+ */
+function updateTeamUI(prefix, xg, xga, status, convPct, rankPct, oddsPct, hasRank, hasStatus, hasOdds, lambdaRatio) {
+  const ratio = isFinite(lambdaRatio) && lambdaRatio > 0 ? lambdaRatio : 1;
+
+  // 原始 xG/xGA 映射
   let attPct = Math.min(Math.max(((xg - 0.5) / 2.0) * 100, 0), 100);
   let defPct = Math.min(Math.max(((3.0 - xga - 0.5) / 2.0) * 100, 0), 100);
+
+  // 賠率 λ 放大：進攻直接乘 ratio；防守因失球期望變大而相對變弱（除以 ratio）
+  if (hasOdds) {
+    attPct = Math.min(Math.max(attPct * ratio, 0), 100);
+    defPct = Math.min(Math.max(defPct / ratio, 0), 100);
+  }
+
   let statPct = hasStatus ? Math.min(Math.max((status / 3.0) * 100, 0), 100) : 0;
 
   $(prefix + 'AttBar').style.width = Math.max(attPct, 1) + '%';
@@ -730,6 +745,7 @@ function predict() {
   let baseLA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
 
   let lH = baseLH, lA = baseLA;
+  let hLambdaRatio = 1, aLambdaRatio = 1;
 
   /* 4. 賠率放大 */
   if (hasOdds) {
@@ -737,7 +753,10 @@ function predict() {
     const ratioA = Math.sqrt(oddD / Math.max(oddA, 1.01));
     lH = Math.min(Math.max(baseLH * ratioH, 0.05), 6);
     lA = Math.min(Math.max(baseLA * ratioA, 0.05), 6);
-    $('modeStatus').innerHTML = `<span class="mode-badge">⚡ 賠率放大 λ (主: ${lH.toFixed(2)} / 客: ${lA.toFixed(2)})</span>`;
+    // 實際生效的 λ 放大倍數（考慮上下限後）
+    hLambdaRatio = lH / baseLH;
+    aLambdaRatio = lA / baseLA;
+    $('modeStatus').innerHTML = `<span class="mode-badge">⚡ 賠率放大 λ (主: ${lH.toFixed(2)} / 客: ${lA.toFixed(2)})｜攻防同步 ×${hLambdaRatio.toFixed(2)} / ×${aLambdaRatio.toFixed(2)}</span>`;
   } else {
     $('modeStatus').innerHTML = `<span class="mode-badge pure">ℹ️ 純數據模式 (主 λ: ${lH.toFixed(2)} / 客 λ: ${lA.toFixed(2)})</span>`;
   }
@@ -1002,8 +1021,8 @@ function predict() {
       hRankBadge.style.display = 'none'; aRankBadge.style.display = 'none';
     }
 
-    updateTeamUI('h', hXg, hXga, hStatus, hConvPct, hRankPct, hOddsPct, hasRank, hasStatus, hasOdds);
-    updateTeamUI('a', aXg, aXga, aStatus, aConvPct, aRankPct, aOddsPct, hasRank, hasStatus, hasOdds);
+    updateTeamUI('h', hXg, hXga, hStatus, hConvPct, hRankPct, hOddsPct, hasRank, hasStatus, hasOdds, hLambdaRatio);
+    updateTeamUI('a', aXg, aXga, aStatus, aConvPct, aRankPct, aOddsPct, hasRank, hasStatus, hasOdds, aLambdaRatio);
 
     $('capture3').style.display = 'block';
     $('btnSave3').style.display = '';
