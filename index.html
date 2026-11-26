@@ -23,6 +23,21 @@ body{
 h1{font-size:22px;margin:0 0 4px;letter-spacing:.5px}
 .sub{color:var(--muted);font-size:13px;margin:0 0 20px;line-height:1.6}
 
+/* ===== 模式切換 ===== */
+.mode-switch{
+  display:flex;align-items:center;gap:10px;margin-bottom:16px;
+  background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;
+}
+.mode-switch .label{font-size:12px;color:var(--muted);flex:none}
+.seg{display:flex;background:#151515;border-radius:8px;padding:3px;gap:3px;flex:1;max-width:260px}
+.seg button{
+  flex:1;padding:8px 10px;border:0;border-radius:6px;cursor:pointer;
+  font-size:12px;font-weight:700;background:transparent;color:var(--muted);
+  -webkit-tap-highlight-color:transparent;transition:all .15s;
+}
+.seg button.active{background:linear-gradient(135deg,#3ddc97,#4da3ff);color:#06231a}
+.seg button:active{transform:none}
+
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:620px){.grid{grid-template-columns:1fr}}
 .team{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:16px;padding:16px}
@@ -340,6 +355,15 @@ svg { width: 140px; height: 140px; }
   <h1>專屬預測器</h1>
   <p class="sub">場均得失為必填；賠率、狀態、排名皆為選填。有賠率則自動放大 λ，並同步放大進攻與防守能力值。狀態、排名、賠率三者全部填寫才顯示能力值與雷達圖。大細完全由 Poisson 矩陣機率判定（門檻 70%）。</p>
 
+  <!-- 模式切換 -->
+  <div class="mode-switch">
+    <span class="label">模式</span>
+    <div class="seg">
+      <button type="button" class="active" id="modeStandard" onclick="setMode('standard')">標準模式</button>
+      <button type="button" id="modeSimple" onclick="setMode('simple')">簡易模式</button>
+    </div>
+  </div>
+
   <!-- 輸入區 -->
   <div class="grid">
     <div class="team">
@@ -348,7 +372,7 @@ svg { width: 140px; height: 140px; }
         <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="hGF"></div>
         <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="hGA"></div>
       </div>
-      <div class="row">
+      <div class="row extra-inputs">
         <div><label>狀態 (0-3)</label><input type="text" inputmode="decimal" class="num-input" id="hStatus"></div>
         <div><label>排名</label><input type="text" inputmode="numeric" class="num-input" id="hRank"></div>
       </div>
@@ -360,7 +384,7 @@ svg { width: 140px; height: 140px; }
         <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="aGF"></div>
         <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="aGA"></div>
       </div>
-      <div class="row">
+      <div class="row extra-inputs">
         <div><label>狀態 (0-3)</label><input type="text" inputmode="decimal" class="num-input" id="aStatus"></div>
         <div><label>排名</label><input type="text" inputmode="numeric" class="num-input" id="aRank"></div>
       </div>
@@ -467,6 +491,28 @@ svg { width: 140px; height: 140px; }
 const $ = id => document.getElementById(id);
 const MAXG = 10;
 
+let currentMode = 'standard';   /* 'standard' | 'simple' */
+
+/* ===== 模式切換 ===== */
+function setMode(mode) {
+  currentMode = mode;
+  const isSimple = mode === 'simple';
+
+  $('modeStandard').classList.toggle('active', !isSimple);
+  $('modeSimple').classList.toggle('active', isSimple);
+
+  document.querySelectorAll('.extra-inputs').forEach(el => {
+    el.style.display = isSimple ? 'none' : 'flex';
+  });
+
+  if (isSimple) {
+    ['hStatus','hRank','aStatus','aRank'].forEach(id => { $(id).value = ''; });
+  }
+
+  /* 若結果區已顯示，切換後自動重算 */
+  if ($('result').classList.contains('show')) predict();
+}
+
 /* ===== 共用工具 ===== */
 const fact = n => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; };
 const poisson = (k, l) => Math.exp(-l) * Math.pow(l, k) / fact(k);
@@ -536,7 +582,6 @@ function captureElement(targetId, btnElement) {
   btnElement.innerHTML = '⏳ 生成中...';
   btnElement.disabled = true;
 
-  /* ★ 截圖前加 capturing class，移除首選綠框特效 */
   target.classList.add('capturing');
 
   setTimeout(() => {
@@ -546,13 +591,13 @@ function captureElement(targetId, btnElement) {
       useCORS: true,
       logging: false
     }).then(canvas => {
-      target.classList.remove('capturing');   /* ★ 截圖後移除 */
+      target.classList.remove('capturing');
       $('previewImg').src = canvas.toDataURL('image/png');
       $('imageModal').classList.add('show');
       btnElement.innerHTML = originalText;
       btnElement.disabled = false;
     }).catch(() => {
-      target.classList.remove('capturing');   /* ★ 失敗也移除 */
+      target.classList.remove('capturing');
       alert('生成圖片失敗，請重試。');
       btnElement.innerHTML = originalText;
       btnElement.disabled = false;
@@ -778,21 +823,23 @@ function predict() {
   const hGA = parseFloat($('hGA').value);
   const aGF = parseFloat($('aGF').value);
   const aGA = parseFloat($('aGA').value);
-  const hStatus = parseFloat($('hStatus').value);
-  const aStatus = parseFloat($('aStatus').value);
-  const hRankStr = $('hRank').value.trim();
-  const aRankStr = $('aRank').value.trim();
+
+  const isSimple = currentMode === 'simple';
+  const hStatus = isSimple ? NaN : parseFloat($('hStatus').value);
+  const aStatus = isSimple ? NaN : parseFloat($('aStatus').value);
+  const hRankStr = isSimple ? '' : $('hRank').value.trim();
+  const aRankStr = isSimple ? '' : $('aRank').value.trim();
   const oddH = parseFloat($('oddH').value);
   const oddD = parseFloat($('oddD').value);
   const oddA = parseFloat($('oddA').value);
 
-  const hasStatus = isFinite(hStatus) && isFinite(aStatus);
-  const hasRank = hRankStr !== '' && aRankStr !== '';
+  const hasStatus = !isSimple && isFinite(hStatus) && isFinite(aStatus);
+  const hasRank = !isSimple && hRankStr !== '' && aRankStr !== '';
   const hRank = hasRank ? parseInt(hRankStr) : 0;
   const aRank = hasRank ? parseInt(aRankStr) : 0;
   const hasOdds = isFinite(oddH) && oddH > 1 && isFinite(oddD) && oddD > 1 && isFinite(oddA) && oddA > 1;
 
-  const showRating = hasStatus && hasRank && hasOdds;
+  const showRating = !isSimple && hasStatus && hasRank && hasOdds;
 
   /* 3. 基礎 λ */
   let baseLH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
@@ -1029,7 +1076,7 @@ function predict() {
     </table>
   `;
 
-  /* 14. 能力值（三者全部都有才顯示） */
+  /* 14. 能力值（標準模式且三者全部都有才顯示） */
   if (showRating) {
     const totalOdds = hasOdds ? oddH + oddA : 0;
     const hOddsPct = hasOdds && totalOdds > 0 ? (oddA / totalOdds) * 100 : 50;
