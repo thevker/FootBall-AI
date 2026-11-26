@@ -44,6 +44,19 @@
   .panel-title { font-size: 14px; color: var(--accent); margin-bottom: 12px; font-weight: 700; display: flex; justify-content: space-between; }
   .panel-title span { font-size: 11px; color: var(--muted); font-weight: normal; }
 
+  .mode-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+  .mode-row label { margin:0; font-size:12px; color:var(--muted); }
+  .mode-row select {
+    font-size:16px; padding:8px 10px; border-radius:8px;
+    border:1px solid var(--line); background:#0e1626; color:var(--txt);
+    -webkit-appearance:none; appearance:none; outline:none; cursor:pointer;
+    background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+    background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;
+    background-size:5px 5px,5px 5px; background-repeat:no-repeat;
+    padding-right:30px;
+  }
+  .mode-row select:focus { border-color:var(--accent2); }
+
   .odds-inputs { display: flex; gap: 8px; }
   .odds-inputs input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: #0e1626; color: var(--txt); text-align: center; }
   .odds-inputs input:focus { border-color: var(--accent); }
@@ -113,7 +126,7 @@
   .star.silver { color: #c0c0c0; text-shadow: 0 0 6px rgba(192, 192, 192, 0.6); }
   .star.gold { color: #ffd700; text-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
 
-  /* 表格內標籤與星號 (標籤改為水平向右) */
+  /* 表格內標籤與星號 */
   .t-badges { display: inline-flex; flex-direction: row; gap: 4px; vertical-align: middle; }
   .t-badge { font-size: 9px; padding: 1px 4px; border-radius: 3px; font-weight: 800; text-align: center; }
   .t-badge.over { background: rgba(255, 77, 77, 0.2); color: #ff6b6b; }
@@ -187,6 +200,15 @@
 
   <div class="odds-panel">
     <div class="panel-title">市場 1X2 賠率 <span>主 - 和 - 客，留空則純看數據</span></div>
+    
+    <div class="mode-row">
+      <label for="formula">計算公式</label>
+      <select id="formula">
+        <option value="standard" selected>標準 Poisson (預設)</option>
+        <option value="dixon">Dixon-Coles 修正 (方案 B)</option>
+      </select>
+    </div>
+
     <div class="odds-inputs">
       <input type="text" inputmode="decimal" class="num-input" id="oddH" placeholder="主勝賠率">
       <input type="text" inputmode="decimal" class="num-input" id="oddD" placeholder="和局賠率">
@@ -313,8 +335,9 @@ function predict() {
     return;
   }
 
-  let baseLH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
-  let baseLA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
+  // 下限改為 0.01
+  let baseLH = Math.max((hGF + aGA) / 2, 0.01);
+  let baseLA = Math.max((aGF + hGA) / 2, 0.01);
   let lH = baseLH;
   let lA = baseLA;
 
@@ -322,6 +345,8 @@ function predict() {
   const oddD = parseFloat($('oddD').value);
   const oddA = parseFloat($('oddA').value);
   const hasOdds = [oddH, oddA, oddD].every(v => isFinite(v) && v > 1);
+  
+  const formula = $('formula').value;
 
   let isHomeFav = false;
   const m = [];
@@ -336,8 +361,9 @@ function predict() {
     const ratioH = Math.sqrt(safeOddD / safeOddH);
     const ratioA = Math.sqrt(safeOddD / safeOddA);
     
-    lH = Math.min(Math.max(baseLH * ratioH, 0.05), 6);
-    lA = Math.min(Math.max(baseLA * ratioA, 0.05), 6);
+    // 下限改為 0.01
+    lH = Math.max(baseLH * ratioH, 0.01);
+    lA = Math.max(baseLA * ratioA, 0.01);
 
     $('modeStatus').innerHTML = `<span class="mode-badge">⚡ 模式 2：賠率放大 λ 已啟用 (主 λ: ${lH.toFixed(2)}, 客 λ: ${lA.toFixed(2)})</span>`;
   } else {
@@ -345,10 +371,23 @@ function predict() {
     $('modeStatus').innerHTML = `<span class="mode-badge pure">ℹ️ 未輸入完整賠率，使用純數據模式 (主 λ: ${lH.toFixed(2)}, 客 λ: ${lA.toFixed(2)})</span>`;
   }
 
+  const rho = -0.12;
+
   let finalTotal = 0;
   for (let i = 0; i <= MAXG; i++) {
     for (let j = 0; j <= MAXG; j++) {
       let p = poisson(i, lH) * poisson(j, lA);
+
+      if (formula === 'dixon') {
+        let tau = 1.0;
+        if (i === 0 && j === 0) tau = 1 - lH * lA * rho;
+        else if (i === 0 && j === 1) tau = 1 + lH * rho;
+        else if (i === 1 && j === 0) tau = 1 + lA * rho;
+        else if (i === 1 && j === 1) tau = 1 - rho;
+        
+        p *= Math.max(tau, 0.01);
+      }
+
       m[i][j] = p;
       finalTotal += p;
     }
