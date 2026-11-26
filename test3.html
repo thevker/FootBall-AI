@@ -175,6 +175,68 @@ button.ghost:active{color:var(--txt);border-color:var(--accent2);background:rgba
 .bar .fl{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#3ddc97,#4da3ff);transition:width .5s ease}
 .bar .vl{width:56px;text-align:right;font-variant-numeric:tabular-nums}
 
+/* ===== 賽果堆疊橫條 ===== */
+.result-bar-wrap {
+  position: relative;
+  margin: 28px 0 8px;
+  padding-top: 34px;
+}
+.result-bar {
+  display: flex;
+  height: 26px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #151515;
+}
+.result-seg {
+  height: 100%;
+  transition: width .5s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.5);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.result-seg.home { background: #e5484d; }
+.result-seg.draw { background: #6b7280; }
+.result-seg.away { background: #4da3ff; }
+.result-marker {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+.result-marker .arrow {
+  font-size: 18px;
+  line-height: 1;
+  color: var(--accent);
+  text-shadow: 0 0 6px rgba(61,220,151,.8);
+}
+.result-marker .pred {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--accent);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+.result-legend {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.result-legend span b { color: var(--txt); }
+
 .table-container { max-height: 400px; overflow-y: auto; border-radius: 8px; border: 1px solid var(--line); }
 table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
@@ -187,7 +249,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 /* ===== 能力值區 ===== */
 .radar-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px 15px; background: #151515; border-radius: 16px; border: 1px solid var(--line); }
 .vertical-text { width: 30px; font-size: 14px; font-weight: bold; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.2; }
-.vertical-text.home { color: var(--warn); }
+.vertical-text.home { color: #ff6b6b; }
 .vertical-text.away { color: var(--accent2); }
 .radar-svg-box { flex: 1; display: flex; justify-content: space-around; align-items: center; }
 svg { width: 140px; height: 140px; }
@@ -250,7 +312,13 @@ svg { width: 140px; height: 140px; }
   box-shadow: 0 10px 40px rgba(0,0,0,0.8);
 }
 .modal-hint { color: #fff; font-size: 13px; font-weight: 600; text-align: center; flex-shrink: 0; }
+
+/* 關閉按鈕：固定尺寸，不受全域 button 樣式影響 */
 .modal-close {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 120px;
+  max-width: 200px;
   padding: 10px 28px;
   background: linear-gradient(135deg,#3ddc97,#4da3ff);
   color: #06231a;
@@ -260,6 +328,12 @@ svg { width: 140px; height: 140px; }
   font-size: 14px;
   cursor: pointer;
   flex-shrink: 0;
+  transform: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+.modal-close:active {
+  transform: none !important;
+  opacity: 0.9;
 }
 </style>
 </head>
@@ -599,19 +673,12 @@ function drawRadar(svgId, data, labels, color, fillColor) {
   svg.appendChild(dataPolygon);
 }
 
-/*
- * 新增參數 hLambdaRatio / aLambdaRatio：
- * 有賠率時為 lH/baseLH、lA/baseLA（λ 放大倍數），
- * 用來同步放大/縮小進攻與防守百分比。
- */
 function updateTeamUI(prefix, xg, xga, status, convPct, rankPct, oddsPct, hasRank, hasStatus, hasOdds, lambdaRatio) {
   const ratio = isFinite(lambdaRatio) && lambdaRatio > 0 ? lambdaRatio : 1;
 
-  // 原始 xG/xGA 映射
   let attPct = Math.min(Math.max(((xg - 0.5) / 2.0) * 100, 0), 100);
   let defPct = Math.min(Math.max(((3.0 - xga - 0.5) / 2.0) * 100, 0), 100);
 
-  // 賠率 λ 放大：進攻直接乘 ratio；防守因失球期望變大而相對變弱（除以 ratio）
   if (hasOdds) {
     attPct = Math.min(Math.max(attPct * ratio, 0), 100);
     defPct = Math.min(Math.max(defPct / ratio, 0), 100);
@@ -753,7 +820,6 @@ function predict() {
     const ratioA = Math.sqrt(oddD / Math.max(oddA, 1.01));
     lH = Math.min(Math.max(baseLH * ratioH, 0.05), 6);
     lA = Math.min(Math.max(baseLA * ratioA, 0.05), 6);
-    // 實際生效的 λ 放大倍數（考慮上下限後）
     hLambdaRatio = lH / baseLH;
     aLambdaRatio = lA / baseLA;
     $('modeStatus').innerHTML = `<span class="mode-badge">⚡ 賠率放大 λ (主: ${lH.toFixed(2)} / 客: ${lA.toFixed(2)})｜攻防同步 ×${hLambdaRatio.toFixed(2)} / ×${aLambdaRatio.toFixed(2)}</span>`;
@@ -924,24 +990,33 @@ function predict() {
     <div>最終客期望入球 <b>${final_lA.toFixed(2)}</b></div>
   `;
 
-  /* 12. 賽果機率條 */
+  /* 12. 賽果機率：單條堆疊橫條 + 中位箭嘴預測 */
   const [hStr, dStr, aStr] = normalizeTo100(homeWin, draw, awayWin);
-  const bars = [
-    ['主勝', homeWin, hStr + '%'],
-    ['和局', draw, dStr + '%'],
-    ['客勝', awayWin, aStr + '%'],
-    ['大 2.5 球', over25, pct(over25)],
-    ['細 2.5 球', 1 - over25, pct(1 - over25)],
-    ['兩隊入球', btts, pct(btts)]
-  ];
+  const hPct = parseFloat(hStr), dPct = parseFloat(dStr), aPct = parseFloat(aStr);
 
-  $('bars').innerHTML = bars.map(([nm, v, str]) => `
-    <div class="bar">
-      <div class="nm">${nm}</div>
-      <div class="tr"><div class="fl" style="width: ${(v * 100).toFixed(1)}%;"></div></div>
-      <div class="vl">${str}</div>
+  // 中位 50% 落在哪一段 → 預測結果
+  let predName = '和局', predCls = 'draw';
+  if (50 < hPct) { predName = '主勝'; predCls = 'home'; }
+  else if (50 >= hPct + dPct) { predName = '客勝'; predCls = 'away'; }
+
+  $('bars').innerHTML = `
+    <div class="result-bar-wrap">
+      <div class="result-marker">
+        <div class="arrow">▼</div>
+        <div class="pred">預測：${predName}</div>
+      </div>
+      <div class="result-bar">
+        <div class="result-seg home" style="width:${hPct}%;">主 ${hStr}%</div>
+        <div class="result-seg draw" style="width:${dPct}%;">和 ${dStr}%</div>
+        <div class="result-seg away" style="width:${aPct}%;">客 ${aStr}%</div>
+      </div>
+      <div class="result-legend">
+        <span>主勝 <b>${hStr}%</b></span>
+        <span>和局 <b>${dStr}%</b></span>
+        <span>客勝 <b>${aStr}%</b></span>
+      </div>
     </div>
-  `).join('');
+  `;
 
   /* 13. 完整比分表 Top 10 */
   const filteredList = list.filter(s => s.p >= 0.01).slice(0, 10);
