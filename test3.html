@@ -192,15 +192,7 @@ button.ghost:active{color:var(--txt);border-color:var(--accent2);background:rgba
 .result-seg {
   height: 100%;
   transition: width .5s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 800;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,.5);
-  overflow: hidden;
-  white-space: nowrap;
+  display: block;
 }
 .result-seg.home { background: #e5484d; }
 .result-seg.draw { background: #6b7280; }
@@ -283,7 +275,6 @@ svg { width: 140px; height: 140px; }
 .bar-defense { background: #4da3ff; }
 .bar-status { background: #fbc02d; }
 .bar-odds { background: #4caf50; }
-.bar-conv { background: #00e5ff; }
 .bar-rank { background: #888; }
 
 /* ===== 截圖 Modal ===== */
@@ -313,7 +304,6 @@ svg { width: 140px; height: 140px; }
 }
 .modal-hint { color: #fff; font-size: 13px; font-weight: 600; text-align: center; flex-shrink: 0; }
 
-/* 關閉按鈕：固定尺寸，不受全域 button 樣式影響 */
 .modal-close {
   flex: 0 0 auto !important;
   width: auto !important;
@@ -340,7 +330,7 @@ svg { width: 140px; height: 140px; }
 <body>
 <div class="wrap">
   <h1>專屬預測器</h1>
-  <p class="sub">場均得失為必填；賠率、xG、狀態、排名皆為選填。有賠率則自動放大 λ，並同步放大/縮小進攻與防守能力值；有 xG 才顯示能力值。大細完全由 Poisson 矩陣機率判定（門檻 70%）。</p>
+  <p class="sub">場均得失為必填；賠率、狀態、排名皆為選填。有賠率則自動放大 λ，並同步放大/縮小進攻與防守能力值。大細完全由 Poisson 矩陣機率判定（門檻 70%）。</p>
 
   <!-- 輸入區 -->
   <div class="grid">
@@ -349,10 +339,6 @@ svg { width: 140px; height: 140px; }
       <div class="row">
         <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="hGF"></div>
         <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="hGA"></div>
-      </div>
-      <div class="row">
-        <div><label>主隊 xG</label><input type="text" inputmode="decimal" class="num-input" id="hXg"></div>
-        <div><label>主隊 xGA</label><input type="text" inputmode="decimal" class="num-input" id="hXga"></div>
       </div>
       <div class="row">
         <div><label>狀態 (0-3)</label><input type="text" inputmode="decimal" class="num-input" id="hStatus"></div>
@@ -365,10 +351,6 @@ svg { width: 140px; height: 140px; }
       <div class="row">
         <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="aGF"></div>
         <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="aGA"></div>
-      </div>
-      <div class="row">
-        <div><label>客隊 xG</label><input type="text" inputmode="decimal" class="num-input" id="aXg"></div>
-        <div><label>客隊 xGA</label><input type="text" inputmode="decimal" class="num-input" id="aXga"></div>
       </div>
       <div class="row">
         <div><label>狀態 (0-3)</label><input type="text" inputmode="decimal" class="num-input" id="aStatus"></div>
@@ -432,7 +414,7 @@ svg { width: 140px; height: 140px; }
       </div>
     </div>
 
-    <!-- 第 3 塊：能力值（有 xG 才顯示） -->
+    <!-- 第 3 塊：能力值 -->
     <div id="capture3" class="capture-block" style="display:none;">
       <div class="radar-container">
         <div class="vertical-text home">主<br>隊</div>
@@ -449,7 +431,6 @@ svg { width: 140px; height: 140px; }
         <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="hDefBar"></div></div><div class="rating-display" id="hDefDisplay">-</div></div>
         <div class="rating-row"><div class="rating-label">狀態</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="hStatBar"></div></div><div class="rating-display" id="hStatDisplay">-</div></div>
         <div class="rating-row"><div class="rating-label">賠率</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="hOddsBar"></div></div><div class="rating-display" id="hOddsDisplay">-</div></div>
-        <div class="rating-row"><div class="rating-label">轉換</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-conv" id="hConvBar"></div></div><div class="rating-display" id="hConvDisplay">-</div></div>
         <div class="rating-row" id="hRankRow" style="display:none;"><div class="rating-label">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="hRankBar"></div></div><div class="rating-display" id="hRankDisplay">-</div></div>
       </div>
 
@@ -462,7 +443,6 @@ svg { width: 140px; height: 140px; }
         <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="aDefBar"></div></div><div class="rating-display" id="aDefDisplay">-</div></div>
         <div class="rating-row"><div class="rating-label">狀態</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="aStatBar"></div></div><div class="rating-display" id="aStatDisplay">-</div></div>
         <div class="rating-row"><div class="rating-label">賠率</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="aOddsBar"></div></div><div class="rating-display" id="aOddsDisplay">-</div></div>
-        <div class="rating-row"><div class="rating-label">轉換</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-conv" id="aConvBar"></div></div><div class="rating-display" id="aConvDisplay">-</div></div>
         <div class="rating-row" id="aRankRow" style="display:none;"><div class="rating-label">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="aRankBar"></div></div><div class="rating-display" id="aRankDisplay">-</div></div>
       </div>
     </div>
@@ -575,7 +555,7 @@ function backToInput() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-/* ===== 大細判定：完全由 Poisson 機率決定（門檻 70% / 30%，與標籤一致） ===== */
+/* ===== 大細判定 ===== */
 function getTeamOUFromProbs(probs) {
   const p0 = probs[0] || 0;
   const p1 = probs[1] || 0;
@@ -606,12 +586,11 @@ function getTotalOUFromProbs(probs) {
   return { fuzzy: true };
 }
 
-/* ===== 評級 / 雷達 / 能力值 ===== */
-/* E/D/C/B/A/S 六級，D 灰色、E 紅色 */
+/* ===== 評級 ===== */
 function getGradeByPercent(p) {
   if (p < 25) return { grade: 'E', color: '#ff4d4d' };
-  if (p < 50) return { grade: 'D', color: '#c0c0c0' };
-  if (p < 70) return { grade: 'C', color: '#cd7f32' };
+  if (p < 50) return { grade: 'D', color: '#cd7f32' };
+  if (p < 70) return { grade: 'C', color: '#c0c0c0' };
   if (p < 85) return { grade: 'B', color: '#4ade80' };
   if (p < 95) return { grade: 'A', color: '#4da6ff' };
   return { grade: 'S', color: '#FFD700' };
@@ -673,11 +652,11 @@ function drawRadar(svgId, data, labels, color, fillColor) {
   svg.appendChild(dataPolygon);
 }
 
-function updateTeamUI(prefix, xg, xga, status, convPct, rankPct, oddsPct, hasRank, hasStatus, hasOdds, lambdaRatio) {
+function updateTeamUI(prefix, gf, ga, status, rankPct, oddsPct, hasRank, hasStatus, hasOdds, lambdaRatio) {
   const ratio = isFinite(lambdaRatio) && lambdaRatio > 0 ? lambdaRatio : 1;
 
-  let attPct = Math.min(Math.max(((xg - 0.5) / 2.0) * 100, 0), 100);
-  let defPct = Math.min(Math.max(((3.0 - xga - 0.5) / 2.0) * 100, 0), 100);
+  let attPct = Math.min(Math.max((gf / 3) * 100, 0), 100);
+  let defPct = Math.min(Math.max(((3 - ga) / 3) * 100, 0), 100);
 
   if (hasOdds) {
     attPct = Math.min(Math.max(attPct * ratio, 0), 100);
@@ -690,10 +669,9 @@ function updateTeamUI(prefix, xg, xga, status, convPct, rankPct, oddsPct, hasRan
   $(prefix + 'DefBar').style.width = Math.max(defPct, 1) + '%';
   $(prefix + 'StatBar').style.width = Math.max(statPct, 1) + '%';
   $(prefix + 'OddsBar').style.width = Math.max(oddsPct, 1) + '%';
-  $(prefix + 'ConvBar').style.width = Math.max(convPct, 1) + '%';
 
   const attData = getGradeByPercent(attPct), defData = getGradeByPercent(defPct);
-  const statData = getGradeByPercent(statPct), oddsData = getGradeByPercent(oddsPct), convData = getGradeByPercent(convPct);
+  const statData = getGradeByPercent(statPct), oddsData = getGradeByPercent(oddsPct);
 
   $(prefix + 'AttDisplay').innerText = `${attData.grade} (${attPct.toFixed(1)})`;
   $(prefix + 'AttDisplay').style.color = attData.color;
@@ -703,8 +681,6 @@ function updateTeamUI(prefix, xg, xga, status, convPct, rankPct, oddsPct, hasRan
   $(prefix + 'StatDisplay').style.color = hasStatus ? statData.color : '#666';
   $(prefix + 'OddsDisplay').innerText = `${oddsData.grade} (${oddsPct.toFixed(1)})`;
   $(prefix + 'OddsDisplay').style.color = oddsData.color;
-  $(prefix + 'ConvDisplay').innerText = `${convData.grade} (${convPct.toFixed(1)})`;
-  $(prefix + 'ConvDisplay').style.color = convData.color;
 
   let radarData = [], labels = [], overallPct = 0;
   if (hasRank) {
@@ -713,14 +689,14 @@ function updateTeamUI(prefix, xg, xga, status, convPct, rankPct, oddsPct, hasRan
     const rankData = getGradeByPercent(rankPct);
     $(prefix + 'RankDisplay').innerText = `${rankData.grade} (${rankPct.toFixed(1)})`;
     $(prefix + 'RankDisplay').style.color = rankData.color;
-    radarData = [attPct, defPct, statPct, oddsPct, convPct, rankPct];
-    labels = ['ATK', 'DEF', 'STA', 'ODD', 'COV', 'RNK'];
-    overallPct = (attPct + defPct + statPct + oddsPct + convPct + rankPct) / 6;
+    radarData = [attPct, defPct, statPct, oddsPct, rankPct];
+    labels = ['ATK', 'DEF', 'STA', 'ODD', 'RNK'];
+    overallPct = (attPct + defPct + statPct + oddsPct + rankPct) / 5;
   } else {
     $(prefix + 'RankRow').style.display = 'none';
-    radarData = [attPct, defPct, statPct, oddsPct, convPct];
-    labels = ['ATK', 'DEF', 'STA', 'ODD', 'COV'];
-    overallPct = (attPct + defPct + statPct + oddsPct + convPct) / 5;
+    radarData = [attPct, defPct, statPct, oddsPct];
+    labels = ['ATK', 'DEF', 'STA', 'ODD'];
+    overallPct = (attPct + defPct + statPct + oddsPct) / 4;
   }
 
   const overallData = getGradeByPercent(overallPct);
@@ -729,7 +705,6 @@ function updateTeamUI(prefix, xg, xga, status, convPct, rankPct, oddsPct, hasRan
   overallEl.style.color = overallData.color;
   overallEl.style.borderColor = overallData.color;
 
-  /* 主隊雷達圖紅色，客隊藍色 */
   drawRadar(prefix === 'h' ? 'radar-home' : 'radar-away', radarData, labels,
             prefix === 'h' ? '#ff6b6b' : '#4da3ff',
             prefix === 'h' ? 'rgba(255,107,107,0.3)' : 'rgba(77,163,255,0.3)');
@@ -760,7 +735,7 @@ function updateTeamUI(prefix, xg, xga, status, convPct, rankPct, oddsPct, hasRan
 
 /* ===== 主流程 ===== */
 function predict() {
-  /* 1. 必填驗證：僅場均得失 */
+  /* 1. 必填驗證 */
   const requiredFields = ['hGF','hGA','aGF','aGA'];
   let missing = [];
   document.querySelectorAll('.num-input').forEach(el => el.classList.remove('invalid'));
@@ -787,10 +762,6 @@ function predict() {
   const hGA = parseFloat($('hGA').value);
   const aGF = parseFloat($('aGF').value);
   const aGA = parseFloat($('aGA').value);
-  const hXg = parseFloat($('hXg').value);
-  const hXga = parseFloat($('hXga').value);
-  const aXg = parseFloat($('aXg').value);
-  const aXga = parseFloat($('aXga').value);
   const hStatus = parseFloat($('hStatus').value);
   const aStatus = parseFloat($('aStatus').value);
   const hRankStr = $('hRank').value.trim();
@@ -799,13 +770,12 @@ function predict() {
   const oddD = parseFloat($('oddD').value);
   const oddA = parseFloat($('oddA').value);
 
-  const hasXg = isFinite(hXg) && isFinite(hXga) && isFinite(aXg) && isFinite(aXga)
-                && hXg > 0 && hXga > 0 && aXg > 0 && aXga > 0;
   const hasStatus = isFinite(hStatus) && isFinite(aStatus);
   const hasRank = hRankStr !== '' && aRankStr !== '';
   const hRank = hasRank ? parseInt(hRankStr) : 0;
   const aRank = hasRank ? parseInt(aRankStr) : 0;
   const hasOdds = isFinite(oddH) && oddH > 1 && isFinite(oddD) && oddD > 1 && isFinite(oddA) && oddA > 1;
+  const showRating = hasStatus || hasRank || hasOdds;
 
   /* 3. 基礎 λ */
   let baseLH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
@@ -880,7 +850,7 @@ function predict() {
 
   const topScores = list.slice(0, 4);
 
-  /* 7. 標籤門檻（70%） */
+  /* 7. 標籤門檻 */
   const big25 = over25 >= 0.70;
   const small25 = (1 - over25) >= 0.70;
   const bttsHot = btts >= 0.70;
@@ -951,7 +921,7 @@ function predict() {
     </div>
   `;
 
-  /* 10. 各隊大細（70% 門檻） */
+  /* 10. 各隊大細 */
   const hOU = getTeamOUFromProbs(hGoalProbs);
   const aOU = getTeamOUFromProbs(aGoalProbs);
   const tOU = getTotalOUFromProbs(totalGoalProbs);
@@ -994,10 +964,9 @@ function predict() {
   const [hStr, dStr, aStr] = normalizeTo100(homeWin, draw, awayWin);
   const hPct = parseFloat(hStr), dPct = parseFloat(dStr), aPct = parseFloat(aStr);
 
-  // 中位 50% 落在哪一段 → 預測結果
-  let predName = '和局', predCls = 'draw';
-  if (50 < hPct) { predName = '主勝'; predCls = 'home'; }
-  else if (50 >= hPct + dPct) { predName = '客勝'; predCls = 'away'; }
+  let predName = '和局';
+  if (50 < hPct) { predName = '主勝'; }
+  else if (50 >= hPct + dPct) { predName = '客勝'; }
 
   $('bars').innerHTML = `
     <div class="result-bar-wrap">
@@ -1006,9 +975,9 @@ function predict() {
         <div class="pred">預測：${predName}</div>
       </div>
       <div class="result-bar">
-        <div class="result-seg home" style="width:${hPct}%;">主 ${hStr}%</div>
-        <div class="result-seg draw" style="width:${dPct}%;">和 ${dStr}%</div>
-        <div class="result-seg away" style="width:${aPct}%;">客 ${aStr}%</div>
+        <div class="result-seg home" style="width:${hPct}%;"></div>
+        <div class="result-seg draw" style="width:${dPct}%;"></div>
+        <div class="result-seg away" style="width:${aPct}%;"></div>
       </div>
       <div class="result-legend">
         <span>主勝 <b>${hStr}%</b></span>
@@ -1043,17 +1012,11 @@ function predict() {
     </table>
   `;
 
-  /* 14. 能力值（有 xG 才顯示） */
-  if (hasXg) {
+  /* 14. 能力值（有填狀態／排名／賠率才顯示） */
+  if (showRating) {
     const totalOdds = hasOdds ? oddH + oddA : 0;
     const hOddsPct = hasOdds && totalOdds > 0 ? (oddA / totalOdds) * 100 : 50;
     const aOddsPct = hasOdds && totalOdds > 0 ? (oddH / totalOdds) * 100 : 50;
-
-    const hConv = hGF + aGA;
-    const aConv = aGF + hGA;
-    const convTotal = hConv + aConv;
-    const hConvPct = convTotal > 0 ? (hConv / convTotal) * 100 : 50;
-    const aConvPct = convTotal > 0 ? (aConv / convTotal) * 100 : 50;
 
     let hRankPct = 50, aRankPct = 50;
     if (hasRank) {
@@ -1096,8 +1059,8 @@ function predict() {
       hRankBadge.style.display = 'none'; aRankBadge.style.display = 'none';
     }
 
-    updateTeamUI('h', hXg, hXga, hStatus, hConvPct, hRankPct, hOddsPct, hasRank, hasStatus, hasOdds, hLambdaRatio);
-    updateTeamUI('a', aXg, aXga, aStatus, aConvPct, aRankPct, aOddsPct, hasRank, hasStatus, hasOdds, aLambdaRatio);
+    updateTeamUI('h', hGF, hGA, hStatus, hRankPct, hOddsPct, hasRank, hasStatus, hasOdds, hLambdaRatio);
+    updateTeamUI('a', aGF, aGA, aStatus, aRankPct, aOddsPct, hasRank, hasStatus, hasOdds, aLambdaRatio);
 
     $('capture3').style.display = 'block';
     $('btnSave3').style.display = '';
