@@ -166,19 +166,6 @@ button.ghost:active{color:var(--txt);border-color:var(--accent2);background:rgba
 .ou-card.under .val { color: #7fc1ff; }
 .ou-card.fuzzy .val { color: var(--muted); }
 
-/* ===== 5x5 波膽 ===== */
-.bet-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-.bet-cell {
-  aspect-ratio: 1 / 1;
-  display: flex; justify-content: center; align-items: center;
-  background-color: #2a2a2a; color: #666;
-  border: 1px solid #3a3a3a; border-radius: 6px;
-  font-size: 13px; font-weight: 700;
-}
-.bet-cell.active { background-color: #1a3324; color: #4ade80; border-color: #4ade80; }
-.bet-cell.yellow { background-color: #3b331c; color: #ffd700; border-color: #ffd700; }
-.bet-cell.red { background-color: #3b1c1c; color: #f87171; border-color: #f87171; }
-
 .lam{display:flex;justify-content:center;gap:22px;font-size:12px;color:var(--muted);margin-top:14px}
 .lam b{color:var(--txt)}
 
@@ -279,39 +266,39 @@ svg { width: 140px; height: 140px; }
 <body>
 <div class="wrap">
   <h1>專屬預測器</h1>
-  <p class="sub">場均得失為必填；賠率、xG、狀態、排名皆為選填。有賠率則自動放大 λ；有 xG 才顯示能力值。大細與波膽完全由 Poisson 矩陣機率判定。</p>
+  <p class="sub">場均得失為必填；賠率、xG、狀態、排名皆為選填。有賠率則自動放大 λ；有 xG 才顯示能力值。大細完全由 Poisson 矩陣機率判定（門檻 70%）。</p>
 
   <!-- 輸入區 -->
   <div class="grid">
     <div class="team">
       <h2>🏠 主隊數據</h2>
       <div class="row">
-        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="hGF" placeholder="例如 2.22"></div>
-        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="hGA" placeholder="例如 0.89"></div>
+        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="hGF"></div>
+        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="hGA"></div>
       </div>
       <div class="row">
-        <div><label>主隊 xG</label><input type="text" inputmode="decimal" class="num-input" id="hXg" placeholder="選填 例如 1.50"></div>
-        <div><label>主隊 xGA</label><input type="text" inputmode="decimal" class="num-input" id="hXga" placeholder="選填 例如 1.00"></div>
+        <div><label>主隊 xG</label><input type="text" inputmode="decimal" class="num-input" id="hXg"></div>
+        <div><label>主隊 xGA</label><input type="text" inputmode="decimal" class="num-input" id="hXga"></div>
       </div>
       <div class="row">
-        <div><label>狀態 (0-3)</label><input type="text" inputmode="decimal" class="num-input" id="hStatus" placeholder="選填 例如 1.50"></div>
-        <div><label>排名</label><input type="text" inputmode="numeric" class="num-input" id="hRank" placeholder="選填"></div>
+        <div><label>狀態 (0-3)</label><input type="text" inputmode="decimal" class="num-input" id="hStatus"></div>
+        <div><label>排名</label><input type="text" inputmode="numeric" class="num-input" id="hRank"></div>
       </div>
     </div>
 
     <div class="team away">
       <h2>✈️ 客隊數據</h2>
       <div class="row">
-        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="aGF" placeholder="例如 0.50"></div>
-        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="aGA" placeholder="例如 1.63"></div>
+        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="aGF"></div>
+        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="aGA"></div>
       </div>
       <div class="row">
-        <div><label>客隊 xG</label><input type="text" inputmode="decimal" class="num-input" id="aXg" placeholder="選填 例如 1.00"></div>
-        <div><label>客隊 xGA</label><input type="text" inputmode="decimal" class="num-input" id="aXga" placeholder="選填 例如 1.20"></div>
+        <div><label>客隊 xG</label><input type="text" inputmode="decimal" class="num-input" id="aXg"></div>
+        <div><label>客隊 xGA</label><input type="text" inputmode="decimal" class="num-input" id="aXga"></div>
       </div>
       <div class="row">
-        <div><label>狀態 (0-3)</label><input type="text" inputmode="decimal" class="num-input" id="aStatus" placeholder="選填 例如 1.00"></div>
-        <div><label>排名</label><input type="text" inputmode="numeric" class="num-input" id="aRank" placeholder="選填"></div>
+        <div><label>狀態 (0-3)</label><input type="text" inputmode="decimal" class="num-input" id="aStatus"></div>
+        <div><label>排名</label><input type="text" inputmode="numeric" class="num-input" id="aRank"></div>
       </div>
     </div>
   </div>
@@ -319,9 +306,9 @@ svg { width: 140px; height: 140px; }
   <div class="odds-panel">
     <div class="panel-title">市場 1X2 賠率 <span>選填；有填則賠率放大，未填則純數據</span></div>
     <div class="odds-inputs">
-      <input type="text" inputmode="decimal" class="num-input" id="oddH" placeholder="主勝賠率">
-      <input type="text" inputmode="decimal" class="num-input" id="oddD" placeholder="和局賠率">
-      <input type="text" inputmode="decimal" class="num-input" id="oddA" placeholder="客勝賠率">
+      <input type="text" inputmode="decimal" class="num-input" id="oddH">
+      <input type="text" inputmode="decimal" class="num-input" id="oddD">
+      <input type="text" inputmode="decimal" class="num-input" id="oddA">
     </div>
   </div>
 
@@ -341,15 +328,10 @@ svg { width: 140px; height: 140px; }
       <button class="btn-save-3" id="btnSave3" onclick="savePart3()">📸 保存分析</button>
     </div>
 
-    <!-- 第 1 塊：比分 + 5x5 + 雙選入球 + 各隊大細 -->
+    <!-- 第 1 塊：比分 + 雙選入球 + 各隊大細 -->
     <div id="capture1" class="capture-block">
       <div id="modeStatus"></div>
       <div class="scores" id="scores"></div>
-
-      <div class="extra-box">
-        <div class="extra-title">5×5 波膽概率分佈</div>
-        <div class="bet-grid" id="betGrid"></div>
-      </div>
 
       <div class="extra-box">
         <div class="extra-title">雙選球隊入球數</div>
@@ -482,22 +464,6 @@ $('clear').addEventListener('click', () => {
 
 $('go').addEventListener('click', predict);
 
-/* ===== 波膽網格初始化 ===== */
-function initBetGrid() {
-  const grid = $('betGrid');
-  if (grid.children.length > 0) return;
-  for (let h = 0; h <= 4; h++) {
-    for (let a = 0; a <= 4; a++) {
-      const cell = document.createElement('div');
-      cell.className = 'bet-cell';
-      cell.id = `cell-${h}-${a}`;
-      cell.innerText = `${h}:${a}`;
-      grid.appendChild(cell);
-    }
-  }
-}
-window.addEventListener('load', initBetGrid);
-
 /* ===== 截圖 ===== */
 function closeModal() { $('imageModal').classList.remove('show'); }
 
@@ -535,36 +501,34 @@ function backToInput() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-/* ===== 大細判定：完全由 Poisson 機率決定 ===== */
-// 單隊：以該隊入球分布 probs 判定
+/* ===== 大細判定：完全由 Poisson 機率決定（門檻 70% / 30%，與標籤一致） ===== */
 function getTeamOUFromProbs(probs) {
   const p0 = probs[0] || 0;
   const p1 = probs[1] || 0;
-  const p2plus = 1 - p0 - p1;                 // P(≥2)
-  const p3plus = 1 - p0 - p1 - (probs[2] || 0); // P(≥3)
+  const p2plus = 1 - p0 - p1;
+  const p3plus = 1 - p0 - p1 - (probs[2] || 0);
 
-  if (p3plus >= 0.60) return { line: 2.5, dir: '大', fuzzy: false, prob: p3plus };
-  if (p0 >= 0.60)     return { line: 0.5, dir: '細', fuzzy: false, prob: p0 };
-  if (p2plus >= 0.60) return { line: 1.5, dir: '大', fuzzy: false, prob: p2plus };
-  if (p2plus <= 0.40) return { line: 1.5, dir: '細', fuzzy: false, prob: 1 - p2plus };
+  if (p3plus >= 0.70) return { line: 2.5, dir: '大', fuzzy: false, prob: p3plus };
+  if (p0 >= 0.70)     return { line: 0.5, dir: '細', fuzzy: false, prob: p0 };
+  if (p2plus >= 0.70) return { line: 1.5, dir: '大', fuzzy: false, prob: p2plus };
+  if (p2plus <= 0.30) return { line: 1.5, dir: '細', fuzzy: false, prob: 1 - p2plus };
   return { fuzzy: true };
 }
 
-// 總入球：以總入球分布 probs 判定
 function getTotalOUFromProbs(probs) {
   const p0 = probs[0] || 0;
   const p1 = probs[1] || 0;
   const p2 = probs[2] || 0;
   const p3 = probs[3] || 0;
-  const p3plus = 1 - p0 - p1 - p2;          // P(≥3)
-  const p4plus = p3plus - p3;               // P(≥4)
+  const p3plus = 1 - p0 - p1 - p2;
+  const p4plus = p3plus - p3;
   const pLe1 = p0 + p1;
   const pLe2 = p0 + p1 + p2;
 
-  if (p4plus >= 0.60) return { line: 3.5, dir: '大', fuzzy: false, prob: p4plus };
-  if (pLe1   >= 0.60) return { line: 1.5, dir: '細', fuzzy: false, prob: pLe1 };
-  if (p3plus >= 0.60) return { line: 2.5, dir: '大', fuzzy: false, prob: p3plus };
-  if (pLe2   >= 0.60) return { line: 2.5, dir: '細', fuzzy: false, prob: pLe2 };
+  if (p4plus >= 0.70) return { line: 3.5, dir: '大', fuzzy: false, prob: p4plus };
+  if (pLe1   >= 0.70) return { line: 1.5, dir: '細', fuzzy: false, prob: pLe1 };
+  if (p3plus >= 0.70) return { line: 2.5, dir: '大', fuzzy: false, prob: p3plus };
+  if (pLe2   >= 0.70) return { line: 2.5, dir: '細', fuzzy: false, prob: pLe2 };
   return { fuzzy: true };
 }
 
@@ -760,13 +724,13 @@ function predict() {
   const aRank = hasRank ? parseInt(aRankStr) : 0;
   const hasOdds = isFinite(oddH) && oddH > 1 && isFinite(oddD) && oddD > 1 && isFinite(oddA) && oddA > 1;
 
-  /* 3. 基礎 λ（原公式） */
+  /* 3. 基礎 λ */
   let baseLH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
   let baseLA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
 
   let lH = baseLH, lA = baseLA;
 
-  /* 4. 賠率放大（有填才啟用） */
+  /* 4. 賠率放大 */
   if (hasOdds) {
     const ratioH = Math.sqrt(oddD / Math.max(oddH, 1.01));
     const ratioA = Math.sqrt(oddD / Math.max(oddA, 1.01));
@@ -794,7 +758,7 @@ function predict() {
   const list = [];
   const hGoalProbs = Array(MAXG + 1).fill(0);
   const aGoalProbs = Array(MAXG + 1).fill(0);
-  const totalGoalProbs = Array(MAXG * 2 + 1).fill(0);   // 總入球分佈
+  const totalGoalProbs = Array(MAXG * 2 + 1).fill(0);
 
   for (let i = 0; i <= MAXG; i++) {
     for (let j = 0; j <= MAXG; j++) {
@@ -830,7 +794,7 @@ function predict() {
 
   const topScores = list.slice(0, 4);
 
-  /* 7. 標籤門檻 */
+  /* 7. 標籤門檻（70%） */
   const big25 = over25 >= 0.70;
   const small25 = (1 - over25) >= 0.70;
   const bttsHot = btts >= 0.70;
@@ -881,22 +845,7 @@ function predict() {
     </div>
   `}).join('');
 
-  /* 9. 5x5 波膽 */
-  initBetGrid();
-  let maxProb = 0;
-  for (let h = 0; h <= 4; h++) for (let a = 0; a <= 4; a++) if (m[h][a] > maxProb) maxProb = m[h][a];
-  for (let h = 0; h <= 4; h++) {
-    for (let a = 0; a <= 4; a++) {
-      const cell = $(`cell-${h}-${a}`);
-      cell.className = 'bet-cell';
-      const ratio = maxProb > 0 ? m[h][a] / maxProb : 0;
-      if (ratio >= 0.75) cell.classList.add('active');
-      else if (ratio >= 0.40) cell.classList.add('yellow');
-      else cell.classList.add('red');
-    }
-  }
-
-  /* 10. 雙選球隊入球數 */
+  /* 9. 雙選球隊入球數 */
   const getTop2 = arr => arr.map((p, val) => ({ val, p })).sort((a, b) => b.p - a.p).slice(0, 2);
   const top2H = getTop2(hGoalProbs);
   const top2A = getTop2(aGoalProbs);
@@ -916,7 +865,7 @@ function predict() {
     </div>
   `;
 
-  /* 11. 各隊大細（由 Poisson 機率判定） */
+  /* 10. 各隊大細（70% 門檻） */
   const hOU = getTeamOUFromProbs(hGoalProbs);
   const aOU = getTeamOUFromProbs(aGoalProbs);
   const tOU = getTotalOUFromProbs(totalGoalProbs);
@@ -949,13 +898,13 @@ function predict() {
     </div>
   `;
 
-  /* 12. λ 資訊 */
+  /* 11. λ 資訊 */
   $('lam').innerHTML = `
     <div>最終主期望入球 <b>${final_lH.toFixed(2)}</b></div>
     <div>最終客期望入球 <b>${final_lA.toFixed(2)}</b></div>
   `;
 
-  /* 13. 賽果機率條 */
+  /* 12. 賽果機率條 */
   const [hStr, dStr, aStr] = normalizeTo100(homeWin, draw, awayWin);
   const bars = [
     ['主勝', homeWin, hStr + '%'],
@@ -974,7 +923,7 @@ function predict() {
     </div>
   `).join('');
 
-  /* 14. 完整比分表 Top 10 */
+  /* 13. 完整比分表 Top 10 */
   const filteredList = list.filter(s => s.p >= 0.01).slice(0, 10);
   $('topList').innerHTML = `
     <table>
@@ -999,7 +948,7 @@ function predict() {
     </table>
   `;
 
-  /* 15. 能力值（有 xG 才顯示） */
+  /* 14. 能力值（有 xG 才顯示） */
   if (hasXg) {
     const totalOdds = hasOdds ? oddH + oddA : 0;
     const hOddsPct = hasOdds && totalOdds > 0 ? (oddA / totalOdds) * 100 : 50;
@@ -1018,7 +967,6 @@ function predict() {
       aRankPct = totalRank > 0 ? (hRank / totalRank) * 100 : 50;
     }
 
-    /* 賠率徽章 */
     const hOddsBadge = $('hOddsBadge'), aOddsBadge = $('aOddsBadge');
     if (hasOdds) {
       hOddsBadge.style.display = 'inline-block';
@@ -1036,7 +984,6 @@ function predict() {
       hOddsBadge.style.display = 'none'; aOddsBadge.style.display = 'none';
     }
 
-    /* 排名徽章 */
     const hRankBadge = $('hRankBadge'), aRankBadge = $('aRankBadge');
     if (hasRank) {
       hRankBadge.style.display = 'inline-block'; hRankBadge.innerText = `第${hRank}名`; hRankBadge.className = 'badge-r';
@@ -1064,7 +1011,7 @@ function predict() {
     $('btnSave3').style.display = 'none';
   }
 
-  /* 16. 顯示 */
+  /* 15. 顯示 */
   $('result').classList.add('show');
   $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
