@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>專屬預測器</title>
+<title>專屬預測器 (標籤與星級版)</title>
 <style>
   :root{
     --bg:#0b1220; --card:#141d2f; --card2:#1b2740; --line:#2a3a55;
@@ -113,7 +113,7 @@
   .star.silver { color: #c0c0c0; text-shadow: 0 0 6px rgba(192, 192, 192, 0.6); }
   .star.gold { color: #ffd700; text-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
 
-  /* 表格內標籤與星號 */
+  /* 表格內標籤與星號 (標籤改為水平向右) */
   .t-badges { display: inline-flex; flex-direction: row; gap: 4px; vertical-align: middle; }
   .t-badge { font-size: 9px; padding: 1px 4px; border-radius: 3px; font-weight: 800; text-align: center; }
   .t-badge.over { background: rgba(255, 77, 77, 0.2); color: #ff6b6b; }
@@ -166,7 +166,7 @@
 <body>
 <div class="wrap">
   <h1>專屬預測器</h1>
-  <p class="sub">大/細 2.5 及 BTTS ≥ 70% 時於左上角顯示標籤。比分機率 ≥ 20% 金星、≥ 15% 銀星、≥ 10% 銅星。使用模式 2（λ 上限 4.5）。</p>
+  <p class="sub">大/細 2.5 及 BTTS ≥ 70% 時於左上角顯示標籤。比分機率 ≥ 20% 金星、≥ 15% 銀星、≥ 10% 銅星。固定顯示前四比分（使用模式 2：賠率放大 λ）。</p>
 
   <div class="grid">
     <div class="team">
@@ -313,9 +313,8 @@ function predict() {
     return;
   }
 
-  // 下限 0.01, 基礎值
-  let baseLH = Math.max((hGF + aGA) / 2, 0.01);
-  let baseLA = Math.max((aGF + hGA) / 2, 0.01);
+  let baseLH = Math.min(Math.max((hGF + aGA) / 2, 0.05), 6);
+  let baseLA = Math.min(Math.max((aGF + hGA) / 2, 0.05), 6);
   let lH = baseLH;
   let lA = baseLA;
 
@@ -337,16 +336,12 @@ function predict() {
     const ratioH = Math.sqrt(safeOddD / safeOddH);
     const ratioA = Math.sqrt(safeOddD / safeOddA);
     
-    // 下限 0.01, 上限 4.5 (最佳平衡點)
-    lH = Math.min(Math.max(baseLH * ratioH, 0.01), 4.5);
-    lA = Math.min(Math.max(baseLA * ratioA, 0.01), 4.5);
+    lH = Math.min(Math.max(baseLH * ratioH, 0.05), 6);
+    lA = Math.min(Math.max(baseLA * ratioA, 0.05), 6);
 
     $('modeStatus').innerHTML = `<span class="mode-badge">⚡ 模式 2：賠率放大 λ 已啟用 (主 λ: ${lH.toFixed(2)}, 客 λ: ${lA.toFixed(2)})</span>`;
   } else {
     isHomeFav = baseLH > baseLA;
-    // 即使無賠率，也套用 4.5 上限 (但通常基礎數據很難超過)
-    lH = Math.min(lH, 4.5);
-    lA = Math.min(lA, 4.5);
     $('modeStatus').innerHTML = `<span class="mode-badge pure">ℹ️ 未輸入完整賠率，使用純數據模式 (主 λ: ${lH.toFixed(2)}, 客 λ: ${lA.toFixed(2)})</span>`;
   }
 
