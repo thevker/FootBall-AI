@@ -23,23 +23,6 @@ body{
 h1{font-size:22px;margin:0 0 4px;letter-spacing:.5px}
 .sub{color:var(--muted);font-size:13px;margin:0 0 20px;line-height:1.6}
 
-/* ===== 語言切換 ===== */
-.lang-switch{
-  position:fixed;top:14px;right:14px;z-index:100;
-  display:flex;background:#151515;border:1px solid var(--line);
-  border-radius:10px;padding:3px;gap:3px;
-  box-shadow:0 4px 16px rgba(0,0,0,.4);
-}
-.lang-switch button{
-  flex:0 0 auto;padding:6px 12px;border:0;border-radius:7px;
-  background:transparent;color:var(--muted);font-size:12px;font-weight:800;
-  cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;
-  transform:none !important;
-}
-.lang-switch button.active{
-  background:linear-gradient(135deg,#3ddc97,#4da3ff);color:#06231a;
-}
-
 /* ===== 切換列 ===== */
 .mode-switch{
   display:flex;align-items:center;gap:10px;margin-bottom:12px;
@@ -126,11 +109,12 @@ button.ghost:active{color:var(--txt);border-color:var(--accent2);background:rgba
   display: inline-block;
   background: rgba(77,163,255,.15);
   color: var(--accent2);
-  padding: 4px 10px;
+  padding: 8px 12px;
   border-radius: 6px;
   font-size: 12px;
   margin-bottom: 12px;
   font-weight: 700;
+  line-height: 1.7;
 }
 .mode-badge.pure {
   background: rgba(143,163,196,.15);
@@ -372,64 +356,57 @@ svg { width: 140px; height: 140px; }
 </style>
 </head>
 <body>
-
-<!-- 語言切換 -->
-<div class="lang-switch">
-  <button type="button" id="langEN" onclick="setLang('en')">EN</button>
-  <button type="button" id="langZH" class="active" onclick="setLang('zh')">中</button>
-</div>
-
 <div class="wrap">
-  <h1 data-i18n="title">專屬預測器</h1>
-  <p class="sub" data-i18n="sub">場均得失為必填；賠率、狀態、排名皆為選填。有賠率則自動放大 λ，並同步放大進攻與防守能力值。狀態、排名、賠率三者全部填寫才顯示能力值與雷達圖。大細完全由 Poisson 矩陣機率判定（門檻 70%）。</p>
+  <h1>專屬預測器</h1>
+  <p class="sub">場均得失為必填；賠率、狀態、排名皆為選填。有賠率則自動放大 λ，並同步放大進攻與防守能力值。狀態、排名、賠率三者全部填寫才顯示能力值與雷達圖。大細完全由 Poisson 矩陣機率判定（門檻 70%）。</p>
 
   <!-- 模式切換 -->
   <div class="mode-switch">
-    <span class="label" data-i18n="mode">模式</span>
+    <span class="label">模式</span>
     <div class="seg">
-      <button type="button" class="active" id="modeStandard" onclick="setMode('standard')" data-i18n="standard">標準模式</button>
-      <button type="button" id="modeSimple" onclick="setMode('simple')" data-i18n="simple">簡易模式</button>
+      <button type="button" class="active" id="modeStandard" onclick="setMode('standard')">標準模式</button>
+      <button type="button" id="modeSimple" onclick="setMode('simple')">簡易模式</button>
     </div>
   </div>
 
   <!-- 賠率放大模式切換 -->
   <div class="mode-switch">
-    <span class="label" data-i18n="ampBase">放大基準</span>
+    <span class="label">放大基準</span>
     <div class="seg">
-      <button type="button" class="active" id="ampDraw" onclick="setAmpMode('draw')" data-i18n="ampDraw">和賠</button>
-      <button type="button" id="ampFixed" onclick="setAmpMode('fixed')" data-i18n="ampFixed">固定 3.50</button>
+      <button type="button" class="active" id="ampDraw" onclick="setAmpMode('draw')">和賠</button>
+      <button type="button" id="ampFixed" onclick="setAmpMode('fixed')">固定 3.50</button>
     </div>
   </div>
 
   <!-- 輸入區 -->
   <div class="grid">
     <div class="team">
-      <h2 data-i18n="homeTitle">🏠 主隊數據</h2>
+      <h2>🏠 主隊數據</h2>
       <div class="row">
-        <div><label data-i18n="gf">場均得分</label><input type="text" inputmode="decimal" class="num-input" id="hGF"></div>
-        <div><label data-i18n="ga">場均失球</label><input type="text" inputmode="decimal" class="num-input" id="hGA"></div>
+        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="hGF"></div>
+        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="hGA"></div>
       </div>
       <div class="row extra-inputs">
-        <div><label data-i18n="form">狀態 (0-3)</label><input type="text" inputmode="decimal" class="num-input" id="hStatus"></div>
-        <div><label data-i18n="rank">排名</label><input type="text" inputmode="numeric" class="num-input" id="hRank"></div>
+        <div><label>狀態 (0-3)</label><input type="text" inputmode="decimal" class="num-input" id="hStatus"></div>
+        <div><label>排名</label><input type="text" inputmode="numeric" class="num-input" id="hRank"></div>
       </div>
     </div>
 
     <div class="team away">
-      <h2 data-i18n="awayTitle">✈️ 客隊數據</h2>
+      <h2>✈️ 客隊數據</h2>
       <div class="row">
-        <div><label data-i18n="gf">場均得分</label><input type="text" inputmode="decimal" class="num-input" id="aGF"></div>
-        <div><label data-i18n="ga">場均失球</label><input type="text" inputmode="decimal" class="num-input" id="aGA"></div>
+        <div><label>場均得分</label><input type="text" inputmode="decimal" class="num-input" id="aGF"></div>
+        <div><label>場均失球</label><input type="text" inputmode="decimal" class="num-input" id="aGA"></div>
       </div>
       <div class="row extra-inputs">
-        <div><label data-i18n="form">狀態 (0-3)</label><input type="text" inputmode="decimal" class="num-input" id="aStatus"></div>
-        <div><label data-i18n="rank">排名</label><input type="text" inputmode="numeric" class="num-input" id="aRank"></div>
+        <div><label>狀態 (0-3)</label><input type="text" inputmode="decimal" class="num-input" id="aStatus"></div>
+        <div><label>排名</label><input type="text" inputmode="numeric" class="num-input" id="aRank"></div>
       </div>
     </div>
   </div>
 
   <div class="odds-panel">
-    <div class="panel-title"><span data-i18n="marketOdds">市場 1X2 賠率</span><span class="pt-hint" data-i18n="marketOddsHint">選填；有填則賠率放大 λ 與攻防能力值，未填則純數據</span></div>
+    <div class="panel-title"><span>市場 1X2 賠率</span><span class="pt-hint">選填；有填則賠率放大 λ 與攻防能力值，未填則純數據</span></div>
     <div class="odds-inputs">
       <input type="text" inputmode="decimal" class="num-input" id="oddH">
       <input type="text" inputmode="decimal" class="num-input" id="oddD">
@@ -438,19 +415,19 @@ svg { width: 140px; height: 140px; }
   </div>
 
   <div class="actions">
-    <button id="go" data-i18n="predict">開始預測</button>
-    <button id="clear" class="ghost" data-i18n="clear">清除</button>
+    <button id="go">開始預測</button>
+    <button id="clear" class="ghost">清除</button>
   </div>
 
   <!-- 結果區 -->
   <div id="result">
     <div class="action-buttons">
-      <button class="btn-return" onclick="backToInput()" data-i18n="back">⬅️ 返回</button>
+      <button class="btn-return" onclick="backToInput()">⬅️ 返回</button>
     </div>
     <div class="action-buttons">
-      <button class="btn-save-1" id="btnSave1" onclick="savePart1()" data-i18n="save1">📸 保存預測</button>
-      <button class="btn-save-2" id="btnSave2" onclick="savePart2()" data-i18n="save2">📸 保存分佈</button>
-      <button class="btn-save-3" id="btnSave3" onclick="savePart3()" data-i18n="save3">📸 保存分析</button>
+      <button class="btn-save-1" id="btnSave1" onclick="savePart1()">📸 保存預測</button>
+      <button class="btn-save-2" id="btnSave2" onclick="savePart2()">📸 保存分佈</button>
+      <button class="btn-save-3" id="btnSave3" onclick="savePart3()">📸 保存分析</button>
     </div>
 
     <!-- 第 1 塊 -->
@@ -459,12 +436,12 @@ svg { width: 140px; height: 140px; }
       <div class="scores" id="scores"></div>
 
       <div class="extra-box">
-        <div class="extra-title" data-i18n="teamGoals">雙選球隊入球數</div>
+        <div class="extra-title">雙選球隊入球數</div>
         <div class="tg-cards" id="teamGoals"></div>
       </div>
 
       <div class="extra-box">
-        <div class="extra-title" data-i18n="teamOU">各隊大細</div>
+        <div class="extra-title">各隊大細</div>
         <div class="ou-cards" id="ouCards"></div>
       </div>
 
@@ -474,11 +451,11 @@ svg { width: 140px; height: 140px; }
     <!-- 第 2 塊 -->
     <div id="capture2" class="capture-block">
       <div class="panel">
-        <h3 data-i18n="resultProb">最終賽果機率</h3>
+        <h3>最終賽果機率</h3>
         <div id="bars"></div>
       </div>
       <div class="panel">
-        <h3 data-i18n="scoreDist">完整比分機率分佈 (Top 10)</h3>
+        <h3>完整比分機率分佈 (Top 10)</h3>
         <div class="table-container" id="topList"></div>
       </div>
     </div>
@@ -486,254 +463,47 @@ svg { width: 140px; height: 140px; }
     <!-- 第 3 塊 -->
     <div id="capture3" class="capture-block" style="display:none;">
       <div class="radar-container">
-        <div class="vertical-text home" data-i18n="homeV">主隊</div>
+        <div class="vertical-text home">主隊</div>
         <div class="radar-svg-box"><svg id="radar-home" viewBox="0 0 200 200"></svg><svg id="radar-away" viewBox="0 0 200 200"></svg></div>
-        <div class="vertical-text away" data-i18n="awayV">客隊</div>
+        <div class="vertical-text away">客隊</div>
       </div>
 
       <div class="team-rating-block">
         <div class="team-header">
-          <div class="left-area"><span class="team-title" style="color:#ffb347;" data-i18n="homeTitleShort">🏠 主隊</span><span class="overall-badge" id="hOverall">-</span></div>
+          <div class="left-area"><span class="team-title" style="color:#ffb347;">🏠 主隊</span><span class="overall-badge" id="hOverall">-</span></div>
           <div class="right-area"><span class="badge-r" id="hStyle">-</span><span class="badge-r" id="hStatusBadge" style="display:none;">-</span><span class="badge-r" id="hOddsBadge" style="display:none;">-</span><span class="badge-r" id="hRankBadge" style="display:none;">-</span></div>
         </div>
-        <div class="rating-row"><div class="rating-label" data-i18n="attack">進攻</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="hAttBar"></div></div><div class="rating-display" id="hAttDisplay">-</div></div>
-        <div class="rating-row"><div class="rating-label" data-i18n="defense">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="hDefBar"></div></div><div class="rating-display" id="hDefDisplay">-</div></div>
-        <div class="rating-row"><div class="rating-label" data-i18n="formShort">狀態</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="hStatBar"></div></div><div class="rating-display" id="hStatDisplay">-</div></div>
-        <div class="rating-row"><div class="rating-label" data-i18n="odds">賠率</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="hOddsBar"></div></div><div class="rating-display" id="hOddsDisplay">-</div></div>
-        <div class="rating-row" id="hRankRow" style="display:none;"><div class="rating-label" data-i18n="rank">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="hRankBar"></div></div><div class="rating-display" id="hRankDisplay">-</div></div>
+        <div class="rating-row"><div class="rating-label">進攻</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="hAttBar"></div></div><div class="rating-display" id="hAttDisplay">-</div></div>
+        <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="hDefBar"></div></div><div class="rating-display" id="hDefDisplay">-</div></div>
+        <div class="rating-row"><div class="rating-label">狀態</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="hStatBar"></div></div><div class="rating-display" id="hStatDisplay">-</div></div>
+        <div class="rating-row"><div class="rating-label">賠率</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="hOddsBar"></div></div><div class="rating-display" id="hOddsDisplay">-</div></div>
+        <div class="rating-row" id="hRankRow" style="display:none;"><div class="rating-label">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="hRankBar"></div></div><div class="rating-display" id="hRankDisplay">-</div></div>
       </div>
 
       <div class="team-rating-block">
         <div class="team-header">
-          <div class="left-area"><span class="team-title" style="color:#4da3ff;" data-i18n="awayTitleShort">✈️ 客隊</span><span class="overall-badge" id="aOverall">-</span></div>
+          <div class="left-area"><span class="team-title" style="color:#4da3ff;">✈️ 客隊</span><span class="overall-badge" id="aOverall">-</span></div>
           <div class="right-area"><span class="badge-r" id="aStyle">-</span><span class="badge-r" id="aStatusBadge" style="display:none;">-</span><span class="badge-r" id="aOddsBadge" style="display:none;">-</span><span class="badge-r" id="aRankBadge" style="display:none;">-</span></div>
         </div>
-        <div class="rating-row"><div class="rating-label" data-i18n="attack">進攻</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="aAttBar"></div></div><div class="rating-display" id="aAttDisplay">-</div></div>
-        <div class="rating-row"><div class="rating-label" data-i18n="defense">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="aDefBar"></div></div><div class="rating-display" id="aDefDisplay">-</div></div>
-        <div class="rating-row"><div class="rating-label" data-i18n="formShort">狀態</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="aStatBar"></div></div><div class="rating-display" id="aStatDisplay">-</div></div>
-        <div class="rating-row"><div class="rating-label" data-i18n="odds">賠率</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="aOddsBar"></div></div><div class="rating-display" id="aOddsDisplay">-</div></div>
-        <div class="rating-row" id="aRankRow" style="display:none;"><div class="rating-label" data-i18n="rank">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="aRankBar"></div></div><div class="rating-display" id="aRankDisplay">-</div></div>
+        <div class="rating-row"><div class="rating-label">進攻</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-attack" id="aAttBar"></div></div><div class="rating-display" id="aAttDisplay">-</div></div>
+        <div class="rating-row"><div class="rating-label">防守</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-defense" id="aDefBar"></div></div><div class="rating-display" id="aDefDisplay">-</div></div>
+        <div class="rating-row"><div class="rating-label">狀態</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-status" id="aStatBar"></div></div><div class="rating-display" id="aStatDisplay">-</div></div>
+        <div class="rating-row"><div class="rating-label">賠率</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-odds" id="aOddsBar"></div></div><div class="rating-display" id="aOddsDisplay">-</div></div>
+        <div class="rating-row" id="aRankRow" style="display:none;"><div class="rating-label">排名</div><div class="rating-bar-bg"><div class="rating-bar-fill bar-rank" id="aRankBar"></div></div><div class="rating-display" id="aRankDisplay">-</div></div>
       </div>
     </div>
   </div>
 </div>
 
 <div id="imageModal">
-  <img id="previewImg" src="" alt="Analysis Result">
-  <div class="modal-hint" data-i18n="longPress">👇 請「長按」上方圖片，選擇「儲存到相片」</div>
-  <button class="modal-close" onclick="closeModal()" data-i18n="close">關閉</button>
+  <img id="previewImg" src="" alt="分析結果">
+  <div class="modal-hint">👇 請「長按」上方圖片，選擇「儲存到相片」</div>
+  <button class="modal-close" onclick="closeModal()">關閉</button>
 </div>
 
 <script>
 const $ = id => document.getElementById(id);
 const MAXG = 10;
-
-/* ===== 語言 ===== */
-const I18N = {
-  zh: {
-    htmlLang: 'zh-Hant',
-    title: '專屬預測器',
-    sub: '場均得失為必填；賠率、狀態、排名皆為選填。有賠率則自動放大 λ，並同步放大進攻與防守能力值。狀態、排名、賠率三者全部填寫才顯示能力值與雷達圖。大細完全由 Poisson 矩陣機率判定（門檻 70%）。',
-    mode: '模式',
-    standard: '標準模式',
-    simple: '簡易模式',
-    ampBase: '放大基準',
-    ampDraw: '和賠',
-    ampFixed: '固定 3.50',
-    homeTitle: '🏠 主隊數據',
-    awayTitle: '✈️ 客隊數據',
-    homeTitleShort: '🏠 主隊',
-    awayTitleShort: '✈️ 客隊',
-    gf: '場均得分',
-    ga: '場均失球',
-    form: '狀態 (0-3)',
-    formShort: '狀態',
-    rank: '排名',
-    marketOdds: '市場 1X2 賠率',
-    marketOddsHint: '選填；有填則賠率放大 λ 與攻防能力值，未填則純數據',
-    predict: '開始預測',
-    clear: '清除',
-    back: '⬅️ 返回',
-    save1: '📸 保存預測',
-    save2: '📸 保存分佈',
-    save3: '📸 保存分析',
-    teamGoals: '雙選球隊入球數',
-    teamOU: '各隊大細',
-    resultProb: '最終賽果機率',
-    scoreDist: '完整比分機率分佈 (Top 10)',
-    homeV: '主隊',
-    awayV: '客隊',
-    attack: '進攻',
-    defense: '防守',
-    odds: '賠率',
-    longPress: '👇 請「長按」上方圖片，選擇「儲存到相片」',
-    close: '關閉',
-    homeOU: '主隊大細',
-    totalOU: '總入球大細',
-    awayOU: '客隊大細',
-    finalHomeLambda: '最終主期望入球',
-    finalAwayLambda: '最終客期望入球',
-    pick1: '首選比分',
-    pick2: '次選比分',
-    pick3: '三選比分',
-    pick4: '四選比分',
-    prob: '機率',
-    homeTop: '主首選',
-    home2nd: '主次選',
-    awayTop: '客首選',
-    away2nd: '客次選',
-    cardOver: '入球大',
-    cardUnder: '入球小',
-    tblOver: '大',
-    tblUnder: '小',
-    ouOver: '大',
-    ouUnder: '小',
-    btts: 'BTTS',
-    fuzzy: '模糊',
-    goals: '球',
-    predHome: '主勝',
-    predDraw: '和局',
-    predAway: '客勝',
-    prediction: '預測：',
-    rankPrefix: '第',
-    rankSuffix: '名',
-    fav: '上盤',
-    dog: '下盤',
-    attacking: '進攻型',
-    defensive: '防守型',
-    balanced: '平衡型',
-    formVeryBad: '狀態極差',
-    formBad: '狀態欠佳',
-    formAvg: '狀態一般',
-    formGoodish: '狀態微優',
-    formGood: '狀態良好',
-    formVeryGood: '狀態極好',
-    overall: '戰力',
-    pureMode: '純數據模式',
-    fillRequired: '請填寫主客隊的場均得分與失球。',
-    captureFail: '生成圖片失敗，請重試。',
-    generating: '⏳ 生成中...',
-    colScore: '比分',
-    colTags: '標籤',
-    colProb: '機率',
-    atkLabel: '攻',
-    defLabel: '防',
-    staLabel: '狀',
-    oddLabel: '賠',
-    rnkLabel: '名'
-  },
-  en: {
-    htmlLang: 'en',
-    title: 'Exclusive Predictor',
-    sub: 'Avg goals scored & conceded are required; odds, form and rank are optional. With odds, λ is amplified and attack/defense ratings scale accordingly. Ratings & radar appear only when form, rank and odds are all filled. Over/Under is decided purely by the Poisson matrix (threshold 70%).',
-    mode: 'Mode',
-    standard: 'Standard',
-    simple: 'Simple',
-    ampBase: 'Amplify Base',
-    ampDraw: 'Draw Odds',
-    ampFixed: 'Fixed 3.50',
-    homeTitle: '🏠 Home Team',
-    awayTitle: '✈️ Away Team',
-    homeTitleShort: '🏠 Home',
-    awayTitleShort: '✈️ Away',
-    gf: 'Avg Scored',
-    ga: 'Avg Conceded',
-    form: 'Form (0-3)',
-    formShort: 'Form',
-    rank: 'Rank',
-    marketOdds: 'Market 1X2 Odds',
-    marketOddsHint: 'Optional; if filled, odds amplify λ and A/D ratings. Blank = pure data.',
-    predict: 'Predict',
-    clear: 'Clear',
-    back: '⬅️ Back',
-    save1: '📸 Save Prediction',
-    save2: '📸 Save Distribution',
-    save3: '📸 Save Analysis',
-    teamGoals: 'Top 2 Team Goals',
-    teamOU: 'Team Over/Under',
-    resultProb: 'Final Result Probability',
-    scoreDist: 'Score Distribution (Top 10)',
-    homeV: 'HOME',
-    awayV: 'AWAY',
-    attack: 'Attack',
-    defense: 'Defense',
-    odds: 'Odds',
-    longPress: '👇 Long-press the image above and choose “Save to Photos”',
-    close: 'Close',
-    homeOU: 'Home O/U',
-    totalOU: 'Total O/U',
-    awayOU: 'Away O/U',
-    finalHomeLambda: 'Final Home xG',
-    finalAwayLambda: 'Final Away xG',
-    pick1: 'Top Pick',
-    pick2: '2nd Pick',
-    pick3: '3rd Pick',
-    pick4: '4th Pick',
-    prob: 'Prob',
-    homeTop: 'Home Top',
-    home2nd: 'Home 2nd',
-    awayTop: 'Away Top',
-    away2nd: 'Away 2nd',
-    cardOver: 'Over',
-    cardUnder: 'Under',
-    tblOver: 'O',
-    tblUnder: 'U',
-    ouOver: 'Over',
-    ouUnder: 'Under',
-    btts: 'BTTS',
-    fuzzy: 'Fuzzy',
-    goals: 'goals',
-    predHome: 'Home',
-    predDraw: 'Draw',
-    predAway: 'Away',
-    prediction: 'Prediction: ',
-    rankPrefix: '#',
-    rankSuffix: '',
-    fav: 'Fav',
-    dog: 'Dog',
-    attacking: 'Attacking',
-    defensive: 'Defensive',
-    balanced: 'Balanced',
-    formVeryBad: 'Very Poor',
-    formBad: 'Poor',
-    formAvg: 'Average',
-    formGoodish: 'Decent',
-    formGood: 'Good',
-    formVeryGood: 'Excellent',
-    overall: 'Overall',
-    pureMode: 'Pure Data Mode',
-    fillRequired: 'Please fill in avg goals scored and conceded for both teams.',
-    captureFail: 'Failed to generate image. Please try again.',
-    generating: '⏳ Generating...',
-    colScore: 'Score',
-    colTags: 'Tags',
-    colProb: 'Prob',
-    atkLabel: 'ATK',
-    defLabel: 'DEF',
-    staLabel: 'STA',
-    oddLabel: 'ODD',
-    rnkLabel: 'RNK'
-  }
-};
-
-let currentLang = 'zh';
-const t = k => (I18N[currentLang] && I18N[currentLang][k]) || I18N.zh[k] || '';
-
-function applyLanguage() {
-  document.documentElement.lang = I18N[currentLang].htmlLang;
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    el.textContent = t(el.getAttribute('data-i18n'));
-  });
-}
-
-function setLang(lang) {
-  if (lang !== 'zh' && lang !== 'en') return;
-  currentLang = lang;
-  $('langEN').classList.toggle('active', lang === 'en');
-  $('langZH').classList.toggle('active', lang === 'zh');
-  applyLanguage();
-  if ($('result').classList.contains('show')) predict(true);
-}
 
 let currentMode = 'standard';   /* 'standard' | 'simple' */
 let ampMode = 'draw';           /* 'draw' | 'fixed' */
@@ -754,7 +524,7 @@ function setMode(mode) {
     ['hStatus','hRank','aStatus','aRank'].forEach(id => { $(id).value = ''; });
   }
 
-  if ($('result').classList.contains('show')) predict();
+  if ($('result').classList.contains('show')) predict(true);
 }
 
 /* ===== 賠率放大模式切換 ===== */
@@ -762,7 +532,7 @@ function setAmpMode(mode) {
   ampMode = mode;
   $('ampDraw').classList.toggle('active', mode === 'draw');
   $('ampFixed').classList.toggle('active', mode === 'fixed');
-  if ($('result').classList.contains('show')) predict();
+  if ($('result').classList.contains('show')) predict(true);
 }
 
 /* ===== 共用工具 ===== */
@@ -837,7 +607,7 @@ function captureElement(targetId, btnElement) {
   const target = $(targetId);
   if (!target) return;
   const originalText = btnElement.innerHTML;
-  btnElement.innerHTML = t('generating');
+  btnElement.innerHTML = '⏳ 生成中...';
   btnElement.disabled = true;
 
   target.classList.add('capturing');
@@ -856,7 +626,7 @@ function captureElement(targetId, btnElement) {
       btnElement.disabled = false;
     }).catch(() => {
       target.classList.remove('capturing');
-      alert(t('captureFail'));
+      alert('生成圖片失敗，請重試。');
       btnElement.innerHTML = originalText;
       btnElement.disabled = false;
     });
@@ -1009,18 +779,18 @@ function updateTeamUI(prefix, gf, ga, status, rankPct, oddsPct, hasRank, hasStat
     $(prefix + 'RankDisplay').innerText = `${rankData.grade} (${rankPct.toFixed(1)})`;
     $(prefix + 'RankDisplay').style.color = rankData.color;
     radarData = [attPct, defPct, statPct, oddsPct, rankPct];
-    labels = [t('atkLabel'), t('defLabel'), t('staLabel'), t('oddLabel'), t('rnkLabel')];
+    labels = ['ATK', 'DEF', 'STA', 'ODD', 'RNK'];
     overallPct = (attPct + defPct + statPct + oddsPct + rankPct) / 5;
   } else {
     $(prefix + 'RankRow').style.display = 'none';
     radarData = [attPct, defPct, statPct, oddsPct];
-    labels = [t('atkLabel'), t('defLabel'), t('staLabel'), t('oddLabel')];
+    labels = ['ATK', 'DEF', 'STA', 'ODD'];
     overallPct = (attPct + defPct + statPct + oddsPct) / 4;
   }
 
   const overallData = getGradeByPercent(overallPct);
   const overallEl = $(prefix + 'Overall');
-  overallEl.innerText = `${t('overall')}: ${overallData.grade} (${overallPct.toFixed(1)})`;
+  overallEl.innerText = `戰力: ${overallData.grade} (${overallPct.toFixed(1)})`;
   overallEl.style.color = overallData.color;
   overallEl.style.borderColor = overallData.color;
 
@@ -1030,9 +800,9 @@ function updateTeamUI(prefix, gf, ga, status, rankPct, oddsPct, hasRank, hasStat
 
   const styleEl = $(prefix + 'Style');
   const pctDiff = Math.round((attPct - defPct) * 10) / 10;
-  if (pctDiff >= 25.0) { styleEl.innerText = t('attacking'); styleEl.style.color = "#ff8c8c"; styleEl.style.backgroundColor = "#3b1c1c"; }
-  else if (pctDiff <= -25.0) { styleEl.innerText = t('defensive'); styleEl.style.color = "#8cb8ff"; styleEl.style.backgroundColor = "#1a2633"; }
-  else { styleEl.innerText = t('balanced'); styleEl.style.color = "#ccc"; styleEl.style.backgroundColor = "#333"; }
+  if (pctDiff >= 25.0) { styleEl.innerText = "進攻型"; styleEl.style.color = "#ff8c8c"; styleEl.style.backgroundColor = "#3b1c1c"; }
+  else if (pctDiff <= -25.0) { styleEl.innerText = "防守型"; styleEl.style.color = "#8cb8ff"; styleEl.style.backgroundColor = "#1a2633"; }
+  else { styleEl.innerText = "平衡型"; styleEl.style.color = "#ccc"; styleEl.style.backgroundColor = "#333"; }
 
   const statusBadge = $(prefix + 'StatusBadge');
   if (!hasStatus) {
@@ -1041,12 +811,12 @@ function updateTeamUI(prefix, gf, ga, status, rankPct, oddsPct, hasRank, hasStat
     statusBadge.style.display = 'inline-block';
     statusBadge.className = 'badge-r';
     statusBadge.style.color = ''; statusBadge.style.backgroundColor = '';
-    if (status <= 0.5) { statusBadge.innerText = t('formVeryBad'); statusBadge.style.color = "#ff3333"; statusBadge.style.backgroundColor = "#550000"; }
-    else if (status <= 1.0) { statusBadge.innerText = t('formBad'); statusBadge.style.color = "#ff6b6b"; statusBadge.style.backgroundColor = "#3b1c1c"; }
-    else if (status <= 1.5) { statusBadge.innerText = t('formAvg'); statusBadge.style.color = "#ffd700"; statusBadge.style.backgroundColor = "#3b331c"; }
-    else if (status <= 2.0) { statusBadge.innerText = t('formGoodish'); statusBadge.style.color = "#a3e635"; statusBadge.style.backgroundColor = "#263b1c"; }
-    else if (status <= 2.5) { statusBadge.innerText = t('formGood'); statusBadge.classList.add('status-glow-green'); }
-    else { statusBadge.innerText = t('formVeryGood'); statusBadge.classList.add('status-glow-cyan'); }
+    if (status <= 0.5) { statusBadge.innerText = "狀態極差"; statusBadge.style.color = "#ff3333"; statusBadge.style.backgroundColor = "#550000"; }
+    else if (status <= 1.0) { statusBadge.innerText = "狀態欠佳"; statusBadge.style.color = "#ff6b6b"; statusBadge.style.backgroundColor = "#3b1c1c"; }
+    else if (status <= 1.5) { statusBadge.innerText = "狀態一般"; statusBadge.style.color = "#ffd700"; statusBadge.style.backgroundColor = "#3b331c"; }
+    else if (status <= 2.0) { statusBadge.innerText = "狀態微優"; statusBadge.style.color = "#a3e635"; statusBadge.style.backgroundColor = "#263b1c"; }
+    else if (status <= 2.5) { statusBadge.innerText = "狀態良好"; statusBadge.classList.add('status-glow-green'); }
+    else { statusBadge.innerText = "狀態極好"; statusBadge.classList.add('status-glow-cyan'); }
   }
 
   return overallPct;
@@ -1072,7 +842,7 @@ function predict(skipScroll) {
       el.classList.add('invalid');
       setTimeout(() => el.classList.remove('invalid'), 1500);
     });
-    alert(t('fillRequired'));
+    alert('請填寫主客隊的場均得分與失球。');
     return;
   }
 
@@ -1120,18 +890,10 @@ function predict(skipScroll) {
     hLambdaRatio = lH / baseLH;
     aLambdaRatio = lA / baseLA;
 
-    const ampTxt = ampMode === 'fixed' ? t('ampFixed') : `${t('ampDraw')} ${oddD.toFixed(2)}`;
-    if (currentLang === 'en') {
-      $('modeStatus').innerHTML = `<span class="mode-badge">⚡ Odds-amplified λ (${ampTxt}) Home: ${lH.toFixed(2)} / Away: ${lA.toFixed(2)} | ATK/DEF ×${(0.5+0.5*hLambdaRatio).toFixed(2)} / ×${(0.5+0.5*aLambdaRatio).toFixed(2)}</span>`;
-    } else {
-      $('modeStatus').innerHTML = `<span class="mode-badge">⚡ 賠率放大 λ（${ampTxt}）主: ${lH.toFixed(2)} / 客: ${lA.toFixed(2)}｜攻防同步 ×${(0.5+0.5*hLambdaRatio).toFixed(2)} / ×${(0.5+0.5*aLambdaRatio).toFixed(2)}</span>`;
-    }
+    const ampTxt = ampMode === 'fixed' ? '固定 3.50' : `和賠 ${oddD.toFixed(2)}`;
+    $('modeStatus').innerHTML = `<span class="mode-badge">⚡ 賠率放大 λ（${ampTxt}）<br>主: ${lH.toFixed(2)} / 客: ${lA.toFixed(2)}<br>攻防同步 ×${(0.5+0.5*hLambdaRatio).toFixed(2)} / ×${(0.5+0.5*aLambdaRatio).toFixed(2)}</span>`;
   } else {
-    if (currentLang === 'en') {
-      $('modeStatus').innerHTML = `<span class="mode-badge pure">ℹ️ Pure Data Mode (Home λ: ${lH.toFixed(2)} / Away λ: ${lA.toFixed(2)})</span>`;
-    } else {
-      $('modeStatus').innerHTML = `<span class="mode-badge pure">ℹ️ 純數據模式 (主 λ: ${lH.toFixed(2)} / 客 λ: ${lA.toFixed(2)})</span>`;
-    }
+    $('modeStatus').innerHTML = `<span class="mode-badge pure">ℹ️ 純數據模式 (主 λ: ${lH.toFixed(2)} / 客 λ: ${lA.toFixed(2)})</span>`;
   }
 
   /* 5. Poisson 矩陣 */
@@ -1193,22 +955,22 @@ function predict(skipScroll) {
   const bttsHot = btts >= 0.70;
 
   /* 8. 比分卡片 */
-  const labels = [t('pick1'), t('pick2'), t('pick3'), t('pick4')];
+  const labels = ['首選比分','次選比分','三選比分','四選比分'];
 
   function getTags(s) {
     let tags = [];
-    if (big25 && (s.h + s.a) >= 3) tags.push(`<span class="badge over">${t('cardOver')}</span>`);
-    if (small25 && (s.h + s.a) <= 2) tags.push(`<span class="badge under">${t('cardUnder')}</span>`);
-    if (bttsHot && s.h > 0 && s.a > 0) tags.push(`<span class="badge btts">${t('btts')}</span>`);
+    if (big25 && (s.h + s.a) >= 3) tags.push('<span class="badge over">入球大</span>');
+    if (small25 && (s.h + s.a) <= 2) tags.push('<span class="badge under">入球小</span>');
+    if (bttsHot && s.h > 0 && s.a > 0) tags.push('<span class="badge btts">BTTS</span>');
     if (tags.length === 0) return '';
     return `<div class="tag-group">${tags.join('')}</div>`;
   }
 
   function getTableTags(s) {
     let tags = [];
-    if (big25 && (s.h + s.a) >= 3) tags.push(`<span class="t-badge over">${t('tblOver')}</span>`);
-    if (small25 && (s.h + s.a) <= 2) tags.push(`<span class="t-badge under">${t('tblUnder')}</span>`);
-    if (bttsHot && s.h > 0 && s.a > 0) tags.push(`<span class="t-badge btts">${t('btts')}</span>`);
+    if (big25 && (s.h + s.a) >= 3) tags.push('<span class="t-badge over">大</span>');
+    if (small25 && (s.h + s.a) <= 2) tags.push('<span class="t-badge under">小</span>');
+    if (bttsHot && s.h > 0 && s.a > 0) tags.push('<span class="t-badge btts">BTTS</span>');
     if (tags.length === 0) return '';
     return `<span class="t-badges">${tags.join('')}</span>`;
   }
@@ -1234,7 +996,7 @@ function predict(skipScroll) {
       ${getStar(s)}
       <div class="tag">${labels[idx]}</div>
       <div class="big">${s.h} - ${s.a}</div>
-      <div class="pct">${t('prob')} <b>${pct(s.p)}</b></div>
+      <div class="pct">機率 <b>${pct(s.p)}</b></div>
     </div>
   `}).join('');
 
@@ -1245,16 +1007,16 @@ function predict(skipScroll) {
 
   $('teamGoals').innerHTML = `
     <div class="tg-card ${top2H[0].val >= top2H[1].val ? 'one' : ''}">
-      <div class="tag">${t('homeTop')}</div><div class="val">${top2H[0].val}</div><div class="pct">${pct(top2H[0].p)}</div>
+      <div class="tag">主首選</div><div class="val">${top2H[0].val}</div><div class="pct">${pct(top2H[0].p)}</div>
     </div>
     <div class="tg-card">
-      <div class="tag">${t('home2nd')}</div><div class="val">${top2H[1].val}</div><div class="pct">${pct(top2H[1].p)}</div>
+      <div class="tag">主次選</div><div class="val">${top2H[1].val}</div><div class="pct">${pct(top2H[1].p)}</div>
     </div>
     <div class="tg-card ${top2A[0].val >= top2A[1].val ? 'one' : ''}">
-      <div class="tag">${t('awayTop')}</div><div class="val">${top2A[0].val}</div><div class="pct">${pct(top2A[0].p)}</div>
+      <div class="tag">客首選</div><div class="val">${top2A[0].val}</div><div class="pct">${pct(top2A[0].p)}</div>
     </div>
     <div class="tg-card">
-      <div class="tag">${t('away2nd')}</div><div class="val">${top2A[1].val}</div><div class="pct">${pct(top2A[1].p)}</div>
+      <div class="tag">客次選</div><div class="val">${top2A[1].val}</div><div class="pct">${pct(top2A[1].p)}</div>
     </div>
   `;
 
@@ -1264,9 +1026,9 @@ function predict(skipScroll) {
   const tOU = getTotalOUFromProbs(totalGoalProbs);
 
   function renderOU(ou) {
-    if (ou.fuzzy) return { text: t('fuzzy'), cls: 'fuzzy', sub: '' };
+    if (ou.fuzzy) return { text: '模糊', cls: 'fuzzy', sub: '' };
     return {
-      text: `${ou.line} ${t('goals')} ${ou.dir === '大' ? t('ouOver') : t('ouUnder')}`,
+      text: `${ou.line} 球 ${ou.dir}`,
       cls: ou.dir === '大' ? 'over' : 'under',
       sub: `P = ${(ou.prob * 100).toFixed(1)}%`
     };
@@ -1275,17 +1037,17 @@ function predict(skipScroll) {
 
   $('ouCards').innerHTML = `
     <div class="ou-card ${hD.cls}">
-      <div class="tag">${t('homeOU')}</div>
+      <div class="tag">主隊大細</div>
       <div class="val">${hD.text}</div>
       <div class="sub-pct">${hD.sub}</div>
     </div>
     <div class="ou-card ${tD.cls}">
-      <div class="tag">${t('totalOU')}</div>
+      <div class="tag">總入球大細</div>
       <div class="val">${tD.text}</div>
       <div class="sub-pct">${tD.sub}</div>
     </div>
     <div class="ou-card ${aD.cls}">
-      <div class="tag">${t('awayOU')}</div>
+      <div class="tag">客隊大細</div>
       <div class="val">${aD.text}</div>
       <div class="sub-pct">${aD.sub}</div>
     </div>
@@ -1293,23 +1055,23 @@ function predict(skipScroll) {
 
   /* 11. λ 資訊 */
   $('lam').innerHTML = `
-    <div>${t('finalHomeLambda')} <b>${final_lH.toFixed(2)}</b></div>
-    <div>${t('finalAwayLambda')} <b>${final_lA.toFixed(2)}</b></div>
+    <div>最終主期望入球 <b>${final_lH.toFixed(2)}</b></div>
+    <div>最終客期望入球 <b>${final_lA.toFixed(2)}</b></div>
   `;
 
   /* 12. 賽果機率 */
   const [hStr, dStr, aStr] = normalizeTo100(homeWin, draw, awayWin);
   const hPct = parseFloat(hStr), dPct = parseFloat(dStr), aPct = parseFloat(aStr);
 
-  let predName = t('predDraw');
-  if (50 < hPct) { predName = t('predHome'); }
-  else if (50 >= hPct + dPct) { predName = t('predAway'); }
+  let predName = '和局';
+  if (50 < hPct) { predName = '主勝'; }
+  else if (50 >= hPct + dPct) { predName = '客勝'; }
 
   $('bars').innerHTML = `
     <div class="result-bar-wrap">
       <div class="result-marker">
         <div class="arrow">▼</div>
-        <div class="pred">${t('prediction')}${predName}</div>
+        <div class="pred">預測：${predName}</div>
       </div>
       <div class="result-bar">
         <div class="result-seg home" style="width:${hPct}%;"></div>
@@ -1317,9 +1079,9 @@ function predict(skipScroll) {
         <div class="result-seg away" style="width:${aPct}%;"></div>
       </div>
       <div class="result-legend">
-        <span>${t('predHome')} <b>${hStr}%</b></span>
-        <span>${t('predDraw')} <b>${dStr}%</b></span>
-        <span>${t('predAway')} <b>${aStr}%</b></span>
+        <span>主勝 <b>${hStr}%</b></span>
+        <span>和局 <b>${dStr}%</b></span>
+        <span>客勝 <b>${aStr}%</b></span>
       </div>
     </div>
   `;
@@ -1331,9 +1093,9 @@ function predict(skipScroll) {
       <thead>
         <tr>
           <th style="width: 40px;">#</th>
-          <th>${t('colScore')}</th>
-          <th>${t('colTags')}</th>
-          <th>${t('colProb')}</th>
+          <th>比分</th>
+          <th>標籤</th>
+          <th>機率</th>
         </tr>
       </thead>
       <tbody>
@@ -1367,11 +1129,11 @@ function predict(skipScroll) {
       hOddsBadge.style.display = 'inline-block';
       aOddsBadge.style.display = 'inline-block';
       if (oddH < oddA) {
-        hOddsBadge.innerText = t('fav'); hOddsBadge.style.color = "#bbf7d0"; hOddsBadge.style.backgroundColor = "#15803d";
-        aOddsBadge.innerText = t('dog'); aOddsBadge.style.color = "#ccc"; aOddsBadge.style.backgroundColor = "#333";
+        hOddsBadge.innerText = "上盤"; hOddsBadge.style.color = "#bbf7d0"; hOddsBadge.style.backgroundColor = "#15803d";
+        aOddsBadge.innerText = "下盤"; aOddsBadge.style.color = "#ccc"; aOddsBadge.style.backgroundColor = "#333";
       } else if (oddH > oddA) {
-        hOddsBadge.innerText = t('dog'); hOddsBadge.style.color = "#ccc"; hOddsBadge.style.backgroundColor = "#333";
-        aOddsBadge.innerText = t('fav'); aOddsBadge.style.color = "#bbf7d0"; aOddsBadge.style.backgroundColor = "#15803d";
+        hOddsBadge.innerText = "下盤"; hOddsBadge.style.color = "#ccc"; hOddsBadge.style.backgroundColor = "#333";
+        aOddsBadge.innerText = "上盤"; aOddsBadge.style.color = "#bbf7d0"; aOddsBadge.style.backgroundColor = "#15803d";
       } else {
         hOddsBadge.style.display = 'none'; aOddsBadge.style.display = 'none';
       }
@@ -1381,13 +1143,13 @@ function predict(skipScroll) {
 
     const hRankBadge = $('hRankBadge'), aRankBadge = $('aRankBadge');
     if (hasRank) {
-      hRankBadge.style.display = 'inline-block'; hRankBadge.innerText = `${t('rankPrefix')}${hRank}${t('rankSuffix')}`; hRankBadge.className = 'badge-r';
+      hRankBadge.style.display = 'inline-block'; hRankBadge.innerText = `第${hRank}名`; hRankBadge.className = 'badge-r';
       if (hRank === 1) hRankBadge.classList.add('rank-glow-gold');
       else if (hRank === 2) hRankBadge.classList.add('rank-glow-silver');
       else if (hRank === 3) hRankBadge.classList.add('rank-glow-bronze');
       else { hRankBadge.style.color = '#ccc'; hRankBadge.style.backgroundColor = '#333'; }
 
-      aRankBadge.style.display = 'inline-block'; aRankBadge.innerText = `${t('rankPrefix')}${aRank}${t('rankSuffix')}`; aRankBadge.className = 'badge-r';
+      aRankBadge.style.display = 'inline-block'; aRankBadge.innerText = `第${aRank}名`; aRankBadge.className = 'badge-r';
       if (aRank === 1) aRankBadge.classList.add('rank-glow-gold');
       else if (aRank === 2) aRankBadge.classList.add('rank-glow-silver');
       else if (aRank === 3) aRankBadge.classList.add('rank-glow-bronze');
@@ -1410,9 +1172,6 @@ function predict(skipScroll) {
   $('result').classList.add('show');
   if (!skipScroll) $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
-
-/* 初始化語言 */
-applyLanguage();
 </script>
 </body>
 </html>
